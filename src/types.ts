@@ -1,0 +1,38 @@
+export interface Point { x: number; y: number }
+export interface Section { id: string; name: string; color: string }
+export interface Performer { id: string; label: string; name: string; sectionId: string }
+export interface DrillSet {
+  id: string;
+  name: string;
+  counts: number;
+  tempo: number;
+  notes: string;
+  transition: 'linear' | 'ease';
+  positions: Record<string, Point>;
+}
+export interface Project {
+  schemaVersion: 1;
+  id: string;
+  title: string;
+  ensemble: string;
+  field: { width: number; height: number; preset: 'college' | 'high-school' };
+  sections: Section[];
+  performers: Performer[];
+  sets: DrillSet[];
+  audioOffsetSeconds: number;
+}
+export type FormationKind = 'line' | 'arc' | 'circle' | 'block' | 'curve';
+export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number }
+export interface TransitionIssue { type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number }
+export interface TimelineSample { positions: Record<string, Point>; setIndex: number; progress: number; localCount: number }
+export interface DesktopBridge {
+  platform: string;
+  resetProject: () => void;
+  openProject: () => Promise<{ content: string; path: string } | null>;
+  saveProject: (content: string, suggestedName: string, saveAs?: boolean) => Promise<string | null>;
+  exportFile: (content: string, suggestedName: string, kind: 'csv' | 'svg' | 'html') => Promise<string | null>;
+  exportPdf: () => Promise<string | null>;
+  setDirty: (dirty: boolean) => void;
+  onMenuAction: (callback: (action: string) => void) => () => void;
+}
+declare global { interface Window { squidware?: DesktopBridge } }
