@@ -6,6 +6,8 @@ Squidware brings cast management, an interactive 2D field, 3D rehearsal, count-b
 
 This is an independent early release of a Pyware-style alternative. It implements a complete basic design-to-rehearsal workflow; it does **not** claim feature parity with mature professional drill software or compatibility with proprietary Pyware files.
 
+![Squidware desktop studio with the 2D field, set list, formation inspector, and count timeline](docs/images/studio.png)
+
 ## What you can do
 
 - **Design in 2D:** select individual performers or groups, marquee-select, drag, enter exact coordinates, snap to an 8-to-5 step grid, nudge, pan, zoom, and inspect paths from the previous set.
@@ -18,6 +20,8 @@ This is an independent early release of a Pyware-style alternative. It implement
 - **Take it to rehearsal:** save editable `.squid` projects; export PDF field charts, individual coordinate sheets, coordinate CSV, and the current chart as SVG.
 
 The included **Tidal forces** demo has 64 performers across six editable sets. A blank production starts with four customizable sections and an opening set.
+
+Download the Windows portable application, macOS Apple Silicon DMG, or Linux x64 AppImage from [release v0.1.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.1.0), or run it from source below. Packages are unsigned; the Windows executable was launch-tested locally, while macOS and Linux packages were built in GitHub Actions.
 
 ## Run the desktop app
 

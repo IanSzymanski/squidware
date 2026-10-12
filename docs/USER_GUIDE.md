@@ -96,7 +96,7 @@ Choose **Constant speed** for uniform progress along each straight path or **Eas
 
 Deleting a set connects its neighbors directly. Check the resulting transition before rehearsal. A production must retain at least one set.
 
-A production can contain up to 128 sets. Set names, production titles, and section names commit when you leave the field or press Enter; Escape cancels the current text draft.
+A production can contain up to 128 sets. Set names, production titles, and section names commit when you leave the text input or press Enter; Escape cancels the current text draft.
 
 The **Production** view summarizes the cast, sets, total counts, runtime at written tempos, and rehearsal notes. Jump back to a set from its table to edit it.
 
