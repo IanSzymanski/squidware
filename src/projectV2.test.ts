@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import v1Text from './fixtures/schema-v1.squid?raw';
 import v2Text from './fixtures/schema-v2.squid?raw';
 import { analyzeTransition, countToSeconds, createBlankProject, createDemoProject, exportCoordinatesCsv, parseProject,
-  PROJECT_LIMITS, sampleProject, secondsToCount, serializeProject, setStartCount, totalCounts } from './domain';
-import { createPerformanceFixture } from './performanceFixtures';
+  PROJECT_LIMITS, sampleProject, secondsToCount, setStartCount, totalCounts } from './domain';
+import * as legacy from './fixtures/legacyEngine';
+import { validateLegacyProject } from './projectValidation';
+import { createLegacyPerformanceFixture } from './performanceFixtures';
 import { migrateProjectV1, parseProjectV2, projectV2AsLegacy, serializeProjectV2, validateProjectV2 } from './projectV2';
 import type { ProjectV2 } from './projectV2';
 
@@ -11,7 +13,7 @@ const fixture = () => parseProjectV2(v2Text);
 
 describe('schema v2 migration and compatibility', () => {
   it('migrates the pinned v1 fixture into the pinned v2 fixture without mutating either', () => {
-    const old = parseProject(v1Text);
+    const old = validateLegacyProject(JSON.parse(v1Text));
     const before = JSON.stringify(old);
     expect(migrateProjectV1(old)).toEqual(fixture());
     expect(parseProjectV2('\uFEFF' + v1Text)).toEqual(fixture());
@@ -24,19 +26,19 @@ describe('schema v2 migration and compatibility', () => {
   });
 
   it('preserves samples, time conversions, warning counts and CSV output', () => {
-    const old = parseProject(v1Text);
-    const compatible = projectV2AsLegacy(parseProjectV2(v1Text));
+    const old = validateLegacyProject(JSON.parse(v1Text));
+    const compatible = parseProject(v1Text);
     expect(totalCounts(compatible)).toBe(40);
     for (const count of [-1, 0, 0.1, 4, 8, 15.999, 16, 16.001, 20, 28, 39.999, 40, 99]) {
-      expect(sampleProject(compatible, count)).toEqual(sampleProject(old, count));
-      expect(countToSeconds(compatible, count)).toBe(countToSeconds(old, count));
-      expect(secondsToCount(compatible, countToSeconds(old, count))).toBe(secondsToCount(old, countToSeconds(old, count)));
+      expect(sampleProject(compatible, count)).toEqual(legacy.sampleProject(old, count));
+      expect(countToSeconds(compatible, count)).toBe(legacy.countToSeconds(old, count));
+      expect(secondsToCount(compatible, legacy.countToSeconds(old, count))).toBe(legacy.secondsToCount(old, legacy.countToSeconds(old, count)));
     }
     for (let index = 0; index < old.sets.length; index += 1) {
-      expect(setStartCount(compatible, index)).toBe(setStartCount(old, index));
-      expect(analyzeTransition(compatible, index)).toEqual(analyzeTransition(old, index));
+      expect(setStartCount(compatible, index)).toBe(legacy.setStartCount(old, index));
+      expect(analyzeTransition(compatible, index)).toEqual(legacy.analyzeTransition(old, index));
     }
-    expect(exportCoordinatesCsv(compatible)).toBe(exportCoordinatesCsv(old));
+    expect(exportCoordinatesCsv(compatible)).toBe(legacy.exportCoordinatesCsv(old));
   });
 
   it('round-trips move and segment identities with explicit supported paths', () => {
@@ -52,40 +54,40 @@ describe('schema v2 migration and compatibility', () => {
   });
 
   it('keeps a single opening picture at zero elapsed time without fabricating a move', () => {
-    const old = createBlankProject();
+    const old = projectV2AsLegacy(createBlankProject());
     old.sets[0].tempo = 20.125;
     old.sets[0].transition = 'ease';
-    const project = parseProjectV2(serializeProject(old));
+    const project = parseProjectV2(JSON.stringify(old));
     expect(project.moves).toEqual([]);
     expect(project.openingTiming).toEqual({ tempo: 20.125, transition: 'ease' });
     expect(parseProjectV2(serializeProjectV2(project))).toEqual(project);
-    expect(sampleProject(projectV2AsLegacy(project), 1)).toEqual(sampleProject(old, 1));
-    expect(countToSeconds(projectV2AsLegacy(project), 10)).toBe(0);
+    expect(sampleProject(project, 1)).toEqual(legacy.sampleProject(old, 1));
+    expect(countToSeconds(project, 10)).toBe(0);
   });
 
   it('preserves the bundled demonstration across every move boundary and midpoint', () => {
-    const old = createDemoProject();
-    const migrated = projectV2AsLegacy(parseProjectV2(serializeProject(old)));
-    expect(migrated).toEqual(old);
+    const old = projectV2AsLegacy(createDemoProject());
+    const migrated = parseProject(JSON.stringify(old));
+    expect(projectV2AsLegacy(migrated)).toEqual(old);
     old.sets.forEach((set, index) => {
-      const arrival = setStartCount(old, index);
+      const arrival = legacy.setStartCount(old, index);
       for (const count of [arrival, arrival - set.counts / 2]) {
-        expect(sampleProject(migrated, count)).toEqual(sampleProject(old, count));
-        expect(countToSeconds(migrated, count)).toBe(countToSeconds(old, count));
+        expect(sampleProject(migrated, count)).toEqual(legacy.sampleProject(old, count));
+        expect(countToSeconds(migrated, count)).toBe(legacy.countToSeconds(old, count));
       }
     });
   });
 
   it('migrates the deterministic maximum 500-performer, 128-picture fixture within the file budget', () => {
-    const old = createPerformanceFixture('maximum');
-    const project = parseProjectV2(serializeProject(old));
+    const old = createLegacyPerformanceFixture('maximum');
+    const project = parseProject(JSON.stringify(old));
     expect(project.moves).toHaveLength(127);
     expect(new Set(project.moves.map(move => move.id)).size).toBe(127);
     const content = serializeProjectV2(project);
     expect(new TextEncoder().encode(content).byteLength).toBeLessThan(PROJECT_LIMITS.projectBytes);
     const restored = projectV2AsLegacy(parseProjectV2(content));
     expect(restored).toEqual(old);
-    for (const count of [0, 0.1, 16, 32, 32.1, 2032, 4064]) expect(sampleProject(restored, count)).toEqual(sampleProject(old, count));
+    for (const count of [0, 0.1, 16, 32, 32.1, 2032, 4064]) expect(sampleProject(project, count)).toEqual(legacy.sampleProject(old, count));
   });
 
   it('discards informational unknown properties and canonicalizes path map order', () => {
@@ -151,13 +153,13 @@ describe('schema v2 rejects ambiguous or unsupported productions', () => {
     }
     expect(() => parseProjectV2(JSON.stringify({ schemaVersion: 3 }))).toThrow(/version 3.*Update Squidware/);
     expect(() => parseProjectV2(v1Text.replace('"counts":16', '"counts":0'))).toThrow(/sets\[1\].counts/);
-    expect(() => validateProjectV2(parseProject(v1Text))).toThrow(/Use migrateProjectV1/);
+    expect(() => validateProjectV2(validateLegacyProject(JSON.parse(v1Text)))).toThrow(/Use migrateProjectV1/);
   });
 
   it('measures byte limits before parsing and after serializing multibyte notes', () => {
     expect(() => parseProjectV2(' '.repeat(PROJECT_LIMITS.projectBytes + 1))).toThrow(/10 MiB/);
     expect(() => parseProjectV2('💧'.repeat(PROJECT_LIMITS.projectBytes / 4 + 1))).toThrow(/10 MiB/);
-    const project = migrateProjectV1(createPerformanceFixture('maximum'));
+    const project = migrateProjectV1(createLegacyPerformanceFixture('maximum'));
     project.sets.forEach(set => { set.notes = '水'.repeat(PROJECT_LIMITS.text.notes); });
     // Extend valid performer IDs to approach the budget without violating text/geometry limits.
     const rename = new Map(project.performers.map((performer, index) => [performer.id, `p-${index}-${'x'.repeat(119)}`]));

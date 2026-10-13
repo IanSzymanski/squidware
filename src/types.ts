@@ -1,7 +1,7 @@
 export interface Point { x: number; y: number }
 export interface Section { id: string; name: string; color: string }
 export interface Performer { id: string; label: string; name: string; sectionId: string }
-export interface DrillSet {
+export interface LegacyDrillSet {
   id: string;
   name: string;
   counts: number;
@@ -10,7 +10,7 @@ export interface DrillSet {
   transition: 'linear' | 'ease';
   positions: Record<string, Point>;
 }
-export interface Project {
+export interface LegacyProject {
   schemaVersion: 1;
   id: string;
   title: string;
@@ -18,9 +18,24 @@ export interface Project {
   field: { width: number; height: number; preset: 'college' | 'high-school' };
   sections: Section[];
   performers: Performer[];
-  sets: DrillSet[];
+  sets: LegacyDrillSet[];
   audioOffsetSeconds: number;
 }
+export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'>;
+export interface OpeningTiming { tempo: number; transition: 'linear' | 'ease' }
+export interface LinePathSegment { id: string; kind: 'line'; startCount: number; endCount: number }
+export interface PerformerPath { segments: LinePathSegment[] }
+export interface Move extends OpeningTiming {
+  id: string; fromSetId: string; toSetId: string; counts: number;
+  paths: Record<string, PerformerPath>;
+}
+export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
+  schemaVersion: 2;
+  sets: DrillSet[];
+  moves: Move[];
+  openingTiming: OpeningTiming;
+}
+export type SetPropertyUpdate = Partial<Pick<DrillSet, 'name' | 'notes'> & Pick<Move, 'counts' | 'tempo' | 'transition'>>;
 export type FormationKind = 'line' | 'arc' | 'circle' | 'block' | 'curve';
 export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number }
 export interface TransitionIssue { type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number }

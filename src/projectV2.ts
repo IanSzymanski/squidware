@@ -1,34 +1,9 @@
-import { PROJECT_LIMITS, validateProject } from './domain';
-import type { DrillSet, Project } from './types';
-
-/** A picture has no duration. Timing belongs to the incoming Move. */
-export type PictureSet = Pick<DrillSet, 'id' | 'name' | 'notes' | 'positions'>;
-export interface OpeningTiming {
-  tempo: number;
-  transition: 'linear' | 'ease';
-}
-export interface LinePathSegment {
-  id: string;
-  kind: 'line';
-  startCount: number;
-  endCount: number;
-}
-export interface PerformerPath { segments: LinePathSegment[] }
-export interface Move extends OpeningTiming {
-  id: string;
-  fromSetId: string;
-  toSetId: string;
-  counts: number;
-  /** Missing performer entries mean one straight segment between set positions. */
-  paths: Record<string, PerformerPath>;
-}
-export interface ProjectV2 extends Omit<Project, 'schemaVersion' | 'sets'> {
-  schemaVersion: 2;
-  sets: PictureSet[];
-  moves: Move[];
-  /** Retains v1's unused opening tempo/easing without inventing an opening move. */
-  openingTiming: OpeningTiming;
-}
+import { PROJECT_LIMITS, validateLegacyProject } from './projectValidation';
+import type { GeometryValidation } from './projectValidation';
+import type { DrillSet, LegacyDrillSet, LegacyProject, Move, OpeningTiming, Project, LinePathSegment } from './types';
+export type { Move, OpeningTiming, LinePathSegment, PerformerPath } from './types';
+export type PictureSet = DrillSet;
+export type ProjectV2 = Project;
 
 function invalid(path: string, reason: string): never {
   throw new Error(`Invalid project: ${path} ${reason}`);
@@ -70,10 +45,10 @@ function assertSize(content: string): void {
   }
 }
 
-function picture(set: DrillSet): PictureSet {
+function picture(set: LegacyDrillSet): PictureSet {
   return { id: set.id, name: set.name, notes: set.notes, positions: set.positions };
 }
-function legacySets(sets: PictureSet[], moves: Move[], opening: OpeningTiming): DrillSet[] {
+function legacySets(sets: PictureSet[], moves: Move[], opening: OpeningTiming): LegacyDrillSet[] {
   return sets.map((set, index) => {
     const incoming = index === 0 ? opening : moves[index - 1];
     return { id: set.id, name: set.name, counts: index === 0 ? 0 : moves[index - 1].counts,
@@ -83,7 +58,7 @@ function legacySets(sets: PictureSet[], moves: Move[], opening: OpeningTiming): 
 
 /** Pure migration: validates v1 first, preserves all existing identities, invents only move IDs. */
 export function migrateProjectV1(input: unknown): ProjectV2 {
-  const legacy = validateProject(input);
+  const legacy = validateLegacyProject(input);
   const { schemaVersion: _version, sets, ...common } = legacy;
   return {
     schemaVersion: 2, ...common, sets: sets.map(picture),
@@ -96,7 +71,7 @@ export function migrateProjectV1(input: unknown): ProjectV2 {
 }
 
 /** Canonical v2 validation. Geometry/roster limits share the existing v1 validator. */
-export function validateProjectV2(input: unknown): ProjectV2 {
+export function validateProjectV2(input: unknown, geometry: GeometryValidation = {}): ProjectV2 {
   const data = object(input, 'root');
   if (data.schemaVersion === 1) invalid('schemaVersion', 'must be 2 for v2 validation. Use migrateProjectV1 or parseProjectV2 to migrate a v1 file.');
   if (data.schemaVersion !== 2) versionError(data.schemaVersion);
@@ -116,9 +91,9 @@ export function validateProjectV2(input: unknown): ProjectV2 {
   }
   // Validate common properties and all geometry before constructing any path maps.
   // Temporary valid timing lets the same geometry validator service both versions.
-  const base = validateProject({ ...data, schemaVersion: 1, sets: sets.map((set, index) => ({
+  const base = validateLegacyProject({ ...data, schemaVersion: 1, sets: sets.map((set, index) => ({
     ...set, counts: index === 0 ? 0 : 1, tempo: 120, transition: 'linear',
-  })) });
+  })) }, geometry);
   const performerIds = new Set(base.performers.map(performer => performer.id));
   const seenMoves = new Set<string>();
   const moves: Move[] = data.moves.map((value, index) => {
@@ -183,7 +158,7 @@ export function serializeProjectV2(project: ProjectV2): string {
 /** Transitional oracle for compatibility checks; not a file downgrade command.
  * Only the supported single-line paths can reach this adapter through validation.
  */
-export function projectV2AsLegacy(input: ProjectV2): Project {
+export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
   const { schemaVersion: _version, moves, openingTiming, sets, ...common } = checked;
   return { schemaVersion: 1, ...common, sets: legacySets(sets, moves, openingTiming) };

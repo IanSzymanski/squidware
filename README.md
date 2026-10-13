@@ -108,7 +108,7 @@ Editing shortcuts do not change a formation while typing into a form field. Perf
 
 ## Files and architecture
 
-`.squid` files are UTF-8 JSON with `schemaVersion: 1`, project metadata, field settings, sections, performers, complete positions for every set, transition timing, notes, and an audio offset. They contain no embedded audio, undo history, or cloud references. Project files are limited to 10 MiB of UTF-8 data; imports are validated before entering the editor.
+`.squid` files are UTF-8 JSON with `schemaVersion: 2`, project metadata, field settings, sections, performers, complete pictures for every set, adjacent moves with timing and supported performer paths, notes, and an audio offset. Existing v1 files migrate when opened; saves write v2. Unsupported newer formats require an updated app. Files contain no embedded audio, undo history, or cloud references and are limited to 10 MiB of UTF-8 data. The renderer and native file handlers validate with the same [versioned codec and migration contract](docs/schema-v2.md).
 
 Coordinates use yards: `x = 0` at the left goal line and `y = 0` at the back sideline. The standard field is 100 × 53⅓ yards, excluding end zones. The [engine contract](docs/domain.md) describes schema limits, timing, coordinate conventions, and transition calculations.
 

@@ -1,4 +1,5 @@
-import type { Point, Project } from './types';
+import type { LegacyProject, Point, Project } from './types';
+import { migrateProjectV1 } from './projectV2';
 
 export type PerformanceFixtureName = 'demo' | 'maximum';
 
@@ -10,7 +11,7 @@ function fixtureId(value: number): string {
 const rounded = (value: number) => Math.round(value * 1_000_000) / 1_000_000;
 
 /** No time, random state, network or storage dependency; safe to regenerate. */
-export function createPerformanceFixture(name: PerformanceFixtureName): Project {
+export function createLegacyPerformanceFixture(name: PerformanceFixtureName): LegacyProject {
   if (name !== 'demo' && name !== 'maximum') throw new Error('Unknown performance fixture.');
   const maximum = name === 'maximum';
   const count = maximum ? 500 : 64;
@@ -50,4 +51,8 @@ export function createPerformanceFixture(name: PerformanceFixtureName): Project 
       positions: Object.fromEntries(performers.map((performer, performerIndex) => [performer.id, position(performerIndex, index)])),
     })), audioOffsetSeconds: 0,
   };
+}
+
+export function createPerformanceFixture(name: PerformanceFixtureName): Project {
+  return migrateProjectV1(createLegacyPerformanceFixture(name));
 }

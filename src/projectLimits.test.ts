@@ -6,11 +6,15 @@ describe('shared project editing limits', () => {
   it('round-trips boundary timing and sections without clamping other values', () => {
     const project = createBlankProject();
     project.sections = Array.from({ length: PROJECT_LIMITS.sections }, (_, index) => ({ id: `section-${index}`, name: `Section ${index}`, color: '#abcdef' }));
-    project.sets[0].tempo = 20.125;
+    project.openingTiming.tempo = 20.125;
     project.sets.push(
-      { ...project.sets[0], id: 'min', counts: PROJECT_LIMITS.counts.min, tempo: PROJECT_LIMITS.tempo.min },
-      { ...project.sets[0], id: 'max', counts: PROJECT_LIMITS.counts.max, tempo: PROJECT_LIMITS.tempo.max },
+      { ...project.sets[0], id: 'min' },
+      { ...project.sets[0], id: 'max' },
     );
+    project.moves = [
+      { id: 'min-move', fromSetId: project.sets[0].id, toSetId: 'min', counts: PROJECT_LIMITS.counts.min, tempo: PROJECT_LIMITS.tempo.min, transition: 'linear', paths: {} },
+      { id: 'max-move', fromSetId: 'min', toSetId: 'max', counts: PROJECT_LIMITS.counts.max, tempo: PROJECT_LIMITS.tempo.max, transition: 'ease', paths: {} },
+    ];
     project.sets[2].name = 'S'.repeat(PROJECT_LIMITS.text.setName);
     project.sets[2].notes = 'N'.repeat(PROJECT_LIMITS.text.notes);
     for (const [index, set] of project.sets.entries()) validateSetUpdate(set, index);

@@ -1,16 +1,9 @@
-import type { DrillSet, FormationKind, FormationOptions, Performer, Point, Project, Section, TimelineSample, TransitionIssue } from './types';
+import type { LegacyDrillSet, FormationKind, FormationOptions, Move, Performer, Point, Project, Section, TimelineSample, TransitionIssue } from './types';
+import { PROJECT_LIMITS } from './projectValidation';
+import { migrateProjectV1, validateProjectV2 } from './projectV2';
+export { PROJECT_LIMITS, setCountLimits, validateSetUpdate } from './projectValidation';
+export { parseProjectV2 as parseProject, serializeProjectV2 as serializeProject } from './projectV2';
 
-export const PROJECT_LIMITS = {
-  performers: 500,
-  sets: 128,
-  sections: 64,
-  projectBytes: 10 * 1024 * 1024,
-  counts: { min: 1, max: 1024 },
-  tempo: { min: 20, max: 400 },
-  audioOffsetSeconds: { min: -3600, max: 3600 },
-  text: { id: 128, title: 160, ensemble: 160, sectionName: 80, performerLabel: 32, performerName: 120, setName: 160, notes: 10_000 },
-} as const;
-const FIELD_HEIGHT_TOLERANCE = 0.001;
 const EPSILON = 1e-8;
 const defaultField: Project['field'] = { width: 100, height: 160 / 3, preset: 'college' };
 const defaultSections: Section[] = [
@@ -161,9 +154,10 @@ export function transformPositions(
 
 export function createBlankProject(): Project {
   return {
-    schemaVersion: 1, id: uid(), title: 'Untitled show', ensemble: 'My ensemble',
+    schemaVersion: 2, id: uid(), title: 'Untitled show', ensemble: 'My ensemble',
     field: { ...defaultField }, sections: defaultSections.map(section => ({ ...section })), performers: [],
-    sets: [{ id: uid(), name: 'Opening set', counts: 0, tempo: 120, notes: '', transition: 'linear', positions: {} }],
+    sets: [{ id: uid(), name: 'Opening set', notes: '', positions: {} }],
+    moves: [], openingTiming: { tempo: 120, transition: 'linear' },
     audioOffsetSeconds: 0,
   };
 }
@@ -199,7 +193,7 @@ export function createDemoProject(): Project {
     generateFormation('block', 64, { center: { x: 50, y: 37 }, width: 70, height: 15, rotation: 0, columns: 16 }),
   ];
   const names = ['The gathering', 'Tidal arc', 'Orbital motion', 'The prism', 'Standing wave', 'Final company'];
-  project.sets = shapes.map((points, index) => ({
+  const legacySets: LegacyDrillSet[] = shapes.map((points, index) => ({
     id: uid(), name: names[index], counts: [0, 32, 32, 24, 32, 32][index],
     tempo: [132, 132, 144, 144, 152, 152][index], notes: [
       'Opening picture. Establish spacing and posture before the first move.',
@@ -211,16 +205,21 @@ export function createDemoProject(): Project {
     ][index], transition: index === 2 || index === 4 ? 'ease' : 'linear',
     positions: Object.fromEntries(project.performers.map((performer, performerIndex) => [performer.id, points[performerIndex]])),
   }));
-  return project;
+  return migrateProjectV1({ ...project, schemaVersion: 1, sets: legacySets });
+}
+
+/** Timing displayed beside a picture is derived from its incoming move. */
+export function setTiming(project: Project, index: number): Pick<Move, 'counts' | 'tempo' | 'transition'> {
+  return index === 0 ? { counts: 0, ...project.openingTiming } : project.moves[index - 1];
 }
 
 export function totalCounts(project: Project): number {
-  return project.sets.slice(1).reduce((sum, set) => sum + set.counts, 0);
+  return project.moves.reduce((sum, move) => sum + move.counts, 0);
 }
 
 /** The arrival count of a set; its transition starts at the previous set's arrival. */
 export function setStartCount(project: Project, index: number): number {
-  return project.sets.slice(1, clamp(Math.floor(index) + 1, 1, project.sets.length)).reduce((sum, set) => sum + set.counts, 0);
+  return project.moves.slice(0, clamp(Math.floor(index), 0, project.moves.length)).reduce((sum, move) => sum + move.counts, 0);
 }
 
 export function sampleProject(project: Project, count: number): TimelineSample {
@@ -232,10 +231,11 @@ export function sampleProject(project: Project, count: number): TimelineSample {
   let start = 0;
   for (let index = 1; index < project.sets.length; index += 1) {
     const set = project.sets[index];
-    if (boundedCount <= start + set.counts || index === project.sets.length - 1) {
-      const localCount = clamp(boundedCount - start, 0, set.counts);
-      const progress = set.counts ? localCount / set.counts : 1;
-      const positionProgress = set.transition === 'ease' ? smoothstep(progress) : progress;
+    const move = project.moves[index - 1];
+    if (boundedCount <= start + move.counts || index === project.sets.length - 1) {
+      const localCount = clamp(boundedCount - start, 0, move.counts);
+      const progress = move.counts ? localCount / move.counts : 1;
+      const positionProgress = move.transition === 'ease' ? smoothstep(progress) : progress;
       const previous = project.sets[index - 1];
       return {
         positions: Object.fromEntries(project.performers.map(performer => {
@@ -245,7 +245,7 @@ export function sampleProject(project: Project, count: number): TimelineSample {
         })), setIndex: index, progress, localCount,
       };
     }
-    start += set.counts;
+    start += move.counts;
   }
   throw new Error('Unable to sample an invalid show timeline.');
 }
@@ -253,7 +253,7 @@ export function sampleProject(project: Project, count: number): TimelineSample {
 export function countToSeconds(project: Project, count: number): number {
   let remaining = clamp(Number.isFinite(count) ? count : 0, 0, totalCounts(project));
   let seconds = 0;
-  for (const set of project.sets.slice(1)) {
+  for (const set of project.moves) {
     const used = Math.min(remaining, set.counts);
     seconds += used * 60 / set.tempo;
     remaining -= used;
@@ -265,7 +265,7 @@ export function countToSeconds(project: Project, count: number): number {
 export function secondsToCount(project: Project, seconds: number): number {
   let remaining = Math.max(0, Number.isFinite(seconds) ? seconds : 0);
   let count = 0;
-  for (const set of project.sets.slice(1)) {
+  for (const set of project.moves) {
     const duration = set.counts * 60 / set.tempo;
     if (remaining <= duration) return count + remaining * set.tempo / 60;
     remaining -= duration;
@@ -277,6 +277,7 @@ export function secondsToCount(project: Project, seconds: number): number {
 export function analyzeTransition(project: Project, setIndex: number): TransitionIssue[] {
   if (!Number.isInteger(setIndex) || setIndex < 1 || setIndex >= project.sets.length) return [];
   const destination = project.sets[setIndex];
+  const move = project.moves[setIndex - 1];
   const previous = project.sets[setIndex - 1];
   const issues: TransitionIssue[] = [];
   const startCount = setStartCount(project, setIndex - 1);
@@ -284,11 +285,11 @@ export function analyzeTransition(project: Project, setIndex: number): Transitio
     const from = previous.positions[performer.id];
     const to = destination.positions[performer.id];
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
-    const peakStride = distance / destination.counts * (destination.transition === 'ease' ? 1.5 : 1);
+    const peakStride = distance / move.counts * (move.transition === 'ease' ? 1.5 : 1);
     if (peakStride > 1.25 + EPSILON) {
       issues.push({ type: 'stride', performerIds: [performer.id], severity: peakStride > 5 / 3 ? 'danger' : 'warning',
-        message: `${performer.label}: ${distance.toFixed(1)} yards in ${destination.counts} counts; ${destination.transition === 'ease' ? 'peak ' : ''}${(5 / peakStride).toFixed(1)} steps per 5 yards.`,
-        atCount: startCount + destination.counts / 2 });
+        message: `${performer.label}: ${distance.toFixed(1)} yards in ${move.counts} counts; ${move.transition === 'ease' ? 'peak ' : ''}${(5 / peakStride).toFixed(1)} steps per 5 yards.`,
+        atCount: startCount + move.counts / 2 });
     }
   });
   for (let a = 0; a < project.performers.length; a += 1) {
@@ -307,8 +308,8 @@ export function analyzeTransition(project: Project, setIndex: number): Transitio
       const closestProgress = velocitySquared < EPSILON ? 0 : clamp(-(rx * vx + ry * vy) / velocitySquared, 0, 1);
       const distance = Math.hypot(rx + vx * closestProgress, ry + vy * closestProgress);
       if (distance < 1 - EPSILON) {
-        const timeProgress = destination.transition === 'ease' ? inverseSmoothstep(closestProgress) : closestProgress;
-        const atCount = startCount + timeProgress * destination.counts;
+        const timeProgress = move.transition === 'ease' ? inverseSmoothstep(closestProgress) : closestProgress;
+        const atCount = startCount + timeProgress * move.counts;
         issues.push({ type: 'collision', performerIds: [first.id, second.id], severity: distance < 0.5 ? 'danger' : 'warning',
           message: `${first.label} / ${second.label}: ${distance.toFixed(2)} yards apart near count ${Number(atCount.toFixed(1))}.`, atCount });
       }
@@ -317,144 +318,18 @@ export function analyzeTransition(project: Project, setIndex: number): Transitio
   return issues.sort((a, b) => (a.severity === b.severity ? (a.atCount ?? 0) - (b.atCount ?? 0) : a.severity === 'danger' ? -1 : 1));
 }
 
-function invalid(path: string, reason: string): never { throw new Error(`Invalid project: ${path} ${reason}`); }
-function object(value: unknown, path: string): Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) invalid(path, 'must be an object.');
-  return value as Record<string, unknown>;
-}
-function string(value: unknown, path: string, max: number, allowEmpty = false): string {
-  if (typeof value !== 'string' || value.length > max || (!allowEmpty && !value.trim())) invalid(path, `must be ${allowEmpty ? 'a' : 'a nonempty'} string of at most ${max} characters.`);
-  if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) invalid(path, 'contains unsupported control characters.');
-  return value;
-}
-function number(value: unknown, path: string, min: number, max: number, integer = false): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max || (integer && !Number.isInteger(value))) {
-    invalid(path, `must be ${integer ? 'an integer' : 'a finite number'} from ${min} to ${max}.`);
-  }
-  return value;
-}
-function array(value: unknown, path: string, min: number, max: number): unknown[] {
-  if (!Array.isArray(value) || value.length < min || value.length > max) invalid(path, `must contain ${min} to ${max} items.`);
-  return value;
-}
-function id(value: unknown, path: string): string {
-  const result = string(value, path, PROJECT_LIMITS.text.id);
-  if (!/^[A-Za-z0-9_-]+$/.test(result) || ['__proto__', 'constructor', 'prototype'].includes(result)) invalid(path, 'must use letters, numbers, underscores, or hyphens and cannot be a reserved key.');
-  return result;
-}
-
-export function setCountLimits(index: number): { min: number; max: number } {
-  return index === 0 ? { min: 0, max: 0 } : PROJECT_LIMITS.counts;
-}
-
-/** Validates editor patches using the same rules as file imports. Never clamps values. */
-export function validateSetUpdate(update: Partial<DrillSet>, index: number): void {
-  const path = `sets[${index}]`;
-  const counts = setCountLimits(index);
-  if (Object.hasOwn(update, 'counts')) number(update.counts, `${path}.counts`, counts.min, counts.max, true);
-  if (Object.hasOwn(update, 'tempo')) number(update.tempo, `${path}.tempo`, PROJECT_LIMITS.tempo.min, PROJECT_LIMITS.tempo.max);
-  if (Object.hasOwn(update, 'name')) string(update.name, `${path}.name`, PROJECT_LIMITS.text.setName);
-  if (Object.hasOwn(update, 'notes')) string(update.notes, `${path}.notes`, PROJECT_LIMITS.text.notes, true);
-  if (Object.hasOwn(update, 'transition') && update.transition !== 'linear' && update.transition !== 'ease') invalid(`${path}.transition`, 'must be linear or ease.');
-}
-function uniqueIds<T extends { id: string }>(items: T[], path: string): T[] {
-  const seen = new Set<string>();
-  items.forEach(item => {
-    if (seen.has(item.id)) invalid(path, `contains duplicate ID "${item.id}".`);
-    seen.add(item.id);
-  });
-  return items;
-}
-
-/** Rebuilds a bounded, canonical schema; unknown properties are discarded. */
+/** Accepts supported imports; the editor always receives a canonical v2 project. */
 export function validateProject(input: unknown): Project {
-  const data = object(input, 'root');
-  if (data.schemaVersion !== 1) invalid('schemaVersion', 'must be 1. This file may require a newer version of Squidware.');
-  const fieldData = object(data.field, 'field');
-  if (fieldData.preset !== 'college' && fieldData.preset !== 'high-school') invalid('field.preset', 'must be college or high-school.');
-  const width = number(fieldData.width, 'field.width', 100, 100);
-  number(fieldData.height, 'field.height', defaultField.height - FIELD_HEIGHT_TOLERANCE, defaultField.height + FIELD_HEIGHT_TOLERANCE);
-  const field: Project['field'] = { width, height: defaultField.height, preset: fieldData.preset };
-  const sections = uniqueIds(array(data.sections, 'sections', 1, PROJECT_LIMITS.sections).map((item, index): Section => {
-    const path = `sections[${index}]`;
-    const section = object(item, path);
-    const color = string(section.color, `${path}.color`, 7);
-    if (!/^#[0-9a-fA-F]{6}$/.test(color)) invalid(`${path}.color`, 'must be a six-digit hex color, such as #38bdf8.');
-    return { id: id(section.id, `${path}.id`), name: string(section.name, `${path}.name`, PROJECT_LIMITS.text.sectionName), color };
-  }), 'sections');
-  const sectionIds = new Set(sections.map(section => section.id));
-  const performers = uniqueIds(array(data.performers, 'performers', 0, PROJECT_LIMITS.performers).map((item, index): Performer => {
-    const path = `performers[${index}]`;
-    const performer = object(item, path);
-    const sectionId = id(performer.sectionId, `${path}.sectionId`);
-    if (!sectionIds.has(sectionId)) invalid(`${path}.sectionId`, `references unknown section "${sectionId}".`);
-    return { id: id(performer.id, `${path}.id`), label: string(performer.label, `${path}.label`, PROJECT_LIMITS.text.performerLabel), name: string(performer.name, `${path}.name`, PROJECT_LIMITS.text.performerName, true), sectionId };
-  }), 'performers');
-  const performerIds = new Set(performers.map(performer => performer.id));
-  const sets = uniqueIds(array(data.sets, 'sets', 1, PROJECT_LIMITS.sets).map((item, index): DrillSet => {
-    const path = `sets[${index}]`;
-    const set = object(item, path);
-    const rawPositions = object(set.positions, `${path}.positions`);
-    const keys = Object.keys(rawPositions);
-    if (keys.length !== performers.length) invalid(`${path}.positions`, `must contain exactly one position for each of the ${performers.length} performers.`);
-    keys.forEach(key => { if (!performerIds.has(key)) invalid(`${path}.positions`, `contains unknown performer "${key}".`); });
-    const positions = Object.fromEntries(performers.map(performer => {
-      if (!Object.hasOwn(rawPositions, performer.id)) invalid(`${path}.positions`, `is missing performer "${performer.id}".`);
-      const point = object(rawPositions[performer.id], `${path}.positions.${performer.id}`);
-      return [performer.id, {
-        x: number(point.x, `${path}.positions.${performer.id}.x`, 0, field.width),
-        y: number(point.y, `${path}.positions.${performer.id}.y`, 0, field.height),
-      }];
-    }));
-    if (set.transition !== 'linear' && set.transition !== 'ease') invalid(`${path}.transition`, 'must be linear or ease.');
-    return {
-      id: id(set.id, `${path}.id`), name: string(set.name, `${path}.name`, PROJECT_LIMITS.text.setName),
-      counts: number(set.counts, `${path}.counts`, setCountLimits(index).min, setCountLimits(index).max, true),
-      tempo: number(set.tempo, `${path}.tempo`, PROJECT_LIMITS.tempo.min, PROJECT_LIMITS.tempo.max), notes: string(set.notes, `${path}.notes`, PROJECT_LIMITS.text.notes, true), transition: set.transition, positions,
-    };
-  }), 'sets');
-  return {
-    schemaVersion: 1, id: id(data.id, 'id'), title: string(data.title, 'title', PROJECT_LIMITS.text.title), ensemble: string(data.ensemble, 'ensemble', PROJECT_LIMITS.text.ensemble, true),
-    field, sections, performers, sets, audioOffsetSeconds: number(data.audioOffsetSeconds, 'audioOffsetSeconds', PROJECT_LIMITS.audioOffsetSeconds.min, PROJECT_LIMITS.audioOffsetSeconds.max),
-  };
+  if (input && typeof input === 'object' && 'schemaVersion' in input && input.schemaVersion === 1) return migrateProjectV1(input);
+  return validateProjectV2(input);
 }
 
-/** Validates an immutable editor edit against an already validated snapshot.
- * Unchanged set objects retain their validated geometry. Roster identity and
- * field-size changes invalidate that assumption and require a complete check.
- * File imports and serialization always use full validation.
- */
+/** Reuse unchanged geometry only within structurally shared immutable edits. */
 export function validateProjectEdit(previous: Project, next: Project): void {
-  array(next.sets, 'sets', 1, PROJECT_LIMITS.sets);
-  uniqueIds(next.sets, 'sets');
   const rosterChanged = next.performers.length !== previous.performers.length
     || next.performers.some((performer, index) => performer.id !== previous.performers[index].id);
   const dimensionsChanged = next.field.width !== previous.field.width || next.field.height !== previous.field.height;
-  if (rosterChanged || dimensionsChanged) { validateProject(next); return; }
-  // Retain the actual opening set first so count semantics do not depend on
-  // the reduced validation array's indices. All later sets still require >0.
-  const changedSets = next.sets.filter((set, index) => index === 0 || set !== previous.sets[index]);
-  validateProject({ ...next, sets: changedSets });
-}
-
-export function parseProject(text: string): Project {
-  assertProjectSize(text);
-  let input: unknown;
-  try { input = JSON.parse(text.replace(/^\uFEFF/, '')); }
-  catch { throw new Error('This is not valid JSON. Open a Squidware project (.squid) file.'); }
-  return validateProject(input);
-}
-
-export function serializeProject(project: Project): string {
-  const content = `${JSON.stringify(validateProject(project))}\n`;
-  assertProjectSize(content);
-  return content;
-}
-
-function assertProjectSize(content: string): void {
-  if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
-    throw new Error(`Project file is too large. The limit is ${PROJECT_LIMITS.projectBytes / 1024 / 1024} MiB of UTF-8 text.`);
-  }
+  validateProjectV2(next, rosterChanged || dimensionsChanged ? {} : { validatedPositions: new Set(previous.sets.map(set => set.positions)) });
 }
 
 function parseCsv(text: string): string[][] {
@@ -536,7 +411,7 @@ export function exportCoordinatesCsv(project: Project): string {
   const sectionNames = new Map(checked.sections.map(section => [section.id, section.name]));
   checked.sets.forEach((set, index) => checked.performers.forEach(performer => {
     const point = set.positions[performer.id];
-    rows.push([set.name, setStartCount(checked, index), set.counts, set.tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), coordinateDescription(point, checked.field), set.notes]);
+    rows.push([set.name, setStartCount(checked, index), setTiming(checked, index).counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), coordinateDescription(point, checked.field), set.notes]);
   }));
   return '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }

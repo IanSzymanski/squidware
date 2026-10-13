@@ -22,6 +22,8 @@ The app also saves a recovery copy in its local storage after changes. Recovery 
 
 The project file includes cast, sections, all sets and positions, counts, tempo, easing, notes, field settings, and the audio offset. Audio data and undo history are not included. Undo/redo retains up to 80 recent editing states during the current session; opening a project starts a new history.
 
+Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2; older apps that support only version 1 cannot reopen that saved file. Unsupported newer versions display an update instruction.
+
 Project files are limited to 10 MiB of UTF-8 data. If a recovery copy cannot be opened, the app preserves it and displays a recovery notice instead of silently treating it as a valid production. Open a saved file or edit the demo to begin a new active recovery.
 
 In browser preview, Save downloads a project and PDF export opens the browser print dialog. The Electron app provides native open/save dialogs and direct PDF export.

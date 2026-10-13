@@ -21,7 +21,7 @@ for (const name of ['demo', 'maximum']) {
   const project = createPerformanceFixture(name);
   domain.validateProject(project);
   const text = domain.serializeProject(project);
-  const edit = { ...project, sets: project.sets.map((set, index) => index === 1 ? { ...set, tempo: set.tempo + 1 } : set) };
+  const edit = { ...project, moves: project.moves.map((move, index) => index === 0 ? { ...move, tempo: move.tempo + 1 } : move) };
   const steps = {
     analyzeTransition: () => domain.analyzeTransition(project, 1),
     sampleProject: () => domain.sampleProject(project, domain.totalCounts(project) * 0.63),

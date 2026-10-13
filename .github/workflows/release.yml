@@ -41,7 +41,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec install-electron
       - run: pnpm test
-      - run: node --test scripts/desktop.test.cjs scripts/release-plan.test.mjs scripts/release-publish.test.mjs
+      - run: pnpm test:desktop scripts/release-plan.test.mjs scripts/release-publish.test.mjs
       - name: Build native package
         run: pnpm dist --publish never
         env:
