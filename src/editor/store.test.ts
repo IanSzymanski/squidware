@@ -4,6 +4,7 @@ import { commandMetadata, commandRegistry } from './commands';
 import { AUTOSAVE_KEY, createEditorStore, recoverProject } from './store';
 import { menuCommands } from './useCommandController';
 import { createDraftTracker } from './drafts';
+import { canEditPositions, isAtActiveSet } from './editMode';
 
 describe('editor store and command registry', () => {
   it('tracks pending drafts separately and clears them after unmount or project replacement', () => {
@@ -102,6 +103,43 @@ describe('editor store and command registry', () => {
     store.dispatch('set.select', { index: 1 });
     expect(store.dispatch('formation.apply', { index: 1, ids: [id], kind: 'line', options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } })).toBe(true);
     expect(store.getState().project.present.sets[1].positions[otherId]).toEqual(from[otherId]);
+  });
+
+  it('locks every positional command between arrivals and recovers without editing history', () => {
+    const project = createDemoProject();
+    const store = createEditorStore(project);
+    const id = project.performers[0].id;
+    const arrival = setStartCount(project, 1);
+    for (const count of [0.01, arrival / 2, arrival - 0.01, arrival + 0.01]) {
+      store.dispatch('playback.scrub', { count });
+      const before = store.getState().project;
+      const index = store.getState().selection.activeIndex;
+      expect(canEditPositions(store.getState())).toBe(false);
+      expect(store.dispatch('positions.move', { index, updates: { [id]: { x: 20, y: 20 } } })).toBe(false);
+      expect(store.dispatch('selection.transform', { index, ids: [id], options: { dx: 0.625 } })).toBe(false);
+      expect(store.dispatch('formation.apply', { index, ids: [id], kind: 'line', options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } })).toBe(false);
+      expect(store.getState().project).toBe(before);
+      store.dispatch('set.select', { index });
+      expect(store.getState().playback.count).toBe(setStartCount(project, index));
+      expect(canEditPositions(store.getState())).toBe(true);
+      expect(store.getState().project).toBe(before);
+    }
+    for (const count of [0, arrival, setStartCount(project, project.sets.length - 1)]) {
+      store.dispatch('playback.scrub', { count });
+      expect(isAtActiveSet(store.getState())).toBe(true);
+      expect(canEditPositions(store.getState())).toBe(true);
+    }
+    store.dispatch('set.select', { index: 1 });
+    store.dispatch('playback.toggle');
+    expect(isAtActiveSet(store.getState())).toBe(true);
+    expect(canEditPositions(store.getState())).toBe(false);
+    store.dispatch('set.select', { index: 1 });
+    expect(store.getState().playback.playing).toBe(false);
+    expect(canEditPositions(store.getState())).toBe(true);
+    const single = createEditorStore(createBlankProject());
+    single.dispatch('playback.scrub', { count: 100 });
+    expect(single.getState().playback.count).toBe(0);
+    expect(canEditPositions(single.getState())).toBe(true);
   });
 
   it('routes roster edits, all-set positions and set ordering through commands', () => {

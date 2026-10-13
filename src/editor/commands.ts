@@ -1,6 +1,7 @@
 import { fitFormationToField, generateFormation, PROJECT_LIMITS, sampleProject, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
 import type { Dialog, EditorState, SessionSlice } from './state';
+import { canEditPositions } from './editMode';
 
 export interface CommandArguments {
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
@@ -37,7 +38,7 @@ export interface CommandDefinition<I extends CommandId> {
 }
 const define = <I extends CommandId>(definition: CommandDefinition<I>) => definition;
 const always = () => true;
-const editable = (state: EditorState) => !state.playback.playing && Math.abs(state.playback.count - setStartCount(state.project.present, state.selection.activeIndex)) < 0.001;
+const editable = canEditPositions;
 const setExists = (state: EditorState, index: number) => Number.isInteger(index) && index >= 0 && index < state.project.present.sets.length;
 const selectSet = (context: CommandContext, index: number) => {
   const project = context.getState().project.present;

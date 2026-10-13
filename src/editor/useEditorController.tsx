@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import type { ChangeEvent } from 'react';
 
 import type { DrillSet, Performer, Point, Project } from '../types';
-import { analyzeTransition, exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, setStartCount, totalCounts, uid, PROJECT_LIMITS } from '../domain';
+import { analyzeTransition, exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, totalCounts, uid, PROJECT_LIMITS } from '../domain';
 import { FieldDrawing } from '../components/Field2D';
 
 import { AUTOSAVE_KEY, useProject } from '../useProject';
@@ -14,6 +14,7 @@ import { formations } from './formations';
 import { usePlaybackController } from './usePlaybackController';
 import { useCommandController } from './useCommandController';
 import { createDraftTracker } from './drafts';
+import { canEditPositions, isAtActiveSet } from './editMode';
 const cleanFilename = (title: string) => (title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/[. ]+$/, '').trim().slice(0, 100) || 'Squidware project').replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i, '$1-project');
 function download(content: string, filename: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -77,8 +78,8 @@ export function useEditorController() {
   const index = Math.min(activeIndex, project.sets.length - 1);
   const activeSet = project.sets[index];
   const duration = totalCounts(project);
-  const atSet = useEditorSelector(state => Math.abs(state.playback.count - setStartCount(state.project.present, state.selection.activeIndex)) < 0.001);
-  const readOnly = playing || !atSet;
+  const atSet = useEditorSelector(isAtActiveSet);
+  const readOnly = !useEditorSelector(canEditPositions);
   const issues = useMemo(() => analyzeTransition(project, index), [project, index]);
   const signature = useMemo(() => JSON.stringify(project), [project]);
   const dirty = signature !== savedSignature;

@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Point, Project } from '../types';
+import { coordinateDescription } from '../domain';
+import { FieldReadout } from './FieldReadout';
 import './stages.css';
 
 interface DrawingProps {
@@ -11,13 +13,15 @@ interface DrawingProps {
   showLabels?: boolean;
   showPaths?: boolean;
   showGrid?: boolean;
+  readoutId?: string;
 }
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false }: DrawingProps) {
+export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId }: DrawingProps) {
   const { width, height, preset } = project.field;
   const selected = new Set(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
+  const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
   const hashInset = preset === 'college' ? 20 : height / 3;
   const yardLines = Array.from({ length: Math.floor(width / 5) + 1 }, (_, index) => index * 5);
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
@@ -68,8 +72,9 @@ export function FieldDrawing({ project, positions, previousPositions, selectedId
       if (!point) return null;
       const isSelected = selected.has(performer.id);
       const color = colors.get(performer.sectionId) ?? '#b9ed85';
-      return <g key={performer.id} data-performer-id={performer.id} tabIndex={0} role="button" aria-label={`${performer.label}, ${performer.name || 'performer'}, ${point.x.toFixed(2)} by ${point.y.toFixed(2)} yards${isSelected ? ', selected' : ''}`} aria-pressed={isSelected} className="field-performer" transform={`translate(${point.x} ${point.y})`}>
-        <title>{performer.label}{performer.name ? ` · ${performer.name}` : ''}</title>
+      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), coordinateDescription(point, project.field)].filter(Boolean).join(' · ');
+      return <g key={performer.id} data-performer-id={performer.id} tabIndex={0} role="button" aria-label={`${details}${isSelected ? ', selected' : ''}`} aria-describedby={readoutId} aria-pressed={isSelected} className="field-performer" transform={`translate(${point.x} ${point.y})`}>
+        <title>{details}</title>
         <circle r="1.15" fill="transparent" />
         {isSelected && <circle r="0.96" fill={`${color}22`} stroke="#ffffff" strokeWidth="0.16" />}
         <circle r="0.52" fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth="0.16" />
@@ -112,6 +117,7 @@ function translatedGroup(originals: Record<string, Point>, delta: Point, width: 
 
 export function Field2D({ project, positions, previousPositions, selectedIds, onSelect, onMove, tool, showLabels, showPaths, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0 }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const readoutId = useId();
   const gesture = useRef<Gesture | null>(null);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [preview, setPreview] = useState<Record<string, Point>>({});
@@ -122,6 +128,8 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
   const safeZoom = clamp(zoom, 0.6, 3);
   const viewWidth = (width + 14) / safeZoom;
   const viewHeight = (height + 16) / safeZoom;
+  const viewport = `${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`;
+  const displayedPositions = { ...positions, ...preview };
 
   function pointAt(clientX: number, clientY: number): Point {
     const matrix = svgRef.current?.getScreenCTM();
@@ -265,11 +273,12 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
     }
   }
 
-  return <div className={`field-stage${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
-    <svg ref={svgRef} className="field-stage__svg" viewBox={`${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`} tabIndex={0} role="group" aria-label="Interactive drill field. Drag performers to move; drag empty space to select; arrow keys move selected performers." onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!(event.target as Element).closest('[data-performer-id]')) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
-      <FieldDrawing project={project} positions={{ ...positions, ...preview }} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} />
+  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
+    <svg ref={svgRef} className="field-stage__svg" viewBox={`${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`} tabIndex={0} role="group" aria-label={readOnly ? 'Read-only drill preview. Select performers or pan and zoom to inspect. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select; arrow keys move selected performers.'} aria-describedby={readOnly ? 'field-preview-message' : undefined} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!(event.target as Element).closest('[data-performer-id]')) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
+      <FieldDrawing project={project} positions={displayedPositions} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} readoutId={readoutId} />
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#c5f47b18" stroke="#caf38a" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
     </svg>
+    <FieldReadout id={readoutId} svgRef={svgRef} project={project} positions={displayedPositions} selectedIds={selectedIds} viewport={viewport} readOnly={readOnly} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
     <div className="field-stage__hint">{readOnly ? 'PLAYBACK PREVIEW' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
     <div className="field-stage__orientation" aria-hidden="true"><span>↑</span> BACK</div>
