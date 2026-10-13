@@ -1,0 +1,173 @@
+{
+  "capturedAt": "2026-10-13T18:32:27.573Z",
+  "hardware": {
+    "os": "Windows_NT",
+    "release": "10.0.26300",
+    "architecture": "x64",
+    "cpuModel": "Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz",
+    "logicalCpus": 8,
+    "totalMemoryBytes": 16953729024,
+    "node": "24.19.0",
+    "representativeSchoolLaptop": false,
+    "note": "Host measurements only; school-laptop qualification requires a separate run."
+  },
+  "electron": "44.7.0",
+  "chrome": "152.0.7977.130",
+  "graphicsRenderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2114)",
+  "beforeBuildSha256": "d99de5b563f1b97799983fa30ef694ec8d05b7bc1c697a0a51c305f670d785b4",
+  "afterBuildSha256": "157e9a5ff657b23c0144fc3cbee102f5e00d90b0258639102f41f20da77a1b61",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "hidden": true,
+    "offscreen": true,
+    "sandbox": true,
+    "backgroundThrottling": false
+  },
+  "fixtures": [
+    {
+      "name": "demo",
+      "performers": 64,
+      "fixtureSha256": "b2e22fddd7e23a1548bd41b05ed975c8d3bb7ea5f07aec6ef9e9e406bef154bb",
+      "before": {
+        "startupBytes": 841984,
+        "startupScripts": [
+          "index-CTy84McW.js",
+          "react-C-5IVu-5.js",
+          "three-_QJGO7AJ.js"
+        ],
+        "idle": {
+          "durationMs": 2000,
+          "raf": 119,
+          "draws": 2261
+        }
+      },
+      "after": {
+        "startupBytes": 333394,
+        "startupScripts": [
+          "index-hvBwsN2b.js",
+          "react-C-5IVu-5.js"
+        ],
+        "idle": {
+          "durationMs": 2000,
+          "raf": 0,
+          "draws": 0
+        },
+        "cameraIdle": {
+          "durationMs": 2000,
+          "raf": 0,
+          "draws": 0
+        },
+        "pausedIdle": {
+          "durationMs": 2000,
+          "raf": 0,
+          "draws": 0
+        },
+        "drawCallsPerQualityFrame": {
+          "detailed": 19,
+          "lightweight": 12
+        },
+        "contextLifecycle": {
+          "created": 5,
+          "lostOrReleased": 5,
+          "createdResources": {
+            "Texture": 31,
+            "Buffer": 262,
+            "Program": 61
+          },
+          "deletedResources": {
+            "Texture": 11,
+            "Buffer": 262,
+            "Program": 34
+          }
+        },
+        "checks": [
+          "3D and Three.js are absent from startup requests",
+          "paused 3D issues no frames or draw calls after settling",
+          "camera presets and orbit damping redraw then return to idle",
+          "section recoloring and field texture changes retain the graphics context",
+          "roster growth expands instance buffers without recreating the renderer",
+          "roster removal, undo, positions and selection redraw in the retained context",
+          "quality choice survives view switching; playback renders and pause returns to idle",
+          "repeated switches dispose GPU resources and context loss returns to usable 2D"
+        ]
+      }
+    },
+    {
+      "name": "maximum",
+      "performers": 500,
+      "fixtureSha256": "ae634ad3f99ad4807b21a8c5ff18e3ef03dbe7f25d3c38ee6d20fef26629e194",
+      "before": {
+        "startupBytes": 841984,
+        "startupScripts": [
+          "index-CTy84McW.js",
+          "react-C-5IVu-5.js",
+          "three-_QJGO7AJ.js"
+        ],
+        "idle": {
+          "durationMs": 2000,
+          "raf": 120,
+          "draws": 2280
+        }
+      },
+      "after": {
+        "startupBytes": 333394,
+        "startupScripts": [
+          "index-hvBwsN2b.js",
+          "react-C-5IVu-5.js"
+        ],
+        "idle": {
+          "durationMs": 2000,
+          "raf": 0,
+          "draws": 0
+        },
+        "cameraIdle": {
+          "durationMs": 2000,
+          "raf": 0,
+          "draws": 0
+        },
+        "pausedIdle": {
+          "durationMs": 2000,
+          "raf": 0,
+          "draws": 0
+        },
+        "drawCallsPerQualityFrame": {
+          "detailed": 19,
+          "lightweight": 12
+        },
+        "contextLifecycle": {
+          "created": 5,
+          "lostOrReleased": 5,
+          "createdResources": {
+            "Texture": 31,
+            "Buffer": 255,
+            "Program": 61
+          },
+          "deletedResources": {
+            "Texture": 11,
+            "Buffer": 255,
+            "Program": 34
+          }
+        },
+        "checks": [
+          "3D and Three.js are absent from startup requests",
+          "paused 3D issues no frames or draw calls after settling",
+          "camera presets and orbit damping redraw then return to idle",
+          "section recoloring and field texture changes retain the graphics context",
+          "roster removal, undo, positions and selection redraw in the retained context",
+          "quality choice survives view switching; playback renders and pause returns to idle",
+          "repeated switches dispose GPU resources and context loss returns to usable 2D"
+        ]
+      }
+    }
+  ],
+  "importFailureChecks": [
+    "3D and Three.js are absent from startup requests",
+    "failed 3D chunk load returns to an editable 2D field"
+  ],
+  "limits": [
+    "Local development hardware only; this does not complete school-laptop acceptance in #3.",
+    "Draw calls and application rAF callbacks measure renderer activity, not GPU watts or physical screen presentation.",
+    "Startup byte totals use actual CDP script requests and uncompressed local file sizes."
+  ]
+}

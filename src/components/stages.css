@@ -33,6 +33,9 @@
 .stage-three__controls > button { appearance: none; border: 0; border-radius: 5px; background: transparent; color: #b5c2b8; padding: 6px 9px; min-height: 27px; font-family: inherit; font-size: 10px; font-weight: 500; line-height: 1.3; cursor: pointer; }
 .stage-three__controls > button:hover { background: #314337; color: #eaf5e6; }
 .stage-three__controls > button:focus-visible { outline: 1px solid #bfe68a; }
+.stage-three__controls select { max-width: 190px; padding: 5px 7px; border: 1px solid #688264; background: #23372b; color: #edf5e5; font-size: 11px; }
+.field-container--preview .stage-three__controls { top: 116px; }
+.stage-three__fallback > button { padding: 9px 13px; border: 1px solid #bfe68a; border-radius: 5px; background: #d9efb9; color: #283126; font-size: 12px; }
 .stage-three__fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 30px; text-align: center; color: #cedbcf; background: #16231c; }
 .stage-three__fallback > svg { color: #b6db8f; }
 .stage-three__fallback > strong { font-size: 16px; font-weight: 600; }
