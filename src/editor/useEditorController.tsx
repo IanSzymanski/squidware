@@ -22,7 +22,7 @@ function download(content: string, filename: string, mime: string) {
 }
 
 export function useEditorController() {
-  const { project, recoveryError, dispatch, canUndo, canRedo } = useProject();
+  const { project, history, recoveryError, dispatch, canUndo, canRedo } = useProject();
   const store = useEditorStore();
   const [activeIndex, setActiveIndex] = useEditorValue('selection', 'activeIndex');
   const [workspace, setWorkspace] = useEditorValue('ui', 'workspace');
@@ -42,7 +42,7 @@ export function useEditorController() {
   const [showGrid, setShowGrid] = useEditorValue('ui', 'showGrid');
   const [snap, setSnap] = useEditorValue('ui', 'snap');
   const [dialog] = useEditorValue('ui', 'dialog');
-  function setDialog(next: Dialog) { dispatch('dialog.open', { dialog: next }); }
+  function setDialog(next: Dialog) { flushSync(() => (document.activeElement as HTMLElement | null)?.blur()); dispatch('dialog.open', { dialog: next }); }
   const [pendingDraft, setPendingDraftState] = useEditorValue('ui', 'pendingDraft');
   const draftTracker = useRef(createDraftTracker());
   const setPendingDraft = useCallback((pending: boolean, fieldId?: string) => {
@@ -50,7 +50,7 @@ export function useEditorController() {
   }, [setPendingDraftState]);
   const [menu, setMenu] = useEditorValue('ui', 'menu');
   const [toast, setToast] = useEditorValue('ui', 'toast');
-  const [savedSignature, setSavedSignature] = useEditorValue('fileSession', 'savedSignature');
+  const [savedRevision, setSavedRevision] = useEditorValue('fileSession', 'savedRevision');
   const [needsSaveAs, setNeedsSaveAs] = useEditorValue('fileSession', 'needsSaveAs');
   const [saveStatus, setSaveStatus] = useEditorValue('fileSession', 'saveStatus');
   const [formation, setFormation] = useEditorValue('ui', 'formation');
@@ -81,8 +81,7 @@ export function useEditorController() {
   const atSet = useEditorSelector(isAtActiveSet);
   const readOnly = !useEditorSelector(canEditPositions);
   const issues = useMemo(() => analyzeTransition(project, index), [project, index]);
-  const signature = useMemo(() => JSON.stringify(project), [project]);
-  const dirty = signature !== savedSignature;
+  const dirty = history.revision !== savedRevision;
   const allSelected = selectedIds.length === project.performers.length && selectedIds.length > 0;
   const selectedPerformers = project.performers.filter(p => selectedIds.includes(p.id));
   const selectionCenter = selectedIds.length ? selectedIds.reduce((point, id) => ({ x: point.x + (activeSet.positions[id]?.x || 0) / selectedIds.length, y: point.y + (activeSet.positions[id]?.y || 0) / selectedIds.length }), { x: 0, y: 0 }) : { x: 50, y: 26.667 };
@@ -96,10 +95,11 @@ export function useEditorController() {
       notify('The last recovery could not be opened and has been preserved. Open a saved project or edit the demo to start a new recovery.');
       return;
     }
+    if (history.transactionName) return;
     setSaveStatus('Saving recovery…');
-    const timeout = setTimeout(() => { try { localStorage.setItem(AUTOSAVE_KEY, signature); setSaveStatus('Recovery saved'); } catch { setSaveStatus('Recovery unavailable'); notify('Local recovery is full or unavailable. Save your project to a file.'); } }, 700);
+    const timeout = setTimeout(() => { try { localStorage.setItem(AUTOSAVE_KEY, serializeProject(project)); setSaveStatus('Recovery saved'); } catch { setSaveStatus('Recovery unavailable'); notify('Local recovery is full or unavailable. Save your project to a file.'); } }, 700);
     return () => clearTimeout(timeout);
-  }, [signature, notify, recoveryError]);
+  }, [project, history.revision, history.transactionName, notify, recoveryError]);
   useEffect(() => { window.squidware?.setDirty(dirty || pendingDraft); }, [dirty, pendingDraft]);
   useEffect(() => { const guard = (e: BeforeUnloadEvent) => { if ((dirty || pendingDraft) && !window.squidware) e.preventDefault(); }; window.addEventListener('beforeunload', guard); return () => window.removeEventListener('beforeunload', guard); }, [dirty, pendingDraft]);
   useEffect(() => { if (!audioUrl) return; return () => URL.revokeObjectURL(audioUrl); }, [audioUrl]);
@@ -125,23 +125,25 @@ export function useEditorController() {
   }
   function loadProject(next: Project) {
     draftTracker.current.clear();
-    dispatch('project.load', { project: next }); setPendingDraft(false); setSavedSignature(JSON.stringify(next)); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setZoom(1); setFitVersion(v => v + 1);
+    dispatch('project.load', { project: next }); setPendingDraft(false); setSavedRevision(store.getState().project.revision); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setZoom(1); setFitVersion(v => v + 1);
   }
   async function saveProjectFile(saveAs = false) {
     try {
       flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
-      if (document.querySelector('input[aria-invalid="true"]')) { notify('Correct the invalid field before saving.'); return; }
+      if (document.querySelector('[aria-invalid="true"]')) { notify('Correct the invalid field before saving.'); return; }
       const savingProject = store.getState().project.present;
+      const savingRevision = store.getState().project.revision;
       const content = serializeProject(savingProject);
       if (window.squidware) { const result = await window.squidware.saveProject(content, `${cleanFilename(savingProject.title)}.squid`, saveAs || needsSaveAs); if (!result) return; setNeedsSaveAs(false); }
       else download(content, `${cleanFilename(savingProject.title)}.squid`, 'application/json');
-      setSavedSignature(JSON.stringify(savingProject)); notify('Project saved');
+      setSavedRevision(savingRevision); notify('Project saved');
     } catch (error) { notify(`Could not save: ${(error as Error).message}`); }
   }
   async function openProjectFile() {
     flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
     setMenu(false);
-    if (JSON.stringify(store.getState().project.present) !== store.getState().fileSession.savedSignature && !window.confirm('Open another project? Your current work has a local recovery copy. Save a project file first if you need to keep it.')) return;
+    if (document.querySelector('[aria-invalid="true"]') || store.getState().ui.pendingDraft) { notify('Finish or cancel the pending field before opening another production.'); return; }
+    if (store.getState().project.revision !== store.getState().fileSession.savedRevision && !window.confirm('Open another project? Your current work has a local recovery copy. Save a project file first if you need to keep it.')) return;
     if (!window.squidware) { projectInput.current?.click(); return; }
     try { const result = await window.squidware.openProject(); if (!result) return; const next = parseProject(result.content); loadProject(next); setNeedsSaveAs(false); notify('Project opened'); }
     catch (error) { window.squidware.resetProject(); setNeedsSaveAs(true); notify(`Could not open: ${(error as Error).message}`); }
@@ -210,6 +212,6 @@ export function useEditorController() {
 
   const filteredCast = project.performers.filter(p => (sectionFilter === 'all' || p.sectionId === sectionFilter) && `${p.name} ${p.label}`.toLowerCase().includes(castQuery.toLowerCase()));
   const visibleSet = activeSet;
-  return { project, recoveryError, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedSignature, setSavedSignature, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, signature, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { project, history, recoveryError, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;

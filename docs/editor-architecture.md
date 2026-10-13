@@ -4,7 +4,7 @@
 
 ## State and subscriptions
 
-`src/editor/state.ts` separates project snapshot history, active set and selection, playback, transient interface state, and file-session state. Audio object URLs, save signatures, menus, selection and the playhead never enter the project or undo history.
+`src/editor/state.ts` separates named reversible project history, active set and selection, playback, transient interface state, and file-session state. Audio object URLs, saved revisions, menus, selection and the playhead never enter the project or undo history.
 
 `useEditorSelector` uses React's external-store subscription API. Selectors return a primitive or an existing immutable object reference; do not construct a new array or object on every snapshot. `subscribeSelector` also accepts a custom equality function for non-React subscribers. A UI setter publishes only when its value changes. A synchronous command publishes a single completed state to subscribers, including commands that update the project, selection and playback together.
 
@@ -28,7 +28,7 @@ Add a command by defining its arguments in `CommandArguments` and its metadata, 
 
 `setValue` is restricted to non-project slices and is appropriate for session-only controls and playback frames. Shared editing operations, menus and shortcuts use commands. `project.load` validates before replacing history and resets selection, playback and draft epoch. Keyed set controls reset local numeric drafts when the current set or loaded project changes, including loading the same project ID again.
 
-Snapshot history intentionally retains the existing 80-edit cap and JSON equality check. Before publishing an immutable edit, the engine validates metadata, sections, performers and changed set geometry, with whole-array set limits and unique IDs checked separately. Unchanged set objects retain their prior validation; performer identity or field-size changes require a complete check. Imports, initial state, and serialization always validate the complete project. Commands must preserve immutable objects for this sharing contract to hold. Snapshot equality, serialization and rendering still have measurable maximum-size costs; compact patches/history belong to issue #6. This refactor does not claim those optimizations.
+History stores reversible patches with named synchronous transactions and explicit preview commit/cancel boundaries. Equal values are no-ops without project-wide serialization. The engine validates metadata, sections, performers and changed geometry before publication; unchanged positions maps retain their prior validation under the immutable sharing contract. Imports, initial state and file output still validate the complete project. Revision IDs support saved-state comparisons through undo/redo, and deferred recovery serializes only committed projects. History retains up to 80 actions or 16 MiB of estimated payload, always keeping the latest action; the History panel discloses expiry and the large-action exception. See [the history contract](history.md) for API and field behavior.
 
 ## Verification
 

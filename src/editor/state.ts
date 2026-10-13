@@ -1,8 +1,12 @@
 import type { FormationKind, Project } from '../types';
+import type { HistoryEntry } from './history';
 
-export type Dialog = 'new' | 'settings' | 'export' | 'help' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'new' | 'settings' | 'export' | 'help' | 'history' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
-export interface ProjectHistory { past: Project[]; present: Project; future: Project[]; recoveryError?: string }
+export interface ProjectHistory {
+  past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
+  estimatedBytes: number; droppedEntries: number; transactionName?: string; recoveryError?: string;
+}
 export interface EditorState {
   project: ProjectHistory;
   selection: { activeIndex: number; selectedIds: string[] };
@@ -16,14 +20,14 @@ export interface EditorState {
     printMode: 'charts' | 'coordinates'; printing: boolean;
   };
   fileSession: {
-    savedSignature: string; needsSaveAs: boolean; saveStatus: string;
+    savedRevision: number; needsSaveAs: boolean; saveStatus: string;
     audioName: string; audioUrl: string; waveform: number[]; audioLoading: boolean;
   };
 }
 export type SessionSlice = Exclude<keyof EditorState, 'project'>;
 export function createEditorState(project: Project, recoveryError?: string): EditorState {
   return {
-    project: { present: project, past: [], future: [], recoveryError },
+    project: { present: project, past: [], future: [], revision: 0, estimatedBytes: 0, droppedEntries: 0, recoveryError },
     selection: { activeIndex: 0, selectedIds: [] },
     playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, muted: false },
     ui: { workspace: 'design', view: '2d', tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0,
@@ -32,7 +36,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false },
-    fileSession: { savedSignature: JSON.stringify(project), needsSaveAs: true,
+    fileSession: { savedRevision: 0, needsSaveAs: true,
       saveStatus: 'Recovered locally', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };
 }

@@ -62,7 +62,7 @@ Both fixtures passed all interaction, playback-progress, WebGL, and renderer-err
 | Demo playback frame interval | 16.70 / 16.70 | 16.70 / 16.70 |
 | Maximum playback frame interval | 33.30 / 33.40 | 16.70 / 33.40 |
 
-Maximum-project keyboard edits exceed the 16.7 ms task budget in both builds. The current store retains whole-project stringify equality and validates edits against the previous immutable snapshot: metadata, roster, section, and whole-list set checks run every time, while geometry validation covers changed set objects. Performer identity or field-dimension changes, imports, and serialization still receive full validation. The controller also derives a whole-project dirty signature. The command/store extraction is an architecture change; the lower maximum median in this single run pair does not establish a hardware-qualified performance improvement. Full transition analysis, thumbnail work, snapshot undo, synchronous recovery, and dynamic SVG work still need their dedicated follow-up issues.
+At the original A02/store-extraction measurement, maximum-project keyboard edits exceeded the 16.7 ms task budget in both builds. That measured store retained whole-project stringify equality and validates edits against the previous immutable snapshot: metadata, roster, section, and whole-list set checks run every time, while geometry validation covers changed set objects. Performer identity or field-dimension changes, imports, and serialization still receive full validation. The controller also derives a whole-project dirty signature. The command/store extraction is an architecture change; the lower maximum median in this single run pair does not establish a hardware-qualified performance improvement. Full transition analysis, thumbnail work, snapshot undo, synchronous recovery, and dynamic SVG work still need their dedicated follow-up issues.
 
 | Maximum fixture isolated Node compute | Before | After |
 | --- | ---: | ---: |
@@ -113,3 +113,18 @@ The runner uses the shared deterministic demo and maximum fixtures and a fresh l
 ## School-laptop acceptance still required
 
 Run this protocol on a school laptop that represents the intended audience, with its hardware and power mode documented. Inspect traces for maximum-project edits, drag, playback, and idle 3D; record median/p95, long tasks, recovery writes, memory, and frame cadence. Use these results to set hardware-qualified budgets for the dependent issues. Keep issue #3 open until those measurements and the resulting budgets are reviewed.
+
+## Named history (issue #6)
+
+The A02 snapshot and JSON-equality behavior at commit 53302a4 is compared with named reversible patches on the same 500-performer, 128-picture v2 fixture and local Intel i7-10510U Windows host. Five GC-controlled trials per workload each use 20 warmup edits and 80 timed edits. Both implementations use the current v2 validation and command reducers. The report records exact after-source hashes, every timing sample, heap observations and hardware: [history-comparison.json](performance/history-comparison.json).
+
+| Maximum fixture workload | Snapshot median / p95 (ms) | Patch median / p95 (ms) |
+| --- | --- | --- |
+| Notes | 33.48 / 40.23 | 1.82 / 2.16 |
+| Coordinates | 44.04 / 61.82 | 2.26 / 2.99 |
+
+Median retained heap above the pre-store baseline was 8.9 → 5.02 MiB for notes and 9.2 → 5.04 MiB for coordinates. These values include the validated live project, history and saved-state metadata. They are not history payload alone, peak allocation, Electron working set or a total application memory bound.
+
+Store edit medians improved by about 95 percent in these local runs. This isolates edit dispatch from React rendering, full transition analysis and deferred recovery; it does not establish an end-to-end 16.7 ms edit-frame pass or school-laptop qualification. The History panel documents the 80-action / 16 MiB estimated-payload policy and always-kept latest-action exception. Pending text/color drafts commit once; undo/redo and dirty comparisons use revision IDs rather than serialization. Native recovery remains separately tracked by #7.
+
+Reproduce with node scripts/history-performance.mjs and an exact --before-ref commit if changing the baseline. Standard app/desktop tests and the production editor workflow verify correctness independently of the benchmark.

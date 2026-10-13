@@ -10,3 +10,11 @@
 /* Readable contrast at compact desktop sizes. */
 .form-label,.section-description,.microcopy,.breadcrumb,.set-card-bottom,.field-legend button,.timeline-heading h2,.track-labels,.count-ruler,.table-footer,.inspector-footer,.statusbar{color:#758568}.form-label>input,.form-label>select,.form-label>textarea,.set-card-top,.section-title>h3{color:#516343}.microcopy,.section-description{font-size:9px}.set-card-bottom{font-size:9px}.exact-position{width:100%}.exact-position .form-label{margin-bottom:0}.modal-intro,.guide-grid p,.help-note p{color:#758767}.modal .microcopy{color:#78886a}.audio-track{color:#899878}.field-legend button span{color:#869779}.rail-button{color:#778967}.statusbar{font-size:9px}@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .field-error{font-size:11px;line-height:1.4;color:#9a2929}.form-label input[aria-invalid=true]{border-color:#ae3838;outline-color:#ae383850}
+
+.history-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.history-actions button { white-space: normal; text-align: left; }
+.history-list { list-style: none; padding: 0; max-height: 240px; overflow: auto; border: 1px solid #45574c; border-radius: 8px; }
+.history-list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #45574c; overflow-wrap: anywhere; }
+.history-list li:last-child { border-bottom: 0; }
+.history-list small, .history-policy { color: #56664f; font-size: 12px; line-height: 1.6; }
+.history-policy { margin-top: 14px; }
