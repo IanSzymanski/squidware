@@ -15,6 +15,7 @@ const bundle = path.join(output, 'boundary-fixture.cjs');
 await esbuild.build({
   stdin: { contents: `
     import { createDemoProject, PROJECT_LIMITS, serializeProject } from './src/domain';
+    export { coordinateDescription } from './src/domain';
     const project = createDemoProject();
     project.title = 'Editor boundary QA';
     project.sections = Array.from({ length: PROJECT_LIMITS.sections }, (_, i) => ({ id: i < 4 ? project.sections[i].id : 'section-' + i, name: 'Section ' + i, color: '#abcdef' }));
