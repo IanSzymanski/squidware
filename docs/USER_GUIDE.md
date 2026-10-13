@@ -1,6 +1,6 @@
 # Squidware user guide
 
-Squidware is a desktop workspace for designing marching ensemble drill and preparing rehearsal materials. The desktop app opens with the editable demo or the last locally recovered production. Your project stays on your device.
+Squidware is a desktop workspace for designing marching ensemble drill and preparing rehearsal materials. The desktop app opens with the editable demo and offers available recovery copies. Choose a production and time to restore. Your project stays on your device.
 
 ## A first production
 
@@ -18,13 +18,15 @@ The opening set has zero move counts. Every later set stores the timing of the m
 
 **Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid` or JSON project files; a JSON import receives a `.squid` destination when saved.
 
-The app also saves a recovery copy in its local storage after changes. Recovery is useful after restarting but is not a folder of versioned backups: opening another production replaces the active recovery state. Save named project files before switching productions, and keep backups wherever you normally store rehearsal files.
+After a committed change, the desktop app writes recovery in the background to its application data folder. Open **Project menu → Recovery copies**, or click the recovery status at the bottom of the editor, to choose a dated copy. Up to 20 most recent copies or 100 MiB are kept across productions; the newest valid copy is always retained. Older copies expire. Save named project files and keep your usual rehearsal backups.
+
+Recovery has its own status. **Recovery copy saved** means the automatic copy was written; use **Save** for a portable project file. Restoring a copy starts an unsaved production and asks for a project file destination on its first save. It does not overwrite a file you had open. Browser previews use asynchronous browser storage and remain subject to the browser's quota.
 
 The project file includes cast, sections, all sets and positions, counts, tempo, easing, notes, field settings, and the audio offset. Audio data and undo history are not included. History lists named actions for Undo/Redo. It keeps up to 80 actions or 16 MiB of estimated history, with the latest action always retained even if larger. Older actions may expire, and opening a project starts a new history. Save named files for lasting versions.
 
 Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2; older apps that support only version 1 cannot reopen that saved file. Unsupported newer versions display an update instruction.
 
-Project files are limited to 10 MiB of UTF-8 data. If a recovery copy cannot be opened, the app preserves it and displays a recovery notice instead of silently treating it as a valid production. Open a saved file or edit the demo to begin a new active recovery.
+Project files are limited to 10 MiB of UTF-8 data. Valid recovery from older versions' browser storage is migrated before its old key is removed. Unreadable originals are kept, with a notice in **Recovery copies**. If recovery is unavailable, save a project file, check disk space or permissions, and use **Retry / refresh copies**. Editing remains available.
 
 In browser preview, Save downloads a project and PDF export opens the browser print dialog. The Electron app provides native open/save dialogs and direct PDF export.
 

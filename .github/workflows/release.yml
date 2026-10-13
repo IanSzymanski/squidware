@@ -56,11 +56,13 @@ jobs:
         run: |
           xvfb-run --auto-servernum pnpm exec electron . --smoke-test
           xvfb-run --auto-servernum pnpm test:editor
+          xvfb-run --auto-servernum pnpm test:recovery
       - name: Verify Windows and macOS sandboxed renderer and editor
         if: runner.os != 'Linux'
         run: |
           pnpm exec electron . --smoke-test
           pnpm test:editor
+          pnpm test:recovery
       - uses: actions/upload-artifact@v4
         with:
           name: squidware-release-${{ matrix.os }}

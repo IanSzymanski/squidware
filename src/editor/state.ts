@@ -1,7 +1,7 @@
 import type { FormationKind, Project } from '../types';
 import type { HistoryEntry } from './history';
 
-export type Dialog = 'new' | 'settings' | 'export' | 'help' | 'history' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'new' | 'settings' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
@@ -37,6 +37,6 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false },
     fileSession: { savedRevision: 0, needsSaveAs: true,
-      saveStatus: 'Recovered locally', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
+      saveStatus: 'Save a project file', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };
 }

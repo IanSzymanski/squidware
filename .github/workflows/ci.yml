@@ -38,6 +38,8 @@ jobs:
         run: xvfb-run --auto-servernum pnpm exec electron . --smoke-test
       - name: Verify production editor workflows
         run: xvfb-run --auto-servernum pnpm test:editor
+      - name: Verify recovery across desktop restarts
+        run: xvfb-run --auto-servernum pnpm test:recovery
       - uses: actions/upload-artifact@v4
         with:
           name: squidware-renderer

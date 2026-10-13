@@ -17,7 +17,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "dist": "pnpm build && electron-builder",
     "dist:win": "pnpm build && electron-builder --win portable",
-    "test:desktop": "node scripts/build-project-codec.mjs && node --test scripts/desktop.test.cjs",
+    "test:desktop": "node scripts/build-project-codec.mjs && node --test scripts/desktop.test.cjs scripts/recovery.test.cjs",
+    "test:recovery": "node scripts/recovery-qa.mjs",
     "test:editor": "node scripts/editor-qa.mjs",
     "test:3d": "node scripts/stage3d-qa.mjs",
     "perf:fixtures": "node scripts/performance-fixtures.mjs",
@@ -56,6 +57,7 @@
       "package.json"
     ],
     "asar": true,
+    "asarUnpack": ["electron/recovery-*.cjs", "electron/project-codec.cjs"],
     "beforePack": "./scripts/package-notices.mjs",
     "afterPack": "./scripts/verify-packaged-notices.mjs",
     "extraResources": [

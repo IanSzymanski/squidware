@@ -58,22 +58,24 @@ pnpm dist:win --publish never
 
 Artifacts are written to `release/`. `pnpm dist --publish never` builds the configured target for the current host: portable EXE on Windows, DMG on macOS, or AppImage on Linux. Build each platform on its corresponding OS; signing and automatic updates are not configured.
 
-The [desktop packaging workflow](.github/workflows/release.yml) builds all three platforms. Manual runs create workflow artifacts; pushing a `v*` tag additionally publishes a GitHub release after packaging succeeds. A configured target is not a guarantee that a particular platform build has already been tested or released.
+The [release train](.github/workflows/release-train.yml) coordinates the [release plan](docs/RELEASES.md). It invokes desktop packaging only after a release's issues are fulfilled and source CI passes. Publication checks Windows, macOS and Linux packages, checksums and immutable tags again. A configured target does not imply a platform has already been tested or released.
 
 ## Verify changes
 
 ```sh
 pnpm test
-node --test scripts/desktop.test.cjs
+pnpm test:desktop
 pnpm build
 pnpm exec electron . --smoke-test
 pnpm test:editor
+pnpm test:recovery
 ```
 
 - Vitest covers formation geometry, transforms, project validation, timeline sampling, timing conversion, roster import, coordinate export, and transition analysis.
 - The desktop tests exercise the actual main-process and preload source with controlled dialogs and temporary files, including atomic saves, canceled dialogs, invalid requests, and renderer isolation.
 - The native smoke test launches Electron, checks that the renderer and preload bridge load with Node access disabled, and exits. It requires a graphical desktop; the [CI workflow](.github/workflows/ci.yml) shows the sandboxed Xvfb setup used on Linux.
 - The editor workflow check runs the production renderer and actual desktop file handlers in an isolated profile with controlled dialogs. It checks boundary imports, numeric validation, undo/redo, selection, formations, playback, saves, reopening, and CSV/SVG export. Build first; artifacts go to `.qa/editor/`.
+- The recovery check opens a 500-performer, 128-set production larger than 5 MB, profiles editing during recovery, exits the desktop process, then restores and saves the exact production in a fresh process. It also checks legacy migration and selection between productions. Artifacts go to `.qa/recovery/`; see the [recovery design and evidence](docs/RECOVERY.md).
 
 The [initial verification record](docs/VERIFICATION.md) records the checks completed for this release and their limits. Automated checks do not replace interactive review of drag selection, 3D graphics, audio devices, or printed output. See the [user guide](docs/USER_GUIDE.md) for a practical acceptance walkthrough.
 

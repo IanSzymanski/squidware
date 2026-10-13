@@ -53,7 +53,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
   }
   const electron = {
     app: {
-      isPackaged: !development, setName() {}, requestSingleInstanceLock: () => true, on() {},
+      isPackaged: !development, setName() {}, requestSingleInstanceLock: () => true, on() {}, getPath: () => directory,
       whenReady: () => ({ then: () => ({ catch() {} }) }),
     },
     BrowserWindow: FakeWindow,
@@ -74,7 +74,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
   const context = {
     require: name => name === 'electron' ? electron
       : name === 'node:fs/promises' && failRename ? { ...fs, rename: async () => { throw new Error('Simulated disk failure'); } }
-      : name === './project-codec.cjs' ? require(path.join(root, 'electron/project-codec.cjs')) : require(name),
+      : name.startsWith('./') ? require(path.join(root, 'electron', name)) : require(name),
     __dirname: path.join(root, 'electron'),
     process: { argv: [], env: development ? { ELECTRON_RENDERER_URL: 'http://127.0.0.1:5173/' } : {}, platform: 'win32' },
     Buffer, URL, console, setTimeout, clearTimeout,
@@ -83,6 +83,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
   vm.runInContext(mainSource, context);
   context.registerIpc();
   context.createWindow();
+  t.after(async () => { await vm.runInContext('recoveryService?.close()', context); });
   const sender = { sender: window.webContents, senderFrame: window.webContents.mainFrame };
   return {
     directory, context, sender, window, messages, sessionCallbacks,
@@ -320,4 +321,20 @@ test('preload exposes only fixed methods and strips Electron event objects from 
   assert.equal(invocations.length, 0);
   bridge.saveProject(project, 'Show', true);
   assert.deepEqual(invocations[0], ['squidware:save-project', project, 'Show', true]);
+  bridge.beginRecovery(); bridge.readRecovery('session', 'id'); bridge.writeRecovery('session', 2, 1, { project: true });
+  assert.deepEqual(invocations.slice(1), [['squidware:begin-recovery'], ['squidware:read-recovery', 'session', 'id'], ['squidware:write-recovery', 'session', 2, 1, { project: true }]]);
+});
+
+test('recovery IPC uses trusted frames, fixed application data and opaque version ids', async t => {
+  const h = await harness(t);
+  for (const name of ['begin-recovery', 'list-recoveries', 'read-recovery', 'write-recovery', 'migrate-recovery']) {
+    await assert.rejects(h.invokeAs(name, { sender: {}, senderFrame: h.sender.senderFrame }), /untrusted/);
+  }
+  const { session } = await h.invoke('begin-recovery', '../escape');
+  const { version } = await h.invoke('write-recovery', session, 1, 1, JSON.parse(project), '../escape');
+  assert.equal((await h.invoke('list-recoveries', session)).versions[0].id, version.id);
+  await assert.rejects(h.invoke('read-recovery', session, '../../escape'), /Choose a recovery copy/);
+  await assert.rejects(h.invoke('write-recovery', 'forged', 2, 2, JSON.parse(project)), /session expired/);
+  assert.deepEqual(await fs.readdir(h.directory), ['recovery']);
+  assert.ok((await h.invoke('read-recovery', session, version.id)).project.schemaVersion === 2);
 });
