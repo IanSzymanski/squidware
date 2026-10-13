@@ -2,6 +2,7 @@
   "name": "squidware",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "A desktop drill design studio for marching ensembles",
   "type": "module",
   "main": "electron/main.cjs",
@@ -9,14 +10,20 @@
     "dev": "vite --host 127.0.0.1",
     "desktop": "node scripts/desktop-dev.mjs",
     "start": "electron .",
-    "build": "tsc -b && vite build",
+    "build": "pnpm licenses:check && tsc -b && vite build",
     "typecheck": "tsc -b",
     "test": "vitest run src",
     "test:watch": "vitest src",
     "preview": "vite preview --host 127.0.0.1",
     "dist": "pnpm build && electron-builder",
     "dist:win": "pnpm build && electron-builder --win portable",
-    "test:desktop": "node --test scripts/desktop.test.cjs"
+    "test:desktop": "node --test scripts/desktop.test.cjs",
+    "test:editor": "node scripts/editor-qa.mjs",
+    "perf:fixtures": "node scripts/performance-fixtures.mjs",
+    "perf:compute": "node scripts/performance-compute.mjs",
+    "perf:electron": "node scripts/performance-electron.mjs",
+    "licenses:generate": "node scripts/generate-notices.mjs",
+    "licenses:check": "node scripts/generate-notices.mjs --check"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -48,6 +55,22 @@
       "package.json"
     ],
     "asar": true,
+    "beforePack": "./scripts/package-notices.mjs",
+    "afterPack": "./scripts/verify-packaged-notices.mjs",
+    "extraResources": [
+      {
+        "from": "LICENSE",
+        "to": "legal/LICENSE.txt"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.txt",
+        "to": "legal/THIRD_PARTY_NOTICES.txt"
+      },
+      {
+        "from": "node_modules/electron/dist/LICENSES.chromium.html",
+        "to": "legal/LICENSES.chromium.html"
+      }
+    ],
     "win": {
       "target": [
         "portable"

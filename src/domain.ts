@@ -5,6 +5,10 @@ export const PROJECT_LIMITS = {
   sets: 128,
   sections: 64,
   projectBytes: 10 * 1024 * 1024,
+  counts: { min: 1, max: 1024 },
+  tempo: { min: 20, max: 400 },
+  audioOffsetSeconds: { min: -3600, max: 3600 },
+  text: { id: 128, title: 160, ensemble: 160, sectionName: 80, performerLabel: 32, performerName: 120, setName: 160, notes: 10_000 },
 } as const;
 const FIELD_HEIGHT_TOLERANCE = 0.001;
 const EPSILON = 1e-8;
@@ -334,9 +338,24 @@ function array(value: unknown, path: string, min: number, max: number): unknown[
   return value;
 }
 function id(value: unknown, path: string): string {
-  const result = string(value, path, 128);
+  const result = string(value, path, PROJECT_LIMITS.text.id);
   if (!/^[A-Za-z0-9_-]+$/.test(result) || ['__proto__', 'constructor', 'prototype'].includes(result)) invalid(path, 'must use letters, numbers, underscores, or hyphens and cannot be a reserved key.');
   return result;
+}
+
+export function setCountLimits(index: number): { min: number; max: number } {
+  return index === 0 ? { min: 0, max: 0 } : PROJECT_LIMITS.counts;
+}
+
+/** Validates editor patches using the same rules as file imports. Never clamps values. */
+export function validateSetUpdate(update: Partial<DrillSet>, index: number): void {
+  const path = `sets[${index}]`;
+  const counts = setCountLimits(index);
+  if (Object.hasOwn(update, 'counts')) number(update.counts, `${path}.counts`, counts.min, counts.max, true);
+  if (Object.hasOwn(update, 'tempo')) number(update.tempo, `${path}.tempo`, PROJECT_LIMITS.tempo.min, PROJECT_LIMITS.tempo.max);
+  if (Object.hasOwn(update, 'name')) string(update.name, `${path}.name`, PROJECT_LIMITS.text.setName);
+  if (Object.hasOwn(update, 'notes')) string(update.notes, `${path}.notes`, PROJECT_LIMITS.text.notes, true);
+  if (Object.hasOwn(update, 'transition') && update.transition !== 'linear' && update.transition !== 'ease') invalid(`${path}.transition`, 'must be linear or ease.');
 }
 function uniqueIds<T extends { id: string }>(items: T[], path: string): T[] {
   const seen = new Set<string>();
@@ -361,7 +380,7 @@ export function validateProject(input: unknown): Project {
     const section = object(item, path);
     const color = string(section.color, `${path}.color`, 7);
     if (!/^#[0-9a-fA-F]{6}$/.test(color)) invalid(`${path}.color`, 'must be a six-digit hex color, such as #38bdf8.');
-    return { id: id(section.id, `${path}.id`), name: string(section.name, `${path}.name`, 80), color };
+    return { id: id(section.id, `${path}.id`), name: string(section.name, `${path}.name`, PROJECT_LIMITS.text.sectionName), color };
   }), 'sections');
   const sectionIds = new Set(sections.map(section => section.id));
   const performers = uniqueIds(array(data.performers, 'performers', 0, PROJECT_LIMITS.performers).map((item, index): Performer => {
@@ -369,7 +388,7 @@ export function validateProject(input: unknown): Project {
     const performer = object(item, path);
     const sectionId = id(performer.sectionId, `${path}.sectionId`);
     if (!sectionIds.has(sectionId)) invalid(`${path}.sectionId`, `references unknown section "${sectionId}".`);
-    return { id: id(performer.id, `${path}.id`), label: string(performer.label, `${path}.label`, 32), name: string(performer.name, `${path}.name`, 120, true), sectionId };
+    return { id: id(performer.id, `${path}.id`), label: string(performer.label, `${path}.label`, PROJECT_LIMITS.text.performerLabel), name: string(performer.name, `${path}.name`, PROJECT_LIMITS.text.performerName, true), sectionId };
   }), 'performers');
   const performerIds = new Set(performers.map(performer => performer.id));
   const sets = uniqueIds(array(data.sets, 'sets', 1, PROJECT_LIMITS.sets).map((item, index): DrillSet => {
@@ -389,15 +408,33 @@ export function validateProject(input: unknown): Project {
     }));
     if (set.transition !== 'linear' && set.transition !== 'ease') invalid(`${path}.transition`, 'must be linear or ease.');
     return {
-      id: id(set.id, `${path}.id`), name: string(set.name, `${path}.name`, 160),
-      counts: number(set.counts, `${path}.counts`, index === 0 ? 0 : 1, index === 0 ? 0 : 1024, true),
-      tempo: number(set.tempo, `${path}.tempo`, 20, 400), notes: string(set.notes, `${path}.notes`, 10_000, true), transition: set.transition, positions,
+      id: id(set.id, `${path}.id`), name: string(set.name, `${path}.name`, PROJECT_LIMITS.text.setName),
+      counts: number(set.counts, `${path}.counts`, setCountLimits(index).min, setCountLimits(index).max, true),
+      tempo: number(set.tempo, `${path}.tempo`, PROJECT_LIMITS.tempo.min, PROJECT_LIMITS.tempo.max), notes: string(set.notes, `${path}.notes`, PROJECT_LIMITS.text.notes, true), transition: set.transition, positions,
     };
   }), 'sets');
   return {
-    schemaVersion: 1, id: id(data.id, 'id'), title: string(data.title, 'title', 160), ensemble: string(data.ensemble, 'ensemble', 160, true),
-    field, sections, performers, sets, audioOffsetSeconds: number(data.audioOffsetSeconds, 'audioOffsetSeconds', -3600, 3600),
+    schemaVersion: 1, id: id(data.id, 'id'), title: string(data.title, 'title', PROJECT_LIMITS.text.title), ensemble: string(data.ensemble, 'ensemble', PROJECT_LIMITS.text.ensemble, true),
+    field, sections, performers, sets, audioOffsetSeconds: number(data.audioOffsetSeconds, 'audioOffsetSeconds', PROJECT_LIMITS.audioOffsetSeconds.min, PROJECT_LIMITS.audioOffsetSeconds.max),
   };
+}
+
+/** Validates an immutable editor edit against an already validated snapshot.
+ * Unchanged set objects retain their validated geometry. Roster identity and
+ * field-size changes invalidate that assumption and require a complete check.
+ * File imports and serialization always use full validation.
+ */
+export function validateProjectEdit(previous: Project, next: Project): void {
+  array(next.sets, 'sets', 1, PROJECT_LIMITS.sets);
+  uniqueIds(next.sets, 'sets');
+  const rosterChanged = next.performers.length !== previous.performers.length
+    || next.performers.some((performer, index) => performer.id !== previous.performers[index].id);
+  const dimensionsChanged = next.field.width !== previous.field.width || next.field.height !== previous.field.height;
+  if (rosterChanged || dimensionsChanged) { validateProject(next); return; }
+  // Retain the actual opening set first so count semantics do not depend on
+  // the reduced validation array's indices. All later sets still require >0.
+  const changedSets = next.sets.filter((set, index) => index === 0 || set !== previous.sets[index]);
+  validateProject({ ...next, sets: changedSets });
 }
 
 export function parseProject(text: string): Project {
@@ -416,7 +453,7 @@ export function serializeProject(project: Project): string {
 
 function assertProjectSize(content: string): void {
   if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
-    throw new Error('Project file is too large. The limit is 10 MiB of UTF-8 text.');
+    throw new Error(`Project file is too large. The limit is ${PROJECT_LIMITS.projectBytes / 1024 / 1024} MiB of UTF-8 text.`);
   }
 }
 
@@ -475,8 +512,8 @@ export function importRosterCsv(text: string, sections: Section[]): Performer[] 
     const label = row[labelIndex].trim();
     const name = nameIndex >= 0 ? row[nameIndex].trim() : '';
     const sectionName = sectionIndex >= 0 ? row[sectionIndex].trim() : '';
-    if (!label || label.length > 32) throw new Error(`CSV row ${rowNumber}: label must have 1 to 32 characters.`);
-    if (name.length > 120) throw new Error(`CSV row ${rowNumber}: name must have at most 120 characters.`);
+    if (!label || label.length > PROJECT_LIMITS.text.performerLabel) throw new Error(`CSV row ${rowNumber}: label must have 1 to ${PROJECT_LIMITS.text.performerLabel} characters.`);
+    if (name.length > PROJECT_LIMITS.text.performerName) throw new Error(`CSV row ${rowNumber}: name must have at most ${PROJECT_LIMITS.text.performerName} characters.`);
     if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(label + name)) throw new Error(`CSV row ${rowNumber}: label or name contains an unsupported control character.`);
     if (seenLabels.has(label.toLowerCase())) throw new Error(`CSV row ${rowNumber}: duplicate label "${label}".`);
     seenLabels.add(label.toLowerCase());

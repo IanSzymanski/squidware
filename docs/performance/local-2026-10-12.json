@@ -1,0 +1,2631 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-13T04:08:22.201Z",
+  "hardware": {
+    "os": "Windows_NT",
+    "release": "10.0.19045",
+    "architecture": "x64",
+    "cpuModel": "AMD Ryzen 7 3700X 8-Core Processor             ",
+    "logicalCpus": 16,
+    "totalMemoryBytes": 34282377216,
+    "node": "24.19.0",
+    "representativeSchoolLaptop": false,
+    "note": "Host measurements only; school-laptop qualification requires a separate run."
+  },
+  "electron": "44.7.0",
+  "chrome": "152.0.7977.130",
+  "gpu": {
+    "auxAttributes": {
+      "amdSwitchable": false,
+      "canSupportThreadedTextureMailbox": false,
+      "directMLFeatureLevel": "2.0",
+      "displayType": "ANGLE_D3D11",
+      "dx12FeatureLevel": "D3D 12.1",
+      "glExtensions": "GL_AMD_performance_monitor GL_ANGLE_base_vertex_base_instance_shader_builtin GL_ANGLE_blob_cache GL_ANGLE_client_arrays GL_ANGLE_clip_cull_distance GL_ANGLE_copy_texture_3d GL_ANGLE_depth_texture GL_ANGLE_framebuffer_blit GL_ANGLE_framebuffer_multisample GL_ANGLE_get_serialized_context_string GL_ANGLE_get_tex_level_parameter GL_ANGLE_instanced_arrays GL_ANGLE_memory_size GL_ANGLE_multiview_multisample GL_ANGLE_pack_reverse_row_order GL_ANGLE_polygon_mode GL_ANGLE_program_binary_readiness_query GL_ANGLE_program_cache_control GL_ANGLE_provoking_vertex GL_ANGLE_renderability_validation GL_ANGLE_request_extension GL_ANGLE_robust_client_memory GL_ANGLE_shader_pixel_local_storage GL_ANGLE_shader_pixel_local_storage_coherent GL_ANGLE_stencil_texturing GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 GL_ANGLE_texture_multisample GL_ANGLE_texture_usage GL_ANGLE_translated_shader_source GL_APPLE_clip_distance GL_ARM_rgba8 GL_CHROMIUM_bind_generates_resource GL_CHROMIUM_bind_uniform_location GL_CHROMIUM_copy_compressed_texture GL_CHROMIUM_copy_texture GL_CHROMIUM_lose_context GL_EXT_EGL_image_external_wrap_modes GL_EXT_base_instance GL_EXT_blend_func_extended GL_EXT_blend_minmax GL_EXT_clip_control GL_EXT_clip_cull_distance GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_debug_label GL_EXT_debug_marker GL_EXT_depth_clamp GL_EXT_discard_framebuffer GL_EXT_disjoint_timer_query GL_EXT_draw_buffers GL_EXT_draw_buffers_indexed GL_EXT_draw_elements_base_vertex GL_EXT_float_blend GL_EXT_frag_depth GL_EXT_instanced_arrays GL_EXT_map_buffer_range GL_EXT_occlusion_query_boolean GL_EXT_polygon_offset_clamp GL_EXT_read_format_bgra GL_EXT_render_snorm GL_EXT_robustness GL_EXT_sRGB GL_EXT_shader_texture_lod GL_EXT_texture_border_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_rgtc GL_EXT_texture_compression_s3tc_srgb GL_EXT_texture_filter_anisotropic GL_EXT_texture_format_BGRA8888 GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_norm16 GL_EXT_texture_rg GL_EXT_texture_storage GL_EXT_texture_type_2_10_10_10_REV GL_EXT_unpack_subimage GL_KHR_debug GL_KHR_parallel_shader_compile GL_KHR_robustness GL_NV_EGL_stream_consumer_external GL_NV_fence GL_NV_framebuffer_blit GL_NV_pack_subimage GL_NV_pixel_buffer_object GL_NV_shader_noperspective_interpolation GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_EGL_image_external_essl3 GL_OES_depth24 GL_OES_depth32 GL_OES_draw_buffers_indexed GL_OES_draw_elements_base_vertex GL_OES_element_index_uint GL_OES_fbo_render_mipmap GL_OES_get_program_binary GL_OES_mapbuffer GL_OES_packed_depth_stencil GL_OES_required_internalformat GL_OES_rgb8_rgba8 GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_standard_derivatives GL_OES_surfaceless_context GL_OES_texture_border_clamp GL_OES_texture_float GL_OES_texture_float_linear GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_texture_npot GL_OES_texture_stencil8 GL_OES_texture_storage_multisample_2d_array GL_OES_vertex_array_object GL_OVR_multiview GL_OVR_multiview2 ",
+      "glImplementationParts": "(gl=egl-angle,angle=d3d11)",
+      "glRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 (0x00002F04) Direct3D11 vs_5_0 ps_5_0, D3D11-32.0.16.1088)",
+      "glResetNotificationStrategy": 33362,
+      "glVendor": "Google Inc. (NVIDIA)",
+      "glVersion": "OpenGL ES 3.0 (ANGLE 2.1.28499 git hash: 30dd6b5278dd)",
+      "glWsExtensions": "EGL_EXT_create_context_robustness EGL_ANGLE_d3d_share_handle_client_buffer EGL_ANGLE_d3d_texture_client_buffer EGL_ANGLE_surface_d3d_texture_2d_share_handle EGL_ANGLE_query_surface_pointer EGL_ANGLE_window_fixed_size EGL_ANGLE_keyed_mutex EGL_ANGLE_surface_orientation EGL_ANGLE_direct_composition EGL_NV_post_sub_buffer EGL_KHR_create_context EGL_KHR_image EGL_KHR_image_base EGL_KHR_gl_texture_2D_image EGL_KHR_gl_texture_cubemap_image EGL_KHR_gl_renderbuffer_image EGL_KHR_get_all_proc_addresses EGL_KHR_stream EGL_KHR_stream_consumer_gltexture EGL_NV_stream_consumer_gltexture_yuv EGL_ANGLE_stream_producer_d3d_texture EGL_ANGLE_create_context_webgl_compatibility EGL_CHROMIUM_create_context_bind_generates_resource EGL_CHROMIUM_sync_control EGL_EXT_pixel_format_float EGL_KHR_surfaceless_context EGL_ANGLE_display_texture_share_group EGL_ANGLE_display_semaphore_share_group EGL_ANGLE_create_context_client_arrays EGL_ANGLE_program_cache_control EGL_ANGLE_robust_resource_initialization EGL_ANGLE_create_context_extensions_enabled EGL_ANDROID_blob_cache EGL_ANDROID_recordable EGL_ANGLE_image_d3d11_texture EGL_ANGLE_create_context_backwards_compatible EGL_KHR_no_config_context EGL_KHR_create_context_no_error EGL_KHR_reusable_sync EGL_ANGLE_memory_usage_report ",
+      "glWsVendor": "Google Inc. (NVIDIA)",
+      "glWsVersion": "1.5 (ANGLE 2.1.28499 git hash: 30dd6b5278dd)",
+      "inProcessGpu": false,
+      "initializationTime": 307.954,
+      "isAsan": false,
+      "isClangCoverage": false,
+      "jpegDecodeAcceleratorSupported": false,
+      "maxMsaaSamples": "8",
+      "optimus": false,
+      "overlayInfo": {
+        "bgra8OverlaySupport": "SOFTWARE",
+        "directComposition": true,
+        "nv12OverlaySupport": "SCALING",
+        "p010OverlaySupport": "SOFTWARE",
+        "rgb10a2OverlaySupport": "SOFTWARE",
+        "supportsOverlays": true,
+        "yuy2OverlaySupport": "SCALING"
+      },
+      "passthroughCmdDecoder": true,
+      "pixelShaderVersion": "5.0",
+      "sandboxed": true,
+      "skiaBackendType": "GaneshGL",
+      "subpixelFontRendering": true,
+      "supportsD3dSharedImages": true,
+      "supportsDirectML": true,
+      "supportsDx12": true,
+      "supportsVulkan": false,
+      "targetCpuBits": 64,
+      "vertexShaderVersion": "5.0",
+      "videoDecodeAcceleratorSupportedProfile": {
+        "encrypted_only": false,
+        "maxResolutionHeight": 8192,
+        "maxResolutionWidth": 8192,
+        "minResolutionHeight": 144,
+        "minResolutionWidth": 144,
+        "profile": 29
+      },
+      "videoEncodeAcceleratorSupportedProfile": {
+        "maxFramerateDenominator": 1,
+        "maxFramerateNumerator": 30,
+        "maxResolutionHeight": 3840,
+        "maxResolutionWidth": 2160,
+        "minResolutionHeight": 34,
+        "minResolutionWidth": 130,
+        "profile": 16
+      },
+      "visibilityCallbackCallCount": 0,
+      "vulkanVersion": "Not supported"
+    },
+    "gpuDevice": [
+      {
+        "active": true,
+        "deviceId": 12036,
+        "deviceString": "NVIDIA GeForce RTX 5070",
+        "driverVendor": "NVIDIA",
+        "driverVersion": "32.0.16.1088",
+        "gpuPreference": 2,
+        "revision": 161,
+        "subSysId": 1394807906,
+        "vendorId": 4318
+      },
+      {
+        "active": false,
+        "deviceId": 12036,
+        "deviceString": "NVIDIA GeForce RTX 5070",
+        "driverVersion": "32.0.16.1088",
+        "gpuPreference": 0,
+        "revision": 161,
+        "subSysId": 1394807906,
+        "vendorId": 4318
+      },
+      {
+        "active": false,
+        "deviceId": 140,
+        "deviceString": "Microsoft Basic Render Driver",
+        "driverVersion": "10.0.19041.5794",
+        "gpuPreference": 0,
+        "revision": 0,
+        "subSysId": 0,
+        "vendorId": 5140
+      }
+    ]
+  },
+  "budget": {
+    "mainThreadEditMs": 16.666666666666668,
+    "frameIntervalMs": 16.666666666666668
+  },
+  "limitations": [
+    "This isolated production renderer uses a hidden offscreen Electron window; it does not measure physical screen scanout or native menu/file dialog latency.",
+    "Synthetic keyboard edits exercise actual renderer handlers; drag uses Electron mouse input. Main-thread task time sums trace-task wall durations between action start and next-task marks; it is occupancy, not exact OS CPU time.",
+    "Next-frame and second-rAF paint opportunity are latency proxies, not confirmed presentation timestamps.",
+    "initialMountElapsedMs stops when field DOM mounts; fixtureReadyElapsedMs additionally includes switching to set 2 and one second of settling.",
+    "The drag frame window includes 60 input moves at approximately 16 ms intervals plus the final release; longer frame windows also include idle time.",
+    "Memory snapshots are uncollected heap/working-set observations, not retained-project allocation or a leak measurement. Electron process memory is reported in KiB.",
+    "DevTools fiber hook, requestAnimationFrame/WebGL wrappers, CDP tracing and CPU sampling add measurement overhead.",
+    "No representative school laptop qualification; hardware metadata records the actual host."
+  ],
+  "artifacts": {
+    "beforeCompute": "before-compute.json",
+    "afterCompute": "after-compute.json",
+    "beforeElectron": "before-electron",
+    "afterElectron": "after-electron",
+    "directory": ".qa/performance (ignored by Git; preserve when sharing evidence)"
+  },
+  "before": {
+    "compute": {
+      "generatedAt": "2026-10-13T03:57:40.066Z",
+      "label": "before-issue-4-refactor",
+      "domain": ".qa\\performance\\before-domain.cjs",
+      "domainSha256": "78b1dae39f84a2ee4868c3c34221c4f1e516e7edf0bc4a416e023113cf04916b",
+      "repetitions": 50,
+      "warmup": 10,
+      "fixtures": {
+        "demo": {
+          "performers": 64,
+          "sets": 6,
+          "utf8Bytes": 34681,
+          "sha256": "b2e22fddd7e23a1548bd41b05ed975c8d3bb7ea5f07aec6ef9e9e406bef154bb",
+          "issuesAtSet2": 148,
+          "metrics": {
+            "analyzeTransition": {
+              "samples": 50,
+              "medianMs": 0.29699999999999704,
+              "p95Ms": 0.5356999999999914,
+              "minMs": 0.26550000000000296,
+              "maxMs": 0.8188999999999993
+            },
+            "sampleProject": {
+              "samples": 50,
+              "medianMs": 0.01015000000000299,
+              "p95Ms": 0.024299999999996658,
+              "minMs": 0.009900000000001796,
+              "maxMs": 0.13060000000000116
+            },
+            "stringifyProject": {
+              "samples": 50,
+              "medianMs": 0.10289999999999822,
+              "p95Ms": 0.12890000000000157,
+              "minMs": 0.09740000000000748,
+              "maxMs": 0.27710000000000434
+            },
+            "legacyEditEquality": {
+              "samples": 50,
+              "medianMs": 0.20794999999999675,
+              "p95Ms": 0.3172999999999888,
+              "minMs": 0.19260000000001298,
+              "maxMs": 0.43669999999998765
+            },
+            "validateProject": {
+              "samples": 50,
+              "medianMs": 0.14784999999999116,
+              "p95Ms": 0.3377000000000123,
+              "minMs": 0.10499999999998977,
+              "maxMs": 0.49150000000000205
+            },
+            "serializeProject": {
+              "samples": 50,
+              "medianMs": 0.24195000000000277,
+              "p95Ms": 0.4025000000000034,
+              "minMs": 0.21979999999999222,
+              "maxMs": 0.546100000000024
+            },
+            "parseProject": {
+              "samples": 50,
+              "medianMs": 0.34004999999999086,
+              "p95Ms": 0.49960000000001514,
+              "minMs": 0.2822999999999922,
+              "maxMs": 0.7854000000000099
+            }
+          }
+        },
+        "maximum": {
+          "performers": 500,
+          "sets": 128,
+          "utf8Bytes": 4000965,
+          "sha256": "ae634ad3f99ad4807b21a8c5ff18e3ef03dbe7f25d3c38ee6d20fef26629e194",
+          "issuesAtSet2": 2563,
+          "metrics": {
+            "analyzeTransition": {
+              "samples": 50,
+              "medianMs": 22.523450000000025,
+              "p95Ms": 24.03839999999991,
+              "minMs": 20.694300000000112,
+              "maxMs": 24.121800000000007
+            },
+            "sampleProject": {
+              "samples": 50,
+              "medianMs": 0.134900000000016,
+              "p95Ms": 0.21580000000017208,
+              "minMs": 0.12269999999989523,
+              "maxMs": 0.23310000000014952
+            },
+            "stringifyProject": {
+              "samples": 50,
+              "medianMs": 18.27949999999987,
+              "p95Ms": 20.444100000000162,
+              "minMs": 17.385299999999916,
+              "maxMs": 20.798699999999826
+            },
+            "legacyEditEquality": {
+              "samples": 50,
+              "medianMs": 35.467749999999796,
+              "p95Ms": 39.06089999999995,
+              "minMs": 34.11280000000079,
+              "maxMs": 45.28139999999985
+            },
+            "validateProject": {
+              "samples": 50,
+              "medianMs": 26.677850000000035,
+              "p95Ms": 28.84360000000015,
+              "minMs": 21.937600000000202,
+              "maxMs": 37.957399999999325
+            },
+            "serializeProject": {
+              "samples": 50,
+              "medianMs": 45.13520000000017,
+              "p95Ms": 48.782900000000154,
+              "minMs": 41.885299999999916,
+              "maxMs": 62.78099999999995
+            },
+            "parseProject": {
+              "samples": 50,
+              "medianMs": 63.192700000000514,
+              "p95Ms": 69.79449999999997,
+              "minMs": 53.883200000000215,
+              "maxMs": 88.568299999999
+            }
+          }
+        }
+      }
+    },
+    "electron": {
+      "generatedAt": "2026-10-13T04:00:47.327Z",
+      "label": "before-issue-4-refactor",
+      "buildSha256": "2dde4720fa28d355d6b073dbf72dd028429b2945f3518e8ef708745be70a7cee",
+      "runnerSha256": "1ef98cff7d8bf70c83fc535beacb067a40463efde4bbab2237eb61a7fe6386e1",
+      "preloadSha256": "9b23ed163b92e6930e1f37526e1e5ff65280d3323530dfaf782d4a24bbe4be6f",
+      "repetitions": 50,
+      "warmup": 5,
+      "frameWindowMs": 2000,
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "hidden": true,
+        "offscreen": true,
+        "backgroundThrottling": false
+      },
+      "results": [
+        {
+          "name": "demo",
+          "performers": 64,
+          "sets": 6,
+          "utf8Bytes": 34681,
+          "sha256": "b2e22fddd7e23a1548bd41b05ed975c8d3bb7ea5f07aec6ef9e9e406bef154bb",
+          "initialMountElapsedMs": 256,
+          "fixtureReadyElapsedMs": 1281,
+          "metrics": {
+            "eventDispatchMs": {
+              "samples": 50,
+              "medianMs": 0.10000000009313226,
+              "p95Ms": 0.20000000018626451,
+              "minMs": 0,
+              "maxMs": 0.20000000018626451
+            },
+            "processingElapsedMs": {
+              "samples": 50,
+              "medianMs": 2.800000000046566,
+              "p95Ms": 3.800000000046566,
+              "minMs": 2.4000000001396984,
+              "maxMs": 4.199999999953434
+            },
+            "commitLatencyMs": {
+              "samples": 50,
+              "medianMs": 2.5,
+              "p95Ms": 3.4000000001396984,
+              "minMs": 2.199999999953434,
+              "maxMs": 3.8999999999068677
+            },
+            "mainThreadTaskMs": {
+              "samples": 50,
+              "medianMs": 2.776,
+              "p95Ms": 3.765,
+              "minMs": 2.501,
+              "maxMs": 4.261
+            },
+            "firstFrameMs": {
+              "samples": 50,
+              "medianMs": 16.099999999976717,
+              "p95Ms": 17.199999999953434,
+              "minMs": 9.800000000046566,
+              "maxMs": 17.600000000093132
+            },
+            "paintOpportunityMs": {
+              "samples": 50,
+              "medianMs": 32.84999999997672,
+              "p95Ms": 33.800000000046566,
+              "minMs": 26.5,
+              "maxMs": 34.300000000046566
+            }
+          },
+          "renderCounts": {
+            "commits": 110,
+            "componentRenders": {
+              "Co": 0,
+              "Mo": 56,
+              "ChevronDown": 110,
+              "anonymous": 8024,
+              "T": 3300,
+              "Undo2": 110,
+              "Redo2": 110,
+              "Save": 110,
+              "Download": 110,
+              "Ellipsis": 110,
+              "MousePointer2": 220,
+              "Users": 220,
+              "ListMusic": 220,
+              "Settings2": 110,
+              "CircleHelp": 110,
+              "Plus": 440,
+              "ChevronRight": 1540,
+              "Grid2x2": 110,
+              "Box": 110,
+              "Hand": 110,
+              "Square": 110,
+              "Waves": 110,
+              "Magnet": 110,
+              "LayoutGrid": 110,
+              "Minus": 220,
+              "Maximize": 110,
+              "no": 110,
+              "Qt": 110,
+              "Music2": 220,
+              "Flag": 110,
+              "AudioLines": 110,
+              "Repeat2": 110,
+              "SkipBack": 110,
+              "ChevronLeft": 110,
+              "Play": 110,
+              "SkipForward": 110,
+              "Volume2": 110,
+              "SlidersHorizontal": 110,
+              "Copy": 110,
+              "Trash2": 110,
+              "Yt": 110,
+              "xe": 880,
+              "ArrowUp": 110,
+              "ArrowDown": 110,
+              "Sparkles": 110,
+              "Circle": 0,
+              "ArrowRight": 110,
+              "ShieldCheck": 0,
+              "Check": 0,
+              "TriangleAlert": 110,
+              "X": 110,
+              "RotateCcw": 110,
+              "RotateCw": 110
+            },
+            "note": "Measured edit period includes warmups; production component names are minified. Instrumentation adds overhead."
+          },
+          "drag": {
+            "elapsedMs": 2002.7999999998137,
+            "commits": 64,
+            "appRafCallbacks": 0,
+            "glDrawCalls": 0,
+            "changedPerformers": 1,
+            "intervals": {
+              "samples": 121,
+              "medianMs": 16.699999999999818,
+              "p95Ms": 16.700000000000728,
+              "minMs": 16.5,
+              "maxMs": 16.800000000000182
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "playback": {
+            "elapsedMs": 2011.4000000001397,
+            "commits": 123,
+            "appRafCallbacks": 121,
+            "glDrawCalls": 0,
+            "startCount": 32,
+            "endCount": 36.7,
+            "changedPerformers": 64,
+            "intervals": {
+              "samples": 120,
+              "medianMs": 16.699999999999818,
+              "p95Ms": 16.700000000000728,
+              "minMs": 16.5,
+              "maxMs": 16.800000000000182
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "idle3D": {
+            "elapsedMs": 2004.6999999999534,
+            "commits": 0,
+            "appRafCallbacks": 121,
+            "glDrawCalls": 2299,
+            "intervals": {
+              "samples": 120,
+              "medianMs": 16.69999999999891,
+              "p95Ms": 16.700000000000728,
+              "minMs": 16.599999999998545,
+              "maxMs": 16.80000000000109
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "phaseCpu": {
+            "keyboard-edits": {
+              "wallMs": 1827.293,
+              "mainThreadTaskMs": 405.72799999999955,
+              "mainThreadTaskPercent": 22.20377356012416,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 746,
+                "medianMs": 0.012,
+                "p95Ms": 3.359,
+                "minMs": 0.001,
+                "maxMs": 5.296
+              }
+            },
+            "drag": {
+              "wallMs": 2003.529,
+              "mainThreadTaskMs": 159.86499999999992,
+              "mainThreadTaskPercent": 7.979170753205965,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 447,
+                "medianMs": 0.021,
+                "p95Ms": 1.324,
+                "minMs": 0.001,
+                "maxMs": 8.071
+              }
+            },
+            "playback": {
+              "wallMs": 2023.885,
+              "mainThreadTaskMs": 747.2119999999962,
+              "mainThreadTaskPercent": 36.91968664227445,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 894,
+                "medianMs": 0.012,
+                "p95Ms": 3.391,
+                "minMs": 0.001,
+                "maxMs": 6.098
+              }
+            },
+            "idle-3d": {
+              "wallMs": 2005.377,
+              "mainThreadTaskMs": 118.68199999999992,
+              "mainThreadTaskPercent": 5.918188949010581,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 742,
+                "medianMs": 0.006,
+                "p95Ms": 1.006,
+                "minMs": 0.001,
+                "maxMs": 1.477
+              }
+            }
+          },
+          "stage": {
+            "canvas": true,
+            "error": null,
+            "canvases": 1
+          },
+          "errors": [],
+          "memory": {
+            "beforeEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 1231608,
+                "embedderHeapUsedSize": 6698344,
+                "totalSize": 10747904,
+                "usedSize": 5720252
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.553924,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23484,
+                  "type": "Browser",
+                  "creationTime": 1791864047468.995,
+                  "memory": {
+                    "workingSetSize": 110552,
+                    "peakWorkingSetSize": 158388,
+                    "privateBytes": 93492
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.576492,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 11468,
+                  "type": "GPU",
+                  "creationTime": 1791864047580.76,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 165304,
+                    "peakWorkingSetSize": 169360,
+                    "privateBytes": 191932
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.076097,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24144,
+                  "type": "Utility",
+                  "creationTime": 1791864047600.566,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42900,
+                    "peakWorkingSetSize": 42904,
+                    "privateBytes": 12016
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.486218,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 22276,
+                  "type": "Tab",
+                  "creationTime": 1791864047640.971,
+                  "memory": {
+                    "workingSetSize": 115908,
+                    "peakWorkingSetSize": 115912,
+                    "privateBytes": 58764
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.022863,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24488,
+                  "type": "Utility",
+                  "creationTime": 1791864049169.303,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 80460,
+                    "peakWorkingSetSize": 80464,
+                    "privateBytes": 14244
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "afterEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 1236027,
+                "embedderHeapUsedSize": 12337720,
+                "totalSize": 24047616,
+                "usedSize": 11988624
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.805896,
+                    "percentCPUUsage": 0.5546004021035602,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23484,
+                  "type": "Browser",
+                  "creationTime": 1791864047468.995,
+                  "memory": {
+                    "workingSetSize": 150676,
+                    "peakWorkingSetSize": 212500,
+                    "privateBytes": 133604
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.885475,
+                    "percentCPUUsage": 0.6800831640001831,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 11468,
+                  "type": "GPU",
+                  "creationTime": 1791864047580.76,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 161224,
+                    "peakWorkingSetSize": 169360,
+                    "privateBytes": 189184
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.076097,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24144,
+                  "type": "Utility",
+                  "creationTime": 1791864047600.566,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42900,
+                    "peakWorkingSetSize": 42904,
+                    "privateBytes": 12016
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 1.132124,
+                    "percentCPUUsage": 1.4216663191954821,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 22276,
+                  "type": "Tab",
+                  "creationTime": 1791864047640.971,
+                  "memory": {
+                    "workingSetSize": 143192,
+                    "peakWorkingSetSize": 143220,
+                    "privateBytes": 84504
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.025242,
+                    "percentCPUUsage": 0.005236279231600344,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24488,
+                  "type": "Utility",
+                  "creationTime": 1791864049169.303,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 82000,
+                    "peakWorkingSetSize": 82004,
+                    "privateBytes": 14268
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "after3D": {
+              "rendererHeap": {
+                "backingStorageSize": 1141629,
+                "embedderHeapUsedSize": 4122144,
+                "totalSize": 32960512,
+                "usedSize": 19067896
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 2.173407,
+                    "percentCPUUsage": 1.183579195014062,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23484,
+                  "type": "Browser",
+                  "creationTime": 1791864047468.995,
+                  "memory": {
+                    "workingSetSize": 376648,
+                    "peakWorkingSetSize": 387964,
+                    "privateBytes": 359700
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 2.950565,
+                    "percentCPUUsage": 1.7873352434339713,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 11468,
+                  "type": "GPU",
+                  "creationTime": 1791864047580.76,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 216400,
+                    "peakWorkingSetSize": 224200,
+                    "privateBytes": 379572
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.078925,
+                    "percentCPUUsage": 0.0024476334534924023,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24144,
+                  "type": "Utility",
+                  "creationTime": 1791864047600.566,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42988,
+                    "peakWorkingSetSize": 43012,
+                    "privateBytes": 12100
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 2.942577,
+                    "percentCPUUsage": 1.566946721632136,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 22276,
+                  "type": "Tab",
+                  "creationTime": 1791864047640.971,
+                  "memory": {
+                    "workingSetSize": 184452,
+                    "peakWorkingSetSize": 184456,
+                    "privateBytes": 118360
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.031599,
+                    "percentCPUUsage": 0.005501982271517399,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24488,
+                  "type": "Utility",
+                  "creationTime": 1791864049169.303,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 87364,
+                    "peakWorkingSetSize": 87368,
+                    "privateBytes": 14356
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            }
+          },
+          "recoveryWrites": [
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 0.10000000009313226,
+              "characters": 34680
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 0.10000000009313226,
+              "characters": 34684
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 0.20000000018626451,
+              "characters": 34680
+            }
+          ],
+          "trace": "demo-trace.json",
+          "cpuProfile": "demo.cpuprofile"
+        },
+        {
+          "name": "maximum",
+          "performers": 500,
+          "sets": 128,
+          "utf8Bytes": 4000965,
+          "sha256": "ae634ad3f99ad4807b21a8c5ff18e3ef03dbe7f25d3c38ee6d20fef26629e194",
+          "initialMountElapsedMs": 825,
+          "fixtureReadyElapsedMs": 1899,
+          "metrics": {
+            "eventDispatchMs": {
+              "samples": 50,
+              "medianMs": 0.19999999995343387,
+              "p95Ms": 0.4000000001396984,
+              "minMs": 0,
+              "maxMs": 0.4000000001396984
+            },
+            "processingElapsedMs": {
+              "samples": 50,
+              "medianMs": 93.80000000016298,
+              "p95Ms": 155.10000000009313,
+              "minMs": 89,
+              "maxMs": 175.89999999990687
+            },
+            "commitLatencyMs": {
+              "samples": 50,
+              "medianMs": 92.19999999995343,
+              "p95Ms": 115.5,
+              "minMs": 87.60000000009313,
+              "maxMs": 127.4000000001397
+            },
+            "mainThreadTaskMs": {
+              "samples": 50,
+              "medianMs": 93.8065,
+              "p95Ms": 155.12199999999999,
+              "minMs": 88.93799999999997,
+              "maxMs": 175.90399999999997
+            },
+            "firstFrameMs": {
+              "samples": 50,
+              "medianMs": 96.5,
+              "p95Ms": 160.70000000018626,
+              "minMs": 91.4000000001397,
+              "maxMs": 181.19999999995343
+            },
+            "paintOpportunityMs": {
+              "samples": 50,
+              "medianMs": 136.09999999997672,
+              "p95Ms": 172.20000000018626,
+              "minMs": 129.10000000009313,
+              "maxMs": 192.5
+            }
+          },
+          "renderCounts": {
+            "commits": 110,
+            "componentRenders": {
+              "Co": 0,
+              "Mo": 56,
+              "ChevronDown": 110,
+              "anonymous": 21322,
+              "T": 3300,
+              "Undo2": 110,
+              "Redo2": 110,
+              "Save": 110,
+              "Download": 110,
+              "Ellipsis": 110,
+              "MousePointer2": 220,
+              "Users": 220,
+              "ListMusic": 220,
+              "Settings2": 110,
+              "CircleHelp": 110,
+              "Plus": 440,
+              "ChevronRight": 1540,
+              "Grid2x2": 110,
+              "Box": 110,
+              "Hand": 110,
+              "Square": 110,
+              "Waves": 110,
+              "Magnet": 110,
+              "LayoutGrid": 110,
+              "Minus": 220,
+              "Maximize": 110,
+              "no": 110,
+              "Qt": 110,
+              "Music2": 220,
+              "Flag": 110,
+              "AudioLines": 110,
+              "Repeat2": 110,
+              "SkipBack": 110,
+              "ChevronLeft": 110,
+              "Play": 110,
+              "SkipForward": 110,
+              "Volume2": 110,
+              "SlidersHorizontal": 110,
+              "Copy": 110,
+              "Trash2": 110,
+              "Yt": 110,
+              "xe": 880,
+              "ArrowUp": 110,
+              "ArrowDown": 110,
+              "Sparkles": 110,
+              "Circle": 0,
+              "ArrowRight": 110,
+              "ShieldCheck": 0,
+              "Check": 0,
+              "TriangleAlert": 110,
+              "X": 110,
+              "RotateCcw": 110,
+              "RotateCw": 110
+            },
+            "note": "Measured edit period includes warmups; production component names are minified. Instrumentation adds overhead."
+          },
+          "drag": {
+            "elapsedMs": 2006.6999999999534,
+            "commits": 63,
+            "appRafCallbacks": 0,
+            "glDrawCalls": 0,
+            "changedPerformers": 1,
+            "intervals": {
+              "samples": 114,
+              "medianMs": 16.69999999999891,
+              "p95Ms": 16.799999999999272,
+              "minMs": 16.599999999998545,
+              "maxMs": 116.69999999999891
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 2,
+            "intervalsOver33_3ms": 1
+          },
+          "playback": {
+            "elapsedMs": 2018.6999999999534,
+            "commits": 75,
+            "appRafCallbacks": 75,
+            "glDrawCalls": 0,
+            "startCount": 32,
+            "endCount": 36.7,
+            "changedPerformers": 500,
+            "intervals": {
+              "samples": 74,
+              "medianMs": 33.29999999999927,
+              "p95Ms": 33.400000000001455,
+              "minMs": 16.600000000000364,
+              "maxMs": 66.70000000000073
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 42,
+            "intervalsOver33_3ms": 13
+          },
+          "idle3D": {
+            "elapsedMs": 2002.1999999999534,
+            "commits": 0,
+            "appRafCallbacks": 121,
+            "glDrawCalls": 2299,
+            "intervals": {
+              "samples": 120,
+              "medianMs": 16.699999999999818,
+              "p95Ms": 16.799999999999272,
+              "minMs": 16.5,
+              "maxMs": 16.80000000000291
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "phaseCpu": {
+            "keyboard-edits": {
+              "wallMs": 7816.076,
+              "mainThreadTaskMs": 7752.94700000003,
+              "mainThreadTaskPercent": 99.19231849843874,
+              "longTasksOver50ms": 56,
+              "tasks": {
+                "samples": 936,
+                "medianMs": 0.01,
+                "p95Ms": 90.729,
+                "minMs": 0.001,
+                "maxMs": 130.418
+              }
+            },
+            "drag": {
+              "wallMs": 2007.515,
+              "mainThreadTaskMs": 654.6959999999999,
+              "mainThreadTaskPercent": 32.612259435172334,
+              "longTasksOver50ms": 1,
+              "tasks": {
+                "samples": 447,
+                "medianMs": 0.019,
+                "p95Ms": 6.253,
+                "minMs": 0.001,
+                "maxMs": 124.111
+              }
+            },
+            "playback": {
+              "wallMs": 2140.854,
+              "mainThreadTaskMs": 2139.0749999999944,
+              "mainThreadTaskPercent": 99.91690232028874,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 465,
+                "medianMs": 0.01,
+                "p95Ms": 16.887,
+                "minMs": 0.001,
+                "maxMs": 40.629
+              }
+            },
+            "idle-3d": {
+              "wallMs": 2002.846,
+              "mainThreadTaskMs": 151.83400000000012,
+              "mainThreadTaskPercent": 7.580912361709294,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 741,
+                "medianMs": 0.007,
+                "p95Ms": 1.337,
+                "minMs": 0.001,
+                "maxMs": 3.353
+              }
+            }
+          },
+          "stage": {
+            "canvas": true,
+            "error": null,
+            "canvases": 1
+          },
+          "errors": [],
+          "memory": {
+            "beforeEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 9036288,
+                "embedderHeapUsedSize": 100461080,
+                "totalSize": 57499648,
+                "usedSize": 48002612
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 3.97801,
+                    "percentCPUUsage": 2.8432599693862426,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23484,
+                  "type": "Browser",
+                  "creationTime": 1791864047468.995,
+                  "memory": {
+                    "workingSetSize": 249004,
+                    "peakWorkingSetSize": 425196,
+                    "privateBytes": 229732
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.20125,
+                    "percentCPUUsage": 1.970523563377033,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 11468,
+                  "type": "GPU",
+                  "creationTime": 1791864047580.76,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 230516,
+                    "peakWorkingSetSize": 271108,
+                    "privateBytes": 447820
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.080413,
+                    "percentCPUUsage": 0.00234442591311608,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24144,
+                  "type": "Utility",
+                  "creationTime": 1791864047600.566,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 43032,
+                    "peakWorkingSetSize": 43036,
+                    "privateBytes": 12140
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.905715,
+                    "percentCPUUsage": 1.3772220435187268,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24488,
+                  "type": "Utility",
+                  "creationTime": 1791864049169.303,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 91960,
+                    "peakWorkingSetSize": 143324,
+                    "privateBytes": 17084
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 1.662528,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 18228,
+                  "type": "Tab",
+                  "creationTime": 1791864060913.613,
+                  "memory": {
+                    "workingSetSize": 318076,
+                    "peakWorkingSetSize": 347208,
+                    "privateBytes": 244664
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "afterEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 8981945,
+                "embedderHeapUsedSize": 94926096,
+                "totalSize": 246767616,
+                "usedSize": 199684664
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.324684,
+                    "percentCPUUsage": 0.24555775583243056,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23484,
+                  "type": "Browser",
+                  "creationTime": 1791864047468.995,
+                  "memory": {
+                    "workingSetSize": 232284,
+                    "peakWorkingSetSize": 425196,
+                    "privateBytes": 212840
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.697192,
+                    "percentCPUUsage": 0.3512882851262219,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 11468,
+                  "type": "GPU",
+                  "creationTime": 1791864047580.76,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 224376,
+                    "peakWorkingSetSize": 271108,
+                    "privateBytes": 414416
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.080413,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24144,
+                  "type": "Utility",
+                  "creationTime": 1791864047600.566,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 43032,
+                    "peakWorkingSetSize": 43036,
+                    "privateBytes": 12140
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.912771,
+                    "percentCPUUsage": 0.004997944722731367,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24488,
+                  "type": "Utility",
+                  "creationTime": 1791864049169.303,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 94008,
+                    "peakWorkingSetSize": 143324,
+                    "privateBytes": 17096
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 11.008088,
+                    "percentCPUUsage": 6.619698452801779,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 18228,
+                  "type": "Tab",
+                  "creationTime": 1791864060913.613,
+                  "memory": {
+                    "workingSetSize": 567344,
+                    "peakWorkingSetSize": 598632,
+                    "privateBytes": 496184
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "after3D": {
+              "rendererHeap": {
+                "backingStorageSize": 13227515,
+                "embedderHeapUsedSize": 94732968,
+                "totalSize": 217346048,
+                "usedSize": 62915132
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 5.555647,
+                    "percentCPUUsage": 1.0475928503238767,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23484,
+                  "type": "Browser",
+                  "creationTime": 1791864047468.995,
+                  "memory": {
+                    "workingSetSize": 425680,
+                    "peakWorkingSetSize": 436928,
+                    "privateBytes": 403872
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 6.70741,
+                    "percentCPUUsage": 1.7107667556963206,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 11468,
+                  "type": "GPU",
+                  "creationTime": 1791864047580.76,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 224264,
+                    "peakWorkingSetSize": 271108,
+                    "privateBytes": 480308
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.080971,
+                    "percentCPUUsage": 0.0004748778389524828,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24144,
+                  "type": "Utility",
+                  "creationTime": 1791864047600.566,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 43020,
+                    "peakWorkingSetSize": 43036,
+                    "privateBytes": 12108
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.918175,
+                    "percentCPUUsage": 0.00459899613207745,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 24488,
+                  "type": "Utility",
+                  "creationTime": 1791864049169.303,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 98376,
+                    "peakWorkingSetSize": 143324,
+                    "privateBytes": 17120
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 15.209583,
+                    "percentCPUUsage": 3.575621623601544,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 18228,
+                  "type": "Tab",
+                  "creationTime": 1791864060913.613,
+                  "memory": {
+                    "workingSetSize": 589968,
+                    "peakWorkingSetSize": 642756,
+                    "privateBytes": 513508
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            }
+          },
+          "recoveryWrites": [
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 12.300000000046566,
+              "characters": 4000964
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 11,
+              "characters": 4000965
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 12,
+              "characters": 4000964
+            }
+          ],
+          "trace": "maximum-trace.json",
+          "cpuProfile": "maximum.cpuprofile"
+        }
+      ]
+    }
+  },
+  "after": {
+    "compute": {
+      "generatedAt": "2026-10-13T04:06:13.616Z",
+      "label": "after-issue-4-refactor",
+      "domain": ".qa\\performance\\after-domain.cjs",
+      "domainSha256": "dafb5b31ee8653b93c0e2f4c42d10de0b68b70b299369e797a1247ebc820ea79",
+      "repetitions": 50,
+      "warmup": 10,
+      "fixtures": {
+        "demo": {
+          "performers": 64,
+          "sets": 6,
+          "utf8Bytes": 34681,
+          "sha256": "b2e22fddd7e23a1548bd41b05ed975c8d3bb7ea5f07aec6ef9e9e406bef154bb",
+          "issuesAtSet2": 148,
+          "metrics": {
+            "analyzeTransition": {
+              "samples": 50,
+              "medianMs": 0.36779999999999546,
+              "p95Ms": 0.7253999999999934,
+              "minMs": 0.26200000000000045,
+              "maxMs": 0.8111000000000104
+            },
+            "sampleProject": {
+              "samples": 50,
+              "medianMs": 0.014150000000000773,
+              "p95Ms": 0.04820000000000846,
+              "minMs": 0.010499999999993292,
+              "maxMs": 0.3036999999999921
+            },
+            "stringifyProject": {
+              "samples": 50,
+              "medianMs": 0.10315000000000651,
+              "p95Ms": 0.14809999999999945,
+              "minMs": 0.0969999999999942,
+              "maxMs": 0.2916000000000025
+            },
+            "legacyEditEquality": {
+              "samples": 50,
+              "medianMs": 0.20669999999999789,
+              "p95Ms": 0.3281000000000063,
+              "minMs": 0.19659999999998945,
+              "maxMs": 0.4702999999999804
+            },
+            "validateProject": {
+              "samples": 50,
+              "medianMs": 0.14894999999999925,
+              "p95Ms": 0.2990000000000066,
+              "minMs": 0.10470000000000823,
+              "maxMs": 0.37760000000000105
+            },
+            "serializeProject": {
+              "samples": 50,
+              "medianMs": 0.25714999999999577,
+              "p95Ms": 0.46759999999997603,
+              "minMs": 0.22530000000000427,
+              "maxMs": 0.6748000000000047
+            },
+            "parseProject": {
+              "samples": 50,
+              "medianMs": 0.3312999999999988,
+              "p95Ms": 0.5911999999999864,
+              "minMs": 0.28489999999999327,
+              "maxMs": 0.9765999999999906
+            }
+          }
+        },
+        "maximum": {
+          "performers": 500,
+          "sets": 128,
+          "utf8Bytes": 4000965,
+          "sha256": "ae634ad3f99ad4807b21a8c5ff18e3ef03dbe7f25d3c38ee6d20fef26629e194",
+          "issuesAtSet2": 2563,
+          "metrics": {
+            "analyzeTransition": {
+              "samples": 50,
+              "medianMs": 24.073399999999992,
+              "p95Ms": 25.19959999999992,
+              "minMs": 22.350000000000023,
+              "maxMs": 25.423500000000104
+            },
+            "sampleProject": {
+              "samples": 50,
+              "medianMs": 0.14870000000007622,
+              "p95Ms": 0.2923000000000684,
+              "minMs": 0.1312000000000353,
+              "maxMs": 0.538899999999785
+            },
+            "stringifyProject": {
+              "samples": 50,
+              "medianMs": 19.579600000000028,
+              "p95Ms": 23.463799999999992,
+              "minMs": 18.413700000000063,
+              "maxMs": 25.520300000000134
+            },
+            "legacyEditEquality": {
+              "samples": 50,
+              "medianMs": 39.8151499999999,
+              "p95Ms": 46.86189999999988,
+              "minMs": 37.88259999999991,
+              "maxMs": 52.62260000000015
+            },
+            "validateProject": {
+              "samples": 50,
+              "medianMs": 31.277149999999892,
+              "p95Ms": 35.537099999999555,
+              "minMs": 25.64600000000064,
+              "maxMs": 41.86729999999989
+            },
+            "serializeProject": {
+              "samples": 50,
+              "medianMs": 50.198600000000624,
+              "p95Ms": 54.13020000000142,
+              "minMs": 46.16220000000067,
+              "maxMs": 76.77180000000044
+            },
+            "parseProject": {
+              "samples": 50,
+              "medianMs": 70.05365000000074,
+              "p95Ms": 79.8752999999997,
+              "minMs": 64.97440000000097,
+              "maxMs": 99.91739999999845
+            }
+          }
+        }
+      }
+    },
+    "electron": {
+      "generatedAt": "2026-10-13T04:06:50.721Z",
+      "label": "after-issue-4-refactor",
+      "buildSha256": "14dfa4f511f625c17255c5d873b181585415696533aa8a1b5a27d45fe9ebab60",
+      "runnerSha256": "1ef98cff7d8bf70c83fc535beacb067a40463efde4bbab2237eb61a7fe6386e1",
+      "preloadSha256": "9b23ed163b92e6930e1f37526e1e5ff65280d3323530dfaf782d4a24bbe4be6f",
+      "repetitions": 50,
+      "warmup": 5,
+      "frameWindowMs": 2000,
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "hidden": true,
+        "offscreen": true,
+        "backgroundThrottling": false
+      },
+      "results": [
+        {
+          "name": "demo",
+          "performers": 64,
+          "sets": 6,
+          "utf8Bytes": 34681,
+          "sha256": "b2e22fddd7e23a1548bd41b05ed975c8d3bb7ea5f07aec6ef9e9e406bef154bb",
+          "initialMountElapsedMs": 236,
+          "fixtureReadyElapsedMs": 1257,
+          "metrics": {
+            "eventDispatchMs": {
+              "samples": 50,
+              "medianMs": 0.39999999990686774,
+              "p95Ms": 0.6000000000931323,
+              "minMs": 0.19999999995343387,
+              "maxMs": 0.6999999999534339
+            },
+            "processingElapsedMs": {
+              "samples": 50,
+              "medianMs": 3.4000000001396984,
+              "p95Ms": 4.5,
+              "minMs": 3,
+              "maxMs": 4.7000000001862645
+            },
+            "commitLatencyMs": {
+              "samples": 50,
+              "medianMs": 3.099999999976717,
+              "p95Ms": 4,
+              "minMs": 2.6000000000931323,
+              "maxMs": 4.2000000001862645
+            },
+            "mainThreadTaskMs": {
+              "samples": 50,
+              "medianMs": 3.4284999999999997,
+              "p95Ms": 4.497999999999999,
+              "minMs": 2.9909999999999997,
+              "maxMs": 4.647
+            },
+            "firstFrameMs": {
+              "samples": 50,
+              "medianMs": 16.20000000006985,
+              "p95Ms": 17.4000000001397,
+              "minMs": 13.100000000093132,
+              "maxMs": 17.9000000001397
+            },
+            "paintOpportunityMs": {
+              "samples": 50,
+              "medianMs": 32.70000000006985,
+              "p95Ms": 33.699999999953434,
+              "minMs": 29.100000000093132,
+              "maxMs": 34
+            }
+          },
+          "renderCounts": {
+            "commits": 110,
+            "componentRenders": {
+              "Wo": 0,
+              "Bo": 0,
+              "li": 0,
+              "Yo": 56,
+              "ChevronDown": 110,
+              "anonymous": 8024,
+              "L": 3300,
+              "Undo2": 110,
+              "Redo2": 110,
+              "Save": 110,
+              "Download": 110,
+              "Ellipsis": 110,
+              "MousePointer2": 220,
+              "Users": 220,
+              "ListMusic": 220,
+              "Settings2": 110,
+              "CircleHelp": 110,
+              "Plus": 440,
+              "ChevronRight": 1540,
+              "Grid2x2": 110,
+              "Box": 110,
+              "Hand": 110,
+              "Square": 110,
+              "Waves": 110,
+              "Magnet": 110,
+              "LayoutGrid": 110,
+              "Minus": 220,
+              "Maximize": 110,
+              "Fo": 110,
+              "uo": 110,
+              "ns": 110,
+              "qo": 110,
+              "Music2": 220,
+              "Flag": 110,
+              "AudioLines": 110,
+              "Repeat2": 110,
+              "SkipBack": 110,
+              "ChevronLeft": 110,
+              "Play": 110,
+              "SkipForward": 110,
+              "Volume2": 110,
+              "SlidersHorizontal": 110,
+              "Copy": 110,
+              "Trash2": 110,
+              "Xt": 110,
+              "we": 826,
+              "ArrowUp": 110,
+              "ArrowDown": 110,
+              "Sparkles": 110,
+              "Circle": 0,
+              "ArrowRight": 110,
+              "ShieldCheck": 0,
+              "Check": 0,
+              "Uo": 56,
+              "TriangleAlert": 110,
+              "X": 110,
+              "RotateCcw": 110,
+              "RotateCw": 110
+            },
+            "note": "Measured edit period includes warmups; production component names are minified. Instrumentation adds overhead."
+          },
+          "drag": {
+            "elapsedMs": 2007.6000000000931,
+            "commits": 63,
+            "appRafCallbacks": 0,
+            "glDrawCalls": 0,
+            "changedPerformers": 1,
+            "intervals": {
+              "samples": 121,
+              "medianMs": 16.699999999999818,
+              "p95Ms": 16.700000000000728,
+              "minMs": 16.5,
+              "maxMs": 16.800000000000182
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "playback": {
+            "elapsedMs": 2013.1999999999534,
+            "commits": 123,
+            "appRafCallbacks": 121,
+            "glDrawCalls": 0,
+            "startCount": 32,
+            "endCount": 36.7,
+            "changedPerformers": 64,
+            "intervals": {
+              "samples": 120,
+              "medianMs": 16.699999999999818,
+              "p95Ms": 16.700000000000728,
+              "minMs": 16.599999999999454,
+              "maxMs": 16.800000000000182
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "idle3D": {
+            "elapsedMs": 2004.1000000000931,
+            "commits": 0,
+            "appRafCallbacks": 121,
+            "glDrawCalls": 2299,
+            "intervals": {
+              "samples": 120,
+              "medianMs": 16.69999999999891,
+              "p95Ms": 16.799999999999272,
+              "minMs": 16.5,
+              "maxMs": 16.80000000000109
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "phaseCpu": {
+            "keyboard-edits": {
+              "wallMs": 1840.935,
+              "mainThreadTaskMs": 488.76799999999923,
+              "mainThreadTaskPercent": 26.549986827345844,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 745,
+                "medianMs": 0.013,
+                "p95Ms": 4.076,
+                "minMs": 0.001,
+                "maxMs": 11.99
+              }
+            },
+            "drag": {
+              "wallMs": 2008.362,
+              "mainThreadTaskMs": 160.76199999999974,
+              "mainThreadTaskPercent": 8.004632630969901,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 444,
+                "medianMs": 0.022,
+                "p95Ms": 1.14,
+                "minMs": 0.001,
+                "maxMs": 9.146
+              }
+            },
+            "playback": {
+              "wallMs": 2025.629,
+              "mainThreadTaskMs": 641.6559999999974,
+              "mainThreadTaskPercent": 31.676876663989184,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 770,
+                "medianMs": 0.0125,
+                "p95Ms": 5.129,
+                "minMs": 0.001,
+                "maxMs": 11.979
+              }
+            },
+            "idle-3d": {
+              "wallMs": 2004.645,
+              "mainThreadTaskMs": 115.31699999999982,
+              "mainThreadTaskPercent": 5.752489842341154,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 743,
+                "medianMs": 0.006,
+                "p95Ms": 0.984,
+                "minMs": 0.001,
+                "maxMs": 1.651
+              }
+            }
+          },
+          "stage": {
+            "canvas": true,
+            "error": null,
+            "canvases": 1
+          },
+          "errors": [],
+          "memory": {
+            "beforeEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 1252280,
+                "embedderHeapUsedSize": 6560056,
+                "totalSize": 10747904,
+                "usedSize": 6571196
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.491887,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23924,
+                  "type": "Browser",
+                  "creationTime": 1791864410858.268,
+                  "memory": {
+                    "workingSetSize": 110188,
+                    "peakWorkingSetSize": 157712,
+                    "privateBytes": 92832
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.525454,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 8680,
+                  "type": "GPU",
+                  "creationTime": 1791864410962.404,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 141356,
+                    "peakWorkingSetSize": 141360,
+                    "privateBytes": 169888
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.072073,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 9388,
+                  "type": "Utility",
+                  "creationTime": 1791864410970.961,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42620,
+                    "peakWorkingSetSize": 42624,
+                    "privateBytes": 11916
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.469067,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 13088,
+                  "type": "Tab",
+                  "creationTime": 1791864411010.049,
+                  "memory": {
+                    "workingSetSize": 119272,
+                    "peakWorkingSetSize": 119276,
+                    "privateBytes": 65032
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.024121,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 3568,
+                  "type": "Utility",
+                  "creationTime": 1791864412490.284,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 80548,
+                    "peakWorkingSetSize": 80552,
+                    "privateBytes": 14260
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "afterEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 1256699,
+                "embedderHeapUsedSize": 12355160,
+                "totalSize": 24379392,
+                "usedSize": 13988960
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.781357,
+                    "percentCPUUsage": 0.6352316915811557,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23924,
+                  "type": "Browser",
+                  "creationTime": 1791864410858.268,
+                  "memory": {
+                    "workingSetSize": 133312,
+                    "peakWorkingSetSize": 217788,
+                    "privateBytes": 115936
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.852579,
+                    "percentCPUUsage": 0.7178614866264572,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 8680,
+                  "type": "GPU",
+                  "creationTime": 1791864410962.404,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 137036,
+                    "peakWorkingSetSize": 142668,
+                    "privateBytes": 168880
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.072073,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 9388,
+                  "type": "Utility",
+                  "creationTime": 1791864410970.961,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42620,
+                    "peakWorkingSetSize": 42624,
+                    "privateBytes": 11916
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 1.251745,
+                    "percentCPUUsage": 1.717552594970798,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 13088,
+                  "type": "Tab",
+                  "creationTime": 1791864411010.049,
+                  "memory": {
+                    "workingSetSize": 146532,
+                    "peakWorkingSetSize": 146556,
+                    "privateBytes": 90880
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.026971,
+                    "percentCPUUsage": 0.006254197993249504,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 3568,
+                  "type": "Utility",
+                  "creationTime": 1791864412490.284,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 82072,
+                    "peakWorkingSetSize": 82076,
+                    "privateBytes": 14280
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "after3D": {
+              "rendererHeap": {
+                "backingStorageSize": 1092968,
+                "embedderHeapUsedSize": 4114816,
+                "totalSize": 28311552,
+                "usedSize": 12817648
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 2.311481,
+                    "percentCPUUsage": 1.3232991224522244,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23924,
+                  "type": "Browser",
+                  "creationTime": 1791864410858.268,
+                  "memory": {
+                    "workingSetSize": 286128,
+                    "peakWorkingSetSize": 398880,
+                    "privateBytes": 268656
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 2.887764,
+                    "percentCPUUsage": 1.7600967963511485,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 8680,
+                  "type": "GPU",
+                  "creationTime": 1791864410962.404,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 197232,
+                    "peakWorkingSetSize": 208176,
+                    "privateBytes": 375488
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.075268,
+                    "percentCPUUsage": 0.00276314555036532,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 9388,
+                  "type": "Utility",
+                  "creationTime": 1791864410970.961,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42712,
+                    "peakWorkingSetSize": 42740,
+                    "privateBytes": 12012
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 2.965789,
+                    "percentCPUUsage": 1.4823640224508214,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 13088,
+                  "type": "Tab",
+                  "creationTime": 1791864411010.049,
+                  "memory": {
+                    "workingSetSize": 181876,
+                    "peakWorkingSetSize": 181880,
+                    "privateBytes": 119532
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.033157,
+                    "percentCPUUsage": 0.005349864165686175,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 3568,
+                  "type": "Utility",
+                  "creationTime": 1791864412490.284,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 87096,
+                    "peakWorkingSetSize": 87100,
+                    "privateBytes": 14364
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            }
+          },
+          "recoveryWrites": [
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 0.19999999995343387,
+              "characters": 34680
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 0,
+              "characters": 34684
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 0.10000000009313226,
+              "characters": 34680
+            }
+          ],
+          "trace": "demo-trace.json",
+          "cpuProfile": "demo.cpuprofile"
+        },
+        {
+          "name": "maximum",
+          "performers": 500,
+          "sets": 128,
+          "utf8Bytes": 4000965,
+          "sha256": "ae634ad3f99ad4807b21a8c5ff18e3ef03dbe7f25d3c38ee6d20fef26629e194",
+          "initialMountElapsedMs": 884,
+          "fixtureReadyElapsedMs": 1941,
+          "metrics": {
+            "eventDispatchMs": {
+              "samples": 50,
+              "medianMs": 13.5,
+              "p95Ms": 32.89999999990687,
+              "minMs": 12,
+              "maxMs": 37.200000000186265
+            },
+            "processingElapsedMs": {
+              "samples": 50,
+              "medianMs": 86.95000000006985,
+              "p95Ms": 147.10000000009313,
+              "minMs": 81.69999999995343,
+              "maxMs": 151.60000000009313
+            },
+            "commitLatencyMs": {
+              "samples": 50,
+              "medianMs": 85.45000000006985,
+              "p95Ms": 110.10000000009313,
+              "minMs": 80.0999999998603,
+              "maxMs": 110.80000000004657
+            },
+            "mainThreadTaskMs": {
+              "samples": 50,
+              "medianMs": 86.9045,
+              "p95Ms": 147.057,
+              "minMs": 81.67800000000001,
+              "maxMs": 151.49599999999998
+            },
+            "firstFrameMs": {
+              "samples": 50,
+              "medianMs": 88.54999999993015,
+              "p95Ms": 150.4000000001397,
+              "minMs": 83.39999999990687,
+              "maxMs": 155.69999999995343
+            },
+            "paintOpportunityMs": {
+              "samples": 50,
+              "medianMs": 125.69999999983702,
+              "p95Ms": 162.20000000018626,
+              "minMs": 117.60000000009313,
+              "maxMs": 168.60000000009313
+            }
+          },
+          "renderCounts": {
+            "commits": 110,
+            "componentRenders": {
+              "Wo": 0,
+              "Bo": 0,
+              "li": 0,
+              "Yo": 56,
+              "ChevronDown": 110,
+              "anonymous": 21322,
+              "L": 3300,
+              "Undo2": 110,
+              "Redo2": 110,
+              "Save": 110,
+              "Download": 110,
+              "Ellipsis": 110,
+              "MousePointer2": 220,
+              "Users": 220,
+              "ListMusic": 220,
+              "Settings2": 110,
+              "CircleHelp": 110,
+              "Plus": 440,
+              "ChevronRight": 1540,
+              "Grid2x2": 110,
+              "Box": 110,
+              "Hand": 110,
+              "Square": 110,
+              "Waves": 110,
+              "Magnet": 110,
+              "LayoutGrid": 110,
+              "Minus": 220,
+              "Maximize": 110,
+              "Fo": 110,
+              "uo": 110,
+              "ns": 110,
+              "qo": 110,
+              "Music2": 220,
+              "Flag": 110,
+              "AudioLines": 110,
+              "Repeat2": 110,
+              "SkipBack": 110,
+              "ChevronLeft": 110,
+              "Play": 110,
+              "SkipForward": 110,
+              "Volume2": 110,
+              "SlidersHorizontal": 110,
+              "Copy": 110,
+              "Trash2": 110,
+              "Xt": 110,
+              "we": 826,
+              "ArrowUp": 110,
+              "ArrowDown": 110,
+              "Sparkles": 110,
+              "Circle": 0,
+              "ArrowRight": 110,
+              "ShieldCheck": 0,
+              "Check": 0,
+              "Uo": 56,
+              "TriangleAlert": 110,
+              "X": 110,
+              "RotateCcw": 110,
+              "RotateCw": 110
+            },
+            "note": "Measured edit period includes warmups; production component names are minified. Instrumentation adds overhead."
+          },
+          "drag": {
+            "elapsedMs": 2002.5,
+            "commits": 63,
+            "appRafCallbacks": 0,
+            "glDrawCalls": 0,
+            "changedPerformers": 1,
+            "intervals": {
+              "samples": 115,
+              "medianMs": 16.69999999999891,
+              "p95Ms": 16.799999999999272,
+              "minMs": 16.5,
+              "maxMs": 116.60000000000036
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 1,
+            "intervalsOver33_3ms": 1
+          },
+          "playback": {
+            "elapsedMs": 2012.8000000000466,
+            "commits": 87,
+            "appRafCallbacks": 86,
+            "glDrawCalls": 0,
+            "startCount": 32,
+            "endCount": 36.7,
+            "changedPerformers": 500,
+            "intervals": {
+              "samples": 85,
+              "medianMs": 16.700000000000728,
+              "p95Ms": 33.400000000001455,
+              "minMs": 16.599999999998545,
+              "maxMs": 83.29999999999927
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 31,
+            "intervalsOver33_3ms": 10
+          },
+          "idle3D": {
+            "elapsedMs": 2003.9000000001397,
+            "commits": 0,
+            "appRafCallbacks": 121,
+            "glDrawCalls": 2299,
+            "intervals": {
+              "samples": 120,
+              "medianMs": 16.69999999999891,
+              "p95Ms": 16.700000000000728,
+              "minMs": 16.599999999998545,
+              "maxMs": 16.80000000000291
+            },
+            "frameBudgetMs": 16.666666666666668,
+            "jitterToleranceMs": 1,
+            "intervalsOverBudgetWithTolerance": 0,
+            "intervalsOver33_3ms": 0
+          },
+          "phaseCpu": {
+            "keyboard-edits": {
+              "wallMs": 7139.574,
+              "mainThreadTaskMs": 7118.938000000038,
+              "mainThreadTaskPercent": 99.71096314710147,
+              "longTasksOver50ms": 55,
+              "tasks": {
+                "samples": 916,
+                "medianMs": 0.011,
+                "p95Ms": 84.936,
+                "minMs": 0.001,
+                "maxMs": 121.742
+              }
+            },
+            "drag": {
+              "wallMs": 2003.198,
+              "mainThreadTaskMs": 677.942999999801,
+              "mainThreadTaskPercent": 33.84303498704576,
+              "longTasksOver50ms": 1,
+              "tasks": {
+                "samples": 6641,
+                "medianMs": 0.002,
+                "p95Ms": 0.016,
+                "minMs": 0.001,
+                "maxMs": 121.304
+              }
+            },
+            "playback": {
+              "wallMs": 2120.431,
+              "mainThreadTaskMs": 2118.831999999993,
+              "mainThreadTaskPercent": 99.9245908025299,
+              "longTasksOver50ms": 1,
+              "tasks": {
+                "samples": 515,
+                "medianMs": 0.008,
+                "p95Ms": 22.886,
+                "minMs": 0.001,
+                "maxMs": 73.706
+              }
+            },
+            "idle-3d": {
+              "wallMs": 2004.567,
+              "mainThreadTaskMs": 103.79199999999975,
+              "mainThreadTaskPercent": 5.177776547254332,
+              "longTasksOver50ms": 0,
+              "tasks": {
+                "samples": 741,
+                "medianMs": 0.005,
+                "p95Ms": 0.825,
+                "minMs": 0.001,
+                "maxMs": 2.971
+              }
+            }
+          },
+          "stage": {
+            "canvas": true,
+            "error": null,
+            "canvases": 1
+          },
+          "errors": [],
+          "memory": {
+            "beforeEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 9044907,
+                "embedderHeapUsedSize": 100784544,
+                "totalSize": 58286080,
+                "usedSize": 48642612
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.245884,
+                    "percentCPUUsage": 2.973219120744971,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23924,
+                  "type": "Browser",
+                  "creationTime": 1791864410858.268,
+                  "memory": {
+                    "workingSetSize": 259628,
+                    "peakWorkingSetSize": 437260,
+                    "privateBytes": 240252
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.109593,
+                    "percentCPUUsage": 1.8779710524503728,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 8680,
+                  "type": "GPU",
+                  "creationTime": 1791864410962.404,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 224576,
+                    "peakWorkingSetSize": 263840,
+                    "privateBytes": 433308
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.076825,
+                    "percentCPUUsage": 0.0023931296245654557,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 9388,
+                  "type": "Utility",
+                  "creationTime": 1791864410970.961,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42744,
+                    "peakWorkingSetSize": 42748,
+                    "privateBytes": 12040
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.881695,
+                    "percentCPUUsage": 1.3042183156002425,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 3568,
+                  "type": "Utility",
+                  "creationTime": 1791864412490.284,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 91984,
+                    "peakWorkingSetSize": 142948,
+                    "privateBytes": 17052
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 1.634084,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23904,
+                  "type": "Tab",
+                  "creationTime": 1791864424302.839,
+                  "memory": {
+                    "workingSetSize": 317120,
+                    "peakWorkingSetSize": 345664,
+                    "privateBytes": 244080
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "afterEdits": {
+              "rendererHeap": {
+                "backingStorageSize": 9002724,
+                "embedderHeapUsedSize": 95373248,
+                "totalSize": 265588736,
+                "usedSize": 226016512
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.566069,
+                    "percentCPUUsage": 0.24572453054132165,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23924,
+                  "type": "Browser",
+                  "creationTime": 1791864410858.268,
+                  "memory": {
+                    "workingSetSize": 270936,
+                    "peakWorkingSetSize": 437260,
+                    "privateBytes": 251416
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 4.563514,
+                    "percentCPUUsage": 0.3483598757105783,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 8680,
+                  "type": "GPU",
+                  "creationTime": 1791864410962.404,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 219284,
+                    "peakWorkingSetSize": 263840,
+                    "privateBytes": 406044
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.076825,
+                    "percentCPUUsage": 0,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 9388,
+                  "type": "Utility",
+                  "creationTime": 1791864410970.961,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42744,
+                    "peakWorkingSetSize": 42748,
+                    "privateBytes": 12040
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.887361,
+                    "percentCPUUsage": 0.004348351954655576,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 3568,
+                  "type": "Utility",
+                  "creationTime": 1791864412490.284,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 93932,
+                    "peakWorkingSetSize": 142948,
+                    "privateBytes": 17060
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 10.360691,
+                    "percentCPUUsage": 6.697207420388743,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23904,
+                  "type": "Tab",
+                  "creationTime": 1791864424302.839,
+                  "memory": {
+                    "workingSetSize": 578244,
+                    "peakWorkingSetSize": 609552,
+                    "privateBytes": 506944
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            },
+            "after3D": {
+              "rendererHeap": {
+                "backingStorageSize": 13332414,
+                "embedderHeapUsedSize": 132602456,
+                "totalSize": 195985408,
+                "usedSize": 104311824
+              },
+              "electronProcesses": [
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 5.757658,
+                    "percentCPUUsage": 1.0193024266396584,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23924,
+                  "type": "Browser",
+                  "creationTime": 1791864410858.268,
+                  "memory": {
+                    "workingSetSize": 301728,
+                    "peakWorkingSetSize": 437260,
+                    "privateBytes": 280028
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 6.390476,
+                    "percentCPUUsage": 1.5628105156085161,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 8680,
+                  "type": "GPU",
+                  "creationTime": 1791864410962.404,
+                  "serviceName": "GPU",
+                  "memory": {
+                    "workingSetSize": 218892,
+                    "peakWorkingSetSize": 263840,
+                    "privateBytes": 472224
+                  },
+                  "integrityLevel": "low",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.077736,
+                    "percentCPUUsage": 0.0007792832934116738,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 9388,
+                  "type": "Utility",
+                  "creationTime": 1791864410970.961,
+                  "serviceName": "network.mojom.NetworkService",
+                  "name": "Network Service",
+                  "memory": {
+                    "workingSetSize": 42524,
+                    "peakWorkingSetSize": 42748,
+                    "privateBytes": 11752
+                  },
+                  "integrityLevel": "medium",
+                  "sandboxed": false
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 0.893178,
+                    "percentCPUUsage": 0.004975951194515707,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 3568,
+                  "type": "Utility",
+                  "creationTime": 1791864412490.284,
+                  "serviceName": "tracing.mojom.TracingService",
+                  "name": "Tracing Service",
+                  "memory": {
+                    "workingSetSize": 98824,
+                    "peakWorkingSetSize": 142948,
+                    "privateBytes": 17132
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                },
+                {
+                  "cpu": {
+                    "cumulativeCPUUsage": 14.449974,
+                    "percentCPUUsage": 3.4980350427358617,
+                    "idleWakeupsPerSecond": 0
+                  },
+                  "pid": 23904,
+                  "type": "Tab",
+                  "creationTime": 1791864424302.839,
+                  "memory": {
+                    "workingSetSize": 561268,
+                    "peakWorkingSetSize": 609552,
+                    "privateBytes": 483900
+                  },
+                  "integrityLevel": "untrusted",
+                  "sandboxed": true
+                }
+              ]
+            }
+          },
+          "recoveryWrites": [
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 12.300000000046566,
+              "characters": 4000964
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 14.699999999953434,
+              "characters": 4000965
+            },
+            {
+              "key": "squidware.autosave.v1",
+              "durationMs": 10.600000000093132,
+              "characters": 4000964
+            }
+          ],
+          "trace": "maximum-trace.json",
+          "cpuProfile": "maximum.cpuprofile"
+        }
+      ]
+    }
+  }
+}
