@@ -67,11 +67,13 @@ pnpm test
 node --test scripts/desktop.test.cjs
 pnpm build
 pnpm exec electron . --smoke-test
+pnpm test:editor
 ```
 
 - Vitest covers formation geometry, transforms, project validation, timeline sampling, timing conversion, roster import, coordinate export, and transition analysis.
 - The desktop tests exercise the actual main-process and preload source with controlled dialogs and temporary files, including atomic saves, canceled dialogs, invalid requests, and renderer isolation.
 - The native smoke test launches Electron, checks that the renderer and preload bridge load with Node access disabled, and exits. It requires a graphical desktop; the [CI workflow](.github/workflows/ci.yml) shows the sandboxed Xvfb setup used on Linux.
+- The editor workflow check runs the production renderer and actual desktop file handlers in an isolated profile with controlled dialogs. It checks boundary imports, numeric validation, undo/redo, selection, formations, playback, saves, reopening, and CSV/SVG export. Build first; artifacts go to `.qa/editor/`.
 
 The [initial verification record](docs/VERIFICATION.md) records the checks completed for this release and their limits. Automated checks do not replace interactive review of drag selection, 3D graphics, audio devices, or printed output. See the [user guide](docs/USER_GUIDE.md) for a practical acceptance walkthrough.
 
@@ -112,7 +114,8 @@ Coordinates use yards: `x = 0` at the left goal line and `y = 0` at the back sid
 
 | Path | Responsibility |
 | --- | --- |
-| `src/App.tsx` | Production workspace, playback, editing, import/export |
+| `src/App.tsx` | Editor store initialization and provider |
+| `src/editor/` | Selector subscriptions, typed commands, workspace/dialog components, playback and file controllers |
 | `src/domain.ts` | Pure drill geometry, timeline, validation, and data exchange |
 | `src/components/Field2D.tsx` | Interactive field and reusable SVG drawing |
 | `src/components/Stage3D.tsx` | Three.js scene and camera controls |
@@ -130,3 +133,11 @@ The editor supports up to 500 performers and 128 sets, straight travel between s
 Audio attachments last for the current session and must be reattached after reopening. There is no proprietary Pyware import/export, curved individual travel paths, performer assignment optimization, props editor, video export, multiplayer editing, or cloud synchronization in this release. The current roadmap is explicit about these gaps: [ROADMAP.md](ROADMAP.md).
 
 Squidware is not affiliated with or endorsed by Pyware or its owners.
+
+## License and contributions
+
+Squidware is licensed under the [MIT License](LICENSE), copyright © 2026 Squidware contributors. You may use, modify, and redistribute it, including commercially, while preserving the copyright and license notice. Contributions submitted for inclusion in Squidware are provided under the same MIT license; preserve existing attribution and identify any third-party code or assets you add.
+
+Dependencies retain their own licenses, recorded in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Desktop packages include the Squidware license, runtime dependency notices, and Electron's full Chromium notices in `resources/legal/` (`Contents/Resources/legal/` on macOS). Keep those files when redistributing a package.
+
+`private: true` in `package.json` prevents accidental publication to the npm registry; source licensing and desktop distribution use MIT regardless of that flag. See the [licensing decision and notice update guide](docs/licensing.md) for distribution details.
