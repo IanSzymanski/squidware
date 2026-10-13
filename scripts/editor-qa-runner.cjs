@@ -119,16 +119,16 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(`${numberSelector('Tempo · BPM')}.value`), '400');
     await evaluate(`${numberSelector('Counts')}.focus(); ${numberSelector('Counts')}.blur();`);
     menuAction('Save As…');
-    let saved = await savedProject(p => p.sets[1].counts === 1024);
+    let saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(saved.sections.length, 64);
     assert.equal(saved.sets[1].notes.length, 10000);
-    assert.equal(saved.sets[1].tempo, 400);
+    assert.equal(saved.moves[0].tempo, 400);
     pass('boundary file opens and saves without clamping untouched values');
 
     await editNumber('Counts', 1);
     await editNumber('Tempo · BPM', 20);
     menuAction('Save');
-    saved = await savedProject(p => p.sets[1].counts === 1 && p.sets[1].tempo === 20);
+    saved = await savedProject(p => p.moves[0].counts === 1 && p.moves[0].tempo === 20);
     pass('minimum valid count and tempo commit through commands and save');
 
     const bytesBeforeInvalid = await fs.readFile(savedFile, 'utf8');
@@ -157,7 +157,7 @@ app.whenReady().then(async () => {
     await clickSelector('.modal [aria-label="Close dialog"]');
     await clickText('Design');
     menuAction('Save');
-    saved = await savedProject(p => p.sets[1].counts === 1024);
+    saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(saved.performers.length, 64);
     pass('invalid cast amounts keep the dialog open and cannot add the previous amount');
 
@@ -166,21 +166,24 @@ app.whenReady().then(async () => {
     pass('native selection updates the field');
 
     menuAction('Save');
-    saved = await savedProject(p => p.sets[1].counts === 1024);
+    saved = await savedProject(p => p.moves[0].counts === 1024);
     const beforeFormation = JSON.stringify(saved.sets[1].positions);
     await editNumber('Width · yd', 0);
     await clickText('Apply formation');
     await keyOnNumber('Width · yd', 'Escape');
     menuAction('Save');
     await pause(150);
-    saved = await savedProject(p => p.sets[1].counts === 1024);
+    saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(JSON.stringify(saved.sets[1].positions), beforeFormation);
     pass('an invalid formation draft cannot apply the previous dimensions');
     await clickText('Apply formation');
     menuAction('Save');
     saved = await savedProject(p => JSON.stringify(p.sets[1].positions) !== beforeFormation);
     assert.equal(saved.performers.length, 64);
-    assert.equal(saved.sets[0].counts, 0);
+    assert.equal(saved.schemaVersion, 2);
+    assert.equal(saved.sets[0].counts, undefined);
+    assert.equal(saved.moves[0].fromSetId, saved.sets[0].id);
+    assert.equal(saved.moves[0].toSetId, saved.sets[1].id);
     pass('formation application mutates only the intended set and keeps a valid roster');
 
     const initialCount = await evaluate("Number(document.querySelector('.count-display strong').textContent)");
@@ -265,7 +268,7 @@ app.whenReady().then(async () => {
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseReleased', x: previewDot.x + 40, y: previewDot.y, button: 'left', clickCount: 1 });
     menuAction('Save');
     await pause(150);
-    saved = await savedProject(p => p.sets[1].counts === 1024);
+    saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(JSON.stringify(saved.sets[1].positions), beforePreview);
     await capture('field-preview.png');
     await clickSelector('.field-preview-banner button');
@@ -285,7 +288,8 @@ app.whenReady().then(async () => {
     const single = structuredClone(saved);
     single.title = 'Single set coordinate QA';
     single.field.preset = 'high-school';
-    single.sets = [{ ...single.sets[0], counts: 0 }];
+    single.sets = [single.sets[0]];
+    single.moves = [];
     single.performers[0].name = 'Avery';
     single.sets[0].positions[person.id] = { x: 40, y: 160 / 9 };
     single.sets[0].positions[single.performers[1].id] = { x: 40, y: 160 / 9 };

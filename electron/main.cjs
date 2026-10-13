@@ -6,6 +6,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 
+const { parseProjectV2 } = require('./project-codec.cjs');
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
@@ -66,14 +67,7 @@ function assertText(content, limit) {
 
 function validateProject(content) {
   assertText(content, MAX_PROJECT_BYTES);
-  let project;
-  try { project = JSON.parse(content); } catch { throw new Error('This file does not contain valid JSON.'); }
-  if (!project || typeof project !== 'object' || Array.isArray(project)
-      || project.schemaVersion !== 1 || typeof project.title !== 'string'
-      || !Array.isArray(project.performers) || !Array.isArray(project.sets)
-      || !Array.isArray(project.sections) || project.sets.length < 1) {
-    throw new Error('This is not a supported Squidware project.');
-  }
+  parseProjectV2(content);
 }
 
 function safeFilename(name, extension) {

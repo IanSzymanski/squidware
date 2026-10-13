@@ -3,7 +3,7 @@ import type { FormationKind, Project } from './types';
 import {
   analyzeTransition, clampPoint, coordinateDescription, countToSeconds, createBlankProject, createDemoProject,
   exportCoordinatesCsv, fitFormationToField, generateFormation, importRosterCsv, parseProject, sampleProject, secondsToCount,
-  PROJECT_LIMITS, serializeProject, setStartCount, totalCounts, transformPositions, validateProject,
+  PROJECT_LIMITS, setTiming, serializeProject, setStartCount, totalCounts, transformPositions, validateProject,
 } from './domain';
 
 function twoPerformerProject(): Project {
@@ -13,7 +13,8 @@ function twoPerformerProject(): Project {
     { id: 'b', label: 'B1', name: 'Ben', sectionId: 'brass' },
   ];
   project.sets[0].positions = { a: { x: 10, y: 10 }, b: { x: 30, y: 10 } };
-  project.sets.push({ id: 'destination', name: 'Arrival', counts: 16, tempo: 120, notes: '', transition: 'linear', positions: { a: { x: 30, y: 10 }, b: { x: 10, y: 10 } } });
+  project.sets.push({ id: 'destination', name: 'Arrival', notes: '', positions: { a: { x: 30, y: 10 }, b: { x: 10, y: 10 } } });
+  project.moves.push({ id: 'move', fromSetId: project.sets[0].id, toSetId: 'destination', counts: 16, tempo: 120, transition: 'linear', paths: {} });
   return project;
 }
 
@@ -35,7 +36,7 @@ describe('project templates and storage', () => {
     const project = createDemoProject();
     expect(project.performers).toHaveLength(64);
     expect(project.sections.map(section => project.performers.filter(performer => performer.sectionId === section.id).length)).toEqual([24, 24, 8, 8]);
-    expect(project.sets.map(set => set.counts)).toEqual([0, 32, 32, 24, 32, 32]);
+    expect(project.sets.map((_, index) => setTiming(project, index).counts)).toEqual([0, 32, 32, 24, 32, 32]);
     expect(totalCounts(project)).toBe(152);
     expect(validateProject(project)).toEqual(project);
     expect(parseProject(serializeProject(project))).toEqual(project);
@@ -67,7 +68,8 @@ describe('project templates and storage', () => {
     project.performers = Array.from({ length: PROJECT_LIMITS.performers + 1 }, (_, index) => ({ ...project.performers[0], id: `performer-${index}` }));
     expect(() => validateProject(project)).toThrow(/performers must contain 0 to 500/);
     project.performers = [];
-    project.sets = Array.from({ length: PROJECT_LIMITS.sets + 1 }, (_, index) => ({ ...project.sets[0], id: `set-${index}`, counts: index === 0 ? 0 : 32, positions: {} }));
+    project.sets = Array.from({ length: PROJECT_LIMITS.sets + 1 }, (_, index) => ({ ...project.sets[0], id: `set-${index}`, positions: {} }));
+    project.moves = project.sets.slice(1).map((set, index) => ({ id: 'move-' + index, fromSetId: project.sets[index].id, toSetId: set.id, counts: 32, tempo: 120, transition: 'linear', paths: {} }));
     expect(() => validateProject(project)).toThrow(/sets must contain 1 to 128/);
   });
 
@@ -79,7 +81,7 @@ describe('project templates and storage', () => {
   });
 
   it.each([
-    ['unsupported schema', (p: Project) => ({ ...p, schemaVersion: 2 }), /schemaVersion/],
+    ['unsupported schema', (p: Project) => ({ ...p, schemaVersion: 3 }), /schema version 3/],
     ['duplicate performer IDs', (p: Project) => ({ ...p, performers: [p.performers[0], p.performers[0]] }), /duplicate ID/],
     ['duplicate set IDs', (p: Project) => ({ ...p, sets: [p.sets[0], { ...p.sets[1], id: p.sets[0].id }] }), /duplicate ID/],
     ['reserved IDs', (p: Project) => ({ ...p, id: '__proto__' }), /reserved key/],
@@ -107,15 +109,14 @@ describe('project templates and storage', () => {
 
   it('enforces zero opening counts, positive subsequent counts, and nonzero tempo', () => {
     const project = twoPerformerProject();
-    project.sets[0].counts = 8;
-    expect(() => validateProject(project)).toThrow(/sets\[0\].counts/);
-    project.sets[0].counts = 0;
-    project.sets[1].counts = 0;
-    expect(() => validateProject(project)).toThrow(/sets\[1\].counts/);
-    project.sets[1].counts = 16.5;
+    const invalidOpening = { ...project, sets: [{ ...project.sets[0], counts: 8 }, project.sets[1]] };
+    expect(() => validateProject(invalidOpening)).toThrow(/sets\[0\].counts/);
+    project.moves[0].counts = 0;
+    expect(() => validateProject(project)).toThrow(/moves\[0\].counts/);
+    project.moves[0].counts = 16.5;
     expect(() => validateProject(project)).toThrow(/integer/);
-    project.sets[1].counts = 16;
-    project.sets[1].tempo = 0;
+    project.moves[0].counts = 16;
+    project.moves[0].tempo = 0;
     expect(() => validateProject(project)).toThrow(/tempo/);
   });
 
@@ -141,7 +142,8 @@ describe('project templates and storage', () => {
     const project = createBlankProject();
     project.performers = Array.from({ length: PROJECT_LIMITS.performers }, (_, index) => ({ id: `p-${index}`, label: `P${index}`, name: 'Performer', sectionId: 'brass' }));
     const positions = Object.fromEntries(project.performers.map((performer, index) => [performer.id, { x: index % 100, y: Math.floor(index / 100) * 10 }]));
-    project.sets = Array.from({ length: PROJECT_LIMITS.sets }, (_, index) => ({ ...project.sets[0], id: `set-${index}`, counts: index === 0 ? 0 : 32, positions }));
+    project.sets = Array.from({ length: PROJECT_LIMITS.sets }, (_, index) => ({ ...project.sets[0], id: `set-${index}`, positions }));
+    project.moves = project.sets.slice(1).map((set, index) => ({ id: 'move-' + index, fromSetId: project.sets[index].id, toSetId: set.id, counts: 32, tempo: 120, transition: 'linear', paths: {} }));
     const content = serializeProject(project);
     expect(content.split('\n')).toHaveLength(2);
     expect(new TextEncoder().encode(content).byteLength).toBeLessThan(PROJECT_LIMITS.projectBytes);
@@ -152,7 +154,8 @@ describe('project templates and storage', () => {
     const project = createBlankProject();
     project.performers = Array.from({ length: PROJECT_LIMITS.performers }, (_, index) => ({ id: `performer-${String(index).padStart(118, '0')}`, label: `P${index}`, name: '', sectionId: 'brass' }));
     const positions = Object.fromEntries(project.performers.map(performer => [performer.id, { x: 49.99999999999999, y: 26.666666666666668 }]));
-    project.sets = Array.from({ length: PROJECT_LIMITS.sets }, (_, index) => ({ ...project.sets[0], id: `set-${index}`, counts: index === 0 ? 0 : 32, notes: 'x'.repeat(10_000), positions }));
+    project.sets = Array.from({ length: PROJECT_LIMITS.sets }, (_, index) => ({ ...project.sets[0], id: `set-${index}`, notes: 'x'.repeat(10_000), positions }));
+    project.moves = project.sets.slice(1).map((set, index) => ({ id: 'move-' + index, fromSetId: project.sets[index].id, toSetId: set.id, counts: 32, tempo: 120, transition: 'linear', paths: {} }));
     expect(() => serializeProject(project)).toThrow(/too large/);
   });
 });
@@ -171,7 +174,7 @@ describe('count timeline and tempo map', () => {
 
   it('uses smoothstep for eased position while preserving count progress', () => {
     const project = twoPerformerProject();
-    project.sets[1].transition = 'ease';
+    project.moves[0].transition = 'ease';
     const sample = sampleProject(project, 4);
     expect(sample.progress).toBe(0.25);
     expect(sample.positions.a.x).toBeCloseTo(13.125);
@@ -180,8 +183,9 @@ describe('count timeline and tempo map', () => {
 
   it('converts across changing destination tempos and round-trips fractional counts', () => {
     const project = twoPerformerProject();
-    project.sets[0].tempo = 60; // The opening picture has no elapsed duration.
-    project.sets.push({ ...project.sets[1], id: 'third', counts: 8, tempo: 60 });
+    project.openingTiming.tempo = 60; // The opening picture has no elapsed duration.
+    project.sets.push({ ...project.sets[1], id: 'third' });
+    project.moves.push({ ...project.moves[0], id: 'second-move', fromSetId: 'destination', toSetId: 'third', counts: 8, tempo: 60 });
     expect(countToSeconds(project, 16)).toBe(8);
     expect(countToSeconds(project, 20)).toBe(12);
     expect(countToSeconds(project, 24)).toBe(16);
@@ -350,7 +354,7 @@ describe('continuous transition analysis', () => {
   it('maps eased crossing positions back to the correct count', () => {
     const project = twoPerformerProject();
     project.sets[1].positions.a.x = 50;
-    project.sets[1].transition = 'ease';
+    project.moves[0].transition = 'ease';
     const collision = analyzeTransition(project, 1).find(issue => issue.type === 'collision')!;
     const sample = sampleProject(project, collision.atCount!);
     expect(sample.positions.a.x).toBeCloseTo(sample.positions.b.x, 7);
@@ -378,10 +382,10 @@ describe('continuous transition analysis', () => {
   it('flags a large step size, including peak speed under easing', () => {
     const project = twoPerformerProject();
     expect(analyzeTransition(project, 1).filter(issue => issue.type === 'stride')).toEqual([]);
-    project.sets[1].transition = 'ease';
+    project.moves[0].transition = 'ease';
     expect(analyzeTransition(project, 1).filter(issue => issue.type === 'stride')).toHaveLength(2);
-    project.sets[1].transition = 'linear';
-    project.sets[1].counts = 8;
+    project.moves[0].transition = 'linear';
+    project.moves[0].counts = 8;
     expect(analyzeTransition(project, 1).filter(issue => issue.type === 'stride').every(issue => issue.severity === 'danger')).toBe(true);
   });
 });

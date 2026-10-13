@@ -1,6 +1,6 @@
 # Editor architecture
 
-`App.tsx` creates one editor store and provides it to the extracted shell. No editor state is global, so another editor can use its own store in a test or future window. The `.squid` schema remains version 1. The domain engine has no React, browser storage, or desktop bridge dependencies.
+`App.tsx` creates one editor store and provides it to the extracted shell. No editor state is global, so another editor can use its own store in a test or future window. The canonical `.squid` schema is version 2, with pictures and adjacent moves stored separately; v1 imports migrate through the shared codec. The domain engine has no React, browser storage, or desktop bridge dependencies. See [the schema contract](schema-v2.md) for command identity and timing semantics.
 
 ## State and subscriptions
 

@@ -8,3 +8,4 @@ release-final/
 coverage/
 .qa/
 .env*
+electron/project-codec.cjs

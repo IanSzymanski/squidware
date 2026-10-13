@@ -12,7 +12,8 @@ const { pathToFileURL } = require('node:url');
 const root = path.resolve(__dirname, '..');
 const mainSource = syncFs.readFileSync(path.join(root, 'electron', 'main.cjs'), 'utf8');
 const preloadSource = syncFs.readFileSync(path.join(root, 'electron', 'preload.cjs'), 'utf8');
-const project = JSON.stringify({ schemaVersion: 1, title: 'Test show', performers: [], sections: [], sets: [{}] });
+const project = syncFs.readFileSync(path.join(root, 'src/fixtures/schema-v2.squid'), 'utf8');
+const legacyProject = syncFs.readFileSync(path.join(root, 'src/fixtures/schema-v1.squid'), 'utf8');
 
 // Run the actual main-process handlers with controlled dialogs and real files.
 // No Electron binary, GUI, remote server, or production user profile is needed.
@@ -73,7 +74,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
   const context = {
     require: name => name === 'electron' ? electron
       : name === 'node:fs/promises' && failRename ? { ...fs, rename: async () => { throw new Error('Simulated disk failure'); } }
-      : require(name),
+      : name === './project-codec.cjs' ? require(path.join(root, 'electron/project-codec.cjs')) : require(name),
     __dirname: path.join(root, 'electron'),
     process: { argv: [], env: development ? { ELECTRON_RENDERER_URL: 'http://127.0.0.1:5173/' } : {}, platform: 'win32' },
     Buffer, URL, console, setTimeout, clearTimeout,
@@ -155,6 +156,35 @@ test('JSON imports require a new Squidware destination instead of overwriting th
   assert.equal(await h.invoke('save-project', project, 'Show'), null);
   assert.equal(h.saveDialogCount(), 1);
   assert.equal(await fs.readFile(filename, 'utf8'), project);
+});
+
+test('native open accepts v1 and v2, and rejects dangling or future files without changing the save destination', async t => {
+  const h = await harness(t);
+  const filename = path.join(h.directory, 'legacy.squid');
+  await fs.writeFile(filename, '\uFEFF' + legacyProject);
+  h.dialog({ canceled: false, filePaths: [filename] });
+  assert.equal((await h.invoke('open-project')).content, '\uFEFF' + legacyProject);
+  const bad = path.join(h.directory, 'bad.squid');
+  const dangling = JSON.parse(project);
+  dangling.moves[0].toSetId = 'missing';
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 3 }), /Update Squidware/]]) {
+    await fs.writeFile(bad, content);
+    h.dialog({ canceled: false, filePaths: [bad] });
+    await assert.rejects(h.invoke('open-project'), error);
+    assert.equal(await h.invoke('save-project', project, 'Show'), filename);
+    assert.equal(await fs.readFile(bad, 'utf8'), content);
+  }
+  assert.equal(h.saveDialogCount(), 0);
+  assert.equal(JSON.parse(await fs.readFile(filename, 'utf8')).schemaVersion, 2);
+});
+
+test('native save rejects unsupported path geometry before any dialog or file write', async t => {
+  const h = await harness(t);
+  const data = JSON.parse(project);
+  data.moves[0].paths.a = { segments: [{ id: 'curve', kind: 'curve', startCount: 0, endCount: 16 }] };
+  await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Show'), /Update Squidware/);
+  assert.equal(h.saveDialogCount(), 0);
+  assert.deepEqual(await fs.readdir(h.directory), []);
 });
 
 test('canceled file and PDF dialogs return null', async t => {

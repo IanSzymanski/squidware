@@ -1,3 +1,4 @@
+import { reconnectSets } from './editor/projectEdits';
 import { describe, expect, it } from 'vitest';
 import { createDemoProject, PROJECT_LIMITS, validateProject, validateProjectEdit } from './domain';
 import type { Project } from './types';
@@ -12,7 +13,7 @@ describe('validation of structurally shared editor edits', () => {
     expect(next.sets[3]).toBe(previous.sets[3]);
   });
   it.each([
-    ['late count', (p: Project) => ({ ...p, sets: p.sets.map((s, i) => i === 5 ? { ...s, counts: 0 } : s) })],
+    ['late count', (p: Project) => ({ ...p, moves: p.moves.map((move, i) => i === 4 ? { ...move, counts: 0 } : move) })],
     ['late coordinate', (p: Project) => ({ ...p, sets: p.sets.map((s, i) => i === 5 ? { ...s, positions: { ...s.positions, [p.performers[0].id]: { x: -1, y: 1 } } } : s) })],
     ['duplicate set ID', (p: Project) => ({ ...p, sets: p.sets.map((s, i) => i === 5 ? { ...s, id: p.sets[2].id } : s) })],
     ['section reference', (p: Project) => ({ ...p, sections: p.sections.slice(1) })],
@@ -35,7 +36,7 @@ describe('validation of structurally shared editor edits', () => {
       previous.sets.slice(0, 3),
       [previous.sets[0], previous.sets[2], previous.sets[1], ...previous.sets.slice(3)],
     ]) {
-      const next = { ...previous, sets };
+      const next = reconnectSets(previous, sets);
       expect(() => validateProjectEdit(previous, next)).not.toThrow();
       expect(validateProject(next)).toEqual(next);
     }

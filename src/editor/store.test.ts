@@ -1,3 +1,4 @@
+import { setTiming } from '../domain';
 import { describe, expect, it, vi } from 'vitest';
 import { createBlankProject, createDemoProject, exportCoordinatesCsv, parseProject, PROJECT_LIMITS, serializeProject, setStartCount } from '../domain';
 import { commandMetadata, commandRegistry } from './commands';
@@ -151,12 +152,12 @@ describe('editor store and command registry', () => {
     store.dispatch('set.add', { index: 0 }); store.dispatch('set.update', { index: 1, update: { name: 'Second' } });
     store.dispatch('set.reorder', { index: 1, direction: -1 });
     expect(store.getState().project.present.sets[0].name).toBe('Second');
-    expect(store.getState().project.present.sets[0].counts).toBe(0); expect(store.getState().project.present.sets[1].counts).toBe(32);
+    expect(setTiming(store.getState().project.present, 0).counts).toBe(0); expect(store.getState().project.present.moves[0].counts).toBe(32);
     expect(store.getState().project.present.performers[0].name).toBe('Alice');
     store.dispatch('performers.remove', { ids: [person.id] });
     expect(store.getState().project.present.sets.every(set => !(person.id in set.positions))).toBe(true);
     store.dispatch('history.undo'); expect(store.getState().project.present.performers).toHaveLength(1);
-    store.dispatch('set.remove', { index: 0 }); expect(store.getState().project.present.sets[0].counts).toBe(0);
+    store.dispatch('set.remove', { index: 0 }); expect(setTiming(store.getState().project.present, 0).counts).toBe(0);
     expect(store.dispatch('set.remove', { index: 0 })).toBe(false);
   });
 
@@ -178,7 +179,7 @@ describe('editor store and command registry', () => {
     await store.dispatch('file.save');
     store.dispatch('project.update', { title: 'Later edit' }); store.dispatch('set.select', { index: 4 });
     await store.dispatch('file.open');
-    const state = store.getState(); expect(state.project.present.title).toBe('Saved show'); expect(state.project.present.schemaVersion).toBe(1);
+    const state = store.getState(); expect(state.project.present.title).toBe('Saved show'); expect(state.project.present.schemaVersion).toBe(2);
     expect(state.project.past).toHaveLength(0); expect(state.selection.activeIndex).toBe(0); expect(state.playback.count).toBe(0);
     expect(state.ui.projectEpoch).toBe(1); expect(exportCoordinatesCsv(state.project.present).includes(state.project.present.sets[0].name)).toBe(true);
     store.dispatch('file.export'); expect(store.getState().ui.dialog).toBe('export');
@@ -211,7 +212,7 @@ describe('editor store and command registry', () => {
     const getItem = vi.fn(() => serializeProject(project));
     expect(recoverProject({ getItem }).project).toEqual(project); expect(getItem).toHaveBeenCalledWith(AUTOSAVE_KEY);
     const denied = recoverProject(() => { throw new Error('Storage denied'); });
-    expect(denied.project.schemaVersion).toBe(1); expect(denied.recoveryError).toBe('Storage denied');
+    expect(denied.project.schemaVersion).toBe(2); expect(denied.recoveryError).toBe('Storage denied');
     const corrupt = recoverProject({ getItem: () => '{broken' }); expect(corrupt.recoveryError).toBeDefined();
   });
 });

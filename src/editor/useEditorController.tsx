@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import type { ChangeEvent } from 'react';
 
-import type { DrillSet, Performer, Point, Project } from '../types';
+import type { SetPropertyUpdate, Performer, Point, Project } from '../types';
 import { analyzeTransition, exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, totalCounts, uid, PROJECT_LIMITS } from '../domain';
 import { FieldDrawing } from '../components/Field2D';
 
@@ -107,7 +107,7 @@ export function useEditorController() {
   function selectSet(next: number) { dispatch('set.select', { index: next }); }
   function undoDrill() { dispatch('history.undo'); }
   function redoDrill() { dispatch('history.redo'); }
-  function updateSet(update: Partial<Omit<DrillSet, 'id' | 'positions'>>) { dispatch('set.update', { index, update }); }
+  function updateSet(update: SetPropertyUpdate) { dispatch('set.update', { index, update }); }
   function movePerformers(updates: Record<string, Point>) { dispatch('positions.move', { index, updates }); }
   function transform(options: { dx?: number; dy?: number; rotation?: number; scale?: number }) { dispatch('selection.transform', { index, ids: selectedIds, options }); }
   function addSet() {
