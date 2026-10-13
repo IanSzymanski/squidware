@@ -10,8 +10,8 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 app.on('window-all-closed', () => {});
 
 // Runs before the production React bundle using CDP, without editing the app.
-function installInstrumentation(fixtureText) {
-  localStorage.setItem('squidware.autosave.v1', fixtureText);
+function installInstrumentation(fixtureText, legacyRecovery) {
+  if (legacyRecovery) localStorage.setItem('squidware.autosave.v1', fixtureText);
   const nativeRaf = window.requestAnimationFrame.bind(window);
   const state = window.__squidwarePerformance = {
     commits: 0, renders: {}, lastCommitAt: 0, appRafCallbacks: 0, glDrawCalls: 0, storageWrites: [], errors: [],
@@ -42,6 +42,11 @@ function installInstrumentation(fixtureText) {
       state.commits++; state.lastCommitAt = performance.now();
       const visit = fiber => {
         if (!fiber) return;
+        const store = fiber.memoizedProps?.value;
+        if (!legacyRecovery && store?.dispatch && store?.getState && !state.fixtureLoaded) {
+          state.fixtureLoaded = true;
+          queueMicrotask(() => store.dispatch('project.load', { project: JSON.parse(fixtureText) }));
+        }
         // PerformedWork is set on components rendered during this commit.
         // Production names are minified; totals and raw names are preserved.
         if ((fiber.flags & 1) && [0, 1, 11, 14, 15].includes(fiber.tag)) {
@@ -128,7 +133,7 @@ async function profileFixture(manifest, fixture) {
   });
   await command('Page.enable');
   const fixtureText = await fs.readFile(fixture.filename, 'utf8');
-  await command('Page.addScriptToEvaluateOnNewDocument', { source: `(${installInstrumentation.toString()})(${JSON.stringify(fixtureText)});` });
+  await command('Page.addScriptToEvaluateOnNewDocument', { source: `(${installInstrumentation.toString()})(${JSON.stringify(fixtureText)}, ${!!manifest.legacyRecovery});` });
   const started = Date.now();
   console.log(`${fixture.name}: loading production URL.`);
   await window.loadURL(expectedUrl);

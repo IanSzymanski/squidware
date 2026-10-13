@@ -40,7 +40,19 @@ export type FormationKind = 'line' | 'arc' | 'circle' | 'block' | 'curve';
 export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number }
 export interface TransitionIssue { type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number }
 export interface TimelineSample { positions: Record<string, Point>; setIndex: number; progress: number; localCount: number }
-export interface DesktopBridge {
+export interface RecoveryVersion {
+  id: string; createdAt: number; revision: number; source: 'automatic' | 'legacy';
+  projectId: string; title: string; performers: number; sets: number; bytes: number;
+}
+export interface RecoveryList { versions: RecoveryVersion[]; warnings: string[] }
+export interface RecoveryBridge {
+  beginRecovery: () => Promise<RecoveryList & { session: string }>;
+  listRecoveries: (session: string) => Promise<RecoveryList>;
+  readRecovery: (session: string, id: string) => Promise<{ project: Project; version: RecoveryVersion }>;
+  writeRecovery: (session: string, sequence: number, revision: number, project: Project) => Promise<{ status: 'saved' | 'stale'; version?: RecoveryVersion }>;
+  migrateRecovery: (session: string, content: string) => Promise<{ status: 'migrated' | 'unreadable'; warning?: string }>;
+}
+export interface DesktopBridge extends RecoveryBridge {
   platform: string;
   resetProject: () => void;
   openProject: () => Promise<{ content: string; path: string } | null>;

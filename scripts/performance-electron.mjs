@@ -19,6 +19,7 @@ const manifest = { schemaVersion: 1, generatedAt: new Date().toISOString(), kind
   label: option('label', 'working-tree'), build, buildSha256: await fingerprint(build), hardware: hardware(),
   runnerSha256: createHash('sha256').update(await readFile(path.join(root, 'scripts', 'performance-electron-runner.cjs'))).digest('hex'),
   preloadSha256: createHash('sha256').update(await readFile(path.join(root, 'electron', 'preload.cjs'))).digest('hex'),
+  legacyRecovery: process.argv.includes('--legacy-recovery'),
   repetitions: integerOption('repetitions', 50), warmup: integerOption('warmup', 5, 0), frameWindowMs: integerOption('frame-window-ms', 2000),
   profile: path.join(output, 'isolated-profile'), output, fixtures: [] };
 for (const name of names) {

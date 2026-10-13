@@ -7,6 +7,7 @@ const { randomUUID } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 
 const { parseProjectV2 } = require('./project-codec.cjs');
+const { createRecoveryService } = require('./recovery-service.cjs');
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
@@ -23,6 +24,7 @@ let dirty = false;
 let closingDialog = false;
 let discardOnClose = false;
 let fileOperationActive = false;
+let recoveryService;
 
 function developmentUrl() {
   if (app.isPackaged || !process.env.ELECTRON_RENDERER_URL) return null;
@@ -134,6 +136,16 @@ function handleFileRequest(channel, handler) {
 }
 
 function registerIpc() {
+  const recovery = () => recoveryService ||= createRecoveryService(path.join(app.getPath('userData'), 'recovery'));
+  for (const [channel, action] of [
+    ['begin-recovery', () => recovery().begin()],
+    ['list-recoveries', token => recovery().list(token)],
+    ['read-recovery', (token, id) => recovery().read(token, id)],
+    ['write-recovery', (token, sequence, revision, project) => recovery().write(token, sequence, revision, project)],
+    ['migrate-recovery', (token, content) => recovery().migrate(token, content)],
+  ]) {
+    ipcMain.handle(`squidware:${channel}`, async (event, ...args) => { assertSender(event); return action(...args); });
+  }
   handleFileRequest('squidware:open-project', async () => {
     const result = await dialog.showOpenDialog(window, {
       title: 'Open Squidware project',
@@ -354,6 +366,18 @@ function createWindow() {
             || state.fatal || state.performers < 1 || state.sets < 1 || state.node !== 'undefined') {
           throw new Error(`Unexpected renderer state: ${JSON.stringify(state)}`);
         }
+        // Exercise the real worker and packaged module paths on every platform.
+        const smokeRecovery = createRecoveryService(path.join(app.getPath('userData'), 'recovery-smoke'));
+        const recoverySession = await smokeRecovery.begin();
+        const recoveryProject = { schemaVersion: 2, id: 'desktop-smoke', title: 'Desktop recovery smoke', ensemble: '',
+          field: { width: 100, height: 160 / 3, preset: 'college' }, sections: [{ id: 'section', name: 'Section', color: '#abcdef' }],
+          performers: [], sets: [{ id: 'opening', name: 'Opening', notes: '', positions: {} }], moves: [],
+          openingTiming: { tempo: 120, transition: 'linear' }, audioOffsetSeconds: 0 };
+        const copy = await smokeRecovery.write(recoverySession.session, 1, 0, recoveryProject);
+        const recovered = await smokeRecovery.read(recoverySession.session, copy.version.id);
+        if (recovered.project.title !== recoveryProject.title) throw new Error('Desktop recovery worker failed its round trip.');
+        await smokeRecovery.close();
+        state.recoveryWorker = true;
         if (smokeArtifacts) {
           await firstPaint;
           const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });

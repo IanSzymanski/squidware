@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, session } = require('electron');
+const { app, BrowserWindow, session, ipcMain } = require('electron');
 process.on('uncaughtException', error => { console.error(error); app.exit(1); });
 process.on('unhandledRejection', error => { console.error(error); app.exit(1); });
 const fs = require('node:fs/promises');
@@ -12,9 +12,22 @@ const profile = path.join(manifest.output, `profile-${process.pid}`);
 require('node:fs').mkdirSync(profile, { recursive: true });
 app.setPath('userData', profile);
 app.on('window-all-closed', () => {});
+// This component harness uses the production desktop recovery backend. Full
+// main/preload trust enforcement is separately covered by desktop/editor QA.
+const recovery = require(path.join(manifest.root, 'electron/recovery-service.cjs')).createRecoveryService(path.join(profile, 'recovery'));
+const appUrl = pathToFileURL(path.join(manifest.build, 'index.html')).href;
+for (const [channel, action] of [
+  ['begin-recovery', () => recovery.begin()], ['list-recoveries', token => recovery.list(token)],
+  ['read-recovery', (token, id) => recovery.read(token, id)],
+  ['write-recovery', (token, sequence, revision, project) => recovery.write(token, sequence, revision, project)],
+  ['migrate-recovery', (token, content) => recovery.migrate(token, content)],
+]) ipcMain.handle(`squidware:${channel}`, async (event, ...args) => {
+  if (event.senderFrame !== event.sender.mainFrame || event.senderFrame.url !== appUrl) throw new Error('Untrusted QA frame.');
+  return action(...args);
+});
 
-function instrument(content) {
-  localStorage.setItem('squidware.autosave.v1', content);
+function instrument(content, baseline) {
+  if (baseline) localStorage.setItem('squidware.autosave.v1', content);
   const state = window.__stageQA = { contexts: 0, lost: 0, raf: 0, draws: 0, created: {}, deleted: {}, instances: [], errors: [], editor: null };
   const seen = new WeakSet();
   const getContext = HTMLCanvasElement.prototype.getContext;
@@ -59,7 +72,10 @@ function instrument(content) {
       const visit = fiber => {
         if (!fiber) return;
         const value = fiber.memoizedProps?.value;
-        if (value?.getState && value?.dispatch) state.editor = value;
+        if (value?.getState && value?.dispatch) {
+          state.editor = value;
+          if (!baseline && !state.fixtureLoaded) { state.fixtureLoaded = true; queueMicrotask(() => value.dispatch('project.load', { project: JSON.parse(content) })); }
+        }
         visit(fiber.child); visit(fiber.sibling);
       };
       visit(root.current);
@@ -69,7 +85,7 @@ function instrument(content) {
 
 async function run(fixture, blockLazy = false) {
   console.log(`${fixture.name}: creating isolated renderer`);
-  const window = new BrowserWindow({ width: 1440, height: 1000, show: false, webPreferences: { offscreen: true, sandbox: true, contextIsolation: true, nodeIntegration: false, preload: path.join(manifest.root, 'electron', 'preload.cjs'), backgroundThrottling: false } });
+  const window = new BrowserWindow({ width: 1440, height: 1000, show: false, webPreferences: { offscreen: true, sandbox: true, contextIsolation: true, nodeIntegration: false, preload: path.join(manifest.root, 'electron/preload.cjs'), backgroundThrottling: false } });
   // Page commands otherwise queue indefinitely before a renderer exists.
   await window.loadURL('about:blank');
   window.webContents.debugger.attach('1.3');
@@ -95,7 +111,7 @@ async function run(fixture, blockLazy = false) {
     await command('Page.enable');
     await command('Network.enable');
     console.log(`${fixture.name}: debugger ready`);
-    await command('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})(${JSON.stringify(fixture.content)})` });
+    await command('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})(${JSON.stringify(fixture.content)}, ${manifest.baseline})` });
     await window.loadURL(pathToFileURL(path.join(manifest.build, 'index.html')).href);
     console.log(`${fixture.name}: production page loaded`);
     await waitFor('!!document.querySelector(".field-performer") && !!window.__stageQA.editor', 'production field');
