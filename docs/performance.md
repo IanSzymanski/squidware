@@ -82,6 +82,34 @@ After 3D, the maximum renderer heap snapshots were 60.0 MiB before and 99.5 MiB 
 
 The raw files are `before-compute.json`, `after-compute.json`, and `before-electron/` / `after-electron/` under `.qa/performance/`. Each Electron directory contains the manifest, successful run status, log, `report.json`, `demo-trace.json`, `maximum-trace.json`, `demo.cpuprofile`, and `maximum.cpuprofile`. Traces are Chromium trace-event JSON; CPU profiles are DevTools-compatible sampling profiles.
 
+## Demand-driven 3D — issue #15
+
+The October 13 local comparison uses the production build at `60c1b477d6316ebdd3c036c078fe3d17c709b077` as the before behavior. The detailed machine, fixture and build fingerprints and lifecycle checks are saved in [stage3d-comparison.json](performance/stage3d-comparison.json). The test ran sequentially in isolated, hidden offscreen 1440×1000 Electron windows with the actual preload, renderer sandbox and context isolation enabled, on an Intel i7-10510U / Intel UHD Graphics development laptop. It does not complete the representative school-laptop acceptance in #3.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Startup JavaScript requested (uncompressed local bytes) | 841,984 | 333,394 |
+| Demo paused 3D, application rAF callbacks / 2 seconds | 119 | 0 |
+| Demo paused 3D, WebGL draw calls / 2 seconds | 2,261 | 0 |
+| Maximum paused 3D, application rAF callbacks / 2 seconds | 120 | 0 |
+| Maximum paused 3D, WebGL draw calls / 2 seconds | 2,280 | 0 |
+
+Startup scripts are captured from actual CDP requests, because file URLs do not expose reliable Resource Timing entries. The after startup requests omit both the Stage3D and Three.js chunks. The 60.4% byte reduction describes locally requested JavaScript, not network compression or measured startup latency. Draw calls and application frame callbacks establish idle rendering activity; they do not measure GPU watts or physical screen presentation.
+
+The renderer keeps its context for section recoloring, field markings, roster addition/removal, empty-roster undo, positions and selection changes. Growing the 64-member roster to 65 expands instance buffers without replacing the field, camera or renderer. Camera presets and orbit damping redraw and settle; playback redraws on count changes and pause settles to zero callbacks and draws. The lightweight choice disables shadows and caps pixel ratio at 1; it survives switching between 2D and 3D during the current editor session. The quality-change windows recorded fewer draw calls per application frame in lightweight mode (12 versus 19), including any settling frames.
+
+For each fixture, five created contexts were released or lost across repeated view switches and injected context loss. Every created instance/geometry buffer was explicitly deleted (262/262 for the demo and 255/255 for maximum). Texture and program deletion calls were also observed; context release frees renderer-internal resources that are not individually deleted by Three.js. Both injected graphics-context loss and a blocked lazy module request returned to a usable 2D editor. Existing desktop file and editor workflows still pass.
+
+To reproduce, preserve the before `dist` folder before building the change, then run:
+
+```powershell
+node scripts/stage3d-qa.mjs --baseline --build=.qa/stage3d/before-build
+pnpm build
+pnpm test:3d
+```
+
+The runner uses the shared deterministic demo and maximum fixtures and a fresh local profile for each run. Raw manifests, reports and screenshots are kept under `.qa/stage3d/before` and `.qa/stage3d/after`. A failed run removes the previous report rather than leaving stale success evidence. The targeted checks cover cold module requests, idle activity, camera motion, roster growth/removal/undo, color and field texture changes, selection/positions, quality, playback/pause, resource disposal and both failure paths.
+
 ## School-laptop acceptance still required
 
 Run this protocol on a school laptop that represents the intended audience, with its hardware and power mode documented. Inspect traces for maximum-project edits, drag, playback, and idle 3D; record median/p95, long tasks, recovery writes, memory, and frame cadence. Use these results to set hardware-qualified budgets for the dependent issues. Keep issue #3 open until those measurements and the resulting budgets are reviewed.
