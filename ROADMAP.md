@@ -4,6 +4,8 @@ Squidware 0.1 is a working desktop foundation for cast-to-chart drill design. It
 
 ## Where work is tracked
 
+The [release plan](docs/RELEASES.md) groups the backlog into v0.5, v0.6, v0.7, v0.8, v0.9, v1.0, v1.1 and v1.2 milestones. Releases publish in order only after their issues are fulfilled and the desktop packages pass verification. [release-plan.json](release-plan.json) records the membership and hard dependencies used by the release coordinator.
+
 [GitHub Issues](https://github.com/IanSzymanski/squidware/issues) is the source of truth for implementation scope, priority, dependencies, estimates and completion. Start with the [combined roadmap and audit tracker (#1)](https://github.com/IanSzymanski/squidware/issues/1) or the [dependency-ordered implementation queue](docs/IMPLEMENTATION_QUEUE.md). Each goal below links to its existing or newly created implementation issue; section numbers are themes, not implementation order.
 
 Each implementation issue has exactly one `priority:P1`, `priority:P2` or `priority:P3` label (reserve `priority:P0` for a verified urgent blocker), matching priority text in its body, an active implementation rank, and an estimated remaining token-effort range. Priorities weigh correctness/reliability, user importance, prerequisites and estimated implementation cost. Token ranges are low-confidence planning estimates, not measured usage or delivery promises. Completed work leaves the active queue.
