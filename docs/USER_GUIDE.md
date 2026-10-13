@@ -20,7 +20,7 @@ The opening set has zero move counts. Every later set stores the timing of the m
 
 The app also saves a recovery copy in its local storage after changes. Recovery is useful after restarting but is not a folder of versioned backups: opening another production replaces the active recovery state. Save named project files before switching productions, and keep backups wherever you normally store rehearsal files.
 
-The project file includes cast, sections, all sets and positions, counts, tempo, easing, notes, field settings, and the audio offset. Audio data and undo history are not included. Undo/redo retains up to 80 recent editing states during the current session; opening a project starts a new history.
+The project file includes cast, sections, all sets and positions, counts, tempo, easing, notes, field settings, and the audio offset. Audio data and undo history are not included. History lists named actions for Undo/Redo. It keeps up to 80 actions or 16 MiB of estimated history, with the latest action always retained even if larger. Older actions may expire, and opening a project starts a new history. Save named files for lasting versions.
 
 Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2; older apps that support only version 1 cannot reopen that saved file. Unsupported newer versions display an update instruction.
 
@@ -206,3 +206,7 @@ This release does not read or write proprietary Pyware projects, attach curved p
 See [the roadmap](../ROADMAP.md) for the intended next areas of work and [the engine contract](domain.md) for the implemented calculations and data schema.
 
 The [verification record](VERIFICATION.md) distinguishes checks completed for the initial release from the broader acceptance checklist above.
+
+## History and field drafts
+
+Open **History** beside Undo/Redo to review named actions and available redo actions. A drag, committed note, performer name, title or color session produces one action. Text and colors apply on blur or Enter; Escape cancels the draft. Notes use Shift+Enter for a new line. Undo/Redo restores the saved-state indicator when returning to or leaving the saved revision. Native text undo remains available while an input has focus. See the [history contract](history.md) for retention and transaction details.

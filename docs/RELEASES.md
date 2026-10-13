@@ -6,7 +6,7 @@ Releases progress in order from v0.5 through v1.2. GitHub milestones own live sc
 
 Versioned project schema and migration; named undo; asynchronous recovery; accurate save status; accessible core interactions and preferences; repeatable regression coverage.
 
-7/17 implementation issues completed at reconciliation.
+8/17 implementation issues completed at reconciliation.
 
 - [x] [#2 · Audit A01 Choose and publish the repository's open-source license](https://github.com/IanSzymanski/squidware/issues/2)
 - [x] [#4 · Audit A03 Extract the editor store and central command registry from App.tsx](https://github.com/IanSzymanski/squidware/issues/4)
@@ -15,7 +15,7 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 - [x] [#19 · Audit A18 Show live cursor coordinates and performer hover details](https://github.com/IanSzymanski/squidware/issues/19)
 - [x] [#23 · Audit A22 Make between-set preview mode explicit and offer direct editing recovery](https://github.com/IanSzymanski/squidware/issues/23)
 - [x] [#5 · Audit A04 Introduce schema v2 with separate sets and moves plus v1 migration](https://github.com/IanSzymanski/squidware/issues/5)
-- [ ] [#6 · Audit A05 Replace snapshot undo with named transactions and coalesced edits](https://github.com/IanSzymanski/squidware/issues/6)
+- [x] [#6 · Audit A05 Replace snapshot undo with named transactions and coalesced edits](https://github.com/IanSzymanski/squidware/issues/6)
 - [ ] [#7 · Audit A06 Move recovery to asynchronous main-process storage](https://github.com/IanSzymanski/squidware/issues/7)
 - [ ] [#38 · Audit A40 Separate explicit file-save status from recovery and draft status](https://github.com/IanSzymanski/squidware/issues/38)
 - [ ] [#37 · Audit A39 Fix field keyboard navigation, text sizes and contrast](https://github.com/IanSzymanski/squidware/issues/37)

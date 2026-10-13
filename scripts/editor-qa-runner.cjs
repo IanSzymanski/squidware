@@ -72,10 +72,10 @@ function menuAction(label) {
   if (!item?.click) throw new Error(`Native menu unavailable: ${label}`);
   item.click(item, window, {});
 }
-async function savedProject(expected) {
+async function savedProject(expected, filename = savedFile) {
   let project;
   await waitFor(async () => {
-    try { project = JSON.parse(await fs.readFile(savedFile, 'utf8')); return expected(project); } catch { return false; }
+    try { project = JSON.parse(await fs.readFile(filename, 'utf8')); return expected(project); } catch { return false; }
   }, 'saved project contents');
   return project;
 }
@@ -94,8 +94,33 @@ async function hoverPoint(x, y) {
   await pause(60);
 }
 async function capture(name) {
+  // A hidden Windows compositor can return its previous surface until a resize.
+  const [width, height] = window.getSize();
+  window.setSize(width + 1, height);
+  await pause(120);
   const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
   await fs.writeFile(path.join(output, name), screenshot.toPNG());
+  window.setSize(width, height);
+  await pause(60);
+}
+
+async function typeText(selector, text) {
+  await evaluate(`(() => { const input = document.querySelector(${JSON.stringify(selector)}); if (!input) throw new Error('Text field unavailable'); input.focus(); input.select(); })()`);
+  for (const character of text) await window.webContents.debugger.sendCommand('Input.insertText', { text: character });
+  await pause(30);
+}
+async function fieldKey(selector, key) {
+  await evaluate(`document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }))`);
+  await pause(30);
+}
+async function colorValue(selector, color) {
+  await evaluate(`(() => { const input = document.querySelector(${JSON.stringify(selector)}); input.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(color)}); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); })()`);
+  await pause(30);
+}
+async function openHistory() {
+  await clickSelector('[aria-label="History"]');
+  await uiWait("document.querySelector('.modal h2')?.textContent === 'History'", 'history panel');
+  return evaluate("[...document.querySelectorAll('.history-list:not(.future) li')].map(node => node.querySelector('span').textContent)");
 }
 
 app.whenReady().then(async () => {
@@ -319,6 +344,85 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), 'Side 1: on the 40-yard line; on back hash');
     await capture('field-focus.png');
     pass('single-set shows stay editable; overlapping dots, optional names and resized fields expose accurate keyboard details');
+
+    const historyFile = path.join(output, `history-${process.pid}.squid`);
+    destination = historyFile;
+    await typeText('.inspector textarea', 'N'.repeat(40));
+    menuAction('Save As…');
+    let historySaved = await savedProject(p => p.sets[0].notes === 'N'.repeat(40), historyFile);
+    let actions = await openHistory();
+    assert.equal(actions.length, 1);
+    assert.match(actions[0], /^Edit notes — Set 1/);
+    await clickSelector('.history-actions button:first-child');
+    assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), true);
+    await clickSelector('.history-actions button:nth-child(2)');
+    assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), false);
+    await clickSelector('.modal [aria-label="Close dialog"]');
+    pass('40-character note drafts commit as one named action; undo and redo restore saved revision status');
+
+    await typeText('.inspector textarea', 'Cancel this note draft');
+    await fieldKey('.inspector textarea', 'Escape');
+    assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'N'.repeat(40));
+    actions = await openHistory();
+    assert.equal(actions.length, 1);
+    await clickSelector('.modal [aria-label="Close dialog"]');
+    pass('Escape cancels a text draft without creating history or changing the production');
+
+    await clickText('Cast');
+    await typeText('.cast-table input[placeholder="Add a name"]', 'A'.repeat(40));
+    await fieldKey('.cast-table input[placeholder="Add a name"]', 'Enter');
+    await clickText('Design');
+    await clickSelector('.project-title');
+    await typeText('.modal label.form-label input', 'History QA production');
+    await fieldKey('.modal label.form-label input', 'Enter');
+    for (const color of ['#112233', '#445566', '#778899']) await colorValue('.modal input[type=color]', color);
+    await clickText('Done', '.modal');
+    menuAction('Save');
+    historySaved = await savedProject(p => p.title === 'History QA production' && p.sections[0].color === '#778899', historyFile);
+    assert.equal(historySaved.performers[0].name, 'A'.repeat(40));
+    actions = await openHistory();
+    assert.equal(actions.length, 4);
+    assert.match(actions[0], /^Recolor /);
+    assert.equal(actions[1], 'Rename production');
+    assert.equal(actions[2], `Rename ${historySaved.performers[0].label}`);
+    await capture('named-history.png');
+    await clickSelector('.modal [aria-label="Close dialog"]');
+    pass('performer names, production title and a multi-change color session each produce one named action');
+
+    await clickSelector('.project-title');
+    await colorValue('.modal input[type=color]', '#ffffff');
+    await fieldKey('.modal input[type=color]', 'Escape');
+    assert.equal(await evaluate("document.querySelector('.modal input[type=color]').value"), '#778899');
+    await clickText('Done', '.modal');
+    actions = await openHistory(); assert.equal(actions.length, 4);
+    await clickSelector('.modal [aria-label="Close dialog"]');
+    pass('Escape cancels a color session without applying its preview or adding history');
+
+    await clickSelector('[aria-label="Select performers (V)"]');
+    const dragId = single.performers[1].id;
+    const dragFrom = single.sets[0].positions[dragId];
+    const pressed = await screenPoint(dragFrom.x, dragFrom.y);
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', buttons: 1, clickCount: 1, ...pressed });
+    for (let frame = 1; frame <= 12; frame++) {
+      const moved = await screenPoint(dragFrom.x + frame / 12 * 2.5, dragFrom.y + frame / 12 * 1.25);
+      await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', button: 'left', buttons: 1, ...moved });
+    }
+    const released = await screenPoint(dragFrom.x + 2.5, dragFrom.y + 1.25);
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseReleased', button: 'left', buttons: 0, clickCount: 1, ...released });
+    await pause(60);
+    actions = await openHistory(); assert.equal(actions.length, 5); assert.match(actions[0], /^Move .* — Set 1/);
+    await clickSelector('.modal [aria-label="Close dialog"]');
+    menuAction('Save');
+    historySaved = await savedProject(p => p.sets[0].positions[dragId].x !== dragFrom.x, historyFile);
+    pass('a multi-frame pointer drag commits one named movement action');
+
+    openPath = historyFile;
+    menuAction('Open project…');
+    await pause(100);
+    actions = await openHistory(); assert.equal(actions.length, 0);
+    assert.equal(await evaluate("document.querySelector('.history-policy').textContent.includes('80 actions')"), true);
+    await clickSelector('.modal [aria-label="Close dialog"]');
+    pass('file loads clear history and the history panel exposes its retention policy');
 
     const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
     await fs.writeFile(path.join(output, 'editor.png'), screenshot.toPNG());

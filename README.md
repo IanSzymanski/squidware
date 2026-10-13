@@ -13,7 +13,7 @@ This is an independent early release of a Pyware-style alternative. It implement
 - **Design in 2D:** select individual performers or groups, marquee-select, drag, enter exact coordinates, snap to an 8-to-5 step grid, nudge, pan, zoom, and inspect paths from the previous set.
 - **Shape formations:** create lines, arcs, circles, blocks, and waves; adjust width, depth, rotation, and block columns; rotate or scale a selection.
 - **Rehearse in 3D:** orbit an actual WebGL field with section-colored performer markers, shadows, and perspective, front, and overhead cameras.
-- **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo edits.
+- **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo named actions, review session History, and cancel text/color drafts.
 - **Manage the ensemble:** add performers, import a CSV roster, edit names and sections, and select sections from the field legend.
 - **Play the show:** scrub the timeline, change playback speed, loop, use a metronome, and attach an audio track with a sync offset.
 - **Review transitions:** inspect continuous minimum spacing and excessive stride flags, then select the affected performers on the field.
@@ -120,7 +120,7 @@ Coordinates use yards: `x = 0` at the left goal line and `y = 0` at the back sid
 | `src/components/Field2D.tsx` | Interactive field and reusable SVG drawing |
 | `src/components/Stage3D.tsx` | Three.js scene and camera controls |
 | `src/components/PrintOutput.tsx` | Field chart and performer print layouts |
-| `src/useProject.ts` | Undo/redo history and local recovery initialization |
+| `src/useProject.ts` | Project/history subscriptions and recovery initialization |
 | `electron/` | Isolated desktop window, native dialogs, saves, and PDF export |
 | `scripts/` | Desktop development runner and native-boundary tests |
 
@@ -141,3 +141,5 @@ Squidware is licensed under the [MIT License](LICENSE), copyright © 2026 Squidw
 Dependencies retain their own licenses, recorded in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Desktop packages include the Squidware license, runtime dependency notices, and Electron's full Chromium notices in `resources/legal/` (`Contents/Resources/legal/` on macOS). Keep those files when redistributing a package.
 
 `private: true` in `package.json` prevents accidental publication to the npm registry; source licensing and desktop distribution use MIT regardless of that flag. See the [licensing decision and notice update guide](docs/licensing.md) for distribution details.
+
+Named history uses reversible patches and commit/cancel boundaries; the [history contract](docs/history.md) explains field behavior, revision identity and retention limits.

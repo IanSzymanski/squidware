@@ -7,7 +7,7 @@ export function useProject() {
   const history = useEditorSelector(state => state.project);
   return {
     project: history.present, recoveryError: history.recoveryError,
-    canUndo: history.past.length > 0, canRedo: history.future.length > 0,
+    history, canUndo: !history.transactionName && history.past.length > 0, canRedo: !history.transactionName && history.future.length > 0,
     dispatch: store.dispatch,
   };
 }

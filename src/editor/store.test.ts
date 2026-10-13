@@ -59,16 +59,16 @@ describe('editor store and command registry', () => {
     store.dispatch('set.select', { index: -1 }); expect(store.getState().selection.activeIndex).toBe(0);
   });
 
-  it('dispatches one coherent notification for compound edits and supports snapshot undo/redo', () => {
+  it('dispatches one coherent notification for compound edits and supports reversible undo/redo', () => {
     const store = createEditorStore(createDemoProject()); const listener = vi.fn(); const before = store.getState().project.present;
     store.subscribe(listener);
     expect(store.dispatch('set.add', { index: 0 })).toBe(true);
     expect(listener).toHaveBeenCalledTimes(1);
     const added = store.getState(); expect(added.project.present.sets).toHaveLength(before.sets.length + 1);
     expect(added.selection.activeIndex).toBe(1); expect(added.playback.count).toBe(32);
-    store.dispatch('history.undo'); expect(store.getState().project.present).toBe(before);
+    store.dispatch('history.undo'); expect(store.getState().project.present).toEqual(before);
     expect(store.getState().playback.playing).toBe(false);
-    store.dispatch('history.redo'); expect(store.getState().project.present).toBe(added.project.present);
+    store.dispatch('history.redo'); expect(store.getState().project.present).toEqual(added.project.present);
     store.dispatch('history.undo'); store.dispatch('project.update', { title: 'New branch' }); expect(store.getState().project.future).toHaveLength(0);
     const history = store.getState().project;
     store.dispatch('project.update', { title: 'New branch' }); expect(store.getState().project).toBe(history);
@@ -171,7 +171,7 @@ describe('editor store and command registry', () => {
     expect(store.dispatch('performers.add', { performers: [{ id: 'over-limit', label: 'Extra', name: '', sectionId }] })).toBe(false);
   });
 
-  it('creates, saves, reopens and exports a v1 production through reusable commands', async () => {
+  it('creates, saves, reopens and exports a v2 production through reusable commands', async () => {
     const store = createEditorStore(createDemoProject()); let saved = '';
     store.registerExternal('file.save', () => { saved = serializeProject(store.getState().project.present); });
     store.registerExternal('file.open', () => { store.dispatch('project.load', { project: parseProject(saved) }); });

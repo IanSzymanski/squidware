@@ -7,7 +7,7 @@ import { canEditPositions } from './editMode';
 export interface CommandArguments {
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
   'project.load': { project: Project };
-  'history.undo': undefined; 'history.redo': undefined;
+  'history.undo': undefined; 'history.redo': undefined; 'history.open': undefined;
   'set.update': { index: number; update: SetPropertyUpdate };
   'set.add': { index: number }; 'set.remove': { index: number }; 'set.reorder': { index: number; direction: -1 | 1 };
   'performers.add': { performers: Performer[] }; 'performers.remove': { ids: string[] };
@@ -51,8 +51,9 @@ export const commandRegistry = {
   'project.update': define({ id: 'project.update', name: 'Update production', description: 'Edit production metadata, field markings or audio synchronization.', arguments: { title: 'string?', ensemble: 'string?', audioOffsetSeconds: 'number?', preset: 'college | high-school?' }, enabled: always,
     execute: (c, { preset, ...update }) => c.edit(p => ({ ...p, ...update, field: preset ? { ...p.field, preset } : p.field })) }),
   'project.load': define({ id: 'project.load', name: 'Load production', description: 'Replace the production and reset edit history.', arguments: { project: 'Project v2' }, enabled: always, execute: (c, a) => c.load(a.project) }),
-  'history.undo': define({ id: 'history.undo', name: 'Undo', description: 'Restore the previous project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Z', enabled: s => s.project.past.length > 0, execute: c => c.history('undo') }),
-  'history.redo': define({ id: 'history.redo', name: 'Redo', description: 'Restore an undone project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Shift Z', enabled: s => s.project.future.length > 0, execute: c => c.history('redo') }),
+  'history.undo': define({ id: 'history.undo', name: 'Undo', description: 'Restore the previous project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Z', enabled: s => !s.project.transactionName && s.project.past.length > 0, execute: c => c.history('undo') }),
+  'history.redo': define({ id: 'history.redo', name: 'Redo', description: 'Restore an undone project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Shift Z', enabled: s => !s.project.transactionName && s.project.future.length > 0, execute: c => c.history('redo') }),
+  'history.open': define({ id: 'history.open', name: 'History', description: 'Review named actions and the session history limit.', arguments: {}, enabled: always, execute: c => c.patch('ui', { dialog: 'history' }) }),
   'set.update': define({ id: 'set.update', name: 'Edit set properties', description: 'Update set name, counts, tempo, transition or rehearsal notes.', arguments: { index: 'integer', update: 'set properties' }, enabled: (s, a) => setExists(s, a.index), execute: (c, a) => {
     validateSetUpdate(a.update, a.index);
     const wasAtSet = Math.abs(c.getState().playback.count - setStartCount(c.getState().project.present, a.index)) < 0.001;
