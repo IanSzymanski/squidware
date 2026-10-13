@@ -1,0 +1,59 @@
+name: Release train
+
+on:
+  push:
+    branches: [main]
+  issues:
+    types: [closed, reopened, milestoned, demilestoned]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: squidware-release-train
+  cancel-in-progress: false
+
+jobs:
+  coordinate:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    outputs:
+      ready: ${{ steps.plan.outputs.ready }}
+      version: ${{ steps.plan.outputs.version }}
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      milestone: ${{ steps.plan.outputs.milestone }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Synchronize milestones and check release readiness
+        id: plan
+        run: node scripts/release-github.mjs coordinate
+        env:
+          GH_TOKEN: ${{ github.token }}
+  publish:
+    needs: coordinate
+    if: needs.coordinate.outputs.ready == 'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.coordinate.outputs.version }}
+      source_sha: ${{ needs.coordinate.outputs.source_sha }}
+      milestone: ${{ needs.coordinate.outputs.milestone }}
+    permissions:
+      contents: write
+      issues: write
+      actions: read

@@ -1,9 +1,17 @@
 name: Desktop packages
 
 on:
-  workflow_dispatch:
-  push:
-    tags: ['v*']
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+      milestone:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -18,50 +26,73 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - uses: pnpm/action-setup@v4
         with:
           version: 11.25.0
+      - name: Record the packaged version
+        run: node scripts/release-version.mjs
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec install-electron
       - run: pnpm test
-      - run: node --test scripts/desktop.test.cjs
+      - run: node --test scripts/desktop.test.cjs scripts/release-plan.test.mjs scripts/release-publish.test.mjs
       - name: Build native package
         run: pnpm dist --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Configure Linux Chromium sandbox helper
+        if: runner.os == 'Linux'
+        run: |
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+      - name: Verify Linux sandboxed renderer and editor
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run --auto-servernum pnpm exec electron . --smoke-test
+          xvfb-run --auto-servernum pnpm test:editor
+      - name: Verify Windows and macOS sandboxed renderer and editor
+        if: runner.os != 'Linux'
+        run: |
+          pnpm exec electron . --smoke-test
+          pnpm test:editor
       - uses: actions/upload-artifact@v4
         with:
-          name: squidware-${{ matrix.os }}
+          name: squidware-release-${{ matrix.os }}
           path: |
             release/*.exe
             release/*.dmg
             release/*.AppImage
           if-no-files-found: error
           retention-days: 14
-
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: package
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
+      actions: read
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: actions/download-artifact@v4
         with:
-          pattern: squidware-*
+          pattern: squidware-release-*
           path: release
           merge-multiple: true
-      - name: Publish tagged release
+      - name: Recheck fulfillment and publish verified packages
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" release/* --clobber
-          else
-            gh release create "$RELEASE_TAG" release/* --verify-tag --generate-notes --prerelease --title "Squidware $RELEASE_TAG"
-          fi
+          VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          MILESTONE: ${{ inputs.milestone }}
+        run: node scripts/release-publish.mjs "$VERSION" "$SOURCE_SHA" "$MILESTONE"
