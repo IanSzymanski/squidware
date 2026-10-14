@@ -14,4 +14,6 @@ Run `pnpm build` followed by `pnpm test:tooltips`. The production Electron runne
 
 The unit formatter checks cover Windows/macOS, native-only bindings, variants, controls without shortcuts and registry changes. Existing editor and accessibility suites retain semantic label selectors after native titles are removed. CI also runs the tooltip renderer suite under Linux Xvfb.
 
+CI runs a second pass with `node scripts/tooltip-qa.mjs .qa/tooltips-fallback --force-3d-fallback` to exercise unavailable WebGL. Screenshot capture uses Electron's `capturePage` with `stayHidden` and `stayAwake`, then requires a nonempty image. The earlier DevTools screenshot request could wait indefinitely for a compositor frame on a hidden Linux window after 3D fallback; this caused the post-merge CI failure for #111.
+
 Local validation uses production Electron on Windows. macOS keycap and touch behavior are emulated; physical macOS/Linux pointer and keyboard walkthroughs and assistive-technology checks remain release validation. Persisted rebinding and its propagation test belong to #65. This change does not add or change shortcut bindings.

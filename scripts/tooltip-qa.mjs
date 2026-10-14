@@ -10,7 +10,7 @@ const output = path.resolve(process.argv[2] || path.join(root, '.qa', 'tooltips'
 await fs.mkdir(output, { recursive: true });
 const profile = await fs.mkdtemp(path.join(output, 'profile-'));
 const manifest = path.join(output, 'manifest.json');
-await fs.writeFile(manifest, JSON.stringify({ root, output, profile }));
+await fs.writeFile(manifest, JSON.stringify({ root, output, profile, force3DFallback: process.argv.includes('--force-3d-fallback') }));
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE; delete env.ELECTRON_RENDERER_URL;
 const child = spawn(require('electron'), [path.join(root, 'scripts/tooltip-qa-runner.cjs'), `--tooltip-manifest=${manifest}`], { cwd: root, env, windowsHide: true, stdio: 'inherit' });
 const timeout = setTimeout(() => child.kill(), 150000);
