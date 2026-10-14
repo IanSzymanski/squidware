@@ -33,7 +33,7 @@
     "format:generate": "node scripts/format-contract.mjs",
     "format:check": "node --test scripts/format-contract.test.mjs",
     "format:validate": "node scripts/validate-squid.mjs",
-    "test:print": "node scripts/print-qa.mjs"
+    "test:print": "node scripts/print-regression-qa.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

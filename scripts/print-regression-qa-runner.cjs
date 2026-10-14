@@ -19,6 +19,10 @@ app.whenReady().then(async()=>{try{
     await evaluate('document.fonts.ready');await pause(150);
     const dom=await evaluate("Array.from(document.querySelectorAll('#print-output .print-page')).map(page=>({charts:page.querySelectorAll('svg').length,rows:page.querySelectorAll('tbody tr').length}))");
     if(entry.coordinateRows)assert.equal(dom.reduce((sum,page)=>sum+page.rows,0),entry.coordinateRows);
+    if(entry.mode==='charts') {
+      const positions=await evaluate("Array.from(document.querySelectorAll('#print-output .print-page')).map(page=>Object.fromEntries(Array.from(page.querySelectorAll('[data-performer-id]')).map(dot=>[dot.dataset.performerId,dot.getAttribute('transform')])))");
+      project.sets.forEach((set,index)=>project.performers.forEach(person=>{const point=set.positions[person.id];assert.equal(positions[index][person.id],`translate(${point.x} ${point.y})`);}));
+    }
     const saved=await evaluate(`window.squidware.exportPdf(${JSON.stringify(entry.paper)})`);assert.equal(saved,destination);assert.ok((await fs.stat(destination)).size>1000);
     await evaluate(`${editor}.setValue('ui','printing',false)`);results.push({name:entry.name,paper:entry.paper,mode:entry.mode,fixtureBytes:(await fs.stat(entry.fixture)).size,performers:project.performers.length,sets:project.sets.length,dom,pdfBytes:(await fs.stat(destination)).size});console.log('PASS native PDF '+entry.name);
   }
