@@ -29,7 +29,8 @@
     "perf:compute": "node scripts/performance-compute.mjs",
     "perf:electron": "node scripts/performance-electron.mjs",
     "licenses:generate": "node scripts/generate-notices.mjs",
-    "licenses:check": "node scripts/generate-notices.mjs --check"
+    "licenses:check": "node scripts/generate-notices.mjs --check",
+    "test:playback": "node scripts/playback-qa.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

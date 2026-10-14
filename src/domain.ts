@@ -222,32 +222,37 @@ export function setStartCount(project: Project, index: number): number {
   return project.moves.slice(0, clamp(Math.floor(index), 0, project.moves.length)).reduce((sum, move) => sum + move.counts, 0);
 }
 
-export function sampleProject(project: Project, count: number): TimelineSample {
-  if (!project.sets.length) return { positions: {}, setIndex: 0, progress: 0, localCount: 0 };
+/** Timeline metadata without allocating performer geometry for clock/navigation users. */
+export function sampleTimeline(project: Project, count: number): Omit<TimelineSample, 'positions'> {
   const boundedCount = clamp(Number.isFinite(count) ? count : 0, 0, totalCounts(project));
-  if (boundedCount === 0 || project.sets.length === 1) {
-    return { positions: Object.fromEntries(Object.entries(project.sets[0].positions).map(([id, point]) => [id, { ...point }])), setIndex: 0, progress: 0, localCount: 0 };
+  if (boundedCount === 0 || project.sets.length <= 1) {
+    return { setIndex: 0, progress: 0, localCount: 0 };
   }
   let start = 0;
   for (let index = 1; index < project.sets.length; index += 1) {
-    const set = project.sets[index];
     const move = project.moves[index - 1];
     if (boundedCount <= start + move.counts || index === project.sets.length - 1) {
       const localCount = clamp(boundedCount - start, 0, move.counts);
       const progress = move.counts ? localCount / move.counts : 1;
-      const positionProgress = move.transition === 'ease' ? smoothstep(progress) : progress;
-      const previous = project.sets[index - 1];
-      return {
-        positions: Object.fromEntries(project.performers.map(performer => {
-          const from = previous.positions[performer.id];
-          const to = set.positions[performer.id];
-          return [performer.id, { x: lerp(from.x, to.x, positionProgress), y: lerp(from.y, to.y, positionProgress) }];
-        })), setIndex: index, progress, localCount,
-      };
+      return { setIndex: index, progress, localCount };
     }
     start += move.counts;
   }
   throw new Error('Unable to sample an invalid show timeline.');
+}
+
+export function sampleProject(project: Project, count: number): TimelineSample {
+  const timing = sampleTimeline(project, count);
+  if (!project.sets.length) return { ...timing, positions: {} };
+  if (timing.setIndex === 0) return { ...timing, positions: Object.fromEntries(Object.entries(project.sets[0].positions).map(([id, point]) => [id, { ...point }])) };
+  const move = project.moves[timing.setIndex - 1];
+  const positionProgress = move.transition === 'ease' ? smoothstep(timing.progress) : timing.progress;
+  const previous = project.sets[timing.setIndex - 1];
+  const set = project.sets[timing.setIndex];
+  return { ...timing, positions: Object.fromEntries(project.performers.map(performer => {
+    const from = previous.positions[performer.id]; const to = set.positions[performer.id];
+    return [performer.id, { x: lerp(from.x, to.x, positionProgress), y: lerp(from.y, to.y, positionProgress) }];
+  })) };
 }
 
 export function countToSeconds(project: Project, count: number): number {
