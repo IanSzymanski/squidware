@@ -15,6 +15,7 @@ interface DrawingProps {
   showLabels?: boolean;
   showPaths?: boolean;
   showGrid?: boolean;
+  coordinateDecimals?: 0 | 1 | 2;
   readoutId?: string;
   focusedId?: string | null;
   keyboardHelpId?: string;
@@ -22,7 +23,7 @@ interface DrawingProps {
 }
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId }: DrawingProps) {
+export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2 }: DrawingProps) {
   const { width, height, preset } = project.field;
   const selected = new Set(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
@@ -77,7 +78,7 @@ export function FieldDrawing({ project, positions, previousPositions, selectedId
       if (!point) return null;
       const isSelected = selected.has(performer.id);
       const color = colors.get(performer.sectionId) ?? '#b9ed85';
-      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), coordinateDescription(point, project.field)].filter(Boolean).join(' · ');
+      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), coordinateDescription(point, project.field, coordinateDecimals)].filter(Boolean).join(' · ');
       return <g key={performer.id} data-performer-id={performer.id} tabIndex={readoutId ? focusedId === performer.id ? 0 : -1 : undefined} role={readoutId ? 'button' : undefined} aria-label={readoutId ? `${details}${isSelected ? ', selected' : ''}` : undefined} aria-describedby={keyboardHelpId} aria-pressed={readoutId ? isSelected : undefined} className={`field-performer${keyboardFocusId === performer.id ? ' field-performer--focused' : ''}`} transform={`translate(${point.x} ${point.y})`}>
         <title>{details}</title>
         <circle r="1.15" fill="transparent" />
@@ -104,6 +105,7 @@ interface Field2DProps extends DrawingProps {
   onZoom: (zoom: number) => void;
   readOnly: boolean;
   fitVersion?: number;
+  nudgeStep?: number; fastNudgeStep?: number; coordinateDecimals?: 0 | 1 | 2;
 }
 
 type Gesture =
@@ -121,7 +123,7 @@ function translatedGroup(originals: Record<string, Point>, delta: Point, width: 
   return Object.fromEntries(Object.entries(originals).map(([id, point]) => [id, { x: point.x + dx, y: point.y + dy }]));
 }
 
-export function Field2D({ project, positions, previousPositions, selectedIds, onSelect, onMove, tool, showLabels, showPaths, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0 }: Field2DProps) {
+export function Field2D({ project, positions, previousPositions, selectedIds, onSelect, onMove, tool, showLabels, showPaths, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateDecimals = 2 }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const readoutId = useId();
   const keyboardHelpId = useId();
@@ -311,7 +313,7 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
       }
       if (!event.key.startsWith('Arrow') || !selectedIds.length) return;
       if (readOnly) return;
-      const distance = event.shiftKey ? 2.5 : 0.625;
+      const distance = event.shiftKey ? fastNudgeStep : nudgeStep;
       const originals = Object.fromEntries(selectedIds.filter(id => positions[id]).map(id => [id, positions[id]]));
       onMove(translatedGroup(originals, { x: event.key === 'ArrowLeft' ? -distance : event.key === 'ArrowRight' ? distance : 0, y: event.key === 'ArrowUp' ? -distance : event.key === 'ArrowDown' ? distance : 0 }, width, height));
     }
@@ -319,11 +321,11 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
 
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
     <svg ref={svgRef} className="field-stage__svg" viewBox={`${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`} tabIndex={focusedId ? -1 : 0} role="group" aria-label={readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!(event.target as Element).closest('[data-performer-id]')) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
-      <FieldDrawing project={project} positions={displayedPositions} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} />
+      <FieldDrawing project={project} positions={displayedPositions} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} coordinateDecimals={coordinateDecimals} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} />
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#c5f47b18" stroke="#caf38a" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
     </svg>
-    <div id={keyboardHelpId} className="field-keyboard-help">Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · Alt+arrows: move selection · Shift+Alt: 4 steps · Page Up/Down: roster · Home/End: first/last</div>
-    <FieldReadout id={readoutId} svgRef={svgRef} project={project} positions={displayedPositions} selectedIds={selectedIds} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} />
+    <div id={keyboardHelpId} className="field-keyboard-help">Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · Alt+arrows: move selection · Shift+Alt: {fastNudgeStep} yd · Page Up/Down: roster · Home/End: first/last</div>
+    <FieldReadout id={readoutId} svgRef={svgRef} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateDecimals={coordinateDecimals} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
     <div className="field-stage__hint">{readOnly ? 'PLAYBACK PREVIEW' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
     <div className="field-stage__orientation" aria-hidden="true"><span>↑</span> BACK</div>

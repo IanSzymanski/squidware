@@ -42,7 +42,7 @@ export function useCommandController() {
       } else if (event.key === 'Escape') store.dispatch('selection.clear');
       else if (key === 'v' || key === 'h') store.dispatch('tool.select', { tool: key === 'v' ? 'select' : 'pan' });
       else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && state.selection.selectedIds.length) {
-        event.preventDefault(); const step = event.shiftKey ? 2.5 : 0.625;
+        event.preventDefault(); const step = event.shiftKey ? state.preferences.value.fastNudgeStep : state.preferences.value.nudgeStep;
         store.dispatch('selection.transform', { index: state.selection.activeIndex, ids: state.selection.selectedIds,
           options: { dx: event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, dy: event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0 } });
       } else if (event.key === '[' || event.key === ']') store.dispatch('set.select', { index: state.selection.activeIndex + (event.key === '[' ? -1 : 1) });

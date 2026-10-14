@@ -56,3 +56,6 @@ input::placeholder, textarea::placeholder, .cast-table input::placeholder { colo
 @media (max-width: 1250px) {
   .project-file-state { flex-direction: column; align-items: flex-start; gap: 3px; }
 }
+
+.preferences-fields{border:0;padding:0;margin:0;min-width:0}.preferences-toggles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.preferences-toggles label{display:flex;align-items:center;gap:8px;font-size:13px;color:#354131}.studio--compact .set-panel{width:176px;min-width:176px}.studio--compact .inspector{width:235px;min-width:235px}
+@media print{@page squid-letter{size:letter landscape;margin:12mm}@page squid-a4{size:A4 landscape;margin:12mm}#print-output[data-paper=letter] .print-page{page:squid-letter}#print-output[data-paper=a4] .print-page{page:squid-a4}}

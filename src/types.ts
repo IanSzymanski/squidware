@@ -1,3 +1,4 @@
+import type { PreferencesBridge } from './preferences';
 export interface Point { x: number; y: number }
 export interface Section { id: string; name: string; color: string }
 export interface Performer { id: string; label: string; name: string; sectionId: string }
@@ -52,13 +53,13 @@ export interface RecoveryBridge {
   writeRecovery: (session: string, sequence: number, revision: number, project: Project) => Promise<{ status: 'saved' | 'stale'; version?: RecoveryVersion }>;
   migrateRecovery: (session: string, content: string) => Promise<{ status: 'migrated' | 'unreadable'; warning?: string }>;
 }
-export interface DesktopBridge extends RecoveryBridge {
+export interface DesktopBridge extends RecoveryBridge, PreferencesBridge {
   platform: string;
   resetProject: () => void;
   openProject: () => Promise<{ content: string; path: string } | null>;
   saveProject: (content: string, suggestedName: string, saveAs?: boolean) => Promise<string | null>;
   exportFile: (content: string, suggestedName: string, kind: 'csv' | 'svg' | 'html') => Promise<string | null>;
-  exportPdf: () => Promise<string | null>;
+  exportPdf: (paper?: 'letter' | 'a4') => Promise<string | null>;
   setDirty: (dirty: boolean) => void;
   onMenuAction: (callback: (action: string) => void) => () => void;
 }

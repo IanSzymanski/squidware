@@ -32,6 +32,12 @@ Project files are limited to 10 MiB of UTF-8 data. Valid recovery from older ver
 
 In browser preview, Save downloads a project and PDF export opens the browser print dialog. The Electron app provides native open/save dialogs and direct PDF export.
 
+## Personal preferences
+
+Open **Project menu → Preferences** for device settings: panel layout, 2D/3D view, labels, paths, grid visibility, snap, zoom, keyboard increments, formation tool defaults, coordinate decimals, paper size, packet type, and geometric check thresholds. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
+
+Choose **Reset defaults** to restore the personal settings. If storage is unavailable, your choices work for the session and Preferences shows the error with **Retry save**. Unsupported newer preferences remain preserved until you update the app or reset them. Invalid numeric entries stay in Preferences until corrected or canceled with Escape. Production settings still belong to each show. See [the persistence policy](PREFERENCES.md).
+
 ## Cast and sections
 
 Open **Cast** to see the ensemble table. You can search by label or performer name, filter by section, edit names, and change section assignments. Select rows to remove performers; removal affects every set and can be undone.
@@ -70,7 +76,7 @@ Coordinates are stored in yards, with `(0, 0)` at the top-left corner. Coordinat
 - Click empty field space or press Escape to clear the selection.
 - Click a section in the legend to select all of its performers, or use **Select all**.
 - Drag a selected performer to move the entire selected group. The group remains together at field boundaries.
-- Alt + arrow keys move the selection one step. Shift + Alt + arrow moves it four steps, or 2.5 yards. Plain arrows on the field change performer focus without editing.
+- Alt + arrow keys move the selection by the preferred nudge increment (default one step). Shift + Alt + arrow uses the fast increment (default four steps, or 2.5 yards). Set the increments in Preferences. Plain arrows on the field change performer focus without editing.
 
 Select a single performer to enter **X · yards from left** and **Y · yards from back** in the Inspector for exact placement.
 
@@ -177,8 +183,8 @@ Use Ctrl on Windows/Linux and Command on macOS. Form fields retain their normal 
 | Select all performers | Ctrl/⌘ + A |
 | Clear selection | Escape |
 | Focus another performer on the field | Arrow |
-| Nudge one step | Alt + Arrow |
-| Nudge four steps | Shift + Alt + Arrow |
+| Nudge selection | Alt + Arrow |
+| Fast nudge | Shift + Alt + Arrow |
 | Previous / next set | [ / ] |
 | Undo | Ctrl/⌘ + Z |
 | Redo | Ctrl/⌘ + Shift + Z |

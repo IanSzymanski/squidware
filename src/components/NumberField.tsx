@@ -42,6 +42,6 @@ export function NumberField({ label, value, onChange, min, max, step = 1, intege
     onBlur={commit}
     onKeyDown={event => {
       if (event.key === 'Enter') event.currentTarget.blur();
-      if (event.key === 'Escape') { event.stopPropagation(); cancelBlur.current = true; setDraft(String(value)); onDraftChange?.(false, errorId); event.currentTarget.blur(); }
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(String(value)); onDraftChange?.(false, errorId); event.currentTarget.blur(); }
     }} />{error && <span id={errorId} className="field-error" role="status">{error}</span>}</label>;
 }

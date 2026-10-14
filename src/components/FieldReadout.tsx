@@ -11,13 +11,14 @@ interface FieldReadoutProps {
   selectedIds: string[];
   viewport: string;
   readOnly: boolean;
+  coordinateDecimals?: 0 | 1 | 2;
   keyboardFocusedId?: string | null;
 }
 
 const performerId = (target: EventTarget | null) => target instanceof Element ? target.closest('[data-performer-id]')?.getAttribute('data-performer-id') ?? null : null;
 
 /** Pointer feedback lives here so moving across empty field does not redraw the dots. */
-export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId }: FieldReadoutProps) {
+export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId, coordinateDecimals = 2 }: FieldReadoutProps) {
   const [cursor, setCursor] = useState<{ x: number; y: number; performerId: string | null } | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [sizeVersion, setSizeVersion] = useState(0);
@@ -72,11 +73,11 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
     const section = project.sections.find(item => item.id === performer?.sectionId);
     setReadout({
       title: performer ? [performer.label, performer.name, section?.name].filter(Boolean).join(' · ') : 'Cursor',
-      description: coordinateDescription(position, project.field),
+      description: coordinateDescription(position, project.field, coordinateDecimals),
       left: Math.max(8, Math.min(bounds.width - 308, anchor.x - bounds.left + 14)),
       top: Math.max(readOnly ? 122 : 42, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
     });
-  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly]);
+  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly, coordinateDecimals]);
 
   return readout && <div id={id} className="field-readout" style={{ left: readout.left, top: readout.top }}><strong>{readout.title}</strong><span>{readout.description}</span></div>;
 }
