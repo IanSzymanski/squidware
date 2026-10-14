@@ -26,6 +26,10 @@ for case in manifest['cases']:
         checked = 0
         for index, page in enumerate(document.pages):
             assert abs(page.width - expected[0]) < 1.5 and abs(page.height - expected[1]) < 1.5
+            backgrounds = [rect for rect in page.rects if rect.get('fill') and rect['x0'] <= .5 and rect['x1'] >= page.width - .5 and rect['top'] <= .5 and rect['bottom'] >= page.height - .5]
+            if backgrounds:
+                color = backgrounds[-1]['non_stroking_color']
+                assert all(channel >= .99 for channel in color), (case['name'], index, 'nonwhite page background', color)
             for char in page.chars:
                 if not char['text'].strip():
                     continue

@@ -11,6 +11,9 @@ on:
         required: false
 permissions:
   contents: read
+concurrency:
+  group: desktop-regression-${{ github.workflow }}-${{ github.ref }}-${{ inputs.source_sha || 'branch' }}
+  cancel-in-progress: true
 jobs:
   desktop:
     strategy:
@@ -87,4 +90,5 @@ jobs:
             .qa/print/*.pdf
             .qa/**/*.png
           if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 14

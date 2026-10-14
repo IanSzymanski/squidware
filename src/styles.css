@@ -67,6 +67,9 @@ button[aria-disabled=true]{color:#6a7566;background-color:#f0f2eb;border-style:d
 
 /* Preserve long production text when Chromium paginates rehearsal packets. */
 @media print {
+  @page { background: #fff; }
+  @page squid-letter { background: #fff; }
+  @page squid-a4 { background: #fff; }
   html, body, #root { background: #fff !important; }
   .print-page header { break-inside: avoid; }
   .print-page header > div:first-child { min-width: 0; flex: 1; }

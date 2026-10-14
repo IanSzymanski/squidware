@@ -26,5 +26,6 @@ app.whenReady().then(async()=>{try{
     const saved=await evaluate(`window.squidware.exportPdf(${JSON.stringify(entry.paper)})`);assert.equal(saved,destination);assert.ok((await fs.stat(destination)).size>1000);
     await evaluate(`${editor}.setValue('ui','printing',false)`);results.push({name:entry.name,paper:entry.paper,mode:entry.mode,fixtureBytes:(await fs.stat(entry.fixture)).size,performers:project.performers.length,sets:project.sets.length,dom,pdfBytes:(await fs.stat(destination)).size});console.log('PASS native PDF '+entry.name);
   }
-  await fs.writeFile(path.join(output,'results.json'),JSON.stringify({...manifest,results,platform:process.platform,electron:process.versions.electron,gpu:app.getGPUFeatureStatus(),gpuInfo:await app.getGPUInfo('basic')},null,2));clearTimeout(timeout);app.exit(0);
+  const gpuInfo=await app.getGPUInfo('basic').catch(error=>({unavailable:error.message}));
+  await fs.writeFile(path.join(output,'results.json'),JSON.stringify({...manifest,results,platform:process.platform,electron:process.versions.electron,gpu:app.getGPUFeatureStatus(),gpuInfo},null,2));clearTimeout(timeout);app.exit(0);
 }catch(error){console.error(error);clearTimeout(timeout);app.exit(1);}});
