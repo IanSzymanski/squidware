@@ -1,4 +1,5 @@
 'use strict';
+const { waitFor: waitUntil } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -17,11 +18,7 @@ dialog.showSaveDialog = async () => ({ canceled: false, filePath: path.join(outp
 dialog.showMessageBox = async () => ({ response: 1 });
 app.on('browser-window-created', (_event, created) => { window = created; created.webContents.setBackgroundThrottling(false); });
 require(path.join(root, 'electron/main.cjs'));
-async function waitFor(condition, label) {
-  const started = Date.now();
-  while (Date.now() - started < 25000) { if (await condition()) return; await pause(15); }
-  throw new Error(`Timed out: ${label}`);
-}
+const waitFor = (condition, label) => waitUntil(condition, label, { timeoutMs: 25000 });
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 async function click(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await pause(35); }
 function native(label) {
@@ -51,7 +48,7 @@ function instrument(legacy) {
     }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {},
   };
 }
-const timeout = setTimeout(() => { console.error('Recovery QA timed out.'); app.exit(1); }, 140000);
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window');
@@ -119,6 +116,6 @@ app.whenReady().then(async () => {
       pass('users can select an older competing production and retain Save As protection');
     }
     await fs.writeFile(path.join(output, `results-${phase}.json`), JSON.stringify({ passed: checks }, null, 2));
-    clearTimeout(timeout); app.exit(0);
-  } catch (error) { clearTimeout(timeout); console.error(error); if (window) console.error(await evaluate("JSON.stringify({ body: document.body.innerText.slice(-1800), qa: !!window.__recoveryQA, editor: !!window.__recoveryQA?.editor, legacy: localStorage.getItem('squidware.autosave.v1')?.slice(0,80), seed: sessionStorage.getItem('recovery-qa-seeded') })").catch(() => 'No renderer')); app.exit(1); }
+     app.exit(0);
+  } catch (error) {  console.error(error); if (window) console.error(await evaluate("JSON.stringify({ body: document.body.innerText.slice(-1800), qa: !!window.__recoveryQA, editor: !!window.__recoveryQA?.editor, legacy: localStorage.getItem('squidware.autosave.v1')?.slice(0,80), seed: sessionStorage.getItem('recovery-qa-seeded') })").catch(() => 'No renderer')); app.exit(1); }
 });

@@ -1,4 +1,5 @@
 'use strict';
+const { waitFor: waitUntil } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--thumbnail-manifest=')).slice('--thumbnail-manifest='.length));
@@ -13,7 +14,7 @@ dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [fixture] });
 dialog.showMessageBox = async () => ({ response: 1 });
 app.on('browser-window-created', (_event, created) => { window = created; window.webContents.setBackgroundThrottling(false); });
 require(path.join(root, 'electron/main.cjs'));
-async function waitFor(condition, label) { const started = Date.now(); while (Date.now() - started < 30000) { if (await condition()) return; await pause(15); } throw new Error('Timed out: ' + label); }
+const waitFor = (condition, label) => waitUntil(condition, label, { timeoutMs: 30000 });
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 function native(label) { function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } } const item = find(Menu.getApplicationMenu()); assert.ok(item, label); item.click(); }
 function instrument() {
@@ -56,7 +57,7 @@ async function counts(label, action, expected) {
 }
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 const thumbnail = (index = 0) => evaluate(`(() => { const svg = document.querySelectorAll('.mini-field')[${index}]; const dot = svg.querySelector('circle'); return { count: svg.querySelectorAll('circle').length, x: Number(dot.getAttribute('cx')), color: dot.getAttribute('fill') }; })()`);
-const timeout = setTimeout(() => { console.error('Thumbnail QA timed out'); app.exit(1); }, 175000);
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
@@ -125,7 +126,7 @@ app.whenReady().then(async () => {
     measurements.edits = edits;
     assert.deepEqual(await evaluate("window.__thumbnailQA.errors"), []);
     await fs.writeFile(path.join(output,'results.json'), JSON.stringify({ ...manifest, checks, measurements, electron:process.versions.electron, note:'Actual production React renderer and editor commands. Fiber work counts are sampled separately from timing; timing disables tree walking. No physical presentation or school-laptop qualification.' },null,2));
-    clearTimeout(timeout); app.exit(0);
-  } catch(error) { console.error(error); if(window) console.error(await evaluate("document.body.innerText.slice(-1600)").catch(()=>'No renderer')); clearTimeout(timeout); app.exit(1); }
+     app.exit(0);
+  } catch(error) { console.error(error); if(window) console.error(await evaluate("document.body.innerText.slice(-1600)").catch(()=>'No renderer'));  app.exit(1); }
 });
 

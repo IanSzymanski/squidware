@@ -1,18 +1,18 @@
 'use strict';
+const { capturePage, key: sendKey, waitFor: waitUntil } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const { auditText } = require('./accessibility-audit.cjs');
 const manifest = require(process.argv.find(arg => arg.startsWith('--accessibility-manifest=')).slice('--accessibility-manifest='.length));
-const { root, output, fixture } = manifest;
+const { root, output, profile, fixture } = manifest;
 const checks = []; const audits = [];
 let window;
 let failure;
 const savedFile = path.join(output, `saved-${process.pid}.squid`);
 const csvFile = path.join(output, `coordinates-${process.pid}.csv`);
-require('node:fs').mkdirSync(path.join(output, `profile-${process.pid}`), { recursive: true });
-app.setPath('userData', path.join(output, `profile-${process.pid}`));
+app.setPath('userData', profile);
 BrowserWindow.prototype.show = function () {};
 dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [fixture] });
 dialog.showSaveDialog = async (_window, options) => ({ canceled: false, filePath: options.title.includes('CSV') ? csvFile : savedFile });
@@ -24,22 +24,13 @@ app.on('browser-window-created', (_event, created) => {
 require(path.join(root, 'electron/main.cjs'));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const evaluate = source => window.webContents.executeJavaScript(source);
-async function waitFor(condition, label) {
-  const start = Date.now();
-  while (Date.now() - start < 20000) { if (failure) throw failure; if (await condition()) return; await pause(20); }
-  throw new Error(`Timed out: ${label}`);
-}
+const waitFor = (condition, label) => waitUntil(condition, label, { timeoutMs: 25000, failure: () => failure });
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 function native(label) {
   function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } }
   const item = find(Menu.getApplicationMenu()); if (!item) throw new Error(`Menu missing: ${label}`); item.click();
 }
-async function key(keyCode, modifiers = []) {
-  window.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
-  if (keyCode === 'Return' || keyCode === 'Space') window.webContents.sendInputEvent({ type: 'char', keyCode: keyCode === 'Return' ? '\r' : ' ', modifiers });
-  window.webContents.sendInputEvent({ type: 'keyUp', keyCode, modifiers });
-  await pause(5);
-}
+const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 5);
 async function tabTo(selector, backwards = false) {
   for (let index = 0; index < 700; index++) {
     if (await evaluate(`document.activeElement?.matches(${JSON.stringify(selector)})`)) return;
@@ -53,11 +44,7 @@ async function audit(label) {
   assert.deepEqual(result.failures, [], `Text contrast/size: ${label}`);
   assert.ok(result.checked > 100, 'Expected a populated renderer audit');
 }
-async function capture(name) {
-  const [width, height] = window.getSize(); window.setSize(width + 1, height); await pause(100);
-  await fs.writeFile(path.join(output, name), (await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true })).toPNG());
-  window.setSize(width, height);
-}
+const capture = name => capturePage(window, output, name);
 const editor = 'window.__accessibilityQA.editor';
 const focusId = () => evaluate("document.activeElement?.getAttribute('data-performer-id')");
 const revision = () => evaluate(`${editor}.getState().project.revision`);
@@ -73,7 +60,7 @@ function instrument() {
     }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {},
   };
 }
-const timeout = setTimeout(() => { console.error('Accessibility QA timed out.'); app.exit(1); }, 240000);
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
@@ -169,9 +156,9 @@ app.whenReady().then(async () => {
     pass('enlarged UI text remains readable, keyboard controls stay reachable, and exposed buttons have accessible names');
 
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, audits, viewport: await evaluate('({ width: innerWidth, height: innerHeight })'), rendererNodeAccess: await evaluate('typeof window.require') }, null, 2));
-    clearTimeout(timeout); app.exit(0);
+     app.exit(0);
   } catch (error) {
-    clearTimeout(timeout); console.error(error);
+     console.error(error);
     await fs.writeFile(path.join(output, 'failed-audits.json'), JSON.stringify(audits, null, 2));
     if (window && !window.isDestroyed()) { await capture('failure.png').catch(() => {}); console.error(await evaluate("({ focus: document.activeElement?.outerHTML?.slice(0, 500), toast: document.querySelector('.toast')?.textContent })").catch(() => null)); }
     app.exit(1);

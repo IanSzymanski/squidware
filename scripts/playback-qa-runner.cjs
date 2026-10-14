@@ -1,4 +1,5 @@
 'use strict';
+const { waitFor: waitUntil } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--playback-manifest=')).slice('--playback-manifest='.length));
@@ -12,7 +13,7 @@ app.on('browser-window-created', (_event, created) => { window = created; window
 require(path.join(root, 'electron/main.cjs'));
 const evaluate = source => window.webContents.executeJavaScript(source).catch(error => { console.error('Failed expression:', source.slice(0,500)); throw error; });
 const editor = 'window.__playbackQA.editor'; const state = editor + '.getState()';
-async function wait(source, label) { const start = Date.now(); while (Date.now() - start < 20000) { if (await evaluate(source)) return; await pause(20); } throw new Error('Timed out: ' + label); }
+const wait = (source, label) => waitUntil(() => evaluate(source), label, { timeoutMs: 20000 });
 function instrument() {
   const qa = window.__playbackQA = { editor: null, renders: {}, errors: [] }; const previous = new Map();
   window.addEventListener('error', e => qa.errors.push(e.message));
@@ -39,7 +40,7 @@ async function measureRenders(name, action) {
   profiles[name] = diff; return diff;
 }
 const pass = text => { checks.push(text); console.log('PASS ' + text); };
-const timeout = setTimeout(() => { console.error('Playback QA timed out'); app.exit(1); }, 120000);
+
 app.whenReady().then(async () => {
   try {
     while (!window) await pause(20);
@@ -103,6 +104,6 @@ app.whenReady().then(async () => {
     assert.deepEqual(await evaluate('window.__playbackQA.errors'), []);
     pass('move boundaries, preview locks, direct set recovery and selection remain synchronized');
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({...manifest,checks,profiles,platform:process.platform,electron:process.versions.electron,note:'Production React committed-work counts; profiling adds overhead. No representative-hardware or assistive-technology qualification.'},null,2));
-    clearTimeout(timeout); app.exit(0);
-  } catch(error) {console.error(error);console.error({profiles,playback:await evaluate(`${state}.playback`).catch(()=>null)});clearTimeout(timeout);app.exit(1);}
+     app.exit(0);
+  } catch(error) {console.error(error);console.error({profiles,playback:await evaluate(`${state}.playback`).catch(()=>null)});app.exit(1);}
 });

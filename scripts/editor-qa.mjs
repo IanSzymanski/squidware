@@ -1,15 +1,13 @@
 // Exercise the production renderer, actual preload and main-process file handlers.
 // Native dialogs are controlled by the runner; all files/recovery use an isolated profile.
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createQa, root } from './testing/launcher.mjs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
-const output = path.resolve(process.argv[2] || path.join(root, '.qa', 'editor'));
-await fs.mkdir(output, { recursive: true });
+const qa = await createQa('editor', { timeoutMs: 240000 });
+const { output } = qa;
 const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
 const bundle = path.join(output, 'boundary-fixture.cjs');
 await esbuild.build({
@@ -28,10 +26,4 @@ await esbuild.build({
   outfile: bundle, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent',
 });
 await fs.writeFile(path.join(output, 'boundary.squid'), require(bundle).fixture);
-const manifest = path.join(output, 'manifest.json');
-await fs.writeFile(manifest, JSON.stringify({ root, output }));
-const environment = { ...process.env };
-delete environment.ELECTRON_RUN_AS_NODE;
-delete environment.ELECTRON_RENDERER_URL;
-const child = spawn(require('electron'), [path.join(root, 'scripts', 'editor-qa-runner.cjs'), `--editor-qa-manifest=${manifest}`], { cwd: root, env: environment, windowsHide: true, stdio: 'inherit' });
-await new Promise((resolve, reject) => { child.on('error', reject); child.on('exit', code => code === 0 ? resolve() : reject(new Error(`Editor QA exited with ${code}.`))); });
+await qa.run('editor-qa-runner.cjs', 'editor-qa-manifest', {});

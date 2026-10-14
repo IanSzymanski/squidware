@@ -1,10 +1,45 @@
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
-const require=createRequire(import.meta.url);const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;delete env.ELECTRON_RENDERER_URL;
-const checks=[['sandboxed renderer',[require('electron'),'.','--smoke-test']],...['editor','accessibility','field-presentation','tooltip','preferences','thumbnail','playback','recovery','print'].map(name=>[name,[process.execPath,`scripts/${name==='print'?'print-regression':name}-qa.mjs`]]),['3D unavailable tooltip',[process.execPath,'scripts/tooltip-qa.mjs','.qa/tooltips-fallback','--force-3d-fallback']]];
-const results=[];await fs.mkdir('.qa/desktop-matrix',{recursive:true});
-for(const [name,[executable,...args]] of checks){const started=Date.now();const child=spawn(executable,args,{env,windowsHide:true,stdio:'inherit'});const timeout=setTimeout(()=>child.kill(),260000);
-  let code;try{code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve);});}finally{clearTimeout(timeout);}
-  results.push({name,code,elapsedMs:Date.now()-started});await fs.writeFile('.qa/desktop-matrix/results.json',JSON.stringify({platform:process.platform,node:process.versions.node,checks:results},null,2));if(code!==0)throw new Error(`${name} failed (${code}).`);
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { root } from './testing/launcher.mjs';
+import { runProcess } from './testing/process.mjs';
+import { desktopSuites, selectSuites, runChecks } from './testing/suites.mjs';
+
+const argv = process.argv.slice(2);
+const selected = selectSuites(argv);
+const reportFile = path.join(root, '.qa/desktop-matrix/results.json');
+if (argv.includes('--list')) {
+  for (const suite of desktopSuites) console.log(`${suite.name}: ${suite.title}`);
+} else if (argv.includes('--print-output')) {
+  const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
+  const print = report.checks.find(check => check.name === 'print');
+  if (report.state !== 'completed' || print?.status !== 'passed') throw new Error('This run has no successful print suite.');
+  console.log(print.output);
+} else {
+  const require = createRequire(import.meta.url);
+  const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}`;
+  const outputRoot = path.join(root, '.qa/desktop-matrix', runId);
+  await fs.mkdir(outputRoot, { recursive: true });
+  const report = { runId, state: 'running', platform: process.platform, node: process.versions.node, selected: selected.map(suite => suite.name), checks: [] };
+  const save = async () => {
+    const data = JSON.stringify(report, null, 2);
+    await fs.writeFile(path.join(outputRoot, 'results.json'), data);
+    const temporary = `${reportFile}.${runId}.tmp`;
+    await fs.writeFile(temporary, data); await fs.rename(temporary, reportFile);
+  };
+  await save();
+  report.checks = await runChecks(selected, async suite => {
+    console.log(`\nRUN ${suite.name}: ${suite.title}`);
+    const output = path.join(outputRoot, suite.name);
+    const command = suite.script ? process.execPath : require('electron');
+    const args = suite.script ? [path.join(root, 'scripts', suite.script), `--output=${output}`, ...(suite.args ?? [])] : [root, '--smoke-test'];
+    const result = await runProcess(command, args, { cwd: root, timeoutMs: suite.timeoutMs, logFile: path.join(outputRoot, `${suite.name}.log`) });
+    console.log(`${suite.name}: ${result.status} (${(result.elapsedMs / 1000).toFixed(1)}s)`);
+    return { ...result, output };
+  }, async checks => { report.checks = [...checks]; await save(); });
+  report.state = 'completed'; await save();
+  const failures = report.checks.filter(check => check.status !== 'passed');
+  console.log(`\n${report.checks.length - failures.length}/${report.checks.length} desktop suites passed. Report: ${reportFile}`);
+  if (failures.length) process.exitCode = 1;
 }

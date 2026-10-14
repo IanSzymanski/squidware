@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, layoutFieldLabels, nearestFieldDots } from './fieldPresentation';
 import type { LabelDot, ScreenBox } from './fieldPresentation';
-import { createDemoProject, exportCoordinatesCsv, serializeProject } from '../domain';
+import { createDemoProject } from '../domain';
 import { FieldDrawing } from './Field2D';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -61,10 +61,10 @@ describe('readable field labels', () => {
     expect(layoutFieldLabels(same, bounds, { ...DEFAULT_FIELD_PRESENTATION, labelMode: 'none' }).size).toBe(0);
     expect(layoutFieldLabels([{ ...dots[0], labelWidth: 5000 }], bounds, DEFAULT_FIELD_PRESENTATION).size).toBe(0);
   });
-  it('keeps static print geometry, serialized projects and coordinate output independent of presentation', () => {
-    const project = createDemoProject(); const before = serializeProject(project); const csv = exportCoordinatesCsv(project);
+  it('keeps static print geometry independent of screen presentation and does not mutate the project', () => {
+    const project = createDemoProject(); const before = structuredClone(project);
     const render = (presentation?: object) => renderToStaticMarkup(createElement('svg', {}, createElement(FieldDrawing, { project, positions: project.sets[0].positions, presentation })));
     expect(render({ dotRadiusPx: 20, labelSizePx: 40, labelMode: 'selected' })).toBe(render());
-    expect(serializeProject(project)).toBe(before); expect(exportCoordinatesCsv(project)).toBe(csv);
+    expect(project).toEqual(before);
   });
 });

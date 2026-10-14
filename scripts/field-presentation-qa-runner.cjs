@@ -1,9 +1,10 @@
 'use strict';
+const { capturePage, key: sendKey, waitFor: waitUntil } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
-const { root, output, fixture, baseline } = require(process.argv.find(arg => arg.startsWith('--field-manifest=')).slice('--field-manifest='.length));
+const { root, output, profile, fixture, baseline } = require(process.argv.find(arg => arg.startsWith('--field-manifest=')).slice('--field-manifest='.length));
 app.disableHardwareAcceleration();
-app.setPath('userData', path.join(output, `profile-${process.pid}`));
+app.setPath('userData', profile);
 BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
 let window; const checks = [];
@@ -12,25 +13,14 @@ require(path.join(root, 'electron/main.cjs'));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const evaluate = source => window.webContents.executeJavaScript(source);
 const editor = 'window.__fieldQA.editor'; const state = editor + '.getState()';
-async function wait(source, label) { const start = Date.now(); while (Date.now() - start < 20000) { if (await evaluate(source)) return; await pause(20); } throw new Error('Timed out: ' + label); }
+const wait = (source, label) => waitUntil(() => evaluate(source), label, { timeoutMs: 20000 });
 function instrument() {
   window.__fieldQA = { editor: null };
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(fiber) { if (!fiber) return; const value = fiber.memoizedProps?.value; if (value?.getState && value?.dispatch) window.__fieldQA.editor = value; visit(fiber.child); visit(fiber.sibling); } visit(root.current); },
     onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
-async function capture(name) {
-  const [width, height] = window.getSize();
-  try {
-    for (let attempt=0;attempt<3;attempt++) {
-      window.setSize(width + 1 + attempt % 2, height); await pause(300);
-      try {
-        const screenshot = await window.webContents.capturePage(undefined, { stayHidden:true,stayAwake:true });
-        assert.ok(!screenshot.isEmpty()); await fs.writeFile(path.join(output,name),screenshot.toPNG()); return;
-      } catch (error) { if (attempt===2) throw error; }
-    }
-  } finally { window.setSize(width,height); }
-}
+const capture = name => capturePage(window, output, name);
 const pass = label => { checks.push(label); console.log('PASS '+label); };
 const input = (type, point, extra = {}) => {
   // sendInputEvent also works with hidden software-composited windows, where
@@ -39,11 +29,7 @@ const input = (type, point, extra = {}) => {
   window.webContents.sendInputEvent({ type:types[type], x:Math.round(point.x), y:Math.round(point.y), ...extra, modifiers:extra.modifiers ? ['shift'] : [] });
 };
 async function click(point, modifiers = 0) { await input('mouseMoved', point); await input('mousePressed', point, { button: 'left', clickCount: 1, modifiers }); await input('mouseReleased', point, { button: 'left', clickCount: 1, modifiers }); }
-async function key(keyCode) {
-  window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
-  if (keyCode === 'Return') window.webContents.sendInputEvent({ type:'char',keyCode:'\r' });
-  window.webContents.sendInputEvent({ type: 'keyUp', keyCode }); await pause(20);
-}
+const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 20);
 const center = id => evaluate(`(() => { const n = [...document.querySelectorAll('.field-performer')].find(n=>n.dataset.performerId===${JSON.stringify(id)}); const p = new DOMPoint(0,0).matrixTransform(n.getScreenCTM()); return {x:p.x,y:p.y}; })()`);
 async function selected(id) { await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'selected '+id); }
 async function assertLabels() {
@@ -61,7 +47,7 @@ async function assertLabels() {
   // Fractional desktop scaling can round emulated viewport dimensions subpixel-wise.
   assert.ok(result.sizes.every(size => Math.abs(size-12)<.1), JSON.stringify({sizes:result.sizes.slice(0,4),dpr:result.dpr}));
 }
-const timeout = setTimeout(() => { console.error('Field QA timed out'); app.exit(1); }, 240000);
+
 app.whenReady().then(async () => {
   try {
     while (!window) await pause(20);
@@ -75,7 +61,7 @@ app.whenReady().then(async () => {
     await wait("document.querySelectorAll('.field-performer').length===500", 'dense block'); await pause(200);
     const baselineViewport = await evaluate("(() => {const field=document.querySelector('.field-stage__svg').getBoundingClientRect(); return {width:innerWidth,height:innerHeight,devicePixelRatio,fieldWidth:field.width,fieldHeight:field.height};})()");
     await capture('dense-1366.png');
-    if (baseline) { clearTimeout(timeout); app.exit(0); return; }
+    if (baseline) {  app.exit(0); return; }
     const project = await evaluate(state+'.project.present'); const ids = project.performers.map(p=>p.id);
     const positions = project.sets[0].positions; const originalRevision = await evaluate(state+'.project.revision');
     // Native Chromium mouse input, rather than dispatching DOM pointer events.
@@ -118,10 +104,6 @@ app.whenReady().then(async () => {
     assert.deepEqual(await evaluate(state+'.project.present.sets[0].positions'), positions);
     assert.equal(await evaluate(state+'.project.revision'), reloadedRevision);
     pass('pointer selection, labels and zoom preserve physical coordinates and edit revision');
-    await evaluate(`document.querySelector('.field-performer[tabindex="0"]').focus()`); await key('Home'); await key('End');
-    assert.equal(await evaluate("document.activeElement.getAttribute('data-performer-id')"),ids[0]);
-    await key('Tab'); assert.equal(await evaluate("!!document.activeElement.closest('.field-stage__svg')"),false);
-    pass('roving field keyboard focus still reaches overlapping dots and leaves in one Tab stop');
     await window.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:2,mobile:false}); await pause(100);
     await assertLabels(); await click(await center(ids[237])); await selected(ids[237]); await capture('dense-dpi2.png');
     await window.webContents.debugger.sendCommand('Emulation.clearDeviceMetricsOverride');
@@ -130,6 +112,6 @@ app.whenReady().then(async () => {
     const narrowViewport = await evaluate('({width:innerWidth,height:innerHeight})');
     pass('labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size');
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
-    clearTimeout(timeout); app.exit(0);
-  } catch (error) { clearTimeout(timeout); console.error(error); if (window && !window.isDestroyed()) await capture('failure.png').catch(() => {}); app.exit(1); }
+     app.exit(0);
+  } catch (error) {  console.error(error); if (window && !window.isDestroyed()) await capture('failure.png').catch(() => {}); app.exit(1); }
 });

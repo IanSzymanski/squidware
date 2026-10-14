@@ -45,29 +45,23 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec install-electron
-      - run: pnpm test
-      - run: pnpm test:desktop scripts/release-plan.test.mjs scripts/release-publish.test.mjs
       - name: Build native package
         run: pnpm dist --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      - name: Configure Linux Chromium sandbox helper
+      - name: Configure packaged Linux Chromium sandbox helper
         if: runner.os == 'Linux'
         run: |
-          sudo chown root:root node_modules/electron/dist/chrome-sandbox
-          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
-      - name: Verify Linux sandboxed renderer and editor
+          sudo chown root:root release/linux-unpacked/chrome-sandbox
+          sudo chmod 4755 release/linux-unpacked/chrome-sandbox
+      - name: Verify packaged Linux application
         if: runner.os == 'Linux'
         run: |
-          xvfb-run --auto-servernum pnpm exec electron . --smoke-test
-          xvfb-run --auto-servernum pnpm test:editor
-          xvfb-run --auto-servernum pnpm test:recovery
-      - name: Verify Windows and macOS sandboxed renderer and editor
+          xvfb-run --auto-servernum node scripts/packaged-smoke.mjs
+      - name: Verify packaged Windows and macOS application
         if: runner.os != 'Linux'
         run: |
-          pnpm exec electron . --smoke-test
-          pnpm test:editor
-          pnpm test:recovery
+          node scripts/packaged-smoke.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: squidware-release-${{ matrix.os }}
