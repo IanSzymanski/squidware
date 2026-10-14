@@ -18,6 +18,8 @@ The opening set has zero move counts. Every later set stores the timing of the m
 
 **Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid` or JSON project files; a JSON import receives a `.squid` destination when saved.
 
+**Unsaved changes** beside the production title includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
+
 After a committed change, the desktop app writes recovery in the background to its application data folder. Open **Project menu → Recovery copies**, or click the recovery status at the bottom of the editor, to choose a dated copy. Up to 20 most recent copies or 100 MiB are kept across productions; the newest valid copy is always retained. Older copies expire. Save named project files and keep your usual rehearsal backups.
 
 Recovery has its own status. **Recovery copy saved** means the automatic copy was written; use **Save** for a portable project file. Restoring a copy starts an unsaved production and asks for a project file destination on its first save. It does not overwrite a file you had open. Browser previews use asynchronous browser storage and remain subject to the browser's quota.

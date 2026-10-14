@@ -20,7 +20,8 @@ export interface EditorState {
     printMode: 'charts' | 'coordinates'; printing: boolean;
   };
   fileSession: {
-    savedRevision: number; needsSaveAs: boolean; saveStatus: string;
+    savedRevision: number | null; needsSaveAs: boolean; saveStatus: string;
+    fileOperation: 'saving' | 'opening' | null;
     audioName: string; audioUrl: string; waveform: number[]; audioLoading: boolean;
   };
 }
@@ -36,7 +37,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false },
-    fileSession: { savedRevision: 0, needsSaveAs: true,
+    fileSession: { savedRevision: null, needsSaveAs: true, fileOperation: null,
       saveStatus: 'Save a project file', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };
 }

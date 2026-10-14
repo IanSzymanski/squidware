@@ -3,6 +3,7 @@ import type { Project, RecoveryBridge, RecoveryList } from '../types';
 import { bootstrapRecovery } from './recoveryBootstrap';
 import { useEditorSelector, useEditorStore } from './react';
 import { createBrowserRecovery } from './browserRecovery';
+import { assertCanReplace, hasUnsavedWork } from './fileSession';
 
 export function useRecoveryController(loadProject: (project: Project) => void) {
   const store = useEditorStore();
@@ -68,16 +69,16 @@ export function useRecoveryController(loadProject: (project: Project) => void) {
   }
   async function restore(id: string) {
     const before = store.getState();
+    try { assertCanReplace(before); } catch (failure) { setError((failure as Error).message); return; }
     if (before.ui.pendingDraft || before.project.transactionName || document.querySelector('[aria-invalid="true"]')) { setError('Finish or cancel the pending edit before restoring a copy.'); return; }
-    if (before.project.revision !== before.fileSession.savedRevision && !window.confirm('Replace your current production with this recovery copy? Save a project file first to keep your latest edits.')) return;
+    if (hasUnsavedWork(before) && !window.confirm('Replace your current production with this recovery copy? Save a project file first to keep your latest edits.')) return;
     setBusy(true);
     try {
       const result = await bridge.readRecovery(session.current, id);
       const current = store.getState();
-      if (current.project.present !== before.project.present || current.ui.projectEpoch !== before.ui.projectEpoch || current.ui.pendingDraft || current.project.transactionName) throw new Error('The production changed while recovery was opening. Retry when the edit is finished.');
+      if (current.project.present !== before.project.present || current.ui.projectEpoch !== before.ui.projectEpoch || current.ui.pendingDraft || current.project.transactionName || current.fileSession.fileOperation) throw new Error('The production changed while recovery was opening. Retry when the edit is finished.');
       loadProject(result.project);
       window.squidware?.resetProject();
-      store.setValue('fileSession', 'savedRevision', -1);
       store.setValue('fileSession', 'needsSaveAs', true);
       store.setValue('fileSession', 'saveStatus', 'Recovered copy · save a project file');
       store.setValue('ui', 'toast', 'Recovery copy restored. Use Save to keep a project file.');

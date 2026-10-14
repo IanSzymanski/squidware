@@ -27,3 +27,12 @@
 .recovery-error { color: #8b3029; font-size: 13px; line-height: 1.6; }
 .recovery-indicator { white-space: nowrap; }
 .recovery-list .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.project-file-state { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1; }
+.project-file-state .project-title { min-width: 0; }
+.project-file-state .save-state { display: flex; font-size: 11px; color: #56664f; white-space: normal; line-height: 1.35; }
+.project-file-state .save-state--unsaved { color: #765b2f; }
+.header-actions { flex-shrink: 0; }
+@media (max-width: 1250px) {
+  .project-file-state { flex-direction: column; align-items: flex-start; gap: 3px; }
+}

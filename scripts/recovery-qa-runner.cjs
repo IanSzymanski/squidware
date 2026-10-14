@@ -68,7 +68,7 @@ app.whenReady().then(async () => {
       await click('.recovery-list li:first-child button');
       await uiWait("document.querySelector('.project-title').textContent.includes('Compatibility fixture')", 'migrated legacy restore');
       assert.equal(await evaluate("window.__recoveryQA.editor.getState().fileSession.needsSaveAs"), true);
-      assert.equal(await evaluate("window.__recoveryQA.editor.getState().fileSession.savedRevision"), -1);
+      assert.equal(await evaluate("window.__recoveryQA.editor.getState().fileSession.savedRevision"), null);
       pass('legacy migration opens a chooser and restored copies require Save As');
       native('Open project…');
       await uiWait("document.querySelector('.project-title').textContent.includes('Maximum recovery QA')", 'maximum file');

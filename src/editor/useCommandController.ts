@@ -19,7 +19,7 @@ export function useCommandController() {
       if (editing && ['undo', 'redo', 'select-all'].includes(action)) {
         document.execCommand(action === 'select-all' ? 'selectAll' : action); return;
       }
-      if (action === 'new' || action === 'export-pdf') flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
+      if (['new', 'export-pdf', 'about', 'shortcuts'].includes(action)) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
       const command = menuCommands[action as keyof typeof menuCommands];
       if (command) void store.dispatch(command);
     }

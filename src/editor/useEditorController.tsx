@@ -16,6 +16,7 @@ import { useCommandController } from './useCommandController';
 import { createDraftTracker } from './drafts';
 import { useRecoveryController } from './useRecoveryController';
 import { canEditPositions, isAtActiveSet } from './editMode';
+import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, markFileOpened, saveProjectRevision } from './fileSession';
 const cleanFilename = (title: string) => (title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/[. ]+$/, '').trim().slice(0, 100) || 'Squidware project').replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i, '$1-project');
 function download(content: string, filename: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -54,6 +55,8 @@ export function useEditorController() {
   const [savedRevision, setSavedRevision] = useEditorValue('fileSession', 'savedRevision');
   const [needsSaveAs, setNeedsSaveAs] = useEditorValue('fileSession', 'needsSaveAs');
   const [saveStatus, setSaveStatus] = useEditorValue('fileSession', 'saveStatus');
+  const fileOperation = useEditorSelector(state => state.fileSession.fileOperation);
+  const fileStatus = useEditorSelector(fileStatusText);
   const [formation, setFormation] = useEditorValue('ui', 'formation');
   const [formationWidth, setFormationWidth] = useEditorValue('ui', 'formationWidth');
   const [formationHeight, setFormationHeight] = useEditorValue('ui', 'formationHeight');
@@ -82,7 +85,7 @@ export function useEditorController() {
   const atSet = useEditorSelector(isAtActiveSet);
   const readOnly = !useEditorSelector(canEditPositions);
   const issues = useMemo(() => analyzeTransition(project, index), [project, index]);
-  const dirty = history.revision !== savedRevision;
+  const dirty = history.revision !== savedRevision || pendingDraft;
   const allSelected = selectedIds.length === project.performers.length && selectedIds.length > 0;
   const selectedPerformers = project.performers.filter(p => selectedIds.includes(p.id));
   const selectionCenter = selectedIds.length ? selectedIds.reduce((point, id) => ({ x: point.x + (activeSet.positions[id]?.x || 0) / selectedIds.length, y: point.y + (activeSet.positions[id]?.y || 0) / selectedIds.length }), { x: 0, y: 0 }) : { x: 50, y: 26.667 };
@@ -90,8 +93,15 @@ export function useEditorController() {
   const notify = useCallback((message: string) => { setToast(message); }, []);
   useEffect(() => { if (!toast) return; const timeout = setTimeout(() => setToast(''), 5000); return () => clearTimeout(timeout); }, [toast]);
   const recovery = useRecoveryController(loadProject);
-  useEffect(() => { window.squidware?.setDirty(dirty || pendingDraft); }, [dirty, pendingDraft]);
-  useEffect(() => { const guard = (e: BeforeUnloadEvent) => { if ((dirty || pendingDraft) && !window.squidware) e.preventDefault(); }; window.addEventListener('beforeunload', guard); return () => window.removeEventListener('beforeunload', guard); }, [dirty, pendingDraft]);
+  useEffect(() => {
+    const update = () => window.squidware?.setDirty(hasUnsavedWork(store.getState()));
+    update();
+    return store.subscribeSelector(hasUnsavedWork, update);
+  }, [store]);
+  useEffect(() => {
+    const guard = (e: BeforeUnloadEvent) => { if (hasUnsavedWork(store.getState()) && !window.squidware) e.preventDefault(); };
+    window.addEventListener('beforeunload', guard); return () => window.removeEventListener('beforeunload', guard);
+  }, [store]);
   useEffect(() => { if (!audioUrl) return; return () => URL.revokeObjectURL(audioUrl); }, [audioUrl]);
 
   function selectSet(next: number) { dispatch('set.select', { index: next }); }
@@ -115,32 +125,63 @@ export function useEditorController() {
   }
   function loadProject(next: Project) {
     draftTracker.current.clear();
-    dispatch('project.load', { project: next }); setPendingDraft(false); setSavedRevision(store.getState().project.revision); setSaveStatus('Save a project file'); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setZoom(1); setFitVersion(v => v + 1);
+    dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setZoom(1); setFitVersion(v => v + 1);
+  }
+  function replaceProduction(next: Project, cast = false) {
+    try {
+      flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
+      assertCanReplace(store.getState());
+      if (hasUnsavedWork(store.getState()) && !window.confirm('Replace this production? Your unsaved changes will be discarded. Save a project file first to keep them.')) return;
+      loadProject(next); window.squidware?.resetProject();
+      if (cast) setWorkspace('cast');
+    } catch (error) { notify((error as Error).message); }
   }
   async function saveProjectFile(saveAs = false) {
     try {
       flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
       if (document.querySelector('[aria-invalid="true"]')) { notify('Correct the invalid field before saving.'); return; }
-      const savingProject = store.getState().project.present;
-      const savingRevision = store.getState().project.revision;
-      const content = serializeProject(savingProject);
-      if (window.squidware) { const result = await window.squidware.saveProject(content, `${cleanFilename(savingProject.title)}.squid`, saveAs || needsSaveAs); if (!result) return; setNeedsSaveAs(false); }
-      else download(content, `${cleanFilename(savingProject.title)}.squid`, 'application/json');
-      setSavedRevision(savingRevision); setSaveStatus('Project file saved'); notify('Project saved');
+      const result = await saveProjectRevision(store, async (savingProject, forceSaveAs) => {
+        const content = serializeProject(savingProject);
+        if (window.squidware) return !!await window.squidware.saveProject(content, `${cleanFilename(savingProject.title)}.squid`, forceSaveAs);
+        download(content, `${cleanFilename(savingProject.title)}.squid`, 'application/json');
+        return true;
+      }, saveAs);
+      if (result === 'busy') notify('Finish the current file operation before saving.');
+      if (result === 'saved') {
+        if (!window.squidware) setSaveStatus('Project download requested');
+        notify(hasUnsavedWork(store.getState()) ? 'Earlier revision saved. Your latest changes still need saving.' : window.squidware ? 'Project saved' : 'Project download requested');
+      }
     } catch (error) { notify(`Could not save: ${(error as Error).message}`); }
   }
   async function openProjectFile() {
     flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
     setMenu(false);
-    if (document.querySelector('[aria-invalid="true"]') || store.getState().ui.pendingDraft) { notify('Finish or cancel the pending field before opening another production.'); return; }
-    if (store.getState().project.revision !== store.getState().fileSession.savedRevision && !window.confirm('Open another project? Save a project file first to keep your latest edits.')) return;
-    if (!window.squidware) { projectInput.current?.click(); return; }
-    try { const result = await window.squidware.openProject(); if (!result) return; const next = parseProject(result.content); loadProject(next); setNeedsSaveAs(false); setSaveStatus('Project file opened'); notify('Project opened'); }
-    catch (error) { window.squidware.resetProject(); setNeedsSaveAs(true); notify(`Could not open: ${(error as Error).message}`); }
+    try {
+      assertCanReplace(store.getState());
+      if (document.querySelector('[aria-invalid="true"]')) throw new Error('Finish or cancel the pending field before opening another production.');
+      if (hasUnsavedWork(store.getState()) && !window.confirm('Open another project? Save a project file first to keep your latest edits.')) return;
+      if (!window.squidware) { projectInput.current?.click(); return; }
+      const before = store.getState();
+      store.setValue('fileSession', 'fileOperation', 'opening');
+      try {
+        const result = await window.squidware.openProject(); if (!result) return;
+        assertUnchangedSince(before, store.getState());
+        loadProject(parseProject(result.content));
+        markFileOpened(store, !result.path.toLowerCase().endsWith('.squid'));
+        notify('Project opened');
+      } catch (error) { window.squidware.resetProject(); setNeedsSaveAs(true); throw error; }
+      finally { store.setValue('fileSession', 'fileOperation', null); }
+    } catch (error) { notify(`Could not open: ${(error as Error).message}`); }
   }
   async function onProjectFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
-    try { if (file.size > PROJECT_LIMITS.projectBytes) throw new Error(`Project files must be no larger than ${PROJECT_LIMITS.projectBytes / 1024 / 1024} MiB.`); loadProject(parseProject(await file.text())); setNeedsSaveAs(true); notify('Project imported'); } catch (error) { notify((error as Error).message); }
+    try {
+      assertCanReplace(store.getState());
+      if (file.size > PROJECT_LIMITS.projectBytes) throw new Error(`Project files must be no larger than ${PROJECT_LIMITS.projectBytes / 1024 / 1024} MiB.`);
+      const before = store.getState(); store.setValue('fileSession', 'fileOperation', 'opening');
+      try { const next = parseProject(await file.text()); assertUnchangedSince(before, store.getState()); loadProject(next); markFileOpened(store, true); notify('Project imported'); }
+      finally { store.setValue('fileSession', 'fileOperation', null); }
+    } catch (error) { notify((error as Error).message); }
   }
   async function exportText(kind: 'csv' | 'svg') {
     try {
@@ -202,6 +243,6 @@ export function useEditorController() {
 
   const filteredCast = project.performers.filter(p => (sectionFilter === 'all' || p.sectionId === sectionFilter) && `${p.name} ${p.label}`.toLowerCase().includes(castQuery.toLowerCase()));
   const visibleSet = activeSet;
-  return { project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;

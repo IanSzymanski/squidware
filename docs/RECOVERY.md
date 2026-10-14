@@ -10,7 +10,7 @@ Copies are immutable UUID-named envelopes containing a canonical v2 project, its
 
 Retention keeps the latest 20 valid copies or 100 MiB across productions, retaining at least the newest valid copy. Preserved unreadable originals and raw legacy sources are outside automatic version deletion. Migration first persists the exact legacy text in a hash-named original file, then validates/migrates it with the same codec. Successful migration has an idempotent marker; only durable success permits removing the legacy localStorage key. Unreadable sources remain in both locations.
 
-Startup offers a dated chooser. It never replaces a production the user edited while storage was opening. Restoring a copy resets the project file destination, marks it unsaved and requires Save As. Version selection checks for intervening edits before applying an asynchronous read. Recovery's status and errors remain separate from the explicit project file state. Broader draft/file status improvements remain tracked in #38.
+Startup offers a dated chooser. It never replaces a production the user edited while storage was opening. Restoring a copy resets the project file destination, marks it unsaved and requires Save As. Version selection checks for intervening edits before applying an asynchronous read and refuses replacement during a pending file operation. Recovery's status and errors remain separate from the [explicit project file and draft state](FILE_STATE.md).
 
 Browser previews use IndexedDB structured clones and transactional retention of 20 copies. They remain subject to browser quota and are not the desktop storage backend.
 

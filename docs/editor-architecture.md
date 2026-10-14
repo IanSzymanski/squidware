@@ -32,4 +32,6 @@ History stores reversible patches with named synchronous transactions and explic
 
 ## Verification
 
+File state uses a saved revision or `null`, separate pending drafts, and an in-flight operation guard. New/recovery loads stay unsaved; successful file opens establish a baseline. Save completion records its captured revision only within the same project epoch. Dirty selectors also drive native close protection directly. See [file and draft behavior](FILE_STATE.md) for cancellation, failure, concurrent edits and browser download semantics.
+
 `src/editor/store.test.ts` exercises selective notifications, compound-command consistency, undo/redo, project limits, runtime navigation arguments, playback editing guards, roster and formation edits, file-controller registration, save/reopen compatibility, export data, recovery and sync/async error handling. The Electron workflow QA scripts exercise the real rendered application and desktop bridge with isolated test files and dialogs. Run the domain/editor tests, desktop tests and production build after changing these boundaries.
