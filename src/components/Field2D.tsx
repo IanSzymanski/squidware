@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Point, Project } from '../types';
 import { selectionMembership } from '../selection';
@@ -23,16 +23,11 @@ interface DrawingProps {
   keyboardFocusId?: string | null;
 }
 
-/** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2 }: DrawingProps) {
-  const { width, height, preset } = project.field;
-  const selected = selectionMembership(selectedIds);
-  const colors = new Map(project.sections.map(section => [section.id, section.color]));
-  const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
+export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, height, preset, showGrid }: Project['field'] & { showGrid: boolean }) {
   const hashInset = preset === 'college' ? 20 : height / 3;
   const yardLines = Array.from({ length: Math.floor(width / 5) + 1 }, (_, index) => index * 5);
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
-  return <>
+  return <g data-field-markings="true" aria-hidden="true">
     <rect x={-2} y={-2} width={width + 4} height={height + 4} rx="0.5" fill="#273a34" stroke="#46574c" strokeWidth="0.12" />
     <rect width={width} height={height} fill="#233c31" />
     {yardLines.filter((_, i) => i % 2 === 0).map(x => <rect key={`stripe-${x}`} x={x} width={Math.min(5, width - x)} height={height} fill="#294438" opacity="0.5" />)}
@@ -63,6 +58,18 @@ export function FieldDrawing({ project, positions, previousPositions, selectedId
       <text x={width / 2} y={-4.2}>BACK SIDELINE</text>
       <text x={width / 2} y={height + 5.2}>FRONT SIDELINE</text>
     </g>
+  </g>;
+});
+StaticFieldMarkings.displayName = 'StaticFieldMarkings';
+
+/** SVG children shared by the interactive field and exported field diagrams. */
+export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2 }: DrawingProps) {
+  const { width, height, preset } = project.field;
+  const selected = selectionMembership(selectedIds);
+  const colors = new Map(project.sections.map(section => [section.id, section.color]));
+  const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
+  return <>
+    <StaticFieldMarkings width={width} height={height} preset={preset} showGrid={showGrid} />
     {showPaths && previousPositions && <g fill="none" strokeWidth="0.13" strokeDasharray="0.7 0.5" opacity="0.65" pointerEvents="none">
       {project.performers.map(performer => {
         const from = previousPositions[performer.id];
