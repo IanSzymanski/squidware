@@ -99,7 +99,7 @@ app.whenReady().then(async () => {
     assert.equal(await revision(), baseline);
     await key('Home');
     const visited = [await focusId()];
-    for (let index = 1; index < ids.length; index++) { await key('PageDown'); visited.push(await focusId()); }
+    for (let index = 1; index < ids.length; index++) { await key('PageDown'); await uiWait(`document.activeElement?.getAttribute('data-performer-id')===${JSON.stringify(ids[index])}`, 'roster focus '+index); visited.push(await focusId()); }
     assert.deepEqual(visited, ids);
     assert.equal(await revision(), baseline);
     await key('PageDown'); assert.equal(await focusId(), ids.at(-1));
@@ -123,7 +123,14 @@ app.whenReady().then(async () => {
     await audit('design at 1366 × 768'); await capture('field-keyboard.png');
     pass('focused performers reveal coordinates, distinct focus outlines and off-viewport positions at 1366 × 768');
 
-    await tabTo('.inspector textarea'); await key('A', [process.platform === 'darwin' ? 'meta' : 'control']); await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Keyboard-only rehearsal note' }); await key('Return');
+    await tabTo('.inspector textarea');
+    // Cocoa app-menu accelerators require a visible key window. Exercise their
+    // native menu entry in this intentionally hidden macOS test window instead.
+    if (process.platform === 'darwin') native('Select all'); else await key('A', ['control']);
+    await uiWait("document.activeElement.selectionStart===0 && document.activeElement.selectionEnd===document.activeElement.value.length", 'note text selected');
+    await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Keyboard-only rehearsal note' });
+    await uiWait("document.querySelector('.inspector textarea').value==='Keyboard-only rehearsal note'", 'note draft entered'); await key('Return');
+    await uiWait(`${editor}.getState().project.present.sets[0].notes==='Keyboard-only rehearsal note'`, 'note committed');
     native('Save As…'); await waitFor(async () => { try { return JSON.parse(await fs.readFile(savedFile, 'utf8')).sets[0].notes === 'Keyboard-only rehearsal note'; } catch { return false; } }, 'native save');
     await tabTo('.rail-button[aria-label="Show"]', true); await key('Space');
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');

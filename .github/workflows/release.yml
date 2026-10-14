@@ -17,7 +17,12 @@ permissions:
   contents: read
 
 jobs:
+  regression:
+    uses: ./.github/workflows/desktop-regression.yml
+    with:
+      source_sha: ${{ inputs.source_sha }}
   package:
+    needs: regression
     strategy:
       fail-fast: false
       matrix:
