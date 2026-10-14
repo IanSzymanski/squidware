@@ -11,12 +11,13 @@ interface FieldReadoutProps {
   selectedIds: string[];
   viewport: string;
   readOnly: boolean;
+  keyboardFocusedId?: string | null;
 }
 
 const performerId = (target: EventTarget | null) => target instanceof Element ? target.closest('[data-performer-id]')?.getAttribute('data-performer-id') ?? null : null;
 
 /** Pointer feedback lives here so moving across empty field does not redraw the dots. */
-export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly }: FieldReadoutProps) {
+export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId }: FieldReadoutProps) {
   const [cursor, setCursor] = useState<{ x: number; y: number; performerId: string | null } | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [sizeVersion, setSizeVersion] = useState(0);
@@ -57,7 +58,8 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
     if (!svg || !matrix) { setReadout(null); return; }
     // Re-hit-test after zoom, pan or playback moves a dot beneath a stationary cursor.
     const hoveredId = cursor ? performerId(document.elementFromPoint(cursor.x, cursor.y)) : null;
-    const targetId = focusedId || hoveredId || (!cursor && selectedIds.length === 1 ? selectedIds[0] : null);
+    const keyboardTarget = keyboardFocusedId === performerId(document.activeElement) ? keyboardFocusedId : null;
+    const targetId = keyboardTarget || focusedId || hoveredId || (!cursor && selectedIds.length === 1 ? selectedIds[0] : null);
     const performer = project.performers.find(person => person.id === targetId);
     const point = performer ? positions[performer.id] : cursor ? new DOMPoint(cursor.x, cursor.y).matrixTransform(matrix.inverse()) : null;
     // Only tolerate matrix roundoff at the boundary; clear actual out-of-field points.
@@ -74,7 +76,7 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
       left: Math.max(8, Math.min(bounds.width - 308, anchor.x - bounds.left + 14)),
       top: Math.max(readOnly ? 122 : 42, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
     });
-  }, [cursor, focusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly]);
+  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly]);
 
   return readout && <div id={id} className="field-readout" style={{ left: readout.left, top: readout.top }}><strong>{readout.title}</strong><span>{readout.description}</span></div>;
 }

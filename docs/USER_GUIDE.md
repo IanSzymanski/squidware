@@ -70,7 +70,7 @@ Coordinates are stored in yards, with `(0, 0)` at the top-left corner. Coordinat
 - Click empty field space or press Escape to clear the selection.
 - Click a section in the legend to select all of its performers, or use **Select all**.
 - Drag a selected performer to move the entire selected group. The group remains together at field boundaries.
-- Arrow keys move the selection one step. Shift + arrow moves it four steps, or 2.5 yards.
+- Alt + arrow keys move the selection one step. Shift + Alt + arrow moves it four steps, or 2.5 yards. Plain arrows on the field change performer focus without editing.
 
 Select a single performer to enter **X · yards from left** and **Y · yards from back** in the Inspector for exact placement.
 
@@ -176,8 +176,9 @@ Use Ctrl on Windows/Linux and Command on macOS. Form fields retain their normal 
 | Pan tool | H |
 | Select all performers | Ctrl/⌘ + A |
 | Clear selection | Escape |
-| Nudge one step | Arrow |
-| Nudge four steps | Shift + Arrow |
+| Focus another performer on the field | Arrow |
+| Nudge one step | Alt + Arrow |
+| Nudge four steps | Shift + Alt + Arrow |
 | Previous / next set | [ / ] |
 | Undo | Ctrl/⌘ + Z |
 | Redo | Ctrl/⌘ + Shift + Z |
@@ -188,7 +189,7 @@ Use Ctrl on Windows/Linux and Command on macOS. Form fields retain their normal 
 | Export dialog, desktop | Ctrl/⌘ + P |
 | Help, desktop | F1 |
 
-In the 2D field, Tab can focus a performer and Enter or Space selects that focused performer; hold Shift to modify the selection. Space on a focused performer selects instead of starting playback.
+In the 2D field, Tab enters at the remembered performer and the next Tab leaves the field. Arrows focus the nearest performer in that direction. Page Up/Down walks the roster so overlapping performers remain reachable; Home/End focuses the first/last performer. Enter or Space selects the focused performer; hold Shift to add or remove it. Focus uses a square outline, while selection uses a circular ring. Space on the field selects instead of starting playback. Alt + arrows moves the selected group, with Shift for four steps; movement remains locked during previews. Focusing a performer outside the zoomed viewport brings it into view.
 
 ## Acceptance walkthrough for a new build
 

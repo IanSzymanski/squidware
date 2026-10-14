@@ -37,10 +37,11 @@ export function useCommandController() {
       if (cmd && key === 'z') { event.preventDefault(); if (!window.squidware) menuAction(event.shiftKey ? 'redo' : 'undo'); return; }
       if (cmd && key === 'a') { event.preventDefault(); store.dispatch('selection.all'); }
       else if (event.code === 'Space') {
+        if (target.closest('button, a[href], [role="button"]')) return;
         event.preventDefault(); if (!store.dispatch('playback.toggle')) store.setValue('ui', 'toast', 'Add a second set to rehearse a transition.');
       } else if (event.key === 'Escape') store.dispatch('selection.clear');
       else if (key === 'v' || key === 'h') store.dispatch('tool.select', { tool: key === 'v' ? 'select' : 'pan' });
-      else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && state.selection.selectedIds.length) {
+      else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && state.selection.selectedIds.length) {
         event.preventDefault(); const step = event.shiftKey ? 2.5 : 0.625;
         store.dispatch('selection.transform', { index: state.selection.activeIndex, ids: state.selection.selectedIds,
           options: { dx: event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, dy: event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0 } });
