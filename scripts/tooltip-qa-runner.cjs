@@ -82,7 +82,8 @@ app.whenReady().then(async () => {
     assert.match(await tooltip(), /Reshape 1 selected performer/);
     pass('Escape dismisses help without clearing selection; toggle and formation explanations stay current');
 
-    await evaluate(`${editor}.dispatch('set.select', { index: 0 })`); await focus('Counts');
+    await evaluate(`${editor}.dispatch('set.select', { index: 0 })`); await focus('Counts'); await pause(150);
+    assert.match(await tooltip(), /Counts/);
     assert.match(await tooltip(), /opening set.*zero counts/);
     assert.equal(await evaluate("document.querySelector('.tooltip-disabled-field input').disabled"), true);
     await key('Space'); assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);

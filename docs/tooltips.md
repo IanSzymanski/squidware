@@ -6,7 +6,7 @@
 
 Disabled buttons use `aria-disabled`, remain in the normal Tab order, and block click/Enter/Space activation. Disabled number/select fields keep native disabling and have a focusable group to explain why editing is unavailable. The existing input error description is preserved alongside the tooltip description. Escape dismisses help; text/number fields retain Escape draft cancellation. Tab moves normally, touching controls does not leave hover help, and activating a control dismisses its tooltip.
 
-Tooltips use a viewport-clamped portal, or the containing dialog's top layer. They remain hoverable and dismiss when the pointer leaves both the trigger and panel, focus leaves, the viewport scrolls/resizes, or another tooltip opens. Coverage includes file/workspace actions, set cards/timeline blocks, the section legend, formation tiles, view/camera/quality controls, Inspector fields, transforms and playback options.
+Tooltips use a viewport-clamped portal, or the containing dialog's top layer. They remain hoverable and dismiss when the pointer leaves both the trigger and panel, focus leaves, the viewport resizes, or another tooltip opens. Hover help dismisses on scrolling. Keyboard help repositions with its focused control, including when focusing an offscreen Inspector field automatically scrolls the panel; that scroll must not immediately erase the newly opened description. Coverage includes file/workspace actions, set cards/timeline blocks, the section legend, formation tiles, view/camera/quality controls, Inspector fields, transforms and playback options.
 
 ## Verification
 

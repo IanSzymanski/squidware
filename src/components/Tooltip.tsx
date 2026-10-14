@@ -40,16 +40,17 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     document.addEventListener('squidware-tooltip', other);
     return () => { cancelTimer(); document.removeEventListener('squidware-tooltip', other); };
   }, [id]);
-  useLayoutEffect(() => {
-    if (!open || !trigger.current || !panel.current) return;
+  const place = () => {
+    if (!trigger.current || !panel.current) return;
     const anchor = trigger.current.getBoundingClientRect();
     const box = panel.current.getBoundingClientRect();
     const margin = 8;
     const left = Math.max(margin, Math.min(anchor.left + (anchor.width - box.width) / 2, window.innerWidth - box.width - margin));
     const below = anchor.bottom + 8;
     const top = below + box.height <= window.innerHeight - margin ? below : Math.max(margin, anchor.top - box.height - 8);
-    setPosition({ left, top });
-  }, [open, name, description, state, disabledReason]);
+    setPosition(previous => previous.left === left && previous.top === top ? previous : { left, top });
+  };
+  useLayoutEffect(() => { if (open) place(); }, [open, name, description, state, disabledReason]);
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
@@ -61,7 +62,13 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
       close();
     };
     const outside = (event: PointerEvent) => { if (!panel.current?.contains(event.target as Node)) close(); };
-    const scroll = (event: Event) => { if (!panel.current?.contains(event.target as Node)) close(); };
+    const scroll = (event: Event) => {
+      if (panel.current?.contains(event.target as Node)) return;
+      // Focusing an offscreen Inspector field can scroll its panel after focus
+      // has already opened help. Keep keyboard help anchored to that control.
+      if (focused.current && document.activeElement === trigger.current) place();
+      else close();
+    };
     document.addEventListener('keydown', dismiss, true);
     document.addEventListener('pointerdown', outside, true);
     document.addEventListener('scroll', scroll, true);
