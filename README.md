@@ -1,5 +1,7 @@
 # Squidware
 
+The public [`.squid` format contract](format/FORMAT.md) includes v1/v2 JSON Schemas, small migration examples, a 500-performer/128-picture fixture and a reference validator.
+
 **Find your flow. A desktop drill design studio for marching ensembles.**
 
 Squidware brings cast management, an interactive 2D field, 3D rehearsal, count-based playback, and printable drill books into one local workspace. It is built with Electron, React, TypeScript, and Three.js, with native project dialogs and no account requirement.
