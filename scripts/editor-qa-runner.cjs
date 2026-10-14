@@ -13,14 +13,24 @@ let openPath = path.join(output, 'boundary.squid');
 const savedFile = path.join(output, `saved-${process.pid}.squid`);
 let destination = savedFile;
 let saves = 0;
+let cancelSave = false;
+let saveGate;
+let releaseSave;
+let saveDialogWaiting = false;
+let messageResponse = 1;
+const messages = [];
 let scriptFailure;
 require('node:fs').mkdirSync(path.join(output, `profile-${process.pid}`), { recursive: true });
 app.setPath('userData', path.join(output, `profile-${process.pid}`));
 // The production main owns all security settings and handlers. Only suppress its show call.
 BrowserWindow.prototype.show = function () {};
 dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [openPath] });
-dialog.showSaveDialog = async () => { saves++; return { canceled: false, filePath: destination }; };
-dialog.showMessageBox = async () => ({ response: 1 });
+dialog.showSaveDialog = async () => {
+  saves++;
+  if (saveGate) { saveDialogWaiting = true; await saveGate; saveGate = undefined; saveDialogWaiting = false; }
+  return { canceled: cancelSave, filePath: destination };
+};
+dialog.showMessageBox = async (_window, options) => { messages.push(options); return { response: messageResponse }; };
 dialog.showErrorBox = (_title, message) => { scriptFailure = new Error(message); };
 app.on('browser-window-created', (_event, created) => {
   window = created;
@@ -130,6 +140,8 @@ app.whenReady().then(async () => {
     window.webContents.debugger.attach('1.3');
     assert.equal(await evaluate('typeof window.require'), 'undefined');
     assert.equal(await evaluate('!!window.squidware'), true);
+    await evaluate('window.__qaConfirmResponse = true; window.confirm = () => window.__qaConfirmResponse; true');
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
     pass('production renderer and actual isolated preload load');
 
     menuAction('Open project…');
@@ -423,6 +435,88 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelector('.history-policy').textContent.includes('80 actions')"), true);
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('file loads clear history and the history panel exposes its retention policy');
+
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Project file saved');
+    await typeText('.inspector textarea', 'A pending draft on a saved file');
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes · Draft pending');
+    for (const width of [1120, 1250]) {
+      window.setSize(width, 800); await pause(60);
+      assert.equal(await evaluate("getComputedStyle(document.querySelector('.save-state')).display !== 'none' && document.querySelector('.save-state').getBoundingClientRect().right <= document.querySelector('.header-actions').getBoundingClientRect().left"), true);
+    }
+    await capture('file-draft-status.png');
+    messageResponse = 0;
+    let prevented = false;
+    window.emit('close', { preventDefault() { prevented = true; } });
+    await pause(60);
+    assert.equal(prevented, true);
+    assert.equal(messages.at(-1).title, 'Unsaved project');
+    await fieldKey('.inspector textarea', 'Escape');
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Project file saved');
+    pass('draft status remains visible at minimum desktop widths and triggers the native close guard; Escape restores clean status');
+
+    await clickSelector('.project-title');
+    await editNumber('Audio sync offset · seconds', 99999);
+    await clickText('Done', '.modal');
+    assert.equal(await evaluate("document.querySelector('.modal h2').textContent"), 'Production settings');
+    menuAction('New project');
+    await pause(50);
+    assert.equal(await evaluate("document.querySelector('.modal h2').textContent"), 'Production settings');
+    menuAction('Open project…');
+    await pause(50);
+    assert.equal(await evaluate(`${numberSelector('Audio sync offset · seconds')}.value`), '99999');
+    await keyOnNumber('Audio sync offset · seconds', 'Escape');
+    await clickText('Done', '.modal');
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Project file saved');
+    pass('invalid modal drafts survive Done, New and Open until corrected or canceled');
+
+    const savedBytes = await fs.readFile(historyFile, 'utf8');
+    await typeText('.inspector textarea', 'A committed unsaved note');
+    await fieldKey('.inspector textarea', 'Enter');
+    cancelSave = true;
+    menuAction('Save As…');
+    await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes · Save canceled'", 'canceled save status');
+    assert.equal(await fs.readFile(historyFile, 'utf8'), savedBytes);
+    cancelSave = false;
+    destination = path.join(output, `missing-${process.pid}`, 'cannot-save.squid');
+    menuAction('Save As…');
+    await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes · Save failed'", 'failed save status');
+    assert.equal(await fs.readFile(historyFile, 'utf8'), savedBytes);
+    pass('canceled and failed native saves retain unsaved edits and the previous project file');
+
+    destination = path.join(output, `save-status-${process.pid}.squid`);
+    saveGate = new Promise(resolve => { releaseSave = resolve; });
+    menuAction('Save As…');
+    await waitFor(() => saveDialogWaiting, 'delayed save dialog');
+    await uiWait("document.querySelector('.save-state').textContent.includes('Saving…')", 'saving status');
+    await typeText('.inspector textarea', 'A later edit during save');
+    await fieldKey('.inspector textarea', 'Enter');
+    releaseSave();
+    await savedProject(p => p.sets[0].notes === 'A committed unsaved note', destination);
+    await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes'", 'later edit remains unsaved');
+    await uiWait("document.querySelector('.recovery-indicator').textContent === 'Recovery copy saved'", 'independent recovery status');
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
+    menuAction('Undo drill edit');
+    await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'undo to saved snapshot');
+    menuAction('Redo drill edit');
+    await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes'", 'redo away from saved snapshot');
+    pass('edits during a native save stay unsaved after recovery; undo and redo compare the captured saved revision');
+
+    await evaluate('window.__qaConfirmResponse = false');
+    openPath = historyFile;
+    menuAction('Open project…');
+    await pause(60);
+    assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
+    menuAction('New project');
+    await uiWait("document.querySelector('.modal h2')?.textContent === 'A new beginning'", 'new project prompt');
+    await clickSelector('.new-options button:first-child');
+    assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
+    await evaluate('window.__qaConfirmResponse = true');
+    await clickSelector('.new-options button:first-child');
+    await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes'", 'new production unsaved');
+    assert.equal(await evaluate("document.querySelector('.set-panel .count-badge').textContent"), '1');
+    pass('open and new-project cancellation preserve edits; a new production requires an explicit file save');
+    await clickText('Design');
+    await capture('file-save-status.png');
 
     const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
     await fs.writeFile(path.join(output, 'editor.png'), screenshot.toPNG());

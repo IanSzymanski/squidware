@@ -3,6 +3,7 @@ import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Poi
 import type { Dialog, EditorState, SessionSlice } from './state';
 import { addPicture, reconnectSets, updateSetProperties } from './projectEdits';
 import { canEditPositions } from './editMode';
+import { assertCanReplace } from './fileSession';
 
 export interface CommandArguments {
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
@@ -39,6 +40,12 @@ export interface CommandDefinition<I extends CommandId> {
 }
 const define = <I extends CommandId>(definition: CommandDefinition<I>) => definition;
 const always = () => true;
+const showDialog = (context: CommandContext, dialog: Dialog) => {
+  const state = context.getState();
+  if (state.ui.dialog !== dialog && state.ui.pendingDraft) throw new Error('Finish or cancel the pending edit before changing dialogs.');
+  if (dialog) context.patch('playback', { playing: false });
+  context.patch('ui', { dialog });
+};
 const editable = canEditPositions;
 const setExists = (state: EditorState, index: number) => Number.isInteger(index) && index >= 0 && index < state.project.present.sets.length;
 const selectSet = (context: CommandContext, index: number) => {
@@ -53,7 +60,7 @@ export const commandRegistry = {
   'project.load': define({ id: 'project.load', name: 'Load production', description: 'Replace the production and reset edit history.', arguments: { project: 'Project v2' }, enabled: always, execute: (c, a) => c.load(a.project) }),
   'history.undo': define({ id: 'history.undo', name: 'Undo', description: 'Restore the previous project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Z', enabled: s => !s.project.transactionName && s.project.past.length > 0, execute: c => c.history('undo') }),
   'history.redo': define({ id: 'history.redo', name: 'Redo', description: 'Restore an undone project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Shift Z', enabled: s => !s.project.transactionName && s.project.future.length > 0, execute: c => c.history('redo') }),
-  'history.open': define({ id: 'history.open', name: 'History', description: 'Review named actions and the session history limit.', arguments: {}, enabled: always, execute: c => c.patch('ui', { dialog: 'history' }) }),
+  'history.open': define({ id: 'history.open', name: 'History', description: 'Review named actions and the session history limit.', arguments: {}, enabled: always, execute: c => showDialog(c, 'history') }),
   'set.update': define({ id: 'set.update', name: 'Edit set properties', description: 'Update set name, counts, tempo, transition or rehearsal notes.', arguments: { index: 'integer', update: 'set properties' }, enabled: (s, a) => setExists(s, a.index), execute: (c, a) => {
     validateSetUpdate(a.update, a.index);
     const wasAtSet = Math.abs(c.getState().playback.count - setStartCount(c.getState().project.present, a.index)) < 0.001;
@@ -80,16 +87,15 @@ export const commandRegistry = {
   'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); c.patch('playback', { playing: false, count }); c.patch('selection', { activeIndex: sampleProject(p, count).setIndex }); } }),
   'tool.select': define({ id: 'tool.select', name: 'Select / pan', description: 'Choose the field interaction tool.', arguments: { tool: 'select | pan' }, shortcut: 'V / H', enabled: always, execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
   'dialog.open': define({ id: 'dialog.open', name: 'Open dialog', description: 'Open an editor dialog and stop playback.', arguments: { dialog: 'Dialog' }, enabled: always, execute: (c, a) => {
-    if (a.dialog) c.patch('playback', { playing: false });
+    showDialog(c, a.dialog);
     if (a.dialog === 'add-cast') { const s = c.getState(); c.patch('ui', { castAmount: Math.max(1, Math.min(s.ui.castAmount, PROJECT_LIMITS.performers - s.project.present.performers.length)) }); }
-    c.patch('ui', { dialog: a.dialog });
   } }),
-  'file.new': define({ id: 'file.new', name: 'New production', description: 'Choose a blank production or demo.', arguments: {}, shortcut: 'Ctrl / ⌘ N', enabled: always, execute: c => { c.patch('playback', { playing: false }); c.patch('ui', { dialog: 'new', menu: false }); } }),
+  'file.new': define({ id: 'file.new', name: 'New production', description: 'Choose a blank production or demo.', arguments: {}, shortcut: 'Ctrl / ⌘ N', enabled: always, execute: c => { assertCanReplace(c.getState()); showDialog(c, 'new'); c.patch('ui', { menu: false }); } }),
   'file.open': define({ id: 'file.open', name: 'Open production', description: 'Open a saved .squid project.', arguments: {}, shortcut: 'Ctrl / ⌘ O', enabled: always, execute: c => c.external('file.open') }),
   'file.save': define({ id: 'file.save', name: 'Save production', description: 'Save an editable .squid file.', arguments: {}, shortcut: 'Ctrl / ⌘ S', enabled: always, execute: c => c.external('file.save') }),
   'file.save-as': define({ id: 'file.save-as', name: 'Save production as', description: 'Choose a new destination for the project.', arguments: {}, shortcut: 'Ctrl / ⌘ Shift S', enabled: always, execute: c => c.external('file.save-as') }),
-  'file.export': define({ id: 'file.export', name: 'Export rehearsal packet', description: 'Choose field charts, coordinates, CSV or SVG.', arguments: {}, enabled: always, execute: c => { c.patch('playback', { playing: false }); c.patch('ui', { dialog: 'export' }); } }),
-  'help.open': define({ id: 'help.open', name: 'Guide & shortcuts', description: 'Open workflow help and command shortcuts.', arguments: {}, enabled: always, execute: c => { c.patch('playback', { playing: false }); c.patch('ui', { dialog: 'help', menu: false }); } }),
+  'file.export': define({ id: 'file.export', name: 'Export rehearsal packet', description: 'Choose field charts, coordinates, CSV or SVG.', arguments: {}, enabled: always, execute: c => showDialog(c, 'export') }),
+  'help.open': define({ id: 'help.open', name: 'Guide & shortcuts', description: 'Open workflow help and command shortcuts.', arguments: {}, enabled: always, execute: c => { showDialog(c, 'help'); c.patch('ui', { menu: false }); } }),
 } satisfies { [I in CommandId]: CommandDefinition<I> };
 
 export const commandMetadata = Object.values(commandRegistry).map(({ id, name, description, arguments: args, shortcut }) => ({ id, name, description, arguments: args, shortcut }));

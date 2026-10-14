@@ -98,7 +98,8 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       active = null;
       const revision = ++revisionClock;
       publish({ ...state, project: { present: next, past: [], future: [], revision, estimatedBytes: 0, droppedEntries: 0 } });
-      patch('fileSession', { savedRevision: revision });
+      // Loading geometry alone is not evidence of a saved project file.
+      patch('fileSession', { savedRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
       patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false });
       patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false });
     },

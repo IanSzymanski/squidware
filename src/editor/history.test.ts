@@ -139,7 +139,7 @@ describe('reversible named history', () => {
     expect(store.getState().project).toBe(loaded);
     expect(loaded.past).toEqual([]); expect(loaded.future).toEqual([]);
     expect(loaded.transactionName).toBeUndefined();
-    expect(store.getState().fileSession.savedRevision).toBe(loaded.revision);
+    expect(store.getState().fileSession.savedRevision).toBeNull();
   });
 
   it('restores saved revision status through undo and redo without serializing edits', () => {
