@@ -1,6 +1,7 @@
 import { Component, lazy, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import type { Stage3DProps } from './Stage3D';
+import { HelpButton } from '../editor/ControlHelp';
 
 const LazyStage3D = lazy(() => import('./Stage3D').then(module => ({ default: module.Stage3D })));
 
@@ -8,7 +9,7 @@ class PreviewBoundary extends Component<{ children: ReactNode; onReturnTo2D: () 
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   render() {
-    return this.state.failed ? <div className="stage-three"><div className="stage-three__fallback" role="alert"><strong>3D preview could not load</strong><p>Return to the field to keep editing. You can try opening 3D again.</p><button onClick={this.props.onReturnTo2D}>Return to 2D field</button></div></div> : this.props.children;
+    return this.state.failed ? <div className="stage-three"><div className="stage-three__fallback" role="alert"><strong>3D preview could not load</strong><p>Return to the field to keep editing. You can try opening 3D again.</p><HelpButton title="Return to 2D field" description="Return to the editable field view." onClick={this.props.onReturnTo2D}>Return to 2D field</HelpButton></div></div> : this.props.children;
   }
 }
 

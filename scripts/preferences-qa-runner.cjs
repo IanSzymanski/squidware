@@ -30,7 +30,7 @@ function instrument() {
     onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
 async function openPreferences() {
-  await click('button[title="Project menu"]');
+  await click('button[aria-label="Project menu"]');
   await evaluate("[...document.querySelectorAll('.dropdown button')].find(button => button.textContent === 'Preferences').click()");
   await uiWait("document.querySelector('.modal h2')?.textContent === 'Preferences'", 'Preferences modal');
 }
