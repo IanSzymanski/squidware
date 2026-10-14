@@ -93,4 +93,6 @@ GitHub Issues retain scope and acceptance evidence. Closed work leaves this acti
 
 ## Maintenance
 
+Follow the [shared design guidance](DESIGN_GUIDANCE.md) for user-facing work and retain its link in every implementation issue. Record applicable review evidence or a reasoned not-applicable result; linking the guide alone does not establish compliance.
+
 Update release-plan.json when membership or prerequisites change; do not move an issue ahead of an unfinished prerequisite in a later release. The coordinator refreshes milestones, maintained rank blocks and tracker progress from live issue state. Close an issue only with acceptance evidence or an explicit maintainer decision; partial delivery, passing unit tests and PR titles do not establish completion. New issues require release assignment. Reconcile before publishing.

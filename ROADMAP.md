@@ -14,6 +14,8 @@ Each implementation issue has exactly one `priority:P1`, `priority:P2` or `prior
 
 Keep issue labels, body priorities, dependency links, this roadmap mapping and the generated queue consistent whenever scope, evidence or completion changes. Check existing issues before adding a goal; update its owner rather than create a duplicate. Preserve maintainer decisions and do not close an issue until its own acceptance criteria are met. The queue documents the ranking and maintenance policy.
 
+All implementation work follows the [shared design guidance](docs/DESIGN_GUIDANCE.md), consolidated from the audit-derived issues. Apply its relevant review checks and record evidence or a reasoned not-applicable result in the issue or implementation PR. New issues use the implementation-work template; retain the guidance link during backlog maintenance.
+
 The themes below are planned development areas, not shipped features or delivery promises. Each should retain editable project compatibility, predictable undo/redo, and useful automated and interactive checks.
 
 ## 1. Strengthen the daily desktop workflow
