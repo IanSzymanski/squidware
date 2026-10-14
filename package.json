@@ -20,6 +20,7 @@
     "test:desktop": "node scripts/build-project-codec.mjs && node --test scripts/desktop.test.cjs scripts/recovery.test.cjs",
     "test:recovery": "node scripts/recovery-qa.mjs",
     "test:editor": "node scripts/editor-qa.mjs",
+    "test:accessibility": "node scripts/accessibility-qa.mjs",
     "test:3d": "node scripts/stage3d-qa.mjs",
     "perf:fixtures": "node scripts/performance-fixtures.mjs",
     "perf:compute": "node scripts/performance-compute.mjs",

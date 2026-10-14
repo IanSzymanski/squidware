@@ -42,4 +42,14 @@
 .stage-three__fallback > p { max-width: 360px; font-size: 12px; line-height: 1.7; color: #99af9e; margin: 0; }
 .field-container .field-stage__corner, .field-container .field-stage__hint, .field-container .field-stage__orientation { display: none; }
 .field-container .stage-three__controls { top: 42px; }
+.field-focus-ring { visibility: hidden; }
+.field-performer:focus-visible .field-focus-ring { visibility: visible; }
+.field-performer--focused .field-focus-ring { visibility: visible; }
+.field-stage__svg:focus-visible, .stage-three__canvas > canvas:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+.field-keyboard-help { position: absolute; left: 8px; right: 8px; bottom: 8px; pointer-events: none; background: #14231bf5; color: #edf5e5; padding: 6px 9px; border-radius: 4px; font-size: 11px; line-height: 1.45; }
+.stage-three__controls > button { font-size: 12px; }
+.stage-three__controls > button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.stage-three__fallback > p { color: #d7e4d0; }
+.field-stage__corner, .field-stage__hint, .field-stage__orientation { font-size: 11px; color: #d7e4d0; }
+.field-stage__dimensions, .field-stage__hint > span { color: #d7e4d0; }
 @media (max-width: 850px) { .field-stage__dimensions { display: none; } .field-stage__corner { left: 15px; top: 15px; } .field-stage__hint { left: 15px; gap: 10px; font-size: 9px; } .field-stage__hint > span { display: none; } }

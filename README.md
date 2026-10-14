@@ -98,15 +98,16 @@ Use `Ctrl` on Windows/Linux and `⌘` on macOS.
 | Play / pause | `Space` |
 | Select / pan tool | `V` / `H` |
 | Select all / clear selection | `Ctrl/⌘ A` / `Esc` |
-| Move selection one 8-to-5 step | Arrow key |
-| Move selection four steps | `Shift` + arrow key |
+| Focus a performer on the field | Arrow key |
+| Move selection one 8-to-5 step | `Alt` + arrow key |
+| Move selection four steps | `Shift` + `Alt` + arrow key |
 | Previous / next set | `[` / `]` |
 | Undo / redo | `Ctrl/⌘ Z` / `Ctrl/⌘ Shift Z` |
 | Save / Save As | `Ctrl/⌘ S` / `Ctrl/⌘ Shift S` |
 | Open / new project | `Ctrl/⌘ O` / `Ctrl/⌘ N` |
 | Export dialog / help in desktop | `Ctrl/⌘ P` / `F1` |
 
-Editing shortcuts do not change a formation while typing into a form field. Performer buttons in the 2D field also support keyboard focus and Enter/Space selection.
+Editing shortcuts do not change a formation while typing into a form field. Tab enters and leaves the 2D field in one stop. Arrows change performer focus; Enter/Space selects, and Shift+Enter/Space adds or removes that performer. Page Up/Down walks the roster, including overlapping dots; Home/End reaches the first/last performer.
 
 ## Files and architecture
 

@@ -296,7 +296,7 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled && ${numberSelector('Y · yards from back')}.disabled`), true);
     assert.equal(await evaluate("document.querySelector('.apply-formation').disabled"), true);
     assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(dotSelector)})).cursor`), 'default');
-    assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby')"), 'field-preview-message');
+    assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby').split(/\\s+/).includes('field-preview-message')"), true);
     const beforePreview = JSON.stringify(saved.sets[1].positions);
     await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); document.querySelector('.apply-formation').click()`);
     const previewDot = await evaluate(`(() => { const element = document.querySelector(${JSON.stringify(dotSelector)}); const point = new DOMPoint(0, 0).matrixTransform(element.getScreenCTM()); return { x: point.x, y: point.y }; })()`);
