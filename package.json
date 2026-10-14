@@ -22,6 +22,7 @@
     "test:editor": "node scripts/editor-qa.mjs",
     "test:accessibility": "node scripts/accessibility-qa.mjs",
     "test:preferences": "node scripts/preferences-qa.mjs",
+    "test:thumbnails": "node scripts/thumbnail-qa.mjs",
     "test:3d": "node scripts/stage3d-qa.mjs",
     "perf:fixtures": "node scripts/performance-fixtures.mjs",
     "perf:compute": "node scripts/performance-compute.mjs",

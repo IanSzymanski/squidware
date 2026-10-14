@@ -1,3 +1,4 @@
+import { selectionMembership } from '../selection';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -357,7 +358,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         const id = hit?.instanceId === undefined ? undefined : state.performers[hit.instanceId]?.id;
         const current = currentRef.current;
         if (!id) { if (!start.shift) current.onSelect([]); return; }
-        current.onSelect(start.shift ? current.selectedIds.includes(id) ? current.selectedIds.filter(selected => selected !== id) : [...current.selectedIds, id] : [id]);
+        current.onSelect(start.shift ? selectionMembership(current.selectedIds).has(id) ? current.selectedIds.filter(selected => selected !== id) : [...current.selectedIds, id] : [id]);
       };
       const onContextLost = (event: Event) => {
         event.preventDefault();

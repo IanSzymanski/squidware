@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Point, Project } from '../types';
+import { selectionMembership } from '../selection';
 import { coordinateDescription } from '../domain';
 import { FieldReadout } from './FieldReadout';
 import { FIELD_KEYS, nextFieldFocus } from './fieldKeyboard';
@@ -25,7 +26,7 @@ interface DrawingProps {
 /** SVG children shared by the interactive field and exported field diagrams. */
 export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2 }: DrawingProps) {
   const { width, height, preset } = project.field;
-  const selected = new Set(selectedIds);
+  const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
   const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
   const hashInset = preset === 'college' ? 20 : height / 3;
@@ -219,11 +220,11 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
     const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id');
     if (id && positions[id]) {
       focusPerformer(id);
-      if (event.shiftKey && selectedIds.includes(id)) {
+      if (event.shiftKey && selectionMembership(selectedIds).has(id)) {
         onSelect(selectedIds.filter(selectedId => selectedId !== id));
         return;
       }
-      const ids = selectedIds.includes(id) ? selectedIds : event.shiftKey ? [...selectedIds, id] : [id];
+      const ids = selectionMembership(selectedIds).has(id) ? selectedIds : event.shiftKey ? [...selectedIds, id] : [id];
       onSelect(ids);
       if (readOnly) return;
       const originals = Object.fromEntries(ids.filter(selectedId => positions[selectedId]).map(selectedId => [selectedId, { ...positions[selectedId] }]));
@@ -295,7 +296,7 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
     if (targetId && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
       event.stopPropagation();
-      onSelect(event.shiftKey ? selectedIds.includes(targetId) ? selectedIds.filter(id => id !== targetId) : [...selectedIds, targetId] : [targetId]);
+      onSelect(event.shiftKey ? selectionMembership(selectedIds).has(targetId) ? selectedIds.filter(id => id !== targetId) : [...selectedIds, targetId] : [targetId]);
       return;
     }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {

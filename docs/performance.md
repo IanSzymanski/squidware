@@ -128,3 +128,24 @@ Median retained heap above the pre-store baseline was 8.9 → 5.02 MiB for notes
 Store edit medians improved by about 95 percent in these local runs. This isolates edit dispatch from React rendering, full transition analysis and deferred recovery; it does not establish an end-to-end 16.7 ms edit-frame pass or school-laptop qualification. The History panel documents the 80-action / 16 MiB estimated-payload policy and always-kept latest-action exception. Pending text/color drafts commit once; undo/redo and dirty comparisons use revision IDs rather than serialization. Native recovery remains separately tracked by #7.
 
 Reproduce with node scripts/history-performance.mjs and an exact --before-ref commit if changing the baseline. Standard app/desktop tests and the production editor workflow verify correctness independently of the benchmark.
+
+## Thumbnails and selection (issue #10)
+
+A production Electron comparison on October 13, 2026 uses the same 500-performer, 128-set fixture, including one empty section. The baseline is main at `30c8e5ba66dabd73accffb645f09238a1d716c25`. The after build uses narrow thumbnail positions/color inputs and cached immutable selection membership. [thumbnail-comparison.json](performance/thumbnail-comparison.json) records the build fingerprints, after-source hashes, hardware, counters and edit-cost summaries.
+
+| Maximum production work | Before | After |
+| --- | ---: | ---: |
+| Thumbnail renders for one dot edit / undo / redo | 128 each | 1 each |
+| Thumbnail renders for set text, move timing or performer name | 128 each | 0 |
+| Thumbnail renders for a used section color or visible section assignment | 128 | 128 |
+| Thumbnail renders for an unused section color | 128 | 0 |
+| Thumbnail renders during playback | 0 | 0 |
+| Selection Set builds / array membership scans during the sampled playback | 5 / 5,000 | 0 / 0 |
+
+Thumbnails receive each picture's immutable positions and a shared array of performer IDs/colors. Metadata and timing changes do not affect these props. Changes to visible roster membership/order/colors invalidate the array; names, labels, unused colors and assignments between equal colors retain it. Cast, legend, Inspector derivations and field selection reuse a WeakMap-cached ReadonlySet for each immutable selected-ID array. Section groups, filtered Cast, selected performers and selection center remain stable when their inputs are unchanged. Empty sections no longer show selected merely because another section is selected.
+
+The local Ryzen 7 3700X / Windows 10 host recorded command dispatch median/p95 **2.00/2.20 → 1.90/2.10 ms** and command-to-React-commit latency **43.40/47.90 → 12.65/13.00 ms** in one sequential before/after pair (20 edits after five warmups). These are host observations, not CI timing gates, hardware-qualified budgets or physical presentation measurements. The broader field/playback subscription work remains #11; representative school-laptop acceptance remains #3.
+
+The runner hooks the actual production React renderer and editor commands in a fresh profile. Render-work counters identify newly committed thumbnail component fibers, excluding retained bailout subtrees with stale PerformedWork flags. Counter sampling and edit timing are separate; timing disables Fiber-tree traversal. The fixture checks actual coordinates/colors/counts plus Cast/legend selection, empty sections, reassignment, removal, undo/redo and playback. CI gates exact invalidation/cache counts and correctness, while retaining timing samples without a flaky wall-time threshold.
+
+Reproduce from an unchanged baseline build with `node scripts/thumbnail-qa.mjs --baseline`, then build the change and run `pnpm test:thumbnails`. Raw results and isolated profiles go to `.qa/thumbnails/before` and `.qa/thumbnails/after`. This targeted runner avoids relying on minified component names. App tests cover additional same-color, roster-order, empty-roster and immutable-cache cases. The editor, keyboard-accessibility and 3D lifecycle checks cover the existing user workflows independently.

@@ -70,12 +70,14 @@ pnpm exec electron . --smoke-test
 pnpm test:editor
 pnpm test:recovery
 pnpm test:preferences
+pnpm test:thumbnails
 ```
 
 - Vitest covers formation geometry, transforms, project validation, timeline sampling, timing conversion, roster import, coordinate export, and transition analysis.
 - The desktop tests exercise the actual main-process and preload source with controlled dialogs and temporary files, including atomic saves, canceled dialogs, invalid requests, and renderer isolation.
 - The native smoke test launches Electron, checks that the renderer and preload bridge load with Node access disabled, and exits. It requires a graphical desktop; the [CI workflow](.github/workflows/ci.yml) shows the sandboxed Xvfb setup used on Linux.
 - The editor workflow check runs the production renderer and actual desktop file handlers in an isolated profile with controlled dialogs. It checks boundary imports, numeric validation, undo/redo, selection, formations, playback, saves, reopening, and CSV/SVG export. Build first; artifacts go to `.qa/editor/`.
+- The thumbnail check instruments the maximum production renderer and asserts one-set redraws, color/roster invalidation, selection-cache reuse, undo/redo and playback. See [the performance evidence](docs/performance.md#thumbnails-and-selection-issue-10).
 - The preferences check changes personal settings through the production UI, checks unchanged project data, opens a different show, restarts four desktop processes, verifies reset and graceful quit, and checks A4/Letter PDF dimensions. See [preferences policy and evidence](docs/PREFERENCES.md).
 - The recovery check opens a 500-performer, 128-set production larger than 5 MB, profiles editing during recovery, exits the desktop process, then restores and saves the exact production in a fresh process. It also checks legacy migration and selection between productions. Artifacts go to `.qa/recovery/`; see the [recovery design and evidence](docs/RECOVERY.md).
 

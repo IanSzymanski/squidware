@@ -1,0 +1,273 @@
+{
+  "fixture": {
+    "performers": 500,
+    "sets": 128,
+    "sections": 5
+  },
+  "before": {
+    "sourceRevision": "30c8e5ba66dabd73accffb645f09238a1d716c25",
+    "buildSha256": "84b8f4423a3bbe87e48cdd8168165902b861b676a3170f57bfc01206b9a1a464",
+    "electron": "44.7.0",
+    "hardware": {
+      "os": "Windows_NT",
+      "release": "10.0.19045",
+      "architecture": "x64",
+      "cpuModel": "AMD Ryzen 7 3700X 8-Core Processor             ",
+      "logicalCpus": 16,
+      "totalMemoryBytes": 34282377216,
+      "node": "24.19.0",
+      "representativeSchoolLaptop": false,
+      "note": "Host measurements only; school-laptop qualification requires a separate run."
+    },
+    "work": {
+      "one-set-dot-edit": {
+        "thumbnails": 128,
+        "membershipBuilds": 3,
+        "membershipScans": 1515,
+        "commits": 5
+      },
+      "undo-dot": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "redo-dot": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "set-metadata": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "move-timing": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "performer-name": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "used-section-color": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "unused-section-color": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "performer-section": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1010,
+        "commits": 2
+      },
+      "section-selection": {
+        "thumbnails": 0,
+        "membershipBuilds": 1,
+        "membershipScans": 629,
+        "commits": 2
+      },
+      "emptySectionSelected": true,
+      "undo-section": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1256,
+        "commits": 2
+      },
+      "redo-section": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1008,
+        "commits": 2
+      },
+      "roster-removal": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 998,
+        "commits": 2
+      },
+      "undo-removal": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 1000,
+        "commits": 2
+      },
+      "select-all": {
+        "thumbnails": 0,
+        "membershipBuilds": 1,
+        "membershipScans": 1000,
+        "commits": 1
+      },
+      "playback": {
+        "thumbnails": 0,
+        "membershipBuilds": 5,
+        "membershipScans": 5000,
+        "commits": 7
+      }
+    },
+    "editCost": {
+      "dispatch": {
+        "samples": 20,
+        "medianMs": 2,
+        "p95Ms": 2.2000000001862645
+      },
+      "commit": {
+        "samples": 20,
+        "medianMs": 43.39999999990687,
+        "p95Ms": 47.89999999990687
+      }
+    }
+  },
+  "after": {
+    "buildSha256": "99592388820b6e5deb756e4f6755f8ab0daa98945f666cd25b8b510615fa80ee",
+    "electron": "44.7.0",
+    "hardware": {
+      "os": "Windows_NT",
+      "release": "10.0.19045",
+      "architecture": "x64",
+      "cpuModel": "AMD Ryzen 7 3700X 8-Core Processor             ",
+      "logicalCpus": 16,
+      "totalMemoryBytes": 34282377216,
+      "node": "24.19.0",
+      "representativeSchoolLaptop": false,
+      "note": "Host measurements only; school-laptop qualification requires a separate run."
+    },
+    "work": {
+      "one-set-dot-edit": {
+        "thumbnails": 1,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 5
+      },
+      "undo-dot": {
+        "thumbnails": 1,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "redo-dot": {
+        "thumbnails": 1,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "set-metadata": {
+        "thumbnails": 0,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "move-timing": {
+        "thumbnails": 0,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "performer-name": {
+        "thumbnails": 0,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "used-section-color": {
+        "thumbnails": 128,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "unused-section-color": {
+        "thumbnails": 0,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "performer-section": {
+        "thumbnails": 128,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "section-selection": {
+        "thumbnails": 0,
+        "membershipBuilds": 1,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "emptySectionSelected": false,
+      "undo-section": {
+        "thumbnails": 128,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "redo-section": {
+        "thumbnails": 128,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 4
+      },
+      "roster-removal": {
+        "thumbnails": 128,
+        "membershipBuilds": 1,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "undo-removal": {
+        "thumbnails": 128,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 2
+      },
+      "select-all": {
+        "thumbnails": 0,
+        "membershipBuilds": 1,
+        "membershipScans": 0,
+        "commits": 1
+      },
+      "playback": {
+        "thumbnails": 0,
+        "membershipBuilds": 0,
+        "membershipScans": 0,
+        "commits": 7
+      }
+    },
+    "editCost": {
+      "dispatch": {
+        "samples": 20,
+        "medianMs": 1.8999999999068677,
+        "p95Ms": 2.1000000000931323
+      },
+      "commit": {
+        "samples": 20,
+        "medianMs": 12.649999999906868,
+        "p95Ms": 13
+      }
+    },
+    "sourceBaseRevision": "30c8e5ba66dabd73accffb645f09238a1d716c25",
+    "sourceState": "Working tree based on sourceBaseRevision; exact application inputs and production build are identified by SHA-256.",
+    "sourceSha256": {
+      "src/selection.ts": "4c2baae428c0aec2698b61e5f5f05cfc10fab4d7ba4beb8101c323092f3a2ebe",
+      "src/editor/thumbnailRoster.ts": "b6dd6ae8e0c2892a394a025a47c5a8fdd6d9440229432d72eedbb583c3bfbc12",
+      "src/editor/EditorControls.tsx": "e8fa52567e50e0308511993deea4b07ec387ce2310109f93daf5cd92982b5026",
+      "src/editor/useEditorController.tsx": "89a99ce5548c53d7a999bfc85f9a40a3d226ead6c3f6994fc2e9e6377564ac38",
+      "src/editor/EditorShell.tsx": "20269954f2eeb7b9d3df2099d5204b58188b00b8f121b21f64196f4220c05f98",
+      "src/editor/CastWorkspace.tsx": "c7156c1494597237de9f31044259ccd9ee5360eeebb991a46213311a09279666",
+      "src/components/Field2D.tsx": "aa824eca93662d70823ddf75001dd6c320cc9f1cc77f20914b98e306e33f11ea",
+      "src/components/Stage3D.tsx": "2a9463fe160bd7c12faf1bfee31bea5e7cdbcfc3e8d58fdee9cd409d689726a6"
+    }
+  },
+  "scope": "Sequential hidden sandboxed production Electron runs on the same development host. 20 command edits after 5 warmups; Fiber render-work counts and timings are separate. Timing disables Fiber walking. Work-count assertions are CI gates; timings are host observations, not thresholds or school-laptop acceptance."
+}

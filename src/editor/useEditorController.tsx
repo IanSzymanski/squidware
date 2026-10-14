@@ -10,6 +10,8 @@ import { useProject } from '../useProject';
 
 import { useEditorSelector, useEditorStore, useEditorValue } from './react';
 import type { Dialog } from './state';
+import { selectionMembership } from '../selection';
+import { createThumbnailRosterSelector, sectionMemberships } from './thumbnailRoster';
 import { formations } from './formations';
 import { usePlaybackController } from './usePlaybackController';
 import { useCommandController } from './useCommandController';
@@ -83,14 +85,18 @@ export function useEditorController() {
   const audioDecodeGeneration = useRef(0);
   const index = Math.min(activeIndex, project.sets.length - 1);
   const activeSet = project.sets[index];
-  const duration = totalCounts(project);
+  const duration = useMemo(() => totalCounts(project), [project.moves]);
   const atSet = useEditorSelector(isAtActiveSet);
   const readOnly = !useEditorSelector(canEditPositions);
   const issues = useMemo(() => analyzeTransition(project, index, preferences.value), [project, index, preferences.value.minimumSpacing, preferences.value.maximumStride]);
   const dirty = history.revision !== savedRevision || pendingDraft;
-  const allSelected = selectedIds.length === project.performers.length && selectedIds.length > 0;
-  const selectedPerformers = project.performers.filter(p => selectedIds.includes(p.id));
-  const selectionCenter = selectedIds.length ? selectedIds.reduce((point, id) => ({ x: point.x + (activeSet.positions[id]?.x || 0) / selectedIds.length, y: point.y + (activeSet.positions[id]?.y || 0) / selectedIds.length }), { x: 0, y: 0 }) : { x: 50, y: 26.667 };
+  const selectedSet = useMemo(() => selectionMembership(selectedIds), [selectedIds]);
+  const allSelected = useMemo(() => project.performers.length > 0 && project.performers.every(p => selectedSet.has(p.id)), [project.performers, selectedSet]);
+  const selectedPerformers = useMemo(() => project.performers.filter(p => selectedSet.has(p.id)), [project.performers, selectedSet]);
+  const sectionMembers = useMemo(() => sectionMemberships(project.performers, project.sections), [project.performers, project.sections]);
+  const thumbnailRoster = useMemo(() => createThumbnailRosterSelector(), []);
+  const thumbnailDots = useMemo(() => thumbnailRoster(project.performers, project.sections), [thumbnailRoster, project.performers, project.sections]);
+  const selectionCenter = useMemo(() => selectedIds.length ? selectedIds.reduce((point, id) => ({ x: point.x + (activeSet.positions[id]?.x || 0) / selectedIds.length, y: point.y + (activeSet.positions[id]?.y || 0) / selectedIds.length }), { x: 0, y: 0 }) : { x: 50, y: 26.667 }, [selectedIds, activeSet.positions]);
 
   const notify = useCallback((message: string) => { setToast(message); }, []);
   useEffect(() => { if (!toast) return; const timeout = setTimeout(() => setToast(''), 5000); return () => clearTimeout(timeout); }, [toast]);
@@ -122,7 +128,7 @@ export function useEditorController() {
   function applyFormation() {
     if (document.querySelector('.formation-section input[aria-invalid="true"]')) { notify('Correct the formation values before applying.'); return; }
     if (readOnly) return;
-    const ids = selectedIds.length ? project.performers.filter(p => selectedIds.includes(p.id)).map(p => p.id) : project.performers.map(p => p.id);
+    const ids = selectedIds.length ? project.performers.filter(p => selectedSet.has(p.id)).map(p => p.id) : project.performers.map(p => p.id);
     if (dispatch('formation.apply', { index, ids, kind: formation, options: { center: selectionCenter, width: formationWidth, height: formationHeight, rotation: formationRotation, columns: formationColumns } })) notify(`${formations.find(f => f.kind === formation)?.label} applied to ${ids.length} performers`);
   }
   function loadProject(next: Project) {
@@ -243,8 +249,8 @@ export function useEditorController() {
   function openProject() { return dispatch('file.open'); }
   useCommandController();
 
-  const filteredCast = project.performers.filter(p => (sectionFilter === 'all' || p.sectionId === sectionFilter) && `${p.name} ${p.label}`.toLowerCase().includes(castQuery.toLowerCase()));
+  const filteredCast = useMemo(() => { const query = castQuery.toLowerCase(); return project.performers.filter(p => (sectionFilter === 'all' || p.sectionId === sectionFilter) && `${p.name} ${p.label}`.toLowerCase().includes(query)); }, [project.performers, sectionFilter, castQuery]);
   const visibleSet = activeSet;
-  return { preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;
