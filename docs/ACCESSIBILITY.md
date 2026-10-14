@@ -2,7 +2,7 @@
 
 The 2D field uses one roving Tab stop. Tab enters at the last focused performer, or the first performer when there is no remembered focus. The next Tab leaves the field. Arrow keys focus the nearest performer in that direction without editing or selecting; Page Up/Down walks the roster, including overlapping dots, and Home/End reaches its boundaries.
 
-Enter/Space selects the focused performer. Shift+Enter/Space adds or removes it. Alt+arrows nudges the selected group one 8-to-5 step (0.625 yards); Shift+Alt+arrows moves four steps. Position edits remain blocked during playback/between-set previews. Space on a standard button activates that button; it does not trigger the global playback shortcut. Form inputs retain their normal editing keys.
+Enter/Space selects the focused performer. Shift+Enter/Space adds or removes it. Alt+arrows nudges the selected group using the preference increment (default one 8-to-5 step, 0.625 yards); Shift+Alt+arrows uses the fast increment (default four steps). Position edits remain blocked during playback/between-set previews. Space on a standard button activates that button; it does not trigger the global playback shortcut. Form inputs retain their normal editing keys.
 
 Focus has a square outline, distinct from the circular selection ring. The focused performer exposes label, optional name, section and drill coordinates. Focusing outside a zoomed viewport brings the performer into view. Static SVG/print drawings do not introduce interactive Tab stops. The displayed keyboard hint and command help describe the same movement modifiers.
 

@@ -7,6 +7,9 @@ const menuActions = new Set(['new', 'open', 'save', 'save-as', 'undo', 'redo', '
 // arbitrary IPC channels, filesystem primitives, or Electron event objects.
 contextBridge.exposeInMainWorld('squidware', Object.freeze({
   platform: process.platform,
+  readPreferences: () => ipcRenderer.invoke('squidware:read-preferences'),
+  savePreferences: preferences => ipcRenderer.invoke('squidware:save-preferences', preferences),
+  resetPreferences: () => ipcRenderer.invoke('squidware:reset-preferences'),
   beginRecovery: () => ipcRenderer.invoke('squidware:begin-recovery'),
   listRecoveries: session => ipcRenderer.invoke('squidware:list-recoveries', session),
   readRecovery: (session, id) => ipcRenderer.invoke('squidware:read-recovery', session, id),
@@ -15,7 +18,7 @@ contextBridge.exposeInMainWorld('squidware', Object.freeze({
   openProject: () => ipcRenderer.invoke('squidware:open-project'),
   saveProject: (content, suggestedName, saveAs = false) => ipcRenderer.invoke('squidware:save-project', content, suggestedName, saveAs),
   exportFile: (content, suggestedName, kind) => ipcRenderer.invoke('squidware:export-file', content, suggestedName, kind),
-  exportPdf: () => ipcRenderer.invoke('squidware:export-pdf'),
+  exportPdf: paper => paper === undefined ? ipcRenderer.invoke('squidware:export-pdf') : ipcRenderer.invoke('squidware:export-pdf', paper),
   setDirty: (dirty) => { if (typeof dirty === 'boolean') ipcRenderer.send('squidware:set-dirty', dirty); },
   resetProject: () => ipcRenderer.send('squidware:reset-project'),
   onMenuAction: (callback) => {

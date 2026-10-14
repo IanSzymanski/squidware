@@ -14,6 +14,7 @@ import { formations } from './formations';
 import { usePlaybackController } from './usePlaybackController';
 import { useCommandController } from './useCommandController';
 import { createDraftTracker } from './drafts';
+import { usePreferencesController } from './usePreferencesController';
 import { useRecoveryController } from './useRecoveryController';
 import { canEditPositions, isAtActiveSet } from './editMode';
 import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, markFileOpened, saveProjectRevision } from './fileSession';
@@ -26,6 +27,7 @@ function download(content: string, filename: string, mime: string) {
 export function useEditorController() {
   const { project, history, recoveryError, dispatch, canUndo, canRedo } = useProject();
   const store = useEditorStore();
+  const preferences = usePreferencesController();
   const [activeIndex, setActiveIndex] = useEditorValue('selection', 'activeIndex');
   const [workspace, setWorkspace] = useEditorValue('ui', 'workspace');
   const projectEpoch = useEditorSelector(state => state.ui.projectEpoch);
@@ -84,7 +86,7 @@ export function useEditorController() {
   const duration = totalCounts(project);
   const atSet = useEditorSelector(isAtActiveSet);
   const readOnly = !useEditorSelector(canEditPositions);
-  const issues = useMemo(() => analyzeTransition(project, index), [project, index]);
+  const issues = useMemo(() => analyzeTransition(project, index, preferences.value), [project, index, preferences.value.minimumSpacing, preferences.value.maximumStride]);
   const dirty = history.revision !== savedRevision || pendingDraft;
   const allSelected = selectedIds.length === project.performers.length && selectedIds.length > 0;
   const selectedPerformers = project.performers.filter(p => selectedIds.includes(p.id));
@@ -125,7 +127,7 @@ export function useEditorController() {
   }
   function loadProject(next: Project) {
     draftTracker.current.clear();
-    dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setZoom(1); setFitVersion(v => v + 1);
+    dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
   }
   function replaceProduction(next: Project, cast = false) {
     try {
@@ -186,7 +188,7 @@ export function useEditorController() {
   async function exportText(kind: 'csv' | 'svg') {
     try {
       const { renderToStaticMarkup } = kind === 'svg' ? await import('react-dom/server') : { renderToStaticMarkup: () => '' };
-      const content = kind === 'csv' ? exportCoordinatesCsv(project) : renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg" viewBox="-7 -8 114 69.333" width="1392" height="784"><title>{project.title} — {activeSet.name}</title><FieldDrawing project={project} positions={activeSet.positions} showLabels={showLabels} showGrid /></svg>);
+      const content = kind === 'csv' ? exportCoordinatesCsv(project, preferences.value.coordinateDecimals) : renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg" viewBox="-7 -8 114 69.333" width="1392" height="784"><title>{project.title} — {activeSet.name}</title><FieldDrawing project={project} positions={activeSet.positions} showLabels={showLabels} showGrid coordinateDecimals={preferences.value.coordinateDecimals} /></svg>);
       const filename = `${cleanFilename(project.title)}${kind === 'svg' ? `-set-${index + 1}` : '-coordinates'}.${kind}`;
       if (window.squidware) { if (!await window.squidware.exportFile(content, filename, kind)) return; } else download(content, filename, kind === 'csv' ? 'text/csv;charset=utf-8' : 'image/svg+xml');
       notify(`${kind.toUpperCase()} exported`); setDialog(null);
@@ -195,7 +197,7 @@ export function useEditorController() {
   async function exportPdf() {
     setPlaying(false); setDialog(null); setPrinting(true);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    try { if (window.squidware) { if (await window.squidware.exportPdf()) notify('PDF saved'); } else window.print(); } catch (error) { notify(`PDF export failed: ${(error as Error).message}`); } finally { setPrinting(false); }
+    try { if (window.squidware) { if (await window.squidware.exportPdf(preferences.value.paperSize)) notify('PDF saved'); } else window.print(); } catch (error) { notify(`PDF export failed: ${(error as Error).message}`); } finally { setPrinting(false); }
   }
   async function onAudioFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
@@ -243,6 +245,6 @@ export function useEditorController() {
 
   const filteredCast = project.performers.filter(p => (sectionFilter === 'all' || p.sectionId === sectionFilter) && `${p.name} ${p.label}`.toLowerCase().includes(castQuery.toLowerCase()));
   const visibleSet = activeSet;
-  return { fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, showPaths, setShowPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, atSet, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;

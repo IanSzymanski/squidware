@@ -9,3 +9,4 @@ coverage/
 .qa/
 .env*
 electron/project-codec.cjs
+electron/preferences-codec.cjs

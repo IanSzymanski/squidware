@@ -274,7 +274,8 @@ export function secondsToCount(project: Project, seconds: number): number {
   return count;
 }
 
-export function analyzeTransition(project: Project, setIndex: number): TransitionIssue[] {
+export function analyzeTransition(project: Project, setIndex: number, { minimumSpacing = 1, maximumStride = 1.25 } = {}): TransitionIssue[] {
+  if (![minimumSpacing, maximumStride].every(value => Number.isFinite(value) && value >= .1 && value <= 5)) throw new Error('Check thresholds must be between 0.1 and 5.');
   if (!Number.isInteger(setIndex) || setIndex < 1 || setIndex >= project.sets.length) return [];
   const destination = project.sets[setIndex];
   const move = project.moves[setIndex - 1];
@@ -286,8 +287,8 @@ export function analyzeTransition(project: Project, setIndex: number): Transitio
     const to = destination.positions[performer.id];
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
     const peakStride = distance / move.counts * (move.transition === 'ease' ? 1.5 : 1);
-    if (peakStride > 1.25 + EPSILON) {
-      issues.push({ type: 'stride', performerIds: [performer.id], severity: peakStride > 5 / 3 ? 'danger' : 'warning',
+    if (peakStride > maximumStride + EPSILON) {
+      issues.push({ type: 'stride', performerIds: [performer.id], severity: peakStride > maximumStride * 4 / 3 ? 'danger' : 'warning',
         message: `${performer.label}: ${distance.toFixed(1)} yards in ${move.counts} counts; ${move.transition === 'ease' ? 'peak ' : ''}${(5 / peakStride).toFixed(1)} steps per 5 yards.`,
         atCount: startCount + move.counts / 2 });
     }
@@ -307,10 +308,10 @@ export function analyzeTransition(project: Project, setIndex: number): Transitio
       const velocitySquared = vx * vx + vy * vy;
       const closestProgress = velocitySquared < EPSILON ? 0 : clamp(-(rx * vx + ry * vy) / velocitySquared, 0, 1);
       const distance = Math.hypot(rx + vx * closestProgress, ry + vy * closestProgress);
-      if (distance < 1 - EPSILON) {
+      if (distance < minimumSpacing - EPSILON) {
         const timeProgress = move.transition === 'ease' ? inverseSmoothstep(closestProgress) : closestProgress;
         const atCount = startCount + timeProgress * move.counts;
-        issues.push({ type: 'collision', performerIds: [first.id, second.id], severity: distance < 0.5 ? 'danger' : 'warning',
+        issues.push({ type: 'collision', performerIds: [first.id, second.id], severity: distance < minimumSpacing / 2 ? 'danger' : 'warning',
           message: `${first.label} / ${second.label}: ${distance.toFixed(2)} yards apart near count ${Number(atCount.toFixed(1))}.`, atCount });
       }
     }
@@ -405,19 +406,19 @@ function csvCell(value: string | number): string {
   return `"${safe.replaceAll('"', '""')}"`;
 }
 
-export function exportCoordinatesCsv(project: Project): string {
+export function exportCoordinatesCsv(project: Project, decimals: 0 | 1 | 2 = 2): string {
   const checked = validateProject(project);
   const rows: (string | number)[][] = [['Set', 'Arrival count', 'Move counts', 'Tempo', 'Label', 'Name', 'Section', 'X (yards)', 'Y (yards)', 'Coordinate', 'Notes']];
   const sectionNames = new Map(checked.sections.map(section => [section.id, section.name]));
   checked.sets.forEach((set, index) => checked.performers.forEach(performer => {
     const point = set.positions[performer.id];
-    rows.push([set.name, setStartCount(checked, index), setTiming(checked, index).counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), coordinateDescription(point, checked.field), set.notes]);
+    rows.push([set.name, setStartCount(checked, index), setTiming(checked, index).counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), coordinateDescription(point, checked.field, decimals), set.notes]);
   }));
   return '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
 
-export function coordinateDescription(point: Point, field: Project['field']): string {
-  const steps = (distance: number) => Number((Math.abs(distance) * 8 / 5).toFixed(2));
+export function coordinateDescription(point: Point, field: Project['field'], decimals: 0 | 1 | 2 = 2): string {
+  const steps = (distance: number) => Number((Math.abs(distance) * 8 / 5).toFixed(decimals));
   const side = point.x <= field.width / 2 ? 1 : 2;
   const distanceFromGoal = side === 1 ? point.x : field.width - point.x;
   const yardLine = Math.round(distanceFromGoal / 5) * 5;

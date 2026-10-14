@@ -8,6 +8,7 @@ const { pathToFileURL } = require('node:url');
 
 const { parseProjectV2 } = require('./project-codec.cjs');
 const { createRecoveryService } = require('./recovery-service.cjs');
+const { createPreferencesService } = require('./preferences-service.cjs');
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
@@ -25,6 +26,8 @@ let closingDialog = false;
 let discardOnClose = false;
 let fileOperationActive = false;
 let recoveryService;
+let preferencesService;
+let drainingPreferences = false;
 
 function developmentUrl() {
   if (app.isPackaged || !process.env.ELECTRON_RENDERER_URL) return null;
@@ -137,6 +140,12 @@ function handleFileRequest(channel, handler) {
 
 function registerIpc() {
   const recovery = () => recoveryService ||= createRecoveryService(path.join(app.getPath('userData'), 'recovery'));
+  const preferences = () => preferencesService ||= createPreferencesService(app.getPath('userData'), atomicWrite);
+  for (const [channel, action] of [
+    ['read-preferences', () => preferences().read()],
+    ['save-preferences', value => preferences().save(value)],
+    ['reset-preferences', () => preferences().reset()],
+  ]) ipcMain.handle(`squidware:${channel}`, async (event, ...args) => { assertSender(event); return action(...args); });
   for (const [channel, action] of [
     ['begin-recovery', () => recovery().begin()],
     ['list-recoveries', token => recovery().list(token)],
@@ -218,7 +227,8 @@ function registerIpc() {
     return filename;
   });
 
-  handleFileRequest('squidware:export-pdf', async () => {
+  handleFileRequest('squidware:export-pdf', async (paper = 'letter') => {
+    if (!['letter', 'a4'].includes(paper)) throw new Error('Choose Letter or A4 paper.');
     const result = await dialog.showSaveDialog(window, {
       title: 'Export drill book PDF',
       defaultPath: 'Squidware-drill-book.pdf',
@@ -231,7 +241,7 @@ function registerIpc() {
     const pdf = await window.webContents.printToPDF({
       printBackground: true,
       preferCSSPageSize: true,
-      pageSize: 'Letter',
+      pageSize: paper === 'a4' ? 'A4' : 'Letter',
       margins: { top: 0.35, bottom: 0.35, left: 0.35, right: 0.35 },
     });
     await atomicWrite(filename, pdf);
@@ -413,4 +423,10 @@ if (!app.requestSingleInstanceLock() && !smokeTest) {
   });
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+  app.on('before-quit', event => {
+    if (!preferencesService?.pending) return;
+    event.preventDefault(); if (drainingPreferences) return;
+    drainingPreferences = true;
+    void preferencesService.drain().finally(() => { drainingPreferences = false; app.quit(); });
+  });
 }

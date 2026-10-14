@@ -41,7 +41,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
         mainFrame: { url: development ? 'http://127.0.0.1:5173/' : pathToFileURL(path.join(root, 'dist', 'index.html')).href },
         on: () => {}, setWindowOpenHandler: handler => { this.openWindowHandler = handler; },
         send: (...args) => messages.push(args),
-        printToPDF: async () => Buffer.from('%PDF-test'),
+        printToPDF: async options => { messages.push(['printToPDF', options]); return Buffer.from('%PDF-test'); },
       };
     }
     on(event, callback) { this.events.set(event, callback); }
@@ -323,6 +323,27 @@ test('preload exposes only fixed methods and strips Electron event objects from 
   assert.deepEqual(invocations[0], ['squidware:save-project', project, 'Show', true]);
   bridge.beginRecovery(); bridge.readRecovery('session', 'id'); bridge.writeRecovery('session', 2, 1, { project: true });
   assert.deepEqual(invocations.slice(1), [['squidware:begin-recovery'], ['squidware:read-recovery', 'session', 'id'], ['squidware:write-recovery', 'session', 2, 1, { project: true }]]);
+  bridge.readPreferences(); bridge.savePreferences({ version: 1 }); bridge.resetPreferences(); bridge.exportPdf('a4');
+  assert.deepEqual(invocations.slice(4), [['squidware:read-preferences'], ['squidware:save-preferences', { version: 1 }], ['squidware:reset-preferences'], ['squidware:export-pdf', 'a4']]);
+});
+
+test('preferences IPC validates values, trusts only the editor and fixes the app-data destination', async t => {
+  const h = await harness(t);
+  for (const name of ['read-preferences', 'save-preferences', 'reset-preferences']) await assert.rejects(h.invokeAs(name, { sender: {}, senderFrame: h.sender.senderFrame }), /untrusted/);
+  await assert.rejects(h.invoke('save-preferences', { zoom: -1 }), /zoom/);
+  const value = (await h.invoke('read-preferences', '../../escape')).preferences;
+  await h.invoke('save-preferences', { ...value, paperSize: 'a4', filename: '../../escape' }, '../../escape');
+  assert.deepEqual(await fs.readdir(h.directory), ['preferences.json']);
+  assert.equal(JSON.parse(await fs.readFile(path.join(h.directory, 'preferences.json'), 'utf8')).paperSize, 'a4');
+  assert.equal((await h.invoke('reset-preferences')).paperSize, 'letter');
+});
+
+test('PDF paper defaults are allowlisted before the save dialog', async t => {
+  const h = await harness(t);
+  await assert.rejects(h.invoke('export-pdf', 'custom'), /Letter or A4/); assert.equal(h.saveDialogCount(), 0);
+  h.dialog({ canceled: false, filePath: path.join(h.directory, 'book.pdf') });
+  await h.invoke('export-pdf', 'a4'); assert.equal(h.messages.at(-1)[1].pageSize, 'A4');
+  await h.invoke('export-pdf'); assert.equal(h.messages.at(-1)[1].pageSize, 'Letter');
 });
 
 test('recovery IPC uses trusted frames, fixed application data and opaque version ids', async t => {

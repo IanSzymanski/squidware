@@ -1,13 +1,16 @@
 import type { FormationKind, Project } from '../types';
 import type { HistoryEntry } from './history';
+import { defaultPreferences } from '../preferences';
+import type { Preferences } from '../preferences';
 
-export type Dialog = 'new' | 'settings' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
   estimatedBytes: number; droppedEntries: number; transactionName?: string; recoveryError?: string;
 }
 export interface EditorState {
+  preferences: { value: Preferences; status: 'loading' | 'pending' | 'saving' | 'saved' | 'unavailable'; error: string };
   project: ProjectHistory;
   selection: { activeIndex: number; selectedIds: string[] };
   playback: { count: number; playing: boolean; loop: boolean; speed: number; metronome: boolean; muted: boolean };
@@ -28,6 +31,7 @@ export interface EditorState {
 export type SessionSlice = Exclude<keyof EditorState, 'project'>;
 export function createEditorState(project: Project, recoveryError?: string): EditorState {
   return {
+    preferences: { value: defaultPreferences(), status: 'loading', error: '' },
     project: { present: project, past: [], future: [], revision: 0, estimatedBytes: 0, droppedEntries: 0, recoveryError },
     selection: { activeIndex: 0, selectedIds: [] },
     playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, muted: false },
