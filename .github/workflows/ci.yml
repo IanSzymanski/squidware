@@ -40,6 +40,8 @@ jobs:
         run: xvfb-run --auto-servernum pnpm test:editor
       - name: Verify keyboard accessibility and rendered text
         run: xvfb-run --auto-servernum pnpm test:accessibility
+      - name: Verify tooltip pointer, focus and disabled explanations
+        run: xvfb-run --auto-servernum pnpm test:tooltips
       - name: Verify preferences and paper sizes across desktop restarts
         run: xvfb-run --auto-servernum pnpm test:preferences
       - name: Verify thumbnail invalidation and selection caches

@@ -16,6 +16,8 @@ Workspaces, dialogs, shared controls and the main editor controller are extracte
 
 Every project mutation enters `store.dispatch(commandId, arguments)`. `src/editor/commands.ts` declares the argument types, stable IDs, names, descriptions, descriptive argument metadata, shortcut labels, enablement and handlers. `commandMetadata` can populate a future palette or scripting client; the help dialog and command-aware button tooltips already reuse it. TypeScript callers get checked argument shapes. Enablement and the domain validators reject invalid timing, navigation, field coordinates, roster references and project limits at runtime.
 
+Control help uses the shared `Tooltip` component and `HelpButton`. The help dialog, menu hints and command tooltips format current registry bindings through `commandKeycaps`; context-specific effects and disabled explanations belong to their controls. See [accessible control help](tooltips.md) for interaction rules and verification.
+
 For example:
 
 ```ts

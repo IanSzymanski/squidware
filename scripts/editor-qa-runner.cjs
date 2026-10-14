@@ -54,11 +54,11 @@ async function waitFor(condition, label) {
 }
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 async function clickText(text, scope = 'body', allowDisabled = false) {
-  await evaluate(`(() => { const button = [...document.querySelector(${JSON.stringify(scope)}).querySelectorAll('button')].find(node => node.textContent.trim() === ${JSON.stringify(text)}); if (!button || (button.disabled && !${allowDisabled})) throw new Error('Button unavailable: ' + ${JSON.stringify(text)}); if (!button.disabled) button.click(); })()`);
+  await evaluate(`(() => { const button = [...document.querySelector(${JSON.stringify(scope)}).querySelectorAll('button')].find(node => node.textContent.trim() === ${JSON.stringify(text)}); if (!button || ((button.disabled || button.getAttribute('aria-disabled') === 'true') && !${allowDisabled})) throw new Error('Button unavailable: ' + ${JSON.stringify(text)}); if (!button.disabled && button.getAttribute('aria-disabled') !== 'true') button.click(); })()`);
   await pause(30);
 }
 async function clickSelector(selector) {
-  await evaluate(`(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node || node.disabled) throw new Error('Control unavailable: ' + ${JSON.stringify(selector)}); node.click(); })()`);
+  await evaluate(`(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node || node.disabled || node.getAttribute('aria-disabled') === 'true') throw new Error('Control unavailable: ' + ${JSON.stringify(selector)}); node.click(); })()`);
   await pause(30);
   if (selector.startsWith('.set-card')) await uiWait(`document.querySelector(${JSON.stringify(selector)})?.classList.contains('selected')`, 'set selection');
 }
@@ -269,7 +269,7 @@ app.whenReady().then(async () => {
     await hoverPoint(20, 20);
     assert.equal(await evaluate("document.querySelector('.field-readout strong').textContent"), 'Cursor');
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
-    await clickSelector('[title="Zoom in"]');
+    await clickSelector('[aria-label="Zoom in"]');
     await hoverPoint(20, 20);
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
     await evaluate("document.querySelector('.field-stage__svg').style.transform = 'scaleX(-1)'");
@@ -284,7 +284,7 @@ app.whenReady().then(async () => {
     await hoverPoint(20, 20);
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
     await capture('field-coordinates.png');
-    await clickSelector('[title="Fit field"]');
+    await clickSelector('[aria-label="Fit field"]');
     await hoverPoint(-3, 20);
     assert.equal(await evaluate("!!document.querySelector('.field-readout')"), false);
     pass('cursor and keyboard performer details match drill coordinates through zoom, pan and out-of-field movement');
@@ -294,7 +294,7 @@ app.whenReady().then(async () => {
     await uiWait("!!document.querySelector('.field-preview-banner')", 'visible between-set banner');
     assert.match(await evaluate("document.querySelector('.field-preview-banner').textContent"), /Move 1 → 2.*Count 512.*512 \/ 1024/);
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled && ${numberSelector('Y · yards from back')}.disabled`), true);
-    assert.equal(await evaluate("document.querySelector('.apply-formation').disabled"), true);
+    assert.equal(await evaluate("document.querySelector('.apply-formation').getAttribute('aria-disabled') === 'true'"), true);
     assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(dotSelector)})).cursor`), 'default');
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby').split(/\\s+/).includes('field-preview-message')"), true);
     const beforePreview = JSON.stringify(saved.sets[1].positions);
@@ -312,7 +312,7 @@ app.whenReady().then(async () => {
     await uiWait("!document.querySelector('.field-preview-banner')", 'one-click editing recovery');
     assert.equal(await evaluate("document.querySelector('.timeline-scrubber').value"), '1024');
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled`), false);
-    assert.equal(await evaluate("document.querySelector('.apply-formation').disabled"), false);
+    assert.equal(await evaluate("document.querySelector('.apply-formation').getAttribute('aria-disabled') === 'true'"), false);
     pass('between-set preview blocks drag, nudge, formation and Inspector edits and recovers at the named arrival');
 
     await clickSelector('[aria-label="Play show"]');
@@ -410,7 +410,7 @@ app.whenReady().then(async () => {
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('Escape cancels a color session without applying its preview or adding history');
 
-    await clickSelector('[aria-label="Select performers (V)"]');
+    await clickSelector('[aria-label="Select performers"]');
     const dragId = single.performers[1].id;
     const dragFrom = single.sets[0].positions[dragId];
     const pressed = await screenPoint(dragFrom.x, dragFrom.y);

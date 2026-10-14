@@ -125,14 +125,14 @@ app.whenReady().then(async () => {
 
     await tabTo('.inspector textarea'); await key('A', [process.platform === 'darwin' ? 'meta' : 'control']); await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Keyboard-only rehearsal note' }); await key('Return');
     native('Save As…'); await waitFor(async () => { try { return JSON.parse(await fs.readFile(savedFile, 'utf8')).sets[0].notes === 'Keyboard-only rehearsal note'; } catch { return false; } }, 'native save');
-    await tabTo('.rail-button[title="Show"]', true); await key('Space');
+    await tabTo('.rail-button[aria-label="Show"]', true); await key('Space');
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');
     assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);
     await audit('production overview');
-    await tabTo('.rail-button[title="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'cast review');
+    await tabTo('.rail-button[aria-label="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'cast review');
     await audit('cast');
-    await tabTo('.rail-button[title="Design"]', true); await key('Return');
-    await tabTo('[aria-label="Next set (])"]'); await key('Return');
+    await tabTo('.rail-button[aria-label="Design"]', true); await key('Return');
+    await tabTo('[aria-label="Next set"]'); await key('Return');
     await tabTo('.timeline-scrubber'); await key('Right');
     await uiWait("!!document.querySelector('.field-preview-banner')", 'keyboard preview');
     await tabTo('.field-performer[tabindex="0"]', true); const locked = await revision();

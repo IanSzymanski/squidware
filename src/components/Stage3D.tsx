@@ -1,3 +1,5 @@
+import { HelpButton } from '../editor/ControlHelp';
+import { Tooltip } from './Tooltip';
 import { selectionMembership } from '../selection';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -424,10 +426,10 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     {!error && <>
       <div className="field-stage__corner"><span className="stage-status-light" /> LIVE 3D PREVIEW</div>
       <div className="stage-three__controls" role="group" aria-label="Camera presets">
-        <button type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</button>
-        <button type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</button>
-        <button type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</button>
-        <select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select>
+        <HelpButton title="Perspective camera" description="Reset the camera to an angled view of the entire field." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
+        <HelpButton title="Front camera" description="Reset the camera to the home sideline view." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
+        <HelpButton title="Overhead camera" description="Reset the camera to look straight down at the field." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
+        <Tooltip name="3D quality" description="Choose detailed shadows or lightweight rendering for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
       </div>
       <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan · Click a performer to select</span></div>
     </>}
@@ -435,7 +437,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
       <strong>3D preview unavailable</strong>
       <p>{error}</p>
-      <button onClick={onReturnTo2D}>Return to 2D field</button>
+      <HelpButton title="Return to 2D field" description="Return to the editable field view." onClick={onReturnTo2D}>Return to 2D field</HelpButton>
     </div>}
   </div>;
 }

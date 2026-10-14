@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { Tooltip } from './Tooltip';
 
 export function numberDraftError(draft: string, min: number, max: number, integer = false): string | undefined {
   if (!draft.trim() || !Number.isFinite(Number(draft))) return 'Enter a finite number.';
@@ -16,11 +17,13 @@ export interface NumberFieldProps {
   step?: number;
   integer?: boolean;
   disabled?: boolean;
+  description?: string;
+  disabledReason?: string;
   onDraftChange?: (pending: boolean, fieldId: string) => void;
 }
 
 /** Keeps incomplete and invalid typing local, then commits a validated value on blur/Enter. */
-export function NumberField({ label, value, onChange, min, max, step = 1, integer = false, disabled, onDraftChange }: NumberFieldProps) {
+export function NumberField({ label, value, onChange, min, max, step = 1, integer = false, disabled, description, disabledReason, onDraftChange }: NumberFieldProps) {
   const [draft, setDraft] = useState(String(value));
   const cancelBlur = useRef(false);
   const errorId = useId();
@@ -36,12 +39,13 @@ export function NumberField({ label, value, onChange, min, max, step = 1, intege
     setDraft(String(next));
     if (next !== value) onChange(next);
   }
-  return <label className="form-label">{label}<input type="number" value={draft} min={min} max={max} step={step} disabled={disabled}
+  const input = <input type="number" value={draft} min={min} max={max} step={step} disabled={disabled}
     aria-invalid={!!error} aria-describedby={error ? errorId : undefined}
     onChange={event => { setDraft(event.target.value); onDraftChange?.(event.target.value !== String(value), errorId); }}
     onBlur={commit}
     onKeyDown={event => {
       if (event.key === 'Enter') event.currentTarget.blur();
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(String(value)); onDraftChange?.(false, errorId); event.currentTarget.blur(); }
-    }} />{error && <span id={errorId} className="field-error" role="status">{error}</span>}</label>;
+    }} />;
+  return <label className="form-label">{label}<Tooltip name={label} description={description || `Enter ${integer ? 'a whole number' : 'a number'} from ${min} to ${max}. Enter applies; Escape cancels.`} disabledReason={disabled ? disabledReason || 'This field is unavailable in the current state.' : undefined}>{input}</Tooltip>{error && <span id={errorId} className="field-error" role="status">{error}</span>}</label>;
 }

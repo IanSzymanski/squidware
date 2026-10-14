@@ -4,17 +4,17 @@ import type { ReactNode } from 'react';
 
 import type { Point } from '../types';
 import type { ThumbnailDot } from './thumbnailRoster';
-import { commandRegistry } from './commands';
-import type { CommandId } from './commands';
+import { HelpButton } from './ControlHelp';
+import type { ControlHelpProps } from './ControlHelp';
+import { Tooltip } from '../components/Tooltip';
 
-export function Button({ children, onClick, title, command, active, disabled, className = '' }: { children: ReactNode; onClick: () => void; title: string; command?: CommandId; active?: boolean; disabled?: boolean; className?: string }) {
-  const tooltip = command ? `${commandRegistry[command].name} — ${commandRegistry[command].description}` : title;
-  return <button className={`icon-button ${active ? 'active' : ''} ${className}`} title={tooltip} aria-label={title} aria-pressed={active === undefined ? undefined : active} onClick={onClick} disabled={disabled}>{children}</button>;
+export function Button({ children, onClick, active, className = '', ...help }: ControlHelpProps & { children: ReactNode; onClick: () => void; disabled?: boolean; className?: string }) {
+  return <HelpButton {...help} active={active} className={`icon-button ${active ? 'active' : ''} ${className}`} onClick={onClick}>{children}</HelpButton>;
 }
 export const MiniField = memo(function MiniField({ positions, dots }: { positions: Readonly<Record<string, Point>>; dots: readonly ThumbnailDot[] }) {
   return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true"><rect x="5" y="5" width="100" height="53.333" rx="2" fill="#243d32" />{Array.from({ length: 11 }, (_, i) => <path key={i} d={`M${5 + i * 10},5v53.333`} stroke="#4c6555" strokeWidth="0.4" />)}{dots.map(dot => { const pos = positions[dot.id]; return pos && <circle key={dot.id} cx={pos.x + 5} cy={pos.y + 5} r="0.9" fill={dot.color} />; })}</svg>;
 });
-export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, allowEmpty = false, multiline = false, placeholder }: { value: string; onCommit: (value: string) => void; maxLength: number; label?: string; onDraftChange: (pending: boolean, fieldId: string) => void; allowEmpty?: boolean; multiline?: boolean; placeholder?: string }) {
+export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, allowEmpty = false, multiline = false, placeholder, description }: { value: string; onCommit: (value: string) => void; maxLength: number; label?: string; onDraftChange: (pending: boolean, fieldId: string) => void; allowEmpty?: boolean; multiline?: boolean; placeholder?: string; description?: string }) {
   const [draft, setDraft] = useState(value);
   const cancelBlur = useRef(false);
   const fieldId = useId();
@@ -31,7 +31,9 @@ export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, 
       if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); cancelBlur.current = true; setDraft(value); onDraftChange(false, fieldId); event.currentTarget.blur(); }
     },
   };
-  return multiline ? <><textarea {...props} rows={2} /><small className="microcopy">Enter applies · Shift+Enter adds a line · Escape cancels</small></> : <input {...props} />;
+  const input = multiline ? <textarea {...props} rows={2} /> : <input {...props} />;
+  const control = description ? <Tooltip name={label || 'Edit text'} description={description}>{input}</Tooltip> : input;
+  return multiline ? <>{control}<small className="microcopy">Enter applies · Shift+Enter adds a line · Escape cancels</small></> : control;
 }
 
 export function CommitColor({ value, label, onCommit, onDraftChange }: { value: string; label: string; onCommit: (value: string) => void; onDraftChange: (pending: boolean, fieldId: string) => void }) {
