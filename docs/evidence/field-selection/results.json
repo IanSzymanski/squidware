@@ -8,7 +8,7 @@
     "the existing keyboard-accessible label button cycles all / selected-focus / hidden; hover uses the same nearest hit",
     "pointer selection, labels and zoom preserve physical coordinates and edit revision",
     "roving field keyboard focus still reaches overlapping dots and leaves in one Tab stop",
-    "labels remain readable without overlaps at 2x DPI, 125% UI zoom and a 1024px window"
+    "labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size"
   ],
   "baselineViewport": {
     "width": 1368,
@@ -16,6 +16,10 @@
     "devicePixelRatio": 1.25,
     "fieldWidth": 787.4000244140625,
     "fieldHeight": 284.20001220703125
+  },
+  "narrowViewport": {
+    "width": 1108,
+    "height": 770
   },
   "platform": "win32",
   "rendererNodeAccess": "undefined"
