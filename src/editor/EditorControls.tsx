@@ -2,7 +2,8 @@ import { memo, useEffect, useId, useRef, useState } from 'react';
 
 import type { ReactNode } from 'react';
 
-import type { DrillSet, Project } from '../types';
+import type { Point } from '../types';
+import type { ThumbnailDot } from './thumbnailRoster';
 import { commandRegistry } from './commands';
 import type { CommandId } from './commands';
 
@@ -10,8 +11,8 @@ export function Button({ children, onClick, title, command, active, disabled, cl
   const tooltip = command ? `${commandRegistry[command].name} — ${commandRegistry[command].description}` : title;
   return <button className={`icon-button ${active ? 'active' : ''} ${className}`} title={tooltip} aria-label={title} aria-pressed={active === undefined ? undefined : active} onClick={onClick} disabled={disabled}>{children}</button>;
 }
-export const MiniField = memo(function MiniField({ project, set }: { project: Project; set: DrillSet }) {
-  return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true"><rect x="5" y="5" width="100" height="53.333" rx="2" fill="#243d32" />{Array.from({ length: 11 }, (_, i) => <path key={i} d={`M${5 + i * 10},5v53.333`} stroke="#4c6555" strokeWidth="0.4" />)}{project.performers.map(p => { const pos = set.positions[p.id]; return pos && <circle key={p.id} cx={pos.x + 5} cy={pos.y + 5} r="0.9" fill={project.sections.find(s => s.id === p.sectionId)?.color || '#d0f398'} />; })}</svg>;
+export const MiniField = memo(function MiniField({ positions, dots }: { positions: Readonly<Record<string, Point>>; dots: readonly ThumbnailDot[] }) {
+  return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true"><rect x="5" y="5" width="100" height="53.333" rx="2" fill="#243d32" />{Array.from({ length: 11 }, (_, i) => <path key={i} d={`M${5 + i * 10},5v53.333`} stroke="#4c6555" strokeWidth="0.4" />)}{dots.map(dot => { const pos = positions[dot.id]; return pos && <circle key={dot.id} cx={pos.x + 5} cy={pos.y + 5} r="0.9" fill={dot.color} />; })}</svg>;
 });
 export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, allowEmpty = false, multiline = false, placeholder }: { value: string; onCommit: (value: string) => void; maxLength: number; label?: string; onDraftChange: (pending: boolean, fieldId: string) => void; allowEmpty?: boolean; multiline?: boolean; placeholder?: string }) {
   const [draft, setDraft] = useState(value);

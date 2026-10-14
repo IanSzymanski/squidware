@@ -15,8 +15,14 @@ app.on('window-all-closed', () => {});
 // This component harness uses the production desktop recovery backend. Full
 // main/preload trust enforcement is separately covered by desktop/editor QA.
 const recovery = require(path.join(manifest.root, 'electron/recovery-service.cjs')).createRecoveryService(path.join(profile, 'recovery'));
+const preferences = require(path.join(manifest.root, 'electron/preferences-service.cjs')).createPreferencesService(profile, async (filename, content) => {
+  // Ordered preference writes use an isolated atomic replacement in this component harness.
+  const temporary = filename + '.qa-temporary';
+  await fs.writeFile(temporary, content); await fs.rename(temporary, filename);
+});
 const appUrl = pathToFileURL(path.join(manifest.build, 'index.html')).href;
 for (const [channel, action] of [
+  ['read-preferences', () => preferences.read()], ['save-preferences', value => preferences.save(value)], ['reset-preferences', () => preferences.reset()],
   ['begin-recovery', () => recovery.begin()], ['list-recoveries', token => recovery.list(token)],
   ['read-recovery', (token, id) => recovery.read(token, id)],
   ['write-recovery', (token, sequence, revision, project) => recovery.write(token, sequence, revision, project)],
