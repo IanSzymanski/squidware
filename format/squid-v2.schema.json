@@ -1,0 +1,349 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v2.schema.json",
+  "title": "Squidware project format v2",
+  "description": "Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "id": {
+      "$ref": "#/definitions/id"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+    },
+    "ensemble": {
+      "type": "string",
+      "maxLength": 160,
+      "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+    },
+    "field": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "const": 100
+        },
+        "height": {
+          "type": "number",
+          "minimum": 53.33233333333334,
+          "maximum": 53.33433333333333
+        },
+        "preset": {
+          "enum": [
+            "college",
+            "high-school"
+          ]
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "preset"
+      ]
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/section"
+      },
+      "minItems": 1,
+      "maxItems": 64
+    },
+    "performers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/performer"
+      },
+      "minItems": 0,
+      "maxItems": 500
+    },
+    "sets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/picture"
+      },
+      "minItems": 1,
+      "maxItems": 128
+    },
+    "audioOffsetSeconds": {
+      "type": "number",
+      "minimum": -3600,
+      "maximum": 3600
+    },
+    "moves": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/move"
+      },
+      "minItems": 0,
+      "maxItems": 127
+    },
+    "openingTiming": {
+      "type": "object",
+      "properties": {
+        "tempo": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 400
+        },
+        "transition": {
+          "enum": [
+            "linear",
+            "ease"
+          ]
+        }
+      },
+      "required": [
+        "tempo",
+        "transition"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "ensemble",
+    "field",
+    "sections",
+    "performers",
+    "sets",
+    "audioOffsetSeconds",
+    "moves",
+    "openingTiming"
+  ],
+  "definitions": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "not": {
+        "enum": [
+          "__proto__",
+          "constructor",
+          "prototype"
+        ]
+      }
+    },
+    "point": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 53.333333333333336
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "section": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "color"
+      ]
+    },
+    "performer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 32,
+          "minLength": 1,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "sectionId": {
+          "$ref": "#/definitions/id"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "name",
+        "sectionId"
+      ]
+    },
+    "picture": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "positions": {
+          "type": "object",
+          "maxProperties": 500,
+          "propertyNames": {
+            "$ref": "#/definitions/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/point"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "notes",
+        "positions"
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "counts"
+            ]
+          },
+          {
+            "required": [
+              "tempo"
+            ]
+          },
+          {
+            "required": [
+              "transition"
+            ]
+          }
+        ]
+      }
+    },
+    "segment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "kind": {
+          "const": "line"
+        },
+        "startCount": {
+          "const": 0
+        },
+        "endCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "startCount",
+        "endCount"
+      ]
+    },
+    "path": {
+      "type": "object",
+      "properties": {
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/segment"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "segments"
+      ]
+    },
+    "move": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "fromSetId": {
+          "$ref": "#/definitions/id"
+        },
+        "toSetId": {
+          "$ref": "#/definitions/id"
+        },
+        "counts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "tempo": {
+          "type": "number",
+          "minimum": 20,
+          "maximum": 400
+        },
+        "transition": {
+          "enum": [
+            "linear",
+            "ease"
+          ]
+        },
+        "paths": {
+          "type": "object",
+          "maxProperties": 500,
+          "propertyNames": {
+            "$ref": "#/definitions/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/path"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "fromSetId",
+        "toSetId",
+        "counts",
+        "tempo",
+        "transition",
+        "paths"
+      ]
+    }
+  }
+}
