@@ -1,8 +1,10 @@
 # Squidware roadmap
 
-Squidware 0.1 is a working desktop foundation for cast-to-chart drill design. It covers 2D placement, basic formations, 3D rehearsal markers, count-based playback, local project files, and rehearsal exports. It is not a complete substitute for every mature Pyware workflow.
+Squidware v0.5.0 is the published desktop foundation for cast-to-chart drill design. It covers 2D placement, basic formations, 3D rehearsal markers, count-based playback, local project files, and rehearsal exports. It is not a complete substitute for every mature Pyware workflow.
 
 ## Where work is tracked
+
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 19 open issues. Start with [#20 — dense-formation hit testing and label readability](https://github.com/IanSzymanski/squidware/issues/20).
 
 The [release plan](docs/RELEASES.md) groups the backlog into v0.5, v0.6, v0.7, v0.8, v0.9, v1.0, v1.1 and v1.2 milestones. Releases publish in order only after their issues are fulfilled and the desktop packages pass verification. [release-plan.json](release-plan.json) records the membership and hard dependencies used by the release coordinator.
 
@@ -43,6 +45,7 @@ The themes below are planned development areas, not shipped features or delivery
 - Compare travel distance, crossings, and step demand before applying a proposed assignment. — [#78](https://github.com/IanSzymanski/squidware/issues/78)
 - Add spacing guides, interval controls, alignment, distribution, and richer formation handles. — [#25](https://github.com/IanSzymanski/squidware/issues/25), [#27](https://github.com/IanSzymanski/squidware/issues/27), [#79](https://github.com/IanSzymanski/squidware/issues/79)
 - Support reusable formations and controlled transitions between them. — [#46](https://github.com/IanSzymanski/squidware/issues/46), [#49](https://github.com/IanSzymanski/squidware/issues/49), [#80](https://github.com/IanSzymanski/squidware/issues/80)
+- Add editable Bézier curve/wave formations and seeded scatter regions with spacing controls. — [#98](https://github.com/IanSzymanski/squidware/issues/98), [#99](https://github.com/IanSzymanski/squidware/issues/99)
 
 **Ready when:** the designer can preview, compare, accept, and undo a suggested assignment without losing performer identity or unintentionally changing other sets. Optimization must explain which constraints it uses.
 
@@ -51,6 +54,8 @@ The themes below are planned development areas, not shipped features or delivery
 - Add props and equipment with footprints, orientation, movement, and visibility by set. — [#81](https://github.com/IanSzymanski/squidware/issues/81)
 - Support stages, indoor floors, custom field sizes, backgrounds, and non-football coordinate systems through the user interface. — [#82](https://github.com/IanSzymanski/squidware/issues/82)
 - Add performer facing, richer instrument/guard representations, and optional costume color schemes. — [#83](https://github.com/IanSzymanski/squidware/issues/83)
+- Add lightweight instrument and guard equipment models, a front-ensemble palette and an optional stadium backdrop. — [#91](https://github.com/IanSzymanski/squidware/issues/91), [#92](https://github.com/IanSzymanski/squidware/issues/92), [#93](https://github.com/IanSzymanski/squidware/issues/93), [#94](https://github.com/IanSzymanski/squidware/issues/94)
+- Evaluate leg-motion mockups and basic count-driven lower-body poses and flag cues. — [#95](https://github.com/IanSzymanski/squidware/issues/95), [#96](https://github.com/IanSzymanski/squidware/issues/96), [#97](https://github.com/IanSzymanski/squidware/issues/97)
 - Extend clearance checks to configured performer and prop footprints. — [#84](https://github.com/IanSzymanski/squidware/issues/84)
 - Add saved cameras and renderable rehearsal/video previews with explicit quality settings. — [#85](https://github.com/IanSzymanski/squidware/issues/85)
 

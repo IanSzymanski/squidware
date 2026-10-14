@@ -1,12 +1,14 @@
 # Squidware release plan
 
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 19 open issues. Start with [#20 — dense-formation hit testing and label readability](https://github.com/IanSzymanski/squidware/issues/20).
+
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
 ## v0.5 — Reliable foundation
 
 Versioned project schema and migration; named undo; asynchronous recovery; accurate save status; accessible core interactions and preferences; repeatable regression coverage.
 
-9/17 implementation issues completed at reconciliation.
+17/17 implementation issues completed at reconciliation.
 
 - [x] [#2 · Audit A01 Choose and publish the repository's open-source license](https://github.com/IanSzymanski/squidware/issues/2)
 - [x] [#4 · Audit A03 Extract the editor store and central command registry from App.tsx](https://github.com/IanSzymanski/squidware/issues/4)
@@ -17,14 +19,14 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 - [x] [#5 · Audit A04 Introduce schema v2 with separate sets and moves plus v1 migration](https://github.com/IanSzymanski/squidware/issues/5)
 - [x] [#6 · Audit A05 Replace snapshot undo with named transactions and coalesced edits](https://github.com/IanSzymanski/squidware/issues/6)
 - [x] [#7 · Audit A06 Move recovery to asynchronous main-process storage](https://github.com/IanSzymanski/squidware/issues/7)
-- [ ] [#38 · Audit A40 Separate explicit file-save status from recovery and draft status](https://github.com/IanSzymanski/squidware/issues/38)
-- [ ] [#37 · Audit A39 Fix field keyboard navigation, text sizes and contrast](https://github.com/IanSzymanski/squidware/issues/37)
-- [ ] [#39 · Audit A41 Add versioned personal preferences separate from project files](https://github.com/IanSzymanski/squidware/issues/39)
-- [ ] [#10 · Audit A09 Limit thumbnail rerenders and use constant-time selection membership](https://github.com/IanSzymanski/squidware/issues/10)
-- [ ] [#11 · Audit A10 Isolate playback subscriptions and memoize the static 2D field](https://github.com/IanSzymanski/squidware/issues/11)
-- [ ] [#66 · Audit A38 Build accessible, state-aware tooltips from command metadata](https://github.com/IanSzymanski/squidware/issues/66)
-- [ ] [#69 · Roadmap Expand cross-platform regression coverage for daily desktop and print workflows](https://github.com/IanSzymanski/squidware/issues/69)
-- [ ] [#47 · Audit A48 Publish the versioned .squid format and compatibility fixtures](https://github.com/IanSzymanski/squidware/issues/47)
+- [x] [#38 · Audit A40 Separate explicit file-save status from recovery and draft status](https://github.com/IanSzymanski/squidware/issues/38)
+- [x] [#37 · Audit A39 Fix field keyboard navigation, text sizes and contrast](https://github.com/IanSzymanski/squidware/issues/37)
+- [x] [#39 · Audit A41 Add versioned personal preferences separate from project files](https://github.com/IanSzymanski/squidware/issues/39)
+- [x] [#10 · Audit A09 Limit thumbnail rerenders and use constant-time selection membership](https://github.com/IanSzymanski/squidware/issues/10)
+- [x] [#11 · Audit A10 Isolate playback subscriptions and memoize the static 2D field](https://github.com/IanSzymanski/squidware/issues/11)
+- [x] [#66 · Audit A38 Build accessible, state-aware tooltips from command metadata](https://github.com/IanSzymanski/squidware/issues/66)
+- [x] [#69 · Roadmap Expand cross-platform regression coverage for daily desktop and print workflows](https://github.com/IanSzymanski/squidware/issues/69)
+- [x] [#47 · Audit A48 Publish the versioned .squid format and compatibility fixtures](https://github.com/IanSzymanski/squidware/issues/47)
 
 ## v0.6 — Precise field authoring
 
