@@ -1,0 +1,2 @@
+# Generated compatibility artifacts must compare byte-for-byte on every OS.
+format/** text eol=lf
