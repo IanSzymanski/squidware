@@ -103,7 +103,10 @@ app.whenReady().then(async () => {
 
     await evaluate(`${editor}.setValue('ui', 'view', '3d')`); await focus('Zoom in');
     assert.match(await tooltip(), /Unavailable:.*Switch to 2D/);
-    await uiWait("!!document.querySelector('[data-tooltip-name=\"Overhead camera\"], .stage-three__fallback[role=alert]')", '3D controls or fallback');
+    // Camera controls mount before the renderer effect runs. Wait for its
+    // canvas or error state so unavailable WebGL cannot remove a control
+    // between choosing it and focusing its help.
+    await uiWait("!!document.querySelector('.stage-three__canvas canvas, .stage-three__fallback[role=alert]')", 'initialized 3D renderer or fallback');
     if (await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {
       await focus('Return to 2D field'); assert.match(await tooltip(), /editable field/);
     } else { await focus('Overhead camera'); assert.match(await tooltip(), /straight down/); }
