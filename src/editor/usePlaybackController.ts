@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import { countToSeconds, sampleProject, secondsToCount, totalCounts } from '../domain';
+import { countToSeconds, sampleTimeline, secondsToCount, totalCounts } from '../domain';
 import { useEditorSelector, useEditorStore } from './react';
 
 /** The clock writes frames without subscribing the shell to the playhead. */
@@ -30,7 +30,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       }
       const count = secondsToCount(project, seconds);
       store.setValue('playback', 'count', count);
-      store.setValue('selection', 'activeIndex', sampleProject(project, count).setIndex);
+      store.setValue('selection', 'activeIndex', sampleTimeline(project, count).setIndex);
       const audio = audioRef.current; const target = seconds + project.audioOffsetSeconds;
       if (audio && audioUrl) {
         audio.playbackRate = speed;

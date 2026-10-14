@@ -8,10 +8,12 @@ import { Stage3DLoader } from '../components/Stage3DLoader';
 import type { Stage3DQuality } from '../components/Stage3D';
 
 import { useEditorSelector } from './react';
+import { isAtActiveSet } from './editMode';
 import type { EditorController } from './useEditorController';
 
 export function EditorField({ controller }: { controller: EditorController }) {
-  const { project, activeSet, view, selectedIds, setSelectedIds, playing, tool, zoom, setZoom, fitVersion, showLabels, showPaths, showGrid, snap, index, atSet, readOnly, selectSet, movePerformers } = controller;
+  const { project, activeSet, view, selectedIds, setSelectedIds, playing, tool, zoom, setZoom, fitVersion, showLabels, showPaths, showGrid, snap, index, readOnly, selectSet, movePerformers } = controller;
+  const atSet = useEditorSelector(isAtActiveSet);
   const count = useEditorSelector(state => state.playback.count);
   const [quality, setQuality] = useState<Stage3DQuality>('detailed');
   const sample = useMemo(() => sampleProject(project, count), [project, count]);

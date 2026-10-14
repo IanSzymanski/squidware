@@ -62,3 +62,5 @@ export function EditorShell() {
     {printing && <PrintOutput project={project} mode={printMode} paper={controller.preferences.value.paperSize} coordinateDecimals={controller.preferences.value.coordinateDecimals} />}
   </>;
 }
+
+EditorShell.displayName = 'EditorShell';
