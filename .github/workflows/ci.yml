@@ -42,6 +42,8 @@ jobs:
         run: xvfb-run --auto-servernum pnpm test:accessibility
       - name: Verify tooltip pointer, focus and disabled explanations
         run: xvfb-run --auto-servernum pnpm test:tooltips
+      - name: Verify tooltip capture after unavailable 3D
+        run: xvfb-run --auto-servernum node scripts/tooltip-qa.mjs .qa/tooltips-fallback --force-3d-fallback
       - name: Verify preferences and paper sizes across desktop restarts
         run: xvfb-run --auto-servernum pnpm test:preferences
       - name: Verify thumbnail invalidation and selection caches

@@ -1,7 +1,7 @@
 'use strict';
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
-const { root, output, profile } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
+const { root, output, profile, force3DFallback } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
 app.setPath('userData', profile);
 let window; const checks = [];
 BrowserWindow.prototype.show = function () {};
@@ -29,7 +29,13 @@ async function hover(name) {
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 }); await pause(120);
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
 }
-function instrument() {
+function instrument(force3DFallback) {
+  if (force3DFallback) {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
+      return String(kind).startsWith('webgl') ? null : getContext.call(this, kind, ...args);
+    };
+  }
   const qa = window.__tooltipQA = { editor: null, errors: [], events: [] };
   for (const type of ['pointerenter', 'pointerleave', 'focusin', 'focusout']) document.addEventListener(type, event => { if (event.target.getAttribute?.('data-tooltip-name')) qa.events.push([type, event.target.getAttribute('data-tooltip-name')]); }, true);
   window.addEventListener('error', event => qa.errors.push(event.message));
@@ -47,7 +53,7 @@ app.whenReady().then(async () => {
     window.setContentSize(1366, 768);
     window.webContents.debugger.attach('1.3');
     await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})(${!!force3DFallback})` });
     window.webContents.reload(); await uiWait(`!!${editor} && !!document.querySelector('.set-card')`, 'renderer');
 
     await hover('Save'); await pause(230); assert.equal(await tooltip(), '');
@@ -99,6 +105,7 @@ app.whenReady().then(async () => {
     if (await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {
       await focus('Return to 2D field'); assert.match(await tooltip(), /editable field/);
     } else { await focus('Overhead camera'); assert.match(await tooltip(), /straight down/); }
+    if (force3DFallback) assert.equal(await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')"), true);
     await evaluate(`${editor}.setValue('ui', 'view', '2d')`);
     pass('3D zoom limitations and camera effects are explained');
 
@@ -106,8 +113,12 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.activeElement.getAttribute('title')"), null);
     assert.ok(await evaluate("(() => { const r = document.querySelector('.tooltip-panel').getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; })()"));
     await hover('Save'); await uiWait("!!document.querySelector('[role=tooltip]')", 'hover screenshot'); await pause(80);
-    const screenshot = await window.webContents.debugger.sendCommand('Page.captureScreenshot', { format: 'png' });
-    await fs.writeFile(path.join(output, 'focus-help.png'), Buffer.from(screenshot.data, 'base64'));
+    // A hidden Linux window may stop producing compositor frames after 3D
+    // fallback. Electron's capture API explicitly wakes it without showing it.
+    const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
+    assert.ok(!screenshot.isEmpty(), 'Tooltip screenshot must contain rendered pixels.');
+    await fs.writeFile(path.join(output, 'focus-help.png'), screenshot.toPNG());
+    pass('hidden-window screenshot completes after 3D controls or fallback');
     await evaluate(`${editor}.dispatch('help.open')`); await uiWait("!!document.querySelector('dialog[open] .shortcut-list')", 'help dialog');
     const saveKeys = () => evaluate("Array.from(document.querySelectorAll('.shortcut-list > div')).find(row => row.querySelector('dt').textContent === 'Save production').querySelector('dd').innerText");
     assert.match(await saveKeys(), /Ctrl\s+S/);
