@@ -49,6 +49,8 @@ jobs:
         run: xvfb-run --auto-servernum pnpm test:preferences
       - name: Verify thumbnail invalidation and selection caches
         run: xvfb-run --auto-servernum pnpm test:thumbnails
+      - name: Verify playback subscriptions, static field and drag previews
+        run: xvfb-run --auto-servernum pnpm test:playback
       - name: Verify recovery across desktop restarts
         run: xvfb-run --auto-servernum pnpm test:recovery
       - uses: actions/upload-artifact@v4

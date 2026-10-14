@@ -32,7 +32,8 @@
     "licenses:check": "node scripts/generate-notices.mjs --check",
     "format:generate": "node scripts/format-contract.mjs",
     "format:check": "node --test scripts/format-contract.test.mjs",
-    "format:validate": "node scripts/validate-squid.mjs"
+    "format:validate": "node scripts/validate-squid.mjs",
+    "test:playback": "node scripts/playback-qa.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
