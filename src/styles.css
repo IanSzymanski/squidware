@@ -64,3 +64,15 @@ input::placeholder, textarea::placeholder, .cast-table input::placeholder { colo
 button[aria-disabled=true]{color:#6a7566;background-color:#f0f2eb;border-style:dashed;cursor:default}.tooltip-disabled-field{display:block;min-width:0;border-radius:5px}.tooltip-disabled-field input,.tooltip-disabled-field select{width:100%;font-size:13px;min-height:33px;padding:7px 9px}.tooltip-disabled-field:focus-visible{outline:2px solid #3b592b;outline-offset:2px}
 @media print{.tooltip-panel{display:none}}
 @media print{@page squid-letter{size:letter landscape;margin:12mm}@page squid-a4{size:A4 landscape;margin:12mm}#print-output[data-paper=letter] .print-page{page:squid-letter}#print-output[data-paper=a4] .print-page{page:squid-a4}}
+
+/* Preserve long production text when Chromium paginates rehearsal packets. */
+@media print {
+  .print-page header { break-inside: avoid; }
+  .print-page header > div:first-child { min-width: 0; flex: 1; }
+  .print-page h1, .print-page header p, .print-set small { overflow-wrap: anywhere; }
+  .print-set { flex: 0 0 25%; margin-left: 12px; }
+  .print-meta { flex-wrap: wrap; gap: 8px 35px; }
+  .print-page > svg { break-inside: avoid; }
+  .print-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .performer-page td { overflow-wrap: anywhere; }
+}

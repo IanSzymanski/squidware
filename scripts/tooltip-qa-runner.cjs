@@ -4,6 +4,7 @@ const fs = require('node:fs/promises'); const path = require('node:path'); const
 const { root, output, profile, force3DFallback } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
 app.setPath('userData', profile);
 let window; const checks = [];
+const nativeSaveKeys = process.platform === 'darwin' ? /Cmd\s+S/ : /Ctrl\s+S/;
 BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
 app.on('browser-window-created', (_event, created) => { window = created; window.webContents.setBackgroundThrottling(false); });
@@ -58,7 +59,7 @@ app.whenReady().then(async () => {
 
     await hover('Save'); await pause(230); assert.equal(await tooltip(), '');
     await uiWait("document.querySelector('[role=tooltip] strong')?.textContent === 'Save'", 'delayed hover');
-    assert.match(await tooltip(), /Ctrl\s+S/);
+    assert.match(await tooltip(), nativeSaveKeys);
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 }); await pause(150); assert.equal(await tooltip(), '');
     pass('pointer help waits approximately 400 ms and dismisses on leave');
 
@@ -121,7 +122,7 @@ app.whenReady().then(async () => {
     pass('hidden-window screenshot completes after 3D controls or fallback');
     await evaluate(`${editor}.dispatch('help.open')`); await uiWait("!!document.querySelector('dialog[open] .shortcut-list')", 'help dialog');
     const saveKeys = () => evaluate("Array.from(document.querySelectorAll('.shortcut-list > div')).find(row => row.querySelector('dt').textContent === 'Save production').querySelector('dd').innerText");
-    assert.match(await saveKeys(), /Ctrl\s+S/);
+    assert.match(await saveKeys(), nativeSaveKeys);
     await focus('Close dialog'); assert.equal(await evaluate("!!document.querySelector('dialog[open] [role=tooltip]')"), true);
     await key('Escape'); assert.equal(await tooltip(), ''); assert.equal(await evaluate("!!document.querySelector('dialog[open]')"), true);
     await key('Escape'); await uiWait("!document.querySelector('dialog[open]')", 'dialog dismissal');
@@ -139,7 +140,7 @@ app.whenReady().then(async () => {
     await pause(30); assert.equal(await tooltip(), '');
     pass('touch hover/focus does not leave persistent help or require an extra tap');
     assert.deepEqual(await evaluate('window.__tooltipQA.errors'), []);
-    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ checks, electron: process.versions.electron, platform: process.platform, note: 'Production Electron on Windows. macOS key labels and touch are emulated; physical macOS/Linux and assistive-technology walkthroughs remain release validation.' }, null, 2));
+    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ checks, electron: process.versions.electron, platform: process.platform, note: 'Native platform keycaps plus emulated Mac keycaps and touch. Physical-device and assistive-technology walkthroughs remain #64.' }, null, 2));
     clearTimeout(timeout); app.exit(0);
   } catch (error) { console.error(error); console.error(await tooltip().catch(() => 'Renderer unavailable')); console.error(await evaluate("JSON.stringify({ events: window.__tooltipQA.events, active: document.activeElement.outerHTML.slice(0, 200), panel: document.querySelector('.tooltip-panel')?.getBoundingClientRect() })").catch(() => 'No diagnostics')); clearTimeout(timeout); app.exit(1); }
 });
