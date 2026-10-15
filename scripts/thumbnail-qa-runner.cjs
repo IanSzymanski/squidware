@@ -85,8 +85,11 @@ app.whenReady().then(async () => {
     await counts('performer-section', dispatch('performer.update', { id, update: { sectionId: project.sections[1].id } }), 128);
     assert.equal((await thumbnail()).color, project.sections[1].color); assert.equal((await thumbnail(127)).color, project.sections[1].color);
     pass('thumbnail colors follow used section colors and performer reassignment');
+    // Review overlays must reuse the same selection cache as the field and Cast.
+    await evaluate(`${store}.setValue('ui','showNextPaths',true)`); await pause(90);
     const selection = await counts('section-selection', "document.querySelectorAll('.field-legend button')[1].click()", 0);
     if (!baseline) assert.equal(selection.membershipBuilds, 1);
+    await evaluate(`${store}.setValue('ui','showNextPaths',false)`); await pause(90);
     assert.equal(await evaluate(state + '.selection.selectedIds.length'), 126);
     assert.equal(await evaluate("document.querySelectorAll('.field-legend button')[1].classList.contains('selected')"), true);
     measurements.emptySectionSelected = await evaluate("document.querySelectorAll('.field-legend button')[4].classList.contains('selected')");

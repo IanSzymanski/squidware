@@ -1,4 +1,5 @@
 import { moveEndpoints } from './domain';
+import { selectionMembership } from './selection';
 import type { Point, Project } from './types';
 
 export interface NeighborPath {
@@ -22,8 +23,8 @@ export interface NeighborOptions {
 
 /** Review only committed adjacent sets, using the same endpoints as playback. */
 export function neighborOverlays(project: Project, index: number, options: NeighborOptions): NeighborOverlay[] {
-  if (options.preview || !Number.isInteger(index) || !project.sets[index]) return [];
-  const selected = new Set(options.selectedIds);
+  if (options.preview || !options.previous && !options.next || !Number.isInteger(index) || !project.sets[index]) return [];
+  const selected = selectionMembership(options.selectedIds);
   const performers = project.performers.filter(person =>
     (!selected.size || selected.has(person.id)) &&
     (options.sectionFilter === 'all' || person.sectionId === options.sectionFilter));

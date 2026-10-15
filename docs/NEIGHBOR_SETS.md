@@ -10,6 +10,8 @@ The opening set disables the previous control; the final set disables the next. 
 
 Both playback and neighbor review use `moveEndpoints` from the shared domain engine. Validated v2 paths currently support one full-count line segment; ease changes time sampling along that line. Review draws the same ordered endpoints. Curved paths and multi-segment path editing remain with their owning future work. Overlay generation never edits production data, coordinates, move timing, history or print/SVG output.
 
+Disabled overlays return before roster/filter work; enabled review reuses the shared selection-membership cache. The existing thumbnail suite checks that section selection builds membership once even with next-set review enabled. This preserves the earlier maximum-roster subscription and selection performance contract.
+
 The existing personal `showPaths` preference continues to control the previous overlay. The additive `showNextPaths` preference defaults to false in older version-1 preference files. Both choices persist independently through the existing validated preference controller, IPC and storage, and appear as Previous paths / Next paths in Preferences. No project format change is required.
 
 ## Validation and design evidence

@@ -1,0 +1,31 @@
+{
+  "platform": "win32",
+  "electron": "44.7.0",
+  "note": "500-performer production: selection membership is built once with next-set ghosts enabled, then reused. Disabled review adds no builds during unrelated edits.",
+  "measurements": {
+    "dotEdit": {
+      "thumbnails": 1,
+      "membershipBuilds": 0,
+      "membershipScans": 0,
+      "commits": 5
+    },
+    "metadata": {
+      "thumbnails": 0,
+      "membershipBuilds": 0,
+      "membershipScans": 0,
+      "commits": 2
+    },
+    "sectionSelectionWithNextGhosts": {
+      "thumbnails": 0,
+      "membershipBuilds": 1,
+      "membershipScans": 0,
+      "commits": 2
+    },
+    "playback": {
+      "thumbnails": 0,
+      "membershipBuilds": 0,
+      "membershipScans": 0,
+      "commits": 7
+    }
+  }
+}
