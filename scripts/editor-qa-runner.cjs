@@ -147,7 +147,7 @@ async function checkActionClarity() {
   await evaluate('document.querySelector(\'[aria-label="Export"]\').focus()'); await sendKey(window, 'Return');
   await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
   await clickSelector('.modal [aria-label="Close dialog"]');
-  await clickSelector('.rail-button[aria-label="Help"]');
+  await clickSelector('[aria-label="Help"]');
   await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'help');
   assert.match(await evaluate("document.querySelector('.modal').textContent"), /Review body clearance and traffic/);
   await capture('action-clarity-help.png');
@@ -170,10 +170,66 @@ async function checkActionClarity() {
   await evaluate('document.querySelector(\'.canvas-toolbar [aria-label="Clear selection"]\').focus()'); await sendKey(window, 'Return');
   await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
   assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
-  await clickSelector('.rail-button[aria-label="Cast"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Cast')", 'Cast heading');
-  await clickSelector('.rail-button[aria-label="Production sheet"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
-  await clickSelector('.rail-button[aria-label="Design"]');
+  await clickSelector('.workspace-tab[aria-label="Cast"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Cast')", 'Cast heading');
+  await clickSelector('.workspace-tab[aria-label="Production sheet"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
+  await clickSelector('.workspace-tab[aria-label="Design"]');
   pass('native pointer and Tab/Enter select sections with pressed state; hint stays retired after clearing; Cast and Production sheet have direct headings');
+}
+
+async function checkCompactChrome() {
+  const measurements = [];
+  for (const [width, scale] of [[1366, 1], [1366, 1.25], [1120, 1], [1120, 1.25]]) {
+    window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
+    await uiWait(`Math.abs(innerWidth-${width / scale})<1 && Math.abs(innerHeight-${768 / scale})<1`, 'viewport scale applied');
+    await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="New production"]');
+    await clickSelector('.new-options button:nth-child(2)');
+    await uiWait("document.querySelectorAll('.field-performer').length === 64", 'compact demo creation');
+    if (await evaluate("!!document.querySelector('[aria-label=\"Dismiss notification\"]')")) await clickSelector('[aria-label="Dismiss notification"]');
+    const measure = await evaluate(`(() => {
+      const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
+      const required = ['Save','Undo','Export','Design','Cast','Production sheet','Help','Project menu','Play show','Add set','Fit field','2D field','3D preview'];
+      const clipped = required.filter(name => { const node = document.querySelector('[aria-label="'+name+'"]'); if (!node) return true; const r=node.getBoundingClientRect(); const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2); return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !node.contains(top); });
+      return { viewport:{width:innerWidth,height:innerHeight}, header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), statusbar:rect('.statusbar'), clipped, emptyAudioLane:!!document.querySelector('.audio-track'), legendInField:!!document.querySelector('.field-container .field-legend') };
+    })()`);
+    measurements.push({ width, scale, ...measure });
+    assert.deepEqual(measure.clipped, [], `Required controls at ${width}px / ${scale}×`);
+    assert.equal(measure.emptyAudioLane, false); assert.equal(measure.legendInField, true);
+    if (width === 1366 && scale === 1) {
+      assert.ok(measure.header.height <= 50); assert.ok(measure.field.height >= 470); assert.ok(measure.timeline.height <= 125);
+    }
+    await capture(`compact-${width}-${scale}.png`);
+    // Exercise native input at both scales, including a narrow enlarged window.
+    await clickSelector('[aria-label="Add set"]');
+    const name = `Compact ${width} ${scale}`;
+    await typeText('.inspector input[aria-label="Set name"]', name); await fieldKey('.inspector input[aria-label="Set name"]', 'Enter');
+    await editNumber('Counts', 12);
+    await uiWait(`document.querySelector('.canvas-set-title').textContent.includes(${JSON.stringify(name)})`, 'canvas set name');
+    await evaluate('document.querySelector(\'[aria-label="Play show"]\').focus()'); await sendKey(window, 'Return');
+    await uiWait("!!document.querySelector('[aria-label=\"Pause playback\"]') && Number(document.querySelector('.count-display strong').textContent)>0", 'compact playback advances');
+    await evaluate('document.querySelector(\'[aria-label="Pause playback"]\').focus()'); await sendKey(window, 'Return');
+    await clickSelector('.set-card:nth-child(2)');
+    destination = path.join(output, `compact-${width}-${scale}-${process.pid}.squid`);
+    await evaluate('document.querySelector(\'[aria-label="Save"]\').focus()'); await sendKey(window, 'Return');
+    const saved = await savedProject(p => p.sets.some(set => set.name === name), destination);
+    assert.equal(saved.moves.find(move => move.toSetId === saved.sets.find(set => set.name === name).id).counts, 12);
+    await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'compact saved status');
+    // Real audio decoding adds the lane only after a track is attached.
+    const wav = Buffer.alloc(44 + 16000);
+    wav.write('RIFF'); wav.writeUInt32LE(wav.length-8,4); wav.write('WAVEfmt ',8); wav.writeUInt32LE(16,16);
+    wav.writeUInt16LE(1,20); wav.writeUInt16LE(1,22); wav.writeUInt32LE(8000,24); wav.writeUInt32LE(16000,28);
+    wav.writeUInt16LE(2,32); wav.writeUInt16LE(16,34); wav.write('data',36); wav.writeUInt32LE(16000,40);
+    const audioFile = path.join(output, 'compact-audio.wav'); await fs.writeFile(audioFile, wav);
+    const { root: dom } = await window.webContents.debugger.sendCommand('DOM.getDocument');
+    const { nodeId } = await window.webContents.debugger.sendCommand('DOM.querySelector', { nodeId:dom.nodeId, selector:'input[accept="audio/*"]' });
+    await window.webContents.debugger.sendCommand('DOM.setFileInputFiles', { nodeId, files:[audioFile] });
+    await uiWait("!!document.querySelector('.audio-track.has-audio')", 'attached audio lane');
+    measurements.at(-1).attachedAudioFieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Project file saved');
+    if (width === 1366 && scale === 1) await capture('compact-attached-audio.png');
+  }
+  await fs.writeFile(path.join(output, 'compact-measurements.json'), JSON.stringify(measurements, null, 2));
+  window.webContents.setZoomFactor(1); window.setContentSize(1366, 768);
+  pass('compact field/header/timeline budgets, no empty audio lane, decoded audio, and unclipped create/edit/play/save at 1366/1120 px and 100/125% scale');
 }
 
 app.whenReady().then(async () => {
@@ -569,6 +625,7 @@ app.whenReady().then(async () => {
     await clickText('Design');
     await capture('file-save-status.png');
 
+    await checkCompactChrome();
     await capture('editor.png');
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, saveDialogs: saves, rendererNodeAccess: false }, null, 2));
 
@@ -576,6 +633,7 @@ app.whenReady().then(async () => {
   } catch (error) {
      console.error(error);
     if (window && !window.isDestroyed()) {
+      await capture('failure.png').catch(() => {});
       try { console.error('Renderer diagnostic:', await evaluate("JSON.stringify({ toast: document.querySelector('.toast')?.textContent, fields: [...document.querySelectorAll('input[type=number]')].map(input => ({ label: input.parentElement?.firstChild?.textContent, value: input.value, invalid: input.getAttribute('aria-invalid'), disabled: input.disabled })) })")); } catch {}
     }
     app.exit(1);

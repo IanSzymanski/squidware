@@ -75,6 +75,11 @@ app.whenReady().then(async () => {
     native('Open project…'); await uiWait("document.querySelectorAll('.field-performer').length === 500", 'maximum cast');
     const initial = JSON.parse(await fs.readFile(fixture, 'utf8')); const ids = initial.performers.map(person => person.id);
     const baseline = await revision();
+    await evaluate("document.querySelector('.field-legend button:last-child').focus()");
+    const legendReachable = await evaluate("(() => { const button=document.activeElement.getBoundingClientRect(); const row=document.querySelector('.field-legend-scroll').getBoundingClientRect(); return button.left>=row.left-.5 && button.right<=row.right+.5 && button.top>=row.top && button.bottom<=row.bottom; })()");
+    assert.equal(legendReachable, true);
+    assert.equal(await revision(), baseline);
+    pass('keyboard focus reveals the last section in the floating legend without editing the production');
     assert.equal(await evaluate("document.querySelectorAll('.field-stage__svg [tabindex=" + '"0"' + "]').length"), 1);
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').tabIndex"), -1);
     await tabTo('[aria-label="Fit field"]'); await key('Tab'); assert.equal(await focusId(), ids[0]);
@@ -122,13 +127,13 @@ app.whenReady().then(async () => {
     await uiWait("document.querySelector('.inspector textarea').value==='Keyboard-only rehearsal note'", 'note draft entered'); await key('Return');
     await uiWait(`${editor}.getState().project.present.sets[0].notes==='Keyboard-only rehearsal note'`, 'note committed');
     native('Save As…'); await waitFor(async () => { try { return JSON.parse(await fs.readFile(savedFile, 'utf8')).sets[0].notes === 'Keyboard-only rehearsal note'; } catch { return false; } }, 'native save');
-    await tabTo('.rail-button[aria-label="Production sheet"]', true); await key('Space');
+    await tabTo('.workspace-tab[aria-label="Production sheet"]', true); await key('Space');
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');
     assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);
     await audit('production overview');
-    await tabTo('.rail-button[aria-label="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'cast review');
+    await tabTo('.workspace-tab[aria-label="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'cast review');
     await audit('cast');
-    await tabTo('.rail-button[aria-label="Design"]', true); await key('Return');
+    await tabTo('.workspace-tab[aria-label="Design"]', true); await key('Return');
     await tabTo('[aria-label="Next set"]'); await key('Return');
     await tabTo('.timeline-scrubber'); await key('Right');
     await uiWait("!!document.querySelector('.field-preview-banner')", 'keyboard preview');
