@@ -6,7 +6,7 @@ Clicks and taps choose the nearest eligible center, regardless of SVG or roster 
 
 Labels try right, left, above and below, avoiding other labels, dot centers and viewport clipping. Keyboard focus has first priority, selection second, then stable IDs. A label with no free position is suppressed; focus or select the dot for its full identity and coordinates in the existing readout. This includes labels too long to fit. The toolbar's existing label button cycles **all → selected/focused → hidden**. Selected/focused mode is session state; the existing label visibility preference retains its previous persistence behavior. There is no additional preference store or project-format field.
 
-The field retains its single roving Tab stop, distinct square focus outline, spatial arrows, Page Up/Down roster traversal (including coincidences), Enter/Space selection and modifier nudges. Presentation inputs apply to the interactive drawing. Static diagrams and print retain their existing yard-based sizes and complete labels; coordinate exports and saved project geometry are unaffected.
+The field retains its single roving Tab stop, distinct square focus outline, spatial arrows, Page Up/Down roster traversal (including coincidences), Enter/Space selection and modifier nudges. Moving focus to a performer clears stale pointer feedback, including assistive-technology focus without a keyboard event; subsequent pointer movement resumes nearest-center hover feedback. Presentation inputs apply to the interactive drawing. Static diagrams and print retain their existing yard-based sizes and complete labels; coordinate exports and saved project geometry are unaffected.
 
 ## Repeatable verification
 

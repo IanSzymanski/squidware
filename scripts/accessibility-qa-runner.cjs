@@ -32,7 +32,10 @@ function native(label) {
 }
 const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 5);
 async function tabTo(selector, backwards = false) {
-  for (let index = 0; index < 700; index++) {
+  // The maximum Cast has three controls per performer. Native workspace
+  // activation may reset the focus origin, requiring a full traversal.
+  const limit = await evaluate("document.querySelectorAll('button, input, select, textarea, a[href], [tabindex]').length + 1");
+  for (let index = 0; index < limit; index++) {
     if (await evaluate(`document.activeElement?.matches(${JSON.stringify(selector)})`)) return;
     await key('Tab', backwards ? ['shift'] : []);
   }

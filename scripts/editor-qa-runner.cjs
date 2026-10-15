@@ -263,7 +263,7 @@ app.whenReady().then(async () => {
     const hoveredId = hovered.id;
     await uiWait(`document.querySelector('.field-readout strong')?.textContent.startsWith(${JSON.stringify(hovered.label + ' ·')})`, 'nearest performer hover');
     assert.equal(await evaluate("document.querySelector('.field-readout strong').textContent"), [hovered.label, hovered.name, saved.sections.find(item => item.id === hovered.sectionId).name].filter(Boolean).join(' · '));
-    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(saved.sets[1].positions[hoveredId], saved.field));
+    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(saved.sets[1].positions[hovered.id], saved.field));
     await hoverPoint(20, 20);
     assert.equal(await evaluate("document.querySelector('.field-readout strong').textContent"), 'Cursor');
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
