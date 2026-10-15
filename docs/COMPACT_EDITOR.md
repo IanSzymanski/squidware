@@ -6,7 +6,7 @@ Implements [#16](https://github.com/IanSzymanski/squidware/issues/16) using sect
 
 The 48 px header combines file status, workspace navigation and the existing history/file/help commands. Design, Cast and Sheet keep their accessible names and current-workspace state. Set name and 2D/3D controls share the canvas toolbar. Cast and Production sheet retain concise headings and their workspace actions.
 
-Section selection floats inside the field. Its horizontal scroller supports the maximum 64 sections without growing the chrome vertically; native keyboard focus scrolls each chip into view. Field coordinates and neighboring-set/preview overlays remain separate from the chip row. Selection count remains visible at narrow sizes.
+Section selection floats inside the field. Its horizontal scroller supports the maximum 64 sections without growing the chrome vertically; native keyboard focus scrolls each chip into view. Field coordinates and neighboring-set/preview overlays remain separate from the chip row. In 3D, camera controls sit below that row; read-only previews dock them above the field footer, clear of the preview banner. Native WebGL layout checks verify non-overlap and pointer hit access at default and narrow enlarged sizes. Selection count remains visible at narrow sizes.
 
 The timeline combines the count ruler, set track and transport. Attach/Replace audio lives beside playback options. No audio track or label is rendered until an actual decoded track is attached. An attached waveform adds one 31 px lane. Enlarged/narrow layouts wrap tool and transport groups; no required action is hidden. Existing sidebars retain their scroll regions, with workspace overflow available at sizes below the supported desktop minimum.
 
