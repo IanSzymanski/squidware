@@ -41,6 +41,9 @@
 .field-topline { top: auto; bottom: 54px; left: 12px; right: 12px; font-size: 11px; letter-spacing: .3px; }
 .field-preview-banner { top: 60px; }
 .neighbor-legend { top: 60px; }
+/* Keep camera actions below the floating section row, including its scrollbar. */
+.field-container .stage-three__controls { top: 72px; max-width: calc(100% - 24px); flex-wrap: wrap; }
+.field-container--preview .stage-three__controls { top: auto; bottom: 72px; }
 .timeline { padding-top: 6px; }
 .timeline-tracks { height: auto; padding: 0 12px 6px; gap: 10px; }
 .track-labels { width: 49px; letter-spacing: .4px; }

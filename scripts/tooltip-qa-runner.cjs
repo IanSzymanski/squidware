@@ -116,6 +116,37 @@ app.whenReady().then(async () => {
     // canvas or error state so unavailable WebGL cannot remove a control
     // between choosing it and focusing its help.
     await uiWait("!!document.querySelector('.stage-three__canvas canvas, .stage-three__fallback[role=alert]')", 'initialized 3D renderer or fallback');
+    if (!await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {
+      const layouts = [];
+      await evaluate('document.activeElement?.blur()');
+      await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type:'mouseMoved', x:0, y:0 });
+      await uiWait("!document.querySelector('[role=tooltip]')", 'clear camera layout overlays');
+      for (const [width, scale] of [[1366, 1], [1120, 1.25]]) {
+        window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
+        await uiWait(`Math.abs(innerWidth-${width / scale})<1 && Math.abs(innerHeight-${768 / scale})<1`, '3D viewport scale');
+        for (const preview of [false, true]) {
+          await evaluate(`${editor}.dispatch(${JSON.stringify(preview ? 'playback.scrub' : 'set.select')}, ${JSON.stringify(preview ? {count:1} : {index:0})})`);
+          await uiWait(`!!document.querySelector('.field-preview-banner') === ${preview}`, '3D preview state');
+          const layout = await evaluate(`(() => {
+            const camera=document.querySelector('.stage-three__controls').getBoundingClientRect();
+            const legend=document.querySelector('.field-legend').getBoundingClientRect();
+            const banner=document.querySelector('.field-preview-banner')?.getBoundingClientRect();
+            const overlap=r=>!!r && camera.left<r.right && camera.right>r.left && camera.top<r.bottom && camera.bottom>r.top;
+            const obscured=[...document.querySelectorAll('.stage-three__controls button,.stage-three__controls select')].filter(n=>{const r=n.getBoundingClientRect(); return !n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(n=>n.getAttribute('aria-label'));
+            return { camera:camera.toJSON(), legend:legend.toJSON(), banner:banner?.toJSON(), overlapsLegend:overlap(legend), overlapsPreview:overlap(banner), obscured };
+          })()`);
+          assert.equal(layout.overlapsLegend, false); assert.equal(layout.overlapsPreview, false); assert.deepEqual(layout.obscured, []);
+          layouts.push({width,scale,preview,...layout});
+          await capturePage(window, output, `camera-${width}-${scale}-${preview ? 'preview' : 'set'}.png`);
+        }
+      }
+      await fs.writeFile(path.join(output, 'camera-layouts.json'), JSON.stringify(layouts,null,2));
+      window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
+      await uiWait('innerWidth===1366 && innerHeight===768', 'restored 3D viewport');
+      await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled:true });
+      await evaluate(`${editor}.dispatch('set.select', {index:0})`);
+      pass('3D camera buttons and quality remain unobstructed by the section legend and preview banner at default and narrow enlarged sizes');
+    }
     await focus('Zoom in'); assert.match(await tooltip(), /Unavailable:.*Switch to 2D/);
     if (await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {
       await focus('Return to 2D field'); assert.match(await tooltip(), /editable field/);

@@ -1,0 +1,134 @@
+[
+  {
+    "width": 1366,
+    "scale": 1,
+    "preview": false,
+    "camera": {
+      "x": 675.890625,
+      "y": 203,
+      "width": 399.109375,
+      "height": 38,
+      "top": 203,
+      "right": 1075,
+      "bottom": 241,
+      "left": 675.890625
+    },
+    "legend": {
+      "x": 237,
+      "y": 139,
+      "width": 850,
+      "height": 44,
+      "top": 139,
+      "right": 1087,
+      "bottom": 183,
+      "left": 237
+    },
+    "overlapsLegend": false,
+    "overlapsPreview": false,
+    "obscured": []
+  },
+  {
+    "width": 1366,
+    "scale": 1,
+    "preview": true,
+    "camera": {
+      "x": 675.890625,
+      "y": 504,
+      "width": 399.109375,
+      "height": 38,
+      "top": 504,
+      "right": 1075,
+      "bottom": 542,
+      "left": 675.890625
+    },
+    "legend": {
+      "x": 237,
+      "y": 139,
+      "width": 850,
+      "height": 44,
+      "top": 139,
+      "right": 1087,
+      "bottom": 183,
+      "left": 237
+    },
+    "banner": {
+      "x": 241,
+      "y": 191,
+      "width": 842,
+      "height": 59.59375,
+      "top": 191,
+      "right": 1083,
+      "bottom": 250.59375,
+      "left": 241
+    },
+    "overlapsLegend": false,
+    "overlapsPreview": false,
+    "obscured": []
+  },
+  {
+    "width": 1120,
+    "scale": 1.25,
+    "preview": false,
+    "camera": {
+      "x": 230.1125030517578,
+      "y": 202.1999969482422,
+      "width": 398.0874938964844,
+      "height": 37.20000076293945,
+      "top": 202.1999969482422,
+      "right": 628.1999969482422,
+      "bottom": 239.39999771118164,
+      "left": 230.1125030517578
+    },
+    "legend": {
+      "x": 168.8000030517578,
+      "y": 138.1999969482422,
+      "width": 471.3999938964844,
+      "height": 51.60000228881836,
+      "top": 138.1999969482422,
+      "right": 640.1999969482422,
+      "bottom": 189.79999923706055,
+      "left": 168.8000030517578
+    },
+    "overlapsLegend": false,
+    "overlapsPreview": false,
+    "obscured": []
+  },
+  {
+    "width": 1120,
+    "scale": 1.25,
+    "preview": true,
+    "camera": {
+      "x": 230.1125030517578,
+      "y": 324.8000183105469,
+      "width": 398.0874938964844,
+      "height": 37.20000076293945,
+      "top": 324.8000183105469,
+      "right": 628.1999969482422,
+      "bottom": 362.0000190734863,
+      "left": 230.1125030517578
+    },
+    "legend": {
+      "x": 168.8000030517578,
+      "y": 138.1999969482422,
+      "width": 471.3999938964844,
+      "height": 51.60000228881836,
+      "top": 138.1999969482422,
+      "right": 640.1999969482422,
+      "bottom": 189.79999923706055,
+      "left": 168.8000030517578
+    },
+    "banner": {
+      "x": 172.8000030517578,
+      "y": 190.1999969482422,
+      "width": 463.3999938964844,
+      "height": 76,
+      "top": 190.1999969482422,
+      "right": 636.1999969482422,
+      "bottom": 266.1999969482422,
+      "left": 172.8000030517578
+    },
+    "overlapsLegend": false,
+    "overlapsPreview": false,
+    "obscured": []
+  }
+]
