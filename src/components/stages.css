@@ -14,6 +14,14 @@
 .field-preview-banner button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
 .field-readout { position: absolute; z-index: 2; width: min(300px, calc(100% - 16px)); padding: 9px 11px; border: 1px solid #688264; border-radius: 6px; background: #14231bf5; color: #f0f5e8; pointer-events: none; display: flex; flex-direction: column; gap: 5px; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 .field-readout strong { font-weight: 600; }
+.neighbor-legend { position: absolute; z-index: 1; top: 36px; left: 12px; max-width: calc(100% - 24px); display: flex; flex-wrap: wrap; gap: 5px 12px; padding: 6px 9px; border: 1px solid #688264; border-radius: 5px; background: #14231bf5; color: #edf5e5; font-size: 11px; line-height: 1.4; pointer-events: none; }
+.neighbor-legend > span { display: flex; align-items: center; gap: 5px; overflow-wrap: anywhere; min-width: 0; }
+.neighbor-legend svg { flex-shrink: 0; fill: #14231b; stroke: currentColor; stroke-width: 1.5; }
+.neighbor-legend svg > path:first-child { fill: none; stroke-dasharray: 6 4; }
+.neighbor-legend [data-neighbor-legend=previous] { color: #b9e3f4; }
+.neighbor-legend [data-neighbor-legend=next] { color: #f1d39a; }
+.neighbor-legend [data-neighbor-legend=next] svg > path:first-child { stroke-dasharray: 1 4; stroke-linecap: round; }
+.field-container:has(.field-stage--moving) .neighbor-legend { display: none; }
 .field-readout span { color: #d7e4d0; }
 .field-stage--pan .field-stage__svg, .field-stage--pan .field-performer { cursor: grab; }
 .field-stage--moving .field-stage__svg, .field-stage--moving .field-performer { cursor: grabbing; }

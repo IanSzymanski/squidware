@@ -241,16 +241,25 @@ export function sampleTimeline(project: Project, count: number): Omit<TimelineSa
   throw new Error('Unable to sample an invalid show timeline.');
 }
 
+/** Validated v2 moves currently support one full-count line per performer. */
+export function moveEndpoints(project: Project, moveIndex: number, performerId: string): { from: Point; to: Point } | undefined {
+  const move = project.moves[moveIndex];
+  const fromSet = project.sets[moveIndex];
+  const toSet = project.sets[moveIndex + 1];
+  if (!move || move.fromSetId !== fromSet?.id || move.toSetId !== toSet?.id) return undefined;
+  const from = fromSet.positions[performerId];
+  const to = toSet.positions[performerId];
+  return from && to ? { from, to } : undefined;
+}
+
 export function sampleProject(project: Project, count: number): TimelineSample {
   const timing = sampleTimeline(project, count);
   if (!project.sets.length) return { ...timing, positions: {} };
   if (timing.setIndex === 0) return { ...timing, positions: Object.fromEntries(Object.entries(project.sets[0].positions).map(([id, point]) => [id, { ...point }])) };
   const move = project.moves[timing.setIndex - 1];
   const positionProgress = move.transition === 'ease' ? smoothstep(timing.progress) : timing.progress;
-  const previous = project.sets[timing.setIndex - 1];
-  const set = project.sets[timing.setIndex];
   return { ...timing, positions: Object.fromEntries(project.performers.map(performer => {
-    const from = previous.positions[performer.id]; const to = set.positions[performer.id];
+    const { from, to } = moveEndpoints(project, timing.setIndex - 1, performer.id)!;
     return [performer.id, { x: lerp(from.x, to.x, positionProgress), y: lerp(from.y, to.y, positionProgress) }];
   })) };
 }
