@@ -9,14 +9,15 @@ import type { FieldKey } from './fieldKeyboard';
 import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, layoutFieldLabels, nearestFieldDots } from './fieldPresentation';
 import type { FieldPresentation, HitCycle, ScreenBox } from './fieldPresentation';
 import './stages.css';
+import { NeighborDrawing } from './NeighborDrawing';
+import type { NeighborOverlay } from '../neighborPaths';
 
 interface DrawingProps {
   project: Project;
   positions: Record<string, Point>;
-  previousPositions?: Record<string, Point>;
+  neighbors?: NeighborOverlay[];
   selectedIds?: string[];
   showLabels?: boolean;
-  showPaths?: boolean;
   showGrid?: boolean;
   coordinateDecimals?: 0 | 1 | 2;
   readoutId?: string;
@@ -67,7 +68,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, he
 StaticFieldMarkings.displayName = 'StaticFieldMarkings';
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2, presentation, screen }: DrawingProps) {
+export function FieldDrawing({ project, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2, presentation, screen }: DrawingProps) {
   const { width, height, preset } = project.field;
   const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
@@ -87,17 +88,7 @@ export function FieldDrawing({ project, positions, previousPositions, selectedId
   }] : []), screen.bounds, { ...display, labelMode: showLabels ? display.labelMode : 'none' }) : null;
   return <>
     <StaticFieldMarkings width={width} height={height} preset={preset} showGrid={showGrid} />
-    {showPaths && previousPositions && <g fill="none" strokeWidth="0.13" strokeDasharray="0.7 0.5" opacity="0.65" pointerEvents="none">
-      {project.performers.map(performer => {
-        const from = previousPositions[performer.id];
-        const to = positions[performer.id];
-        if (!from || !to) return null;
-        return <g key={`path-${performer.id}`} stroke={colors.get(performer.sectionId) ?? '#b9ed85'}>
-          <circle cx={from.x} cy={from.y} r="0.34" strokeDasharray="none" />
-          <path d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} />
-        </g>;
-      })}
-    </g>}
+    {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
       const point = positions[performer.id];
       if (!point) return null;
@@ -125,7 +116,6 @@ interface Field2DProps extends DrawingProps {
   onMove: (updates: Record<string, Point>) => void;
   tool: 'select' | 'pan';
   showLabels: boolean;
-  showPaths: boolean;
   showGrid: boolean;
   snap: boolean;
   zoom: number;
@@ -150,7 +140,7 @@ function translatedGroup(originals: Record<string, Point>, delta: Point, width: 
   return Object.fromEntries(Object.entries(originals).map(([id, point]) => [id, { x: point.x + dx, y: point.y + dy }]));
 }
 
-export function Field2D({ project, positions, previousPositions, selectedIds, onSelect, onMove, tool, showLabels, showPaths, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateDecimals = 2, presentation }: Field2DProps) {
+export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateDecimals = 2, presentation }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const readoutId = useId();
   const keyboardHelpId = useId();
@@ -401,7 +391,7 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
 
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
     <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
-      <FieldDrawing project={project} positions={displayedPositions} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} coordinateDecimals={coordinateDecimals} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} />
+      <FieldDrawing project={project} positions={displayedPositions} neighbors={moving ? [] : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateDecimals={coordinateDecimals} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} />
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#c5f47b18" stroke="#caf38a" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
     </svg>
     <div id={keyboardHelpId} className="field-keyboard-help">Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · Alt+arrows: move selection · Shift+Alt: {fastNudgeStep} yd · Page Up/Down: roster · Home/End: first/last</div>

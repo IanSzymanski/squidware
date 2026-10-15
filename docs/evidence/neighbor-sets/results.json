@@ -1,0 +1,29 @@
+{
+  "passed": [
+    "every distinct center in an 8x8 two-step block is mouse-selectable within the 500-performer cast",
+    "nearest selection, 6px dots and 12px collision-free labels work at 60%, 100% and 300% zoom",
+    "repeated native clicks cycle coincident dots in stable ID order",
+    "reversing the roster preserves nearest and initial tied hit results",
+    "Chromium touch input selects the nearest dense-field dot",
+    "the existing keyboard-accessible label button cycles all / selected-focus / hidden; hover uses the same nearest hit",
+    "pointer selection, labels and zoom preserve physical coordinates and edit revision",
+    "labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size",
+    "both neighbors use ordered endpoints, distinct circle/diamond ghosts and dashed/dotted paths; ghosts do not intercept native selection",
+    "selection intersects the section filter and real Tab/Enter input controls the next overlay independently",
+    "first/last sets have no phantom neighbors; playback, scrubbing and 3D hide review geometry without changing project or history",
+    "uncommitted drag previews suppress ghosts and restore them on release"
+  ],
+  "baselineViewport": {
+    "width": 1366,
+    "height": 768,
+    "devicePixelRatio": 1,
+    "fieldWidth": 785,
+    "fieldHeight": 282
+  },
+  "narrowViewport": {
+    "width": 1104,
+    "height": 768
+  },
+  "platform": "win32",
+  "rendererNodeAccess": "undefined"
+}

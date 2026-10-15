@@ -2,7 +2,7 @@ import { defaultPreferences, validatePreferences } from '../preferences';
 import type { Preferences, PreferencesBridge } from '../preferences';
 import type { EditorState } from './state';
 import type { EditorStore } from './store';
-const UI_KEYS = ['view', 'showLabels', 'showPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
+const UI_KEYS = ['view', 'showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
 const KEYS = Object.keys(defaultPreferences()) as (keyof Preferences)[];
 const equal = (a: Preferences, b: Preferences) => KEYS.every(key => a[key] === b[key]);
 export const preferencesSnapshot = (state: EditorState) => validatePreferences({ ...state.preferences.value, ...Object.fromEntries(UI_KEYS.map(key => [key, state.ui[key]])) });

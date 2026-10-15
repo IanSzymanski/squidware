@@ -70,7 +70,7 @@ app.whenReady().then(async () => {
     await openPreferences();
     if (phase === 'write') {
       assert.ok(before.preferences.error.includes('Older')); assert.equal(before.ui.zoom, 1.1);
-      await select('Panel layout', 'compact'); await toggle('Performer labels'); await toggle('Previous paths'); await toggle('Field grid'); await toggle('Snap to grid');
+      await select('Panel layout', 'compact'); await toggle('Performer labels'); await toggle('Previous paths'); await toggle('Next paths'); await toggle('Field grid'); await toggle('Snap to grid');
       await number('Field zoom', 1.6); await number('Nudge · yards', 1.25); await number('Fast nudge', 5);
       await select('Coordinate decimals', 0); await select('Paper', 'a4'); await select('Packet default', 'coordinates'); await select('Shape', 'block');
       await number('Width · yards', 30); await number('Depth · yards', 15); await number('Rotation', 30); await number('Block columns', 4); await number('Spacing', 2); await number('Stride', .75);

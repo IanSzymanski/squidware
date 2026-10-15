@@ -1,7 +1,7 @@
 export interface Preferences {
   version: 1;
   panelLayout: 'comfortable' | 'compact'; view: '2d' | '3d';
-  showLabels: boolean; showPaths: boolean; showGrid: boolean; snap: boolean; zoom: number;
+  showLabels: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; zoom: number;
   formation: 'line' | 'arc' | 'circle' | 'block' | 'curve';
   formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
   nudgeStep: number; fastNudgeStep: number; coordinateDecimals: 0 | 1 | 2;
@@ -15,7 +15,7 @@ export interface PreferencesBridge {
   resetPreferences: () => Promise<Preferences>;
 }
 export function defaultPreferences(): Preferences {
-  return { version: 1, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showGrid: true, snap: true, zoom: 1,
+  return { version: 1, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
     nudgeStep: .625, fastNudgeStep: 2.5, coordinateDecimals: 2, paperSize: 'letter', printMode: 'charts', minimumSpacing: 1, maximumStride: 1.25 };
 }

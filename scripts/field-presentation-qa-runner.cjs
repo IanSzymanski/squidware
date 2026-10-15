@@ -30,6 +30,79 @@ const input = (type, point, extra = {}) => {
 };
 async function click(point, modifiers = 0) { await input('mouseMoved', point); await input('mousePressed', point, { button: 'left', clickCount: 1, modifiers }); await input('mouseReleased', point, { button: 'left', clickCount: 1, modifiers }); }
 const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 20);
+async function checkNeighbors(project) {
+  const performers = project.performers.slice(1, 5).map((person, index) => ({ ...person, sectionId: project.sections[index % 2].id }));
+  const sets = [0, 1, 2].map(index => ({ id: `neighbor-${index}`, name: ['Departure', 'Arrival', 'Release'][index], notes: '',
+    positions: Object.fromEntries(performers.map((person, i) => [person.id, { x: 35 + index * 7.5 + i * 2.5, y: 20 + i * 3.75 }])) }));
+  // A ghost coincides with a real editable dot: it must never win a hit test.
+  sets[1].positions[performers[1].id] = { ...sets[0].positions[performers[0].id] };
+  const fixture = { ...project, title: 'Neighboring set review', performers, sets,
+    moves: [0, 1].map(index => ({ ...project.moves[0], id: `neighbor-move-${index}`, fromSetId: sets[index].id, toSetId: sets[index + 1].id, counts: 16, transition: index ? 'linear' : 'ease', paths: {} })) };
+  window.setContentSize(1366, 768);
+  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(fixture)}}); ${editor}.dispatch('set.select',{index:1}); ${editor}.setValue('ui','sectionFilter','all'); ${editor}.setValue('ui','showPaths',false); ${editor}.setValue('ui','showNextPaths',false)`);
+  await wait("document.querySelectorAll('.field-performer').length===4", 'neighbor fixture');
+  const before = await evaluate(`${state}.project`);
+  await capture('neighbors-before.png');
+  const previous = '[aria-label="Show paths from previous set"]';
+  const next = '[aria-label="Show paths to next set"]';
+  const clickControl = async selector => { const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };
+  await clickControl(previous); await wait(`${state}.ui.showPaths`, 'previous toggle');
+  await clickControl(next); await wait("document.querySelectorAll('[data-neighbor]').length===2", 'both neighbors');
+  assert.equal(await evaluate("document.querySelectorAll('[data-neighbor-dot]').length"), 8);
+  const firstPath = await evaluate(`document.querySelector('[data-neighbor=previous] [data-neighbor-performer="${performers[0].id}"] [data-neighbor-path]').getAttribute('d')`);
+  assert.equal(firstPath, 'M 35 20 L 42.5 20');
+  assert.ok(await evaluate("document.querySelector('.neighbor-legend').textContent.includes('From set 1') && document.querySelector('.neighbor-legend').textContent.includes('To set 3')"));
+  assert.equal(await evaluate("document.querySelectorAll('[data-neighbor-overlays] [tabindex], [data-neighbor-overlays] [role=button]').length"), 0);
+  await capture('neighbors-both.png');
+  await click(await center(performers[1].id)); await selected(performers[1].id);
+  assert.equal(await evaluate("document.querySelectorAll('[data-neighbor-dot]').length"), 2);
+  pass('both neighbors use ordered endpoints, distinct circle/diamond ghosts and dashed/dotted paths; ghosts do not intercept native selection');
+
+  await evaluate(`${editor}.setValue('selection','selectedIds',${JSON.stringify([performers[0].id, performers[1].id])}); ${editor}.setValue('ui','sectionFilter',${JSON.stringify(project.sections[1].id)})`);
+  await wait("document.querySelectorAll('[data-neighbor-dot]').length===2", 'selection and section intersection');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-neighbor-performer]')].map(node=>node.dataset.neighborPerformer)"), [performers[1].id, performers[1].id]);
+  await evaluate(`${editor}.setValue('ui','sectionFilter',${JSON.stringify(project.sections[2].id)})`);
+  await wait("!document.querySelector('[data-neighbor]') && document.querySelector('.neighbor-legend').textContent.includes('No performers match')", 'empty review scope');
+  await evaluate(`${editor}.setValue('ui','sectionFilter','all'); document.querySelector(${JSON.stringify(previous)}).focus()`);
+  await key('Tab'); assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), 'Show paths to next set');
+  await key('Return'); await wait("document.querySelectorAll('[data-neighbor]').length===1", 'keyboard next off');
+  assert.equal(await evaluate("document.querySelector('[data-neighbor]').dataset.neighbor"), 'previous');
+  await key('Return'); await wait("document.querySelectorAll('[data-neighbor]').length===2", 'keyboard next on');
+  pass('selection intersects the section filter and real Tab/Enter input controls the next overlay independently');
+
+  for (const [index, direction, disabled] of [[0, 'next', previous], [2, 'previous', next]]) {
+    await evaluate(`${editor}.dispatch('set.select',{index:${index}})`);
+    await wait(`document.querySelectorAll('[data-neighbor]').length===1 && document.querySelector('[data-neighbor]').dataset.neighbor==='${direction}'`, 'endpoint neighbor');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(disabled)}).getAttribute('aria-disabled')`), 'true');
+  }
+  await evaluate(`${editor}.dispatch('set.select',{index:1}); ${editor}.dispatch('playback.scrub',{count:17})`);
+  await wait("!document.querySelector('[data-neighbor]') && !document.querySelector('.neighbor-legend')", 'between-set overlays hidden');
+  await evaluate(`${editor}.dispatch('set.select',{index:1}); ${editor}.setValue('playback','playing',true)`);
+  await wait("!document.querySelector('[data-neighbor]')", 'playing overlays hidden');
+  await evaluate(`${editor}.dispatch('set.select',{index:1}); ${editor}.setValue('ui','view','3d')`);
+  await wait("!document.querySelector('[data-neighbor]')", '3D overlays hidden');
+  await evaluate(`${editor}.setValue('ui','view','2d'); ${editor}.setValue('selection','selectedIds',[])`);
+  await wait("document.querySelectorAll('[data-neighbor-dot]').length===8", 'review restored');
+  assert.deepEqual((await evaluate(`${state}.project`)).present, before.present);
+  assert.equal(await evaluate(`${state}.project.revision`), before.revision);
+  assert.deepEqual(await evaluate(`${state}.project.past`), before.past);
+  pass('first/last sets have no phantom neighbors; playback, scrubbing and 3D hide review geometry without changing project or history');
+  const dragPoint = await center(performers[0].id);
+  await input('mousePressed', dragPoint, {button:'left',clickCount:1});
+  await input('mouseMoved', {x:dragPoint.x+12,y:dragPoint.y}, {button:'left',buttons:1});
+  await wait("!!document.querySelector('.field-stage--moving') && !document.querySelector('[data-neighbor]')", 'drag ghosts hidden');
+  assert.equal(await evaluate(`${state}.project.revision`), before.revision);
+  // Return to the anchor before release so this probe makes no production edit.
+  await input('mouseMoved', dragPoint, {button:'left',buttons:1});
+  await input('mouseReleased', dragPoint, {button:'left',clickCount:1});
+  await wait("!!document.querySelector('[data-neighbor]')", 'drag review restored');
+  await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
+  pass('uncommitted drag previews suppress ghosts and restore them on release');
+  window.webContents.setZoomFactor(1.25); await pause(100); await capture('neighbors-enlarged.png');
+  window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await pause(100); await capture('neighbors-narrow.png');
+  for (const selector of [previous, next]) assert.ok(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()`));
+  window.setContentSize(1366, 768);
+}
 const center = id => evaluate(`(() => { const n = [...document.querySelectorAll('.field-performer')].find(n=>n.dataset.performerId===${JSON.stringify(id)}); const p = new DOMPoint(0,0).matrixTransform(n.getScreenCTM()); return {x:p.x,y:p.y}; })()`);
 async function selected(id) { await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'selected '+id); }
 async function assertLabels() {
@@ -111,6 +184,7 @@ app.whenReady().then(async () => {
     window.webContents.setZoomFactor(1); window.setContentSize(1024,768); await pause(100); await assertLabels(); await capture('narrow-1024.png');
     const narrowViewport = await evaluate('({width:innerWidth,height:innerHeight})');
     pass('labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size');
+    await checkNeighbors(project);
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
      app.exit(0);
   } catch (error) {  console.error(error); if (window && !window.isDestroyed()) await capture('failure.png').catch(() => {}); app.exit(1); }
