@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeTransition, parseProject, PROJECT_LIMITS, serializeProject, validateProject } from './domain';
+import { analyzeTransition, exportCoordinatesCsv, parseProject, PROJECT_LIMITS, serializeProject, validateProject } from './domain';
 import { createPerformanceFixture } from './performanceFixtures';
 
 describe('reproducible performance fixtures', () => {
@@ -26,4 +26,12 @@ describe('reproducible performance fixtures', () => {
     expect(project.sets[1].positions[first].x).toBeGreaterThan(project.sets[1].positions[second].x);
     expect(analyzeTransition(project, 1).filter(issue => issue.type === 'collision').length).toBeGreaterThan(500);
   });
+  it('keeps all 64,000 coordinate rows inside the native CSV byte limit with step metadata', () => {
+    const project = createPerformanceFixture('maximum');
+    for (const options of [{ coordinatePrecision: 'quarter' as const }, 2 as const]) {
+      const csv = exportCoordinatesCsv(project, options);
+      expect(new TextEncoder().encode(csv).byteLength).toBeLessThanOrEqual(20 * 1024 * 1024);
+      expect(csv.match(/\r\n/g)).toHaveLength(64001);
+    }
+  }, 15000);
 });

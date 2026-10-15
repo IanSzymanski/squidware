@@ -21,7 +21,8 @@ for case in manifest['cases']:
         assert normalize(marker) in text, (case['name'], 'missing text', marker[:70])
     if case.get('coordinateRows'):
         # One row per performer and set, independent of table pagination.
-        assert sum(len(re.findall(r'\d+\. Picture \d{3}', page)) for page in pages_text) == case['coordinateRows']
+        pattern = case.get('coordinateRowPattern', r'\d+\. Picture \d{3}')
+        assert sum(len(re.findall(pattern, page)) for page in pages_text) == case['coordinateRows']
     with pdfplumber.open(pdf) as document:
         checked = 0
         for index, page in enumerate(document.pages):

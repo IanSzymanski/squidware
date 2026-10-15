@@ -443,6 +443,6 @@ describe('roster CSV and coordinate exports', () => {
     const field = createBlankProject().field;
     expect(coordinateDescription({ x: 41.25, y: 21.25 }, field)).toBe('Side 1: 2 steps inside the 40-yard line; 2 steps in front of back hash');
     expect(coordinateDescription({ x: 58.75, y: field.height }, field)).toBe('Side 2: 2 steps inside the 40-yard line; on front sideline');
-    expect(coordinateDescription({ x: 50, y: 160 / 9 }, { ...field, preset: 'high-school' })).toBe('Side 1: on the 50-yard line; on back hash');
+    expect(coordinateDescription({ x: 50, y: 160 / 9 }, { ...field, preset: 'high-school' })).toBe('On the 50-yard line; on back hash');
   });
 });
