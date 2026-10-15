@@ -261,11 +261,15 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).getAttribute('aria-label').includes(${JSON.stringify(saved.sections.find(s => s.id === person.sectionId).name)})`), true);
     await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).blur()`);
     await hoverPoint(saved.sets[1].positions[person.id].x, saved.sets[1].positions[person.id].y);
-    const hoverScreen = await screenPoint(saved.sets[1].positions[person.id].x, saved.sets[1].positions[person.id].y);
-    const hoveredId = await evaluate(`document.elementFromPoint(${hoverScreen.x}, ${hoverScreen.y}).closest('[data-performer-id]').getAttribute('data-performer-id')`);
-    const hovered = saved.performers.find(item => item.id === hoveredId);
+    // Hovering an exact center chooses that performer, with stable ID order
+    // for coincident centers; SVG stacking order no longer defines the hit.
+    const target = saved.sets[1].positions[person.id];
+    const hovered = saved.performers.filter(item => {
+      const point = saved.sets[1].positions[item.id];
+      return point.x === target.x && point.y === target.y;
+    }).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)[0];
     assert.equal(await evaluate("document.querySelector('.field-readout strong').textContent"), [hovered.label, hovered.name, saved.sections.find(item => item.id === hovered.sectionId).name].filter(Boolean).join(' · '));
-    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(saved.sets[1].positions[hoveredId], saved.field));
+    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(saved.sets[1].positions[hovered.id], saved.field));
     await hoverPoint(20, 20);
     assert.equal(await evaluate("document.querySelector('.field-readout strong').textContent"), 'Cursor');
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
@@ -411,7 +415,8 @@ app.whenReady().then(async () => {
     pass('Escape cancels a color session without applying its preview or adding history');
 
     await clickSelector('[aria-label="Select performers"]');
-    const dragId = single.performers[1].id;
+    // Use a distinct center; coincident-dot cycling has its own field suite.
+    const dragId = single.performers[2].id;
     const dragFrom = single.sets[0].positions[dragId];
     const pressed = await screenPoint(dragFrom.x, dragFrom.y);
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', buttons: 1, clickCount: 1, ...pressed });

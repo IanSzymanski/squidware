@@ -39,7 +39,12 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
       if (!frame) frame = requestAnimationFrame(() => { frame = 0; setCursor(latest); });
     };
     const leave = () => { cancelAnimationFrame(frame); frame = 0; latest = null; setCursor(null); };
-    const focus = (event: FocusEvent) => setFocusedId(performerId(event.target));
+    const focus = (event: FocusEvent) => {
+      // A new focus target takes precedence over a stationary pointer, including
+      // focus moved by assistive technology without a keyboard event.
+      leave();
+      setFocusedId(performerId(event.target));
+    };
     const blur = () => setFocusedId(null);
     svg.addEventListener('pointermove', pointer);
     svg.addEventListener('pointerdown', pointer);
