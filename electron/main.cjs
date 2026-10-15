@@ -270,7 +270,7 @@ function installMenu() {
   const template = [
     ...(isMac ? [{ label: app.name, submenu: [action('About Squidware', 'about'), { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] }] : []),
     { label: '&File', submenu: [
-      action('New project', 'new', 'CmdOrCtrl+N'),
+      action('New production', 'new', 'CmdOrCtrl+N'),
       action('Open project…', 'open', 'CmdOrCtrl+O'),
       { type: 'separator' },
       action('Save', 'save', 'CmdOrCtrl+S'),
@@ -292,7 +292,7 @@ function installMenu() {
       { type: 'separator' }, { role: 'togglefullscreen' },
       ...(!app.isPackaged ? [{ type: 'separator' }, { role: 'toggleDevTools' }] : []),
     ] },
-    { label: '&Help', submenu: [action('Keyboard shortcuts', 'shortcuts', 'F1'), action('About Squidware', 'about')] },
+    { label: '&Help', submenu: [action('Squidware Help', 'shortcuts', 'F1')] },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }

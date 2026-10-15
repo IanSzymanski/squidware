@@ -125,6 +125,57 @@ async function openHistory() {
   return evaluate("[...document.querySelectorAll('.history-list:not(.future) li')].map(node => node.querySelector('span').textContent)");
 }
 
+async function checkActionClarity() {
+  window.setContentSize(1366, 768);
+  await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
+  const inventory = await evaluate("[...document.querySelectorAll('button')].map(n=>({name:n.getAttribute('aria-label'),text:n.textContent.trim(),icon:n.querySelector('svg')?.getAttribute('class')}))");
+  await fs.writeFile(path.join(output, 'control-inventory.json'), JSON.stringify(inventory, null, 2));
+  assert.equal(inventory.filter(n => n.name === 'Add set').length, 1);
+  assert.equal(inventory.filter(n => n.name === 'Help').length, 1);
+  const icon = name => inventory.find(n => n.name === name)?.icon;
+  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome'].map(icon);
+  assert.ok(distinct.every(Boolean)); assert.equal(new Set(distinct).size, distinct.length);
+  await capture('action-clarity-design.png');
+  for (const [action, heading] of [['New production', 'New production'], ['Production settings', 'Production settings'], ['Preferences', 'Preferences']]) {
+    await evaluate('document.querySelector(\'[aria-label="Project menu"]\').focus()');
+    await sendKey(window, 'Return'); await uiWait("!!document.querySelector('.dropdown')", 'project menu');
+    await evaluate(`document.querySelector('[aria-label="${action}"]').focus()`);
+    await sendKey(window, 'Return');
+    await uiWait(`document.querySelector('.modal h2')?.textContent === '${heading}'`, heading);
+    await clickSelector('.modal [aria-label="Close dialog"]');
+  }
+  await evaluate('document.querySelector(\'[aria-label="Export"]\').focus()'); await sendKey(window, 'Return');
+  await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
+  await clickSelector('.modal [aria-label="Close dialog"]');
+  await clickSelector('.rail-button[aria-label="Help"]');
+  await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'help');
+  assert.match(await evaluate("document.querySelector('.modal').textContent"), /Review body clearance and traffic/);
+  await capture('action-clarity-help.png');
+  await clickSelector('.modal [aria-label="Close dialog"]');
+  menuAction('Squidware Help'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'native help');
+  await clickSelector('.modal [aria-label="Close dialog"]');
+  pass('one Add set and Help control; distinct audited icons; keyboard menu, settings, preferences, export and native Help remain reachable');
+  const point = await evaluate("(() => {const r=document.querySelector('.field-legend button').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+  for (const type of ['mouseDown', 'mouseUp']) window.webContents.sendInputEvent({ type, ...point, button: 'left', clickCount: 1 });
+  await uiWait("document.querySelector('.field-legend button').getAttribute('aria-pressed') === 'true'", 'pointer section selection');
+  assert.equal(await evaluate("document.querySelector('.selection-count').textContent"), '24 selected');
+  await evaluate("document.querySelectorAll('.field-legend button')[0].focus()"); await sendKey(window, 'Tab'); await sendKey(window, 'Return');
+  await uiWait("document.querySelectorAll('.field-legend button')[1].getAttribute('aria-pressed') === 'true'", 'keyboard section selection');
+  assert.equal(await evaluate("document.querySelectorAll('.field-legend button')[0].getAttribute('aria-pressed')"), 'false');
+  await clickSelector('[aria-label="Clear selection"]');
+  await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'selection cleared');
+  assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
+  await clickSelector('[aria-label="Select all performers"]');
+  await uiWait("!!document.querySelector('.canvas-toolbar [aria-label=\"Clear selection\"]')", 'select-all becomes clear');
+  await evaluate('document.querySelector(\'.canvas-toolbar [aria-label="Clear selection"]\').focus()'); await sendKey(window, 'Return');
+  await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
+  assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
+  await clickSelector('.rail-button[aria-label="Cast"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Cast')", 'Cast heading');
+  await clickSelector('.rail-button[aria-label="Production sheet"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
+  await clickSelector('.rail-button[aria-label="Design"]');
+  pass('native pointer and Tab/Enter select sections with pressed state; hint stays retired after clearing; Cast and Production sheet have direct headings');
+}
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'production window');
@@ -135,6 +186,7 @@ app.whenReady().then(async () => {
     await evaluate('window.__qaConfirmResponse = true; window.confirm = () => window.__qaConfirmResponse; true');
     assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
     pass('production renderer and actual isolated preload load');
+    await checkActionClarity();
 
     menuAction('Open project…');
     await uiWait("document.querySelector('.project-title')?.textContent.includes('Editor boundary QA')", 'boundary import');
@@ -382,7 +434,7 @@ app.whenReady().then(async () => {
     await typeText('.cast-table input[placeholder="Add a name"]', 'A'.repeat(40));
     await fieldKey('.cast-table input[placeholder="Add a name"]', 'Enter');
     await clickText('Design');
-    await clickSelector('.project-title');
+    await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="Production settings"]');
     await typeText('.modal label.form-label input', 'History QA production');
     await fieldKey('.modal label.form-label input', 'Enter');
     for (const color of ['#112233', '#445566', '#778899']) await colorValue('.modal input[type=color]', color);
@@ -399,7 +451,7 @@ app.whenReady().then(async () => {
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('performer names, production title and a multi-change color session each produce one named action');
 
-    await clickSelector('.project-title');
+    await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="Production settings"]');
     await colorValue('.modal input[type=color]', '#ffffff');
     await fieldKey('.modal input[type=color]', 'Escape');
     assert.equal(await evaluate("document.querySelector('.modal input[type=color]').value"), '#778899');
@@ -453,11 +505,11 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Project file saved');
     pass('draft status remains visible at minimum desktop widths and triggers the native close guard; Escape restores clean status');
 
-    await clickSelector('.project-title');
+    await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="Production settings"]');
     await editNumber('Audio sync offset · seconds', 99999);
     await clickText('Done', '.modal');
     assert.equal(await evaluate("document.querySelector('.modal h2').textContent"), 'Production settings');
-    menuAction('New project');
+    menuAction('New production');
     await pause(50);
     assert.equal(await evaluate("document.querySelector('.modal h2').textContent"), 'Production settings');
     menuAction('Open project…');
@@ -505,8 +557,8 @@ app.whenReady().then(async () => {
     menuAction('Open project…');
     await pause(60);
     assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
-    menuAction('New project');
-    await uiWait("document.querySelector('.modal h2')?.textContent === 'A new beginning'", 'new project prompt');
+    menuAction('New production');
+    await uiWait("document.querySelector('.modal h2')?.textContent === 'New production'", 'new project prompt');
     await clickSelector('.new-options button:first-child');
     assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
     await evaluate('window.__qaConfirmResponse = true');

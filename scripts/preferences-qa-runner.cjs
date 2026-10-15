@@ -51,7 +51,7 @@ const state = () => evaluate('window.__preferencesQA.editor.getState()');
 async function saved() { await uiWait("window.__preferencesQA.editor.getState().preferences.status === 'saved'", 'preferences saved'); }
 async function done() { await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Done').click()"); await uiWait("!document.querySelector('dialog[open]')", 'dialog closed'); }
 async function pdf(paper) {
-  savedFile = path.join(output, paper + '.pdf'); native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Take it to the field'", 'export');
+  savedFile = path.join(output, paper + '.pdf'); native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
   await click('.export-pdf'); await waitFor(async () => { try { return (await fs.stat(savedFile)).size > 100; } catch { return false; } }, 'PDF');
   await uiWait("!window.__preferencesQA.editor.getState().ui.printing", 'print finished');
   const content = (await fs.readFile(savedFile)).toString('latin1'); const match = content.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/); assert.ok(match, 'PDF page dimensions');
@@ -67,6 +67,14 @@ app.whenReady().then(async () => {
     if (await evaluate("!!document.querySelector('dialog[open]')")) await evaluate("window.__preferencesQA.editor.setValue('ui', 'dialog', null)");
     native('Open project…'); await uiWait("window.__preferencesQA.editor.getState().fileSession.savedRevision !== null", 'opened fixture');
     const before = await state(); const original = before.project.present; const revision = before.project.revision;
+    if (phase === 'write') {
+      assert.match(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
+      await evaluate('document.activeElement?.blur()'); native('Select all');
+      await uiWait("window.__preferencesQA.editor.getState().preferences.value.selectionHintDismissed", 'selection hint retired');
+      await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
+      assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
+      pass('selecting performers retires the introductory hint after clearing selection without a project edit');
+    }
     await openPreferences();
     if (phase === 'write') {
       assert.ok(before.preferences.error.includes('Older')); assert.equal(before.ui.zoom, 1.1);
@@ -94,6 +102,8 @@ app.whenReady().then(async () => {
       pass('the older preferences original is preserved when the upgraded file is written');
     } else if (phase === 'restart') {
       const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
+      assert.equal(expected.selectionHintDismissed, true);
+      assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
       assert.ok(await evaluate("document.querySelector('.studio').classList.contains('studio--compact')"));
       const audit = await evaluate('(' + auditText.toString() + ')()'); assert.deepEqual(audit.failures, []); assert.ok(audit.checked > 100);
       const [width, height] = window.getSize(); window.setSize(width + 1, height); await pause(150);

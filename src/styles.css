@@ -26,6 +26,13 @@
 .recovery-list time, .recovery-list span, .recovery-status { font-size: 12px; color: #56664f; }
 .recovery-error { color: #8b3029; font-size: 13px; line-height: 1.6; }
 .recovery-indicator { white-space: nowrap; }
+
+/* Section chips are selection actions, with the same focus language as other controls. */
+.field-legend button { background: #fff; border: 1px solid #a9b79d; padding: 5px 8px; min-height: 30px; }
+.field-legend button:hover { background: #edf3e5; border-color: #54713e; }
+.field-legend button.selected { background: #e6efdc; border-color: #54713e; }
+.set-track > .empty-track { display: flex; align-items: center; font-size: 11px; color: #4c6041; }
+.rail-bottom .rail-button { gap: 5px; }
 .recovery-list .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .project-file-state { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1; }

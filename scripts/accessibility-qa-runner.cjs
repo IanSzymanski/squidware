@@ -122,7 +122,7 @@ app.whenReady().then(async () => {
     await uiWait("document.querySelector('.inspector textarea').value==='Keyboard-only rehearsal note'", 'note draft entered'); await key('Return');
     await uiWait(`${editor}.getState().project.present.sets[0].notes==='Keyboard-only rehearsal note'`, 'note committed');
     native('Save As…'); await waitFor(async () => { try { return JSON.parse(await fs.readFile(savedFile, 'utf8')).sets[0].notes === 'Keyboard-only rehearsal note'; } catch { return false; } }, 'native save');
-    await tabTo('.rail-button[aria-label="Show"]', true); await key('Space');
+    await tabTo('.rail-button[aria-label="Production sheet"]', true); await key('Space');
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');
     assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);
     await audit('production overview');
@@ -140,10 +140,11 @@ app.whenReady().then(async () => {
     await uiWait("!document.querySelector('.field-preview-banner')", 'keyboard edit recovery');
     pass('keyboard-only note/save, Cast/Show review and preview recovery preserve edit locks and native button activation');
 
-    await tabTo('.project-title', true); await key('Return'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Production settings'", 'settings');
+    await tabTo('[aria-label="Project menu"]', true); await key('Return'); await uiWait("!!document.querySelector('.dropdown')", 'project menu');
+    await tabTo('[aria-label="Production settings"]'); await key('Return'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Production settings'", 'settings');
     await audit('settings'); await tabTo('.modal .modal-actions .button'); await key('Return');
     await tabTo('.header-actions > .button.primary'); await key('Return');
-    await uiWait("document.querySelector('.modal h2')?.textContent === 'Take it to the field'", 'export');
+    await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
     await audit('export'); await tabTo('.export-secondary > button:first-child'); await key('Return');
     await waitFor(async () => { try { return (await fs.stat(csvFile)).size > 0; } catch { return false; } }, 'CSV export');
     assert.equal((await fs.readFile(csvFile, 'utf8')).trim().split('\n').length, 500 * 128 + 1);
