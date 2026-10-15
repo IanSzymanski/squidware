@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { ArrowRight, LockKeyhole } from 'lucide-react';
 
@@ -12,7 +12,7 @@ import { isAtActiveSet } from './editMode';
 import type { EditorController } from './useEditorController';
 import { neighborOverlays } from '../neighborPaths';
 
-export function EditorField({ controller }: { controller: EditorController }) {
+export function EditorField({ controller, children }: { controller: EditorController; children?: ReactNode }) {
   const { project, activeSet, view, selectedIds, setSelectedIds, playing, tool, zoom, setZoom, fitVersion, showLabels, showPaths, showGrid, snap, index, readOnly, selectSet, movePerformers } = controller;
   const atSet = useEditorSelector(isAtActiveSet);
   const count = useEditorSelector(state => state.playback.count);
@@ -37,5 +37,6 @@ export function EditorField({ controller }: { controller: EditorController }) {
                 </span>)}
                 <span className="neighbor-legend__scope">{!neighbors.length ? 'No performers match this review scope.' : <>{neighbors[0].paths.length} {selectedIds.length ? 'selected' : 'performers'}{controller.sectionFilter !== 'all' ? ` · ${project.sections.find(section => section.id === controller.sectionFilter)?.name ?? 'Section filter'}` : ''}</>}</span>
               </div>}
+              {children}
             </div>);
 }

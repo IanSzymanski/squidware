@@ -78,9 +78,9 @@ async function checkCoordinateOutput(project) {
       window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await capturePage(window, output, 'coordinate-narrow.png');
       window.setContentSize(1366, 768);
     }
-    await click('.rail-button[aria-label="Cast"]');
+    await click('.workspace-tab[aria-label="Cast"]');
     await uiWait(`document.querySelector('.coordinate-cell')?.textContent === ${JSON.stringify(expected)}`, 'Cast coordinate precision');
-    await click('.rail-button[aria-label="Design"]');
+    await click('.workspace-tab[aria-label="Design"]');
     savedFile = path.join(output, `coordinates-${precision}-${process.pid}.csv`);
     native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
     await click('.export-options label:nth-child(2) input');

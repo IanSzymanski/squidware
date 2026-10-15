@@ -91,7 +91,7 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
       title: performer ? [performer.label, performer.name, section?.name].filter(Boolean).join(' · ') : 'Cursor',
       description: coordinateDescription(position, project.field, coordinateFormat),
       left: Math.max(8, Math.min(bounds.width - 308, anchor.x - bounds.left + 14)),
-      top: Math.max(readOnly ? 122 : 42, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
+      top: Math.max(readOnly ? 150 : 60, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
     });
   }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly, coordinateFormat, pointerRadius, touchRadius]);
 
