@@ -1,4 +1,5 @@
 'use strict';
+const { capturePage, waitFor: waitUntil, key: sendKey } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -6,7 +7,7 @@ const assert = require('node:assert/strict');
 const manifestArg = process.argv.find(value => value.startsWith('--editor-qa-manifest='));
 if (!manifestArg) throw new Error('Run through scripts/editor-qa.mjs.');
 const manifest = require(manifestArg.slice('--editor-qa-manifest='.length));
-const { root, output } = manifest;
+const { root, output, profile } = manifest;
 const checks = [];
 let window;
 let openPath = path.join(output, 'boundary.squid');
@@ -20,8 +21,7 @@ let saveDialogWaiting = false;
 let messageResponse = 1;
 const messages = [];
 let scriptFailure;
-require('node:fs').mkdirSync(path.join(output, `profile-${process.pid}`), { recursive: true });
-app.setPath('userData', path.join(output, `profile-${process.pid}`));
+app.setPath('userData', profile);
 // The production main owns all security settings and handlers. Only suppress its show call.
 BrowserWindow.prototype.show = function () {};
 dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [openPath] });
@@ -38,20 +38,12 @@ app.on('browser-window-created', (_event, created) => {
   created.webContents.on('console-message', details => { if (details.level === 'error') console.error(details.message); });
   created.webContents.on('render-process-gone', (_event, details) => { scriptFailure = new Error(`Renderer exited: ${details.reason}`); });
 });
-const timeout = setTimeout(() => { console.error('Editor QA timed out.'); app.exit(1); }, 120000);
+
 require(path.join(root, 'electron', 'main.cjs'));
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const evaluate = source => window.webContents.executeJavaScript(source);
-async function waitFor(condition, label) {
-  const started = Date.now();
-  while (Date.now() - started < 15000) {
-    if (scriptFailure) throw scriptFailure;
-    if (await condition()) return;
-    await pause(25);
-  }
-  throw new Error(`Timed out: ${label}`);
-}
+const waitFor = (condition, label) => waitUntil(condition, label, { timeoutMs: 15000, failure: () => scriptFailure });
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 async function clickText(text, scope = 'body', allowDisabled = false) {
   await evaluate(`(() => { const button = [...document.querySelector(${JSON.stringify(scope)}).querySelectorAll('button')].find(node => node.textContent.trim() === ${JSON.stringify(text)}); if (!button || ((button.disabled || button.getAttribute('aria-disabled') === 'true') && !${allowDisabled})) throw new Error('Button unavailable: ' + ${JSON.stringify(text)}); if (!button.disabled && button.getAttribute('aria-disabled') !== 'true') button.click(); })()`);
@@ -103,15 +95,15 @@ async function hoverPoint(x, y) {
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
   await pause(60);
 }
-async function capture(name) {
-  // A hidden Windows compositor can return its previous surface until a resize.
-  const [width, height] = window.getSize();
-  window.setSize(width + 1, height);
-  await pause(120);
-  const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
-  await fs.writeFile(path.join(output, name), screenshot.toPNG());
-  window.setSize(width, height);
-  await pause(60);
+const capture = name => capturePage(window, output, name);
+
+async function focusFieldPerformer(selector) {
+  const index = await evaluate(`[...document.querySelectorAll('.field-performer')].findIndex(node => node.matches(${JSON.stringify(selector)}))`);
+  assert.ok(index >= 0, `Performer exists: ${selector}`);
+  await evaluate("document.querySelector('[aria-label=\"Fit field\"]').focus()");
+  await sendKey(window, 'Tab'); await sendKey(window, 'Home');
+  for (let step = 0; step < index; step++) await sendKey(window, 'PageDown');
+  await uiWait(`document.activeElement?.matches(${JSON.stringify(selector)})`, 'keyboard performer focus');
 }
 
 async function typeText(selector, text) {
@@ -254,20 +246,22 @@ app.whenReady().then(async () => {
     const { coordinateDescription } = require(path.join(output, 'boundary-fixture.cjs'));
     const person = saved.performers[0];
     const dotSelector = `.field-performer[data-performer-id="${person.id}"]`;
-    await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).focus()`);
+    await focusFieldPerformer(dotSelector);
     await uiWait("!!document.querySelector('.field-readout')", 'focused performer details');
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(saved.sets[1].positions[person.id], saved.field));
     assert.match(await evaluate("document.querySelector('.field-readout strong').textContent"), new RegExp(person.label));
     assert.equal(await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).getAttribute('aria-label').includes(${JSON.stringify(saved.sections.find(s => s.id === person.sectionId).name)})`), true);
     await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).blur()`);
     await hoverPoint(saved.sets[1].positions[person.id].x, saved.sets[1].positions[person.id].y);
-    // Hovering an exact center chooses that performer, with stable ID order
-    // for coincident centers; SVG stacking order no longer defines the hit.
+    // The contract is nearest center, with stable IDs for coincident dots.
+    // SVG paint order is not an oracle for which performer the user pointed at.
     const target = saved.sets[1].positions[person.id];
     const hovered = saved.performers.filter(item => {
       const point = saved.sets[1].positions[item.id];
-      return point.x === target.x && point.y === target.y;
+      return Math.hypot(point.x - target.x, point.y - target.y) < 1e-8;
     }).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)[0];
+    const hoveredId = hovered.id;
+    await uiWait(`document.querySelector('.field-readout strong')?.textContent.startsWith(${JSON.stringify(hovered.label + ' ·')})`, 'nearest performer hover');
     assert.equal(await evaluate("document.querySelector('.field-readout strong').textContent"), [hovered.label, hovered.name, saved.sections.find(item => item.id === hovered.sectionId).name].filter(Boolean).join(' · '));
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(saved.sets[1].positions[hovered.id], saved.field));
     await hoverPoint(20, 20);
@@ -342,17 +336,17 @@ app.whenReady().then(async () => {
     await uiWait("document.querySelector('.project-title').textContent.includes('Single set coordinate QA')", 'single-set import');
     await scrubCount(0);
     assert.equal(await evaluate("!!document.querySelector('.field-preview-banner')"), false);
-    await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).focus()`);
+    await focusFieldPerformer(dotSelector);
     await uiWait("document.querySelector('.field-readout strong')?.textContent.includes('Avery')", 'named performer details');
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), 'Side 1: on the 40-yard line; on back hash');
     for (const boundaryPerson of single.performers.slice(2, 4)) {
       const selector = `.field-performer[data-performer-id="${boundaryPerson.id}"]`;
-      await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
+      await focusFieldPerformer(selector);
       await uiWait(`document.querySelector('.field-readout strong')?.textContent.includes(${JSON.stringify(boundaryPerson.label)})`, 'boundary performer details');
       assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription(single.sets[0].positions[boundaryPerson.id], single.field));
     }
     const overlapSelector = `.field-performer[data-performer-id="${single.performers[1].id}"]`;
-    await evaluate(`document.querySelector(${JSON.stringify(overlapSelector)}).focus()`);
+    await focusFieldPerformer(overlapSelector);
     await uiWait(`document.querySelector('.field-readout strong')?.textContent.includes(${JSON.stringify(single.performers[1].label)})`, 'overlapping focused performer');
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), 'Side 1: on the 40-yard line; on back hash');
     window.setSize(1250, 800);
@@ -415,8 +409,8 @@ app.whenReady().then(async () => {
     pass('Escape cancels a color session without applying its preview or adding history');
 
     await clickSelector('[aria-label="Select performers"]');
-    // Use a distinct center; coincident-dot cycling has its own field suite.
-    const dragId = single.performers[2].id;
+    // This case owns drag/undo, not coincident-dot cycling (owned by field QA).
+    const dragId = single.performers[4].id;
     const dragFrom = single.sets[0].positions[dragId];
     const pressed = await screenPoint(dragFrom.x, dragFrom.y);
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', buttons: 1, clickCount: 1, ...pressed });
@@ -523,13 +517,12 @@ app.whenReady().then(async () => {
     await clickText('Design');
     await capture('file-save-status.png');
 
-    const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
-    await fs.writeFile(path.join(output, 'editor.png'), screenshot.toPNG());
+    await capture('editor.png');
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, saveDialogs: saves, rendererNodeAccess: false }, null, 2));
-    clearTimeout(timeout);
+
     app.exit(0);
   } catch (error) {
-    clearTimeout(timeout); console.error(error);
+     console.error(error);
     if (window && !window.isDestroyed()) {
       try { console.error('Renderer diagnostic:', await evaluate("JSON.stringify({ toast: document.querySelector('.toast')?.textContent, fields: [...document.querySelectorAll('input[type=number]')].map(input => ({ label: input.parentElement?.firstChild?.textContent, value: input.value, invalid: input.getAttribute('aria-invalid'), disabled: input.disabled })) })")); } catch {}
     }

@@ -8,8 +8,7 @@ const assert = require('node:assert/strict');
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const manifest = require(process.argv.find(arg => arg.startsWith('--stage3d-manifest=')).slice('--stage3d-manifest='.length));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const profile = path.join(manifest.output, `profile-${process.pid}`);
-require('node:fs').mkdirSync(profile, { recursive: true });
+const profile = manifest.profile;
 app.setPath('userData', profile);
 app.on('window-all-closed', () => {});
 // This component harness uses the production desktop recovery backend. Full
@@ -235,12 +234,12 @@ async function run(fixture, blockLazy = false) {
   console.log('Electron ready');
   session.defaultSession.setPermissionCheckHandler(() => false);
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  const timeout = setTimeout(() => { console.error('3D QA timed out'); app.exit(1); }, 240000);
+
   try {
     const fixtures = [];
     for (const fixture of manifest.fixtures) fixtures.push(await run(fixture));
     if (!manifest.baseline) fixtures.push(await run(manifest.fixtures[0], true));
     await fs.writeFile(path.join(manifest.output, 'report.json'), JSON.stringify({ hardware: manifest.hardware, buildSha256: manifest.buildSha256, electron: process.versions.electron, chrome: process.versions.chrome, gpu: await app.getGPUInfo('complete'), baseline: manifest.baseline, fixtures }, null, 2));
-    clearTimeout(timeout); app.exit(0);
-  } catch (error) { clearTimeout(timeout); console.error(error); app.exit(1); }
+     app.exit(0);
+  } catch (error) {  console.error(error); app.exit(1); }
 })();

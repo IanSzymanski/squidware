@@ -66,22 +66,15 @@ The [release train](.github/workflows/release-train.yml) coordinates the [releas
 
 ```sh
 pnpm test
-pnpm test:desktop
+pnpm test:contracts
 pnpm build
-pnpm exec electron . --smoke-test
-pnpm test:editor
-pnpm test:recovery
-pnpm test:preferences
-pnpm test:thumbnails
+pnpm test:native
+pnpm test:workflows
 ```
 
-- Vitest covers formation geometry, transforms, project validation, timeline sampling, timing conversion, roster import, coordinate export, and transition analysis.
-- The desktop tests exercise the actual main-process and preload source with controlled dialogs and temporary files, including atomic saves, canceled dialogs, invalid requests, and renderer isolation.
-- The native smoke test launches Electron, checks that the renderer and preload bridge load with Node access disabled, and exits. It requires a graphical desktop; the [CI workflow](.github/workflows/ci.yml) shows the sandboxed Xvfb setup used on Linux.
-- The editor workflow check runs the production renderer and actual desktop file handlers in an isolated profile with controlled dialogs. It checks boundary imports, numeric validation, undo/redo, selection, formations, playback, saves, reopening, and CSV/SVG export. Build first; artifacts go to `.qa/editor/`.
-- The thumbnail check instruments the maximum production renderer and asserts one-set redraws, color/roster invalidation, selection-cache reuse, undo/redo and playback. See [the performance evidence](docs/performance.md#thumbnails-and-selection-issue-10).
-- The preferences check changes personal settings through the production UI, checks unchanged project data, opens a different show, restarts four desktop processes, verifies reset and graceful quit, and checks A4/Letter PDF dimensions. See [preferences policy and evidence](docs/PREFERENCES.md).
-- The recovery check opens a 500-performer, 128-set production larger than 5 MB, profiles editing during recovery, exits the desktop process, then restores and saves the exact production in a fresh process. It also checks legacy migration and selection between productions. Artifacts go to `.qa/recovery/`; see the [recovery design and evidence](docs/RECOVERY.md).
+The [testing guide](docs/TESTING.md) maps each contract to its owning layer. Source/contracts run once in CI, while native and production workflows run once on each supported desktop OS. For a focused check, use `pnpm test:workflows --suite=editor,field`; use `--list` to find other owners. The runner preserves each suite's logs and status in a new `.qa/desktop-matrix/<run-id>` directory and continues independent suites after a failure.
+
+Production workflows require a graphical desktop; the [reusable desktop workflow](.github/workflows/desktop-regression.yml) configures Linux Xvfb and the Chromium sandbox. The [desktop/print guide](docs/DESKTOP_REGRESSION.md) covers independent PDF inspection and packaged startup. `pnpm test:desktop` remains available to generate the codec and run native boundary tests without a full renderer build.
 
 The [initial verification record](docs/VERIFICATION.md) records the checks completed for this release and their limits. Automated checks do not replace interactive review of drag selection, 3D graphics, audio devices, or printed output. See the [user guide](docs/USER_GUIDE.md) for a practical acceptance walkthrough.
 

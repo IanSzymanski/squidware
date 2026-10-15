@@ -1,8 +1,8 @@
 # Desktop and print regression coverage (#69)
 
-`Desktop regression` runs the same production-build cases on Windows, macOS and Linux for pull requests, main pushes and manual runs. It is also a required reusable job before release packaging, checked out at the release coordinator's exact source SHA. A failed platform prevents release packaging/publication. None of these jobs creates tags or publishes releases.
+`Desktop regression` runs the same production-build cases on Windows, macOS and Linux, called once by CI for pull requests/main pushes and available for manual runs. It is also a required reusable job before release packaging, checked out at the release coordinator's exact source SHA. A failed platform prevents release packaging/publication. None of these jobs creates tags or publishes releases. [TESTING.md](TESTING.md) defines coverage ownership, commands and report semantics.
 
-Each platform installs the locked application toolchain and pinned PDF inspection tools, then runs application/native tests, compatibility checks, the production build and these desktop cases:
+Each platform installs the locked application toolchain and pinned PDF inspection tools, then runs the production build, native boundary tests and these desktop cases. Source and published-contract tests run once in CI's preceding fast job:
 
 | Suite | Evidence |
 | --- | --- |
@@ -17,7 +17,7 @@ Each platform installs the locked application toolchain and pinned PDF inspectio
 | Print | Actual native PDF handler; 128-picture charts with a 10,000-character note, 128-set performer tables and a 500-performer chart. |
 | Packaged app | Unpacked production package starts its sandboxed renderer and performs the recovery-worker round trip from packaged paths. |
 
-Run `pnpm build`, `node scripts/run-desktop-regressions.mjs`, then `python scripts/verify-print.py .qa/print`. On Linux use Xvfb with the installed Chromium sandbox helper configured as in the workflow. `pnpm test:print` runs only the print cases. Install the inspection dependencies with `python -m pip install -r scripts/print-requirements.txt`. `pnpm exec electron-builder --dir --publish never` and `node scripts/packaged-smoke.mjs` reproduce packaged startup.
+Run `pnpm build`, then `pnpm test:workflows`. Pass `--suite=editor,field` for a targeted run. Inspect the current PDF output with `python scripts/verify-print.py "$(node scripts/run-desktop-regressions.mjs --print-output)"`. On Linux use Xvfb with the installed Chromium sandbox helper configured as in the workflow. `pnpm test:print` runs only print generation. Install the inspection dependencies with `python -m pip install -r scripts/print-requirements.txt`. `pnpm exec electron-builder --dir --publish never` and `node scripts/packaged-smoke.mjs` reproduce packaged startup.
 
 ## PDF fixtures and assertions
 
@@ -29,7 +29,7 @@ The checks exposed clipped long titles, unwrapped rehearsal notes and dark page 
 
 ## Reports and bounded acceptance
 
-Artifacts named `desktop-regression-<OS>` retain test reports, PDF verification, generated PDFs and screenshots even after failure. The print report records OS/architecture/CPU/memory, Electron version, GPU feature/device inventory, actual fixture sizes/counts and exact source/build fingerprints. Editor/accessibility reports expose their individual checks rather than hiding them behind a single success flag. All app profiles, files and injected dialog results are isolated from user productions.
+Artifacts named `desktop-regression-<OS>` retain test reports, logs, PDF verification, generated PDFs and screenshots even after failure. The print report records OS/architecture/CPU/memory, Electron version, GPU feature/device inventory, actual fixture sizes/counts and exact source/build fingerprints. Editor/accessibility reports expose their individual checks rather than hiding them behind a single success flag. All app profiles, files and injected dialog results are isolated from user productions.
 
 Local Windows PDF verification passed 130 chart pages (62,593 character boxes), 16 coordinate pages (19,208 boxes) and one dense page (4,054 boxes), with complete text and correct page geometry. These numbers are fixture-specific, not universal pagination guarantees. Hosted matrix artifacts supply the corresponding supported-platform evidence; inspect all three job results before closing #69.
 

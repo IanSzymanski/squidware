@@ -20,7 +20,7 @@ describe('validation of structurally shared editor edits', () => {
     ['performer identity', (p: Project) => ({ ...p, performers: p.performers.map((s, i) => i === 0 ? { ...s, id: 'new-identity' } : s) })],
     ['performer name', (p: Project) => ({ ...p, performers: p.performers.map((s, i) => i === 0 ? { ...s, name: 'x'.repeat(PROJECT_LIMITS.text.performerName + 1) } : s) })],
     ['set limit', (p: Project) => ({ ...p, sets: Array.from({ length: PROJECT_LIMITS.sets + 1 }, (_, i) => ({ ...p.sets[i % p.sets.length], id: `set-${i}`, counts: i ? 32 : 0 })) })],
-    ['opening count', (p: Project) => ({ ...p, sets: p.sets.map((s, i) => i === 0 ? { ...s, counts: 1 } : s) })],
+    ['opening tempo', (p: Project) => ({ ...p, openingTiming: { ...p.openingTiming, tempo: 0 } })],
     ['field size', (p: Project) => ({ ...p, field: { ...p.field, width: 99 } })],
     ['metadata', (p: Project) => ({ ...p, audioOffsetSeconds: Infinity })],
   ] as const)('rejects invalid %s just like full file validation', (_label, edit) => {

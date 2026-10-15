@@ -1,4 +1,5 @@
 'use strict';
+const { waitFor: waitUntil } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--preferences-manifest=')).slice('--preferences-manifest='.length));
@@ -19,7 +20,7 @@ dialog.showSaveDialog = async () => ({ canceled: false, filePath: savedFile });
 dialog.showMessageBox = async () => ({ response: 1 });
 app.on('browser-window-created', (_event, created) => { window = created; window.webContents.setBackgroundThrottling(false); });
 require(path.join(root, 'electron/main.cjs'));
-async function waitFor(condition, label) { const started = Date.now(); while (Date.now() - started < 25000) { if (await condition()) return; await pause(15); } throw new Error('Timed out: ' + label); }
+const waitFor = (condition, label) => waitUntil(condition, label, { timeoutMs: 25000 });
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 async function click(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await pause(40); }
 function native(label) { function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } } const item = find(Menu.getApplicationMenu()); assert.ok(item, label); item.click(); }
@@ -56,7 +57,7 @@ async function pdf(paper) {
   const content = (await fs.readFile(savedFile)).toString('latin1'); const match = content.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/); assert.ok(match, 'PDF page dimensions');
   const expected = paper === 'a4' ? [841.89, 595.28] : [792, 612]; assert.ok(Math.abs(Number(match[1]) - expected[0]) < 1.5); assert.ok(Math.abs(Number(match[2]) - expected[1]) < 1.5);
 }
-const timeout = setTimeout(() => { console.error('Preferences QA timed out'); app.exit(1); }, 85000);
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
@@ -114,7 +115,7 @@ app.whenReady().then(async () => {
     } else { assert.deepEqual((await state()).preferences.value, { ...defaultPreferences(), paperSize: 'a4' }); await done(); pass('normal quit waits for an in-flight preference replacement and the setting survives restart'); }
     await fs.writeFile(path.join(output, 'results-' + phase + '.json'), JSON.stringify({ passed: checks, phase, electron: process.versions.electron }, null, 2));
     if (phase === 'reset-restart') { app.quit(); return; }
-    clearTimeout(timeout); app.exit(0);
-  } catch (error) { console.error(error); if (window) console.error(await evaluate("document.body.innerText.slice(-2000)").catch(() => 'No renderer')); clearTimeout(timeout); app.exit(1); }
+     app.exit(0);
+  } catch (error) { console.error(error); if (window) console.error(await evaluate("document.body.innerText.slice(-2000)").catch(() => 'No renderer'));  app.exit(1); }
 });
 

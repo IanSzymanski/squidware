@@ -1,8 +1,5 @@
 name: Desktop regression
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -38,10 +35,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec install-electron
       - run: python -m pip install -r scripts/print-requirements.txt
-      - run: pnpm test
-      - run: pnpm test:desktop
-      - run: pnpm format:check
       - run: pnpm build
+      - run: pnpm test:native
       - name: Configure Linux Chromium sandbox
         if: runner.os == 'Linux'
         run: |
@@ -54,15 +49,16 @@ jobs:
         if: runner.os != 'Linux'
         run: node scripts/run-desktop-regressions.mjs
       - name: Verify rendered PDF text, geometry, page sizes and pagination
-        run: python scripts/verify-print.py .qa/print
+        run: python scripts/verify-print.py "$(node scripts/run-desktop-regressions.mjs --print-output)"
       - name: Render representative Linux PDF pages
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y poppler-utils
-          pdftoppm -f 1 -singlefile -scale-to 1400 -png .qa/print/charts-letter.pdf .qa/print/chart-preview
-          pdftoppm -f 1 -singlefile -scale-to 1400 -png .qa/print/coordinates-a4.pdf .qa/print/coordinates-preview
-          pdftoppm -f 1 -singlefile -scale-to 1400 -gray -png .qa/print/dense-a4.pdf .qa/print/monochrome-preview
+          print_output=$(node scripts/run-desktop-regressions.mjs --print-output)
+          pdftoppm -f 1 -singlefile -scale-to 1400 -png "$print_output/charts-letter.pdf" "$print_output/chart-preview"
+          pdftoppm -f 1 -singlefile -scale-to 1400 -png "$print_output/coordinates-a4.pdf" "$print_output/coordinates-preview"
+          pdftoppm -f 1 -singlefile -scale-to 1400 -gray -png "$print_output/dense-a4.pdf" "$print_output/monochrome-preview"
       - name: Build unpacked production application
         run: pnpm exec electron-builder --dir --publish never
         env:
@@ -85,10 +81,17 @@ jobs:
           path: |
             .qa/**/results*.json
             .qa/**/report.json
-            .qa/print/manifest.json
-            .qa/print/pdf-verification.json
-            .qa/print/*.pdf
+            .qa/**/manifest.json
+            .qa/**/pdf-verification.json
+            .qa/**/*.pdf
             .qa/**/*.png
+            .qa/**/*.log
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux' && success()
+        with:
+          name: squidware-renderer
+          path: dist
+          if-no-files-found: error
