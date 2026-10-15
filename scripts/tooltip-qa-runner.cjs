@@ -60,7 +60,10 @@ app.whenReady().then(async () => {
     await hover('Save'); await pause(230); assert.equal(await tooltip(), '');
     await uiWait("document.querySelector('[role=tooltip] strong')?.textContent === 'Save'", 'delayed hover');
     assert.match(await tooltip(), nativeSaveKeys);
-    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 }); await pause(150); assert.equal(await tooltip(), '');
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 });
+    // Native input acknowledgement can precede the renderer's delayed dismissal
+    // and React commit, especially on busy hosted macOS runners.
+    await uiWait("!document.querySelector('[role=tooltip]')", 'hover help dismissed on pointer leave');
     pass('pointer help waits approximately 400 ms and dismisses on leave');
 
     await focus('Undo'); assert.match(await tooltip(), /Unavailable:.*no earlier edits/);
