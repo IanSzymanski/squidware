@@ -1,3 +1,4 @@
+import type { CoordinateOptions } from '../coordinates';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import type { RefObject } from 'react';
 import { coordinateDescription } from '../domain';
@@ -13,7 +14,7 @@ interface FieldReadoutProps {
   selectedIds: string[];
   viewport: string;
   readOnly: boolean;
-  coordinateDecimals?: 0 | 1 | 2;
+  coordinateFormat?: CoordinateOptions;
   keyboardFocusedId?: string | null;
   presentation?: Partial<FieldPresentation>;
 }
@@ -21,7 +22,7 @@ interface FieldReadoutProps {
 const performerId = (target: EventTarget | null) => target instanceof Element ? target.closest('[data-performer-id]')?.getAttribute('data-performer-id') ?? null : null;
 
 /** Pointer feedback lives here so moving across empty field does not redraw the dots. */
-export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId, coordinateDecimals = 2, presentation }: FieldReadoutProps) {
+export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId, coordinateFormat, presentation }: FieldReadoutProps) {
   const pointerRadius = presentation?.pointerRadiusPx ?? DEFAULT_FIELD_PRESENTATION.pointerRadiusPx;
   const touchRadius = presentation?.touchRadiusPx ?? DEFAULT_FIELD_PRESENTATION.touchRadiusPx;
   const [cursor, setCursor] = useState<{ x: number; y: number; pointerType: string } | null>(null);
@@ -88,11 +89,11 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
     const section = project.sections.find(item => item.id === performer?.sectionId);
     setReadout({
       title: performer ? [performer.label, performer.name, section?.name].filter(Boolean).join(' · ') : 'Cursor',
-      description: coordinateDescription(position, project.field, coordinateDecimals),
+      description: coordinateDescription(position, project.field, coordinateFormat),
       left: Math.max(8, Math.min(bounds.width - 308, anchor.x - bounds.left + 14)),
       top: Math.max(readOnly ? 122 : 42, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
     });
-  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly, coordinateDecimals, pointerRadius, touchRadius]);
+  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly, coordinateFormat, pointerRadius, touchRadius]);
 
   return readout && <div id={id} className="field-readout" style={{ left: readout.left, top: readout.top }}><strong>{readout.title}</strong><span>{readout.description}</span></div>;
 }

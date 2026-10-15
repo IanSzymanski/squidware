@@ -25,7 +25,7 @@ describe('schema v2 migration and compatibility', () => {
     expect(fixture().openingTiming).toEqual({ tempo: 91.25, transition: 'ease' });
   });
 
-  it('preserves samples, time conversions, warning counts and CSV output', () => {
+  it('preserves samples, time conversions, warning counts and existing CSV columns', () => {
     const old = validateLegacyProject(JSON.parse(v1Text));
     const compatible = parseProject(v1Text);
     expect(totalCounts(compatible)).toBe(40);
@@ -38,7 +38,11 @@ describe('schema v2 migration and compatibility', () => {
       expect(setStartCount(compatible, index)).toBe(legacy.setStartCount(old, index));
       expect(analyzeTransition(compatible, index)).toEqual(legacy.analyzeTransition(old, index));
     }
-    expect(exportCoordinatesCsv(compatible)).toBe(legacy.exportCoordinatesCsv(old));
+    const originalRows = legacy.exportCoordinatesCsv(old).trimEnd().split('\r\n');
+    const currentRows = exportCoordinatesCsv(compatible).trimEnd().split('\r\n');
+    expect(currentRows).toHaveLength(originalRows.length);
+    // Coordinate-output metadata is appended; existing columns keep their order and values.
+    originalRows.forEach((row, index) => expect(currentRows[index].startsWith(row + ',')).toBe(true));
   });
 
   it('round-trips move and segment identities with explicit supported paths', () => {

@@ -86,4 +86,7 @@ button[aria-disabled=true]{color:#6a7566;background-color:#f0f2eb;border-style:d
   .print-page > svg { break-inside: avoid; }
   .print-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
   .performer-page td { overflow-wrap: anywhere; }
+  .performer-page table { table-layout: fixed; }
+  .performer-page th, .performer-page td { padding: 9px; }
+  .print-coordinate-key { font-size: 10px; line-height: 1.5; margin-top: 12px; }
 }

@@ -1,16 +1,17 @@
 'use strict';
-const { waitFor: waitUntil } = require('./testing/renderer.cjs');
+const { waitFor: waitUntil, capturePage, key: sendKey } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--preferences-manifest=')).slice('--preferences-manifest='.length));
 const phase = process.argv.find(arg => arg.startsWith('--phase=')).slice(8);
-const { root, output, profile, fixtureFile, otherFile } = manifest;
+const { root, output, profile, fixtureFile, otherFile, coordinateBundle } = manifest;
+const { coordinateDescription, performerMoveOutput, sampleProject } = require(coordinateBundle);
 // Exercise graceful quit while the actual atomic preferences replacement is pending.
 if (phase === 'reset-restart') { const rename = fs.rename; fs.rename = async (...args) => { if (path.basename(args[1]) === 'preferences.json') await new Promise(resolve => setTimeout(resolve, 300)); return rename(...args); }; }
 const { defaultPreferences } = require(path.join(root, 'electron/preferences-codec.cjs'));
 const { auditText } = require('./accessibility-audit.cjs');
 app.setPath('userData', profile);
-let window; let openedFile = fixtureFile; let savedFile = path.join(output, 'unchanged.squid');
+let window; let openedFile = fixtureFile; let savedFile = path.join(output, `unchanged-${process.pid}.squid`);
 const checks = []; const pass = label => { checks.push(label); console.log('PASS ' + label); };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const evaluate = source => window.webContents.executeJavaScript(source).catch(error => { console.error('Failed QA expression:', source); throw error; });
@@ -51,11 +52,58 @@ const state = () => evaluate('window.__preferencesQA.editor.getState()');
 async function saved() { await uiWait("window.__preferencesQA.editor.getState().preferences.status === 'saved'", 'preferences saved'); }
 async function done() { await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Done').click()"); await uiWait("!document.querySelector('dialog[open]')", 'dialog closed'); }
 async function pdf(paper) {
-  savedFile = path.join(output, paper + '.pdf'); native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
+  savedFile = path.join(output, `${paper}-${process.pid}.pdf`); native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
   await click('.export-pdf'); await waitFor(async () => { try { return (await fs.stat(savedFile)).size > 100; } catch { return false; } }, 'PDF');
   await uiWait("!window.__preferencesQA.editor.getState().ui.printing", 'print finished');
   const content = (await fs.readFile(savedFile)).toString('latin1'); const match = content.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/); assert.ok(match, 'PDF page dimensions');
   const expected = paper === 'a4' ? [841.89, 595.28] : [792, 612]; assert.ok(Math.abs(Number(match[1]) - expected[0]) < 1.5); assert.ok(Math.abs(Number(match[2]) - expected[1]) < 1.5);
+}
+
+async function checkCoordinateOutput(project) {
+  const previousDestination = savedFile;
+  const id = project.performers[0].id;
+  window.setContentSize(1366, 768);
+  await number('Field zoom', 1);
+  for (const precision of ['whole', 'half', 'quarter']) {
+    await select('Coordinate precision', precision); await saved(); await done();
+    const expected = coordinateDescription(project.sets[0].positions[id], project.field, { coordinatePrecision: precision });
+    await evaluate(`document.querySelector('[data-performer-id="${id}"]').focus()`); await sendKey(window, 'Return');
+    await uiWait(`document.querySelector('.selection-coordinate')?.textContent === ${JSON.stringify(expected)} && document.querySelector('.field-readout span')?.textContent === ${JSON.stringify(expected)}`, 'Inspector and field precision');
+    assert.ok(await evaluate(`document.querySelector('[data-performer-id="${id}"]').getAttribute('aria-label').includes(${JSON.stringify(expected)})`));
+    if (precision === 'quarter') {
+      await evaluate('document.querySelector(\'.toast [aria-label="Dismiss notification"]\')?.click()');
+      await evaluate("document.querySelector('.selected-performer').scrollIntoView({block:'center'})");
+      await capturePage(window, output, 'coordinate-quarter-field.png');
+      window.webContents.setZoomFactor(1.25); await capturePage(window, output, 'coordinate-enlarged.png');
+      window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await capturePage(window, output, 'coordinate-narrow.png');
+      window.setContentSize(1366, 768);
+    }
+    await click('.rail-button[aria-label="Cast"]');
+    await uiWait(`document.querySelector('.coordinate-cell')?.textContent === ${JSON.stringify(expected)}`, 'Cast coordinate precision');
+    await click('.rail-button[aria-label="Design"]');
+    savedFile = path.join(output, `coordinates-${precision}-${process.pid}.csv`);
+    native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
+    await click('.export-options label:nth-child(2) input');
+    await click('.export-secondary button:first-child');
+    await waitFor(async () => { try { return (await fs.readFile(savedFile, 'utf8')).includes('"' + expected + '"'); } catch { return false; } }, 'native CSV precision');
+    const editor = 'window.__preferencesQA.editor';
+    await evaluate(`${editor}.setValue('ui','printing',true)`);
+    await uiWait("document.querySelectorAll('#print-output .performer-page tbody tr').length === 6", 'dot sheet rows');
+    assert.equal(await evaluate("document.querySelector('#print-output .performer-page tbody tr td:nth-child(3)').textContent"), expected);
+    assert.equal(await evaluate("document.querySelectorAll('#print-output .performer-page tbody tr')[1].querySelector('td:nth-child(4)').textContent"), performerMoveOutput(project, 1, id, { coordinatePrecision: precision }).description);
+    await evaluate(`${editor}.setValue('ui','printing',false); ${editor}.dispatch('playback.scrub',{count:4})`);
+    const preview = coordinateDescription(sampleProject(project, 4).positions[id], project.field, { coordinatePrecision: precision });
+    await uiWait(`!!document.querySelector('.field-preview-banner') && document.querySelector('.field-readout span')?.textContent === ${JSON.stringify(preview)}`, 'read-only preview coordinate precision');
+    await evaluate(`${editor}.dispatch('set.select',{index:0}); ${editor}.setValue('selection','selectedIds',[])`);
+    assert.deepEqual((await state()).project.present, project);
+    await openPreferences();
+    if (precision === 'quarter') {
+      await evaluate('document.activeElement?.blur()'); await uiWait("!document.querySelector('[role=tooltip]')", 'clean preference capture');
+      await capturePage(window, output, 'coordinate-preferences.png');
+    }
+  }
+  pass('whole/half/quarter precision agrees across field focus, read-only previews, Inspector, Cast, native CSV and dot sheets without a production edit');
+  savedFile = previousDestination;
 }
 
 app.whenReady().then(async () => {
@@ -78,9 +126,10 @@ app.whenReady().then(async () => {
     await openPreferences();
     if (phase === 'write') {
       assert.ok(before.preferences.error.includes('Older')); assert.equal(before.ui.zoom, 1.1);
+      await checkCoordinateOutput(original);
       await select('Panel layout', 'compact'); await toggle('Performer labels'); await toggle('Previous paths'); await toggle('Next paths'); await toggle('Field grid'); await toggle('Snap to grid');
       await number('Field zoom', 1.6); await number('Nudge · yards', 1.25); await number('Fast nudge', 5);
-      await select('Coordinate decimals', 0); await select('Paper', 'a4'); await select('Packet default', 'coordinates'); await select('Shape', 'block');
+      await select('Coordinate precision', 'half'); await select('Paper', 'a4'); await select('Packet default', 'coordinates'); await select('Shape', 'block');
       await number('Width · yards', 30); await number('Depth · yards', 15); await number('Rotation', 30); await number('Block columns', 4); await number('Spacing', 2); await number('Stride', .75);
       await saved();
       const chosen = (await state()).preferences.value; await fs.writeFile(path.join(output, 'expected.json'), JSON.stringify(chosen));
@@ -103,6 +152,7 @@ app.whenReady().then(async () => {
     } else if (phase === 'restart') {
       const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
       assert.equal(expected.selectionHintDismissed, true);
+      assert.equal(expected.coordinatePrecision, 'half');
       assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
       assert.ok(await evaluate("document.querySelector('.studio').classList.contains('studio--compact')"));
       const audit = await evaluate('(' + auditText.toString() + ')()'); assert.deepEqual(audit.failures, []); assert.ok(audit.checked > 100);

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "charts-letter",
+    "pages": 130,
+    "checkedCharacters": 62593,
+    "pagePoints": [
+      792,
+      612
+    ]
+  },
+  {
+    "name": "coordinates-a4",
+    "pages": 19,
+    "checkedCharacters": 37470,
+    "pagePoints": [
+      841.89,
+      595.28
+    ]
+  },
+  {
+    "name": "dense-a4",
+    "pages": 1,
+    "checkedCharacters": 4054,
+    "pagePoints": [
+      841.89,
+      595.28
+    ]
+  },
+  {
+    "name": "coordinates-whole",
+    "pages": 1,
+    "checkedCharacters": 884,
+    "pagePoints": [
+      792,
+      612
+    ]
+  },
+  {
+    "name": "coordinates-half",
+    "pages": 1,
+    "checkedCharacters": 975,
+    "pagePoints": [
+      841.89,
+      595.28
+    ]
+  },
+  {
+    "name": "coordinates-quarter",
+    "pages": 1,
+    "checkedCharacters": 986,
+    "pagePoints": [
+      792,
+      612
+    ]
+  }
+]

@@ -27,6 +27,17 @@ test('older and corrupt files recover defaults and preserve exact originals on f
     assert.equal(JSON.parse(await fs.readFile(h.filename, 'utf8')).version, 1);
   }
 });
+
+test('decimal-only v1 preferences retain their output mode after a native service restart', async t => {
+  for (const coordinateDecimals of [0, 1, 2]) {
+    const original = { ...defaultPreferences(), coordinateDecimals }; delete original.coordinatePrecision;
+    const h = await setup(t, JSON.stringify(original)); const read = await h.service.read();
+    assert.equal(read.preferences.coordinatePrecision, 'decimal'); assert.equal(read.preferences.coordinateDecimals, coordinateDecimals);
+    await h.service.save(read.preferences);
+    const restarted = (await createPreferencesService(h.directory, h.atomic).read()).preferences;
+    assert.equal(restarted.coordinatePrecision, 'decimal'); assert.equal(restarted.coordinateDecimals, coordinateDecimals);
+  }
+});
 test('newer versions remain untouched until reset, which preserves the original', async t => {
   const original = '{"version":99,"future":{"value":2}}'; const h = await setup(t, original);
   assert.equal((await h.service.read()).readOnly, true);

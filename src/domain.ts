@@ -1,6 +1,9 @@
 import type { LegacyDrillSet, FormationKind, FormationOptions, Move, Performer, Point, Project, Section, TimelineSample, TransitionIssue } from './types';
 import { PROJECT_LIMITS } from './projectValidation';
 import { migrateProjectV1, validateProjectV2 } from './projectV2';
+import { coordinateDescription, coordinatePrecisionLabel } from './coordinates';
+import type { CoordinateOptions } from './coordinates';
+export { coordinateDescription, coordinatePrecisionLabel, COORDINATE_CONVENTIONS } from './coordinates';
 export { PROJECT_LIMITS, setCountLimits, validateSetUpdate } from './projectValidation';
 export { parseProjectV2 as parseProject, serializeProjectV2 as serializeProject } from './projectV2';
 
@@ -420,35 +423,41 @@ function csvCell(value: string | number): string {
   return `"${safe.replaceAll('"', '""')}"`;
 }
 
-export function exportCoordinatesCsv(project: Project, decimals: 0 | 1 | 2 = 2): string {
+export interface PerformerMoveOutput {
+  kind: 'opening' | 'hold' | 'move'; counts: number; arrival: string; direction: string;
+  distanceYards: number; averageStepsPerFive: number | null; peakStepsPerFive: number | null;
+  description: string;
+}
+
+/** Uses the same ordered move endpoints and easing profile as playback and analysis. */
+export function performerMoveOutput(project: Project, index: number, performerId: string, options: CoordinateOptions = {}): PerformerMoveOutput {
+  const point = project.sets[index]?.positions[performerId];
+  if (!Number.isInteger(index) || !point) throw new Error('Move output requires a known performer and arrival set.');
+  const arrival = coordinateDescription(point, project.field, options);
+  if (index === 0) return { kind: 'opening', counts: 0, arrival, direction: 'Opening position', distanceYards: 0, averageStepsPerFive: null, peakStepsPerFive: null, description: 'Opening position' };
+  const endpoints = moveEndpoints(project, index - 1, performerId);
+  const move = project.moves[index - 1];
+  if (!endpoints || !move || move.counts <= 0) throw new Error('Move output requires a valid incoming move.');
+  const dx = endpoints.to.x - endpoints.from.x; const dy = endpoints.to.y - endpoints.from.y;
+  const distanceYards = Math.hypot(dx, dy);
+  if (distanceYards <= EPSILON) return { kind: 'hold', counts: move.counts, arrival, direction: 'Hold', distanceYards, averageStepsPerFive: null, peakStepsPerFive: null, description: `Hold for ${move.counts} ${move.counts === 1 ? 'count' : 'counts'}` };
+  const direction = 'Toward ' + [Math.abs(dx) > distanceYards * 1e-9 ? dx > 0 ? 'Side 2' : 'Side 1' : '', Math.abs(dy) > distanceYards * 1e-9 ? dy > 0 ? 'front sideline' : 'back sideline' : ''].filter(Boolean).join(' and ');
+  const averageStepsPerFive = 5 * move.counts / distanceYards;
+  // Smoothstep has a peak derivative of 1.5, so its largest step is 1.5 × average.
+  const peakStepsPerFive = averageStepsPerFive / (move.transition === 'ease' ? 1.5 : 1);
+  const size = (value: number) => value < .005 ? '<0.01' : String(Number(value.toFixed(2)));
+  return { kind: 'move', counts: move.counts, arrival, direction, distanceYards, averageStepsPerFive, peakStepsPerFive,
+    description: `${direction}. Average ${size(averageStepsPerFive)} steps per 5 yd${move.transition === 'ease' ? `; peak ${size(peakStepsPerFive)} steps per 5 yd (eased)` : ''}.` };
+}
+
+export function exportCoordinatesCsv(project: Project, options: CoordinateOptions = {}): string {
   const checked = validateProject(project);
-  const rows: (string | number)[][] = [['Set', 'Arrival count', 'Move counts', 'Tempo', 'Label', 'Name', 'Section', 'X (yards)', 'Y (yards)', 'Coordinate', 'Notes']];
+  const rows: (string | number)[][] = [['Set', 'Arrival count', 'Move counts', 'Tempo', 'Label', 'Name', 'Section', 'X (yards)', 'Y (yards)', 'Coordinate', 'Notes', 'Coordinate precision', 'Travel (yards)', 'Average step size (steps/5 yd)', 'Peak step size (steps/5 yd)', 'Direction']];
   const sectionNames = new Map(checked.sections.map(section => [section.id, section.name]));
   checked.sets.forEach((set, index) => checked.performers.forEach(performer => {
     const point = set.positions[performer.id];
-    rows.push([set.name, setStartCount(checked, index), setTiming(checked, index).counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), coordinateDescription(point, checked.field, decimals), set.notes]);
+    const move = performerMoveOutput(checked, index, performer.id, options);
+    rows.push([set.name, setStartCount(checked, index), move.counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), move.arrival, set.notes, coordinatePrecisionLabel(options), Number(move.distanceYards.toFixed(3)), move.averageStepsPerFive === null ? '' : Number(move.averageStepsPerFive.toFixed(3)), move.peakStepsPerFive === null ? '' : Number(move.peakStepsPerFive.toFixed(3)), move.direction]);
   }));
   return '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
-}
-
-export function coordinateDescription(point: Point, field: Project['field'], decimals: 0 | 1 | 2 = 2): string {
-  const steps = (distance: number) => Number((Math.abs(distance) * 8 / 5).toFixed(decimals));
-  const side = point.x <= field.width / 2 ? 1 : 2;
-  const distanceFromGoal = side === 1 ? point.x : field.width - point.x;
-  const yardLine = Math.round(distanceFromGoal / 5) * 5;
-  const xDifference = distanceFromGoal - yardLine;
-  const horizontal = Math.abs(xDifference) < 0.01
-    ? `on the ${yardLine}-yard line`
-    : `${steps(xDifference)} steps ${xDifference > 0 ? 'inside' : 'outside'} the ${yardLine}-yard line`;
-  const hashOffset = field.preset === 'college' ? 20 : 160 / 9;
-  const references = [
-    { name: 'back sideline', y: 0 }, { name: 'back hash', y: Math.min(hashOffset, field.height / 2) },
-    { name: 'front hash', y: Math.max(field.height - hashOffset, field.height / 2) }, { name: 'front sideline', y: field.height },
-  ];
-  const nearest = references.reduce((best, ref) => Math.abs(point.y - ref.y) < Math.abs(point.y - best.y) ? ref : best);
-  const yDifference = point.y - nearest.y;
-  const vertical = Math.abs(yDifference) < 0.01
-    ? `on ${nearest.name}`
-    : `${steps(yDifference)} steps ${yDifference > 0 ? 'in front of' : 'behind'} ${nearest.name}`;
-  return `Side ${side}: ${horizontal}; ${vertical}`;
 }
