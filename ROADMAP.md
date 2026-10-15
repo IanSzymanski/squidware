@@ -4,7 +4,7 @@ Squidware v0.5.0 is the published desktop foundation for cast-to-chart drill des
 
 ## Where work is tracked
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 19 open issues. Start with [#20 — dense-formation hit testing and label readability](https://github.com/IanSzymanski/squidware/issues/20).
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 2 of 19 issues completed and 17 open. Start with [#36 — consistent action labels, icons and controls](https://github.com/IanSzymanski/squidware/issues/36).
 
 The [release plan](docs/RELEASES.md) groups the backlog into v0.5, v0.6, v0.7, v0.8, v0.9, v1.0, v1.1 and v1.2 milestones. Releases publish in order only after their issues are fulfilled and the desktop packages pass verification. [release-plan.json](release-plan.json) records the membership and hard dependencies used by the release coordinator.
 
