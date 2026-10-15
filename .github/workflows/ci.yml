@@ -41,6 +41,8 @@ jobs:
         run: xvfb-run --auto-servernum pnpm test:editor
       - name: Verify keyboard accessibility and rendered text
         run: xvfb-run --auto-servernum pnpm test:accessibility
+      - name: Verify dense-field selection and label presentation
+        run: xvfb-run --auto-servernum pnpm test:field
       - name: Verify tooltip pointer, focus and disabled explanations
         run: xvfb-run --auto-servernum pnpm test:tooltips
       - name: Verify tooltip capture after unavailable 3D

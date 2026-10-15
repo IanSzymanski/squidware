@@ -1,4 +1,4 @@
-import { memo, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Point, Project } from '../types';
 import { selectionMembership } from '../selection';
@@ -6,6 +6,8 @@ import { coordinateDescription } from '../domain';
 import { FieldReadout } from './FieldReadout';
 import { FIELD_KEYS, nextFieldFocus } from './fieldKeyboard';
 import type { FieldKey } from './fieldKeyboard';
+import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, layoutFieldLabels, nearestFieldDots } from './fieldPresentation';
+import type { FieldPresentation, HitCycle, ScreenBox } from './fieldPresentation';
 import './stages.css';
 
 interface DrawingProps {
@@ -21,6 +23,8 @@ interface DrawingProps {
   focusedId?: string | null;
   keyboardHelpId?: string;
   keyboardFocusId?: string | null;
+  presentation?: Partial<FieldPresentation>;
+  screen?: { scale: number; bounds: ScreenBox };
 }
 
 export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, height, preset, showGrid }: Project['field'] & { showGrid: boolean }) {
@@ -63,11 +67,24 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, he
 StaticFieldMarkings.displayName = 'StaticFieldMarkings';
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2 }: DrawingProps) {
+export function FieldDrawing({ project, positions, previousPositions, selectedIds = [], showLabels = true, showPaths = false, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateDecimals = 2, presentation, screen }: DrawingProps) {
   const { width, height, preset } = project.field;
   const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
   const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
+  const display = { ...DEFAULT_FIELD_PRESENTATION, ...presentation };
+  const scale = screen?.scale ?? 1;
+  const radius = screen ? display.dotRadiusPx / scale : .52;
+  // Measure the actual font once per roster/font change; use conservative fallback during SSR.
+  const labelWidths = useMemo(() => {
+    const context = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
+    if (context) context.font = `700 ${display.labelSizePx}px Arial, sans-serif`;
+    return new Map(project.performers.map(person => [person.id, context?.measureText(person.label).width ?? person.label.length * display.labelSizePx]));
+  }, [project.performers, display.labelSizePx]);
+  const labels = screen ? layoutFieldLabels(project.performers.flatMap(person => positions[person.id] ? [{
+    id: person.id, x: positions[person.id].x * scale, y: positions[person.id].y * scale,
+    labelWidth: labelWidths.get(person.id)!, selected: selected.has(person.id), focused: keyboardFocusId === person.id,
+  }] : []), screen.bounds, { ...display, labelMode: showLabels ? display.labelMode : 'none' }) : null;
   return <>
     <StaticFieldMarkings width={width} height={height} preset={preset} showGrid={showGrid} />
     {showPaths && previousPositions && <g fill="none" strokeWidth="0.13" strokeDasharray="0.7 0.5" opacity="0.65" pointerEvents="none">
@@ -87,14 +104,16 @@ export function FieldDrawing({ project, positions, previousPositions, selectedId
       const isSelected = selected.has(performer.id);
       const color = colors.get(performer.sectionId) ?? '#b9ed85';
       const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), coordinateDescription(point, project.field, coordinateDecimals)].filter(Boolean).join(' · ');
+      const label = labels?.get(performer.id);
+      const focusRadius = screen ? (display.dotRadiusPx + 5) / scale : 1.35;
       return <g key={performer.id} data-performer-id={performer.id} tabIndex={readoutId ? focusedId === performer.id ? 0 : -1 : undefined} role={readoutId ? 'button' : undefined} aria-label={readoutId ? `${details}${isSelected ? ', selected' : ''}` : undefined} aria-describedby={keyboardHelpId} aria-pressed={readoutId ? isSelected : undefined} className={`field-performer${keyboardFocusId === performer.id ? ' field-performer--focused' : ''}`} transform={`translate(${point.x} ${point.y})`}>
         <title>{details}</title>
-        <circle r="1.15" fill="transparent" />
-        {readoutId && <rect className="field-focus-ring" x="-1.35" y="-1.35" width="2.7" height="2.7" rx="0.15" fill="none" stroke="#fff" strokeWidth="0.24" pointerEvents="none" />}
-        {isSelected && <circle r="0.96" fill={`${color}22`} stroke="#ffffff" strokeWidth="0.16" />}
-        <circle r="0.52" fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth="0.16" />
-        <circle cx="-0.12" cy="-0.14" r="0.13" fill="#ffffff" opacity="0.3" pointerEvents="none" />
-        {showLabels && <text x="0.83" y="0.34" fill={isSelected ? '#fff' : '#e0e9de'} stroke="#1c3026" strokeWidth="0.2" paintOrder="stroke" fontFamily="Inter, Arial, sans-serif" fontSize="1.05" fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
+        <circle className="field-hit-area" r={screen ? display.pointerRadiusPx / scale : 1.15} fill="transparent" />
+        {readoutId && <rect className="field-focus-ring" x={-focusRadius} y={-focusRadius} width={focusRadius * 2} height={focusRadius * 2} rx={screen ? 1 / scale : .15} fill="none" stroke="#fff" strokeWidth={screen ? 2 / scale : .24} pointerEvents="none" />}
+        {isSelected && <circle r={screen ? (display.dotRadiusPx + 3) / scale : .96} fill={`${color}22`} stroke="#ffffff" strokeWidth={screen ? 1.5 / scale : .16} pointerEvents="none" />}
+        <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth={screen ? 1 / scale : .16} />
+        <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity="0.3" pointerEvents="none" />
+        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - point.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - point.y : .34} fill={isSelected ? '#fff' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 3 / scale : .2} paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
       </g>;
     })}
   </>;
@@ -131,7 +150,7 @@ function translatedGroup(originals: Record<string, Point>, delta: Point, width: 
   return Object.fromEntries(Object.entries(originals).map(([id, point]) => [id, { x: point.x + dx, y: point.y + dy }]));
 }
 
-export function Field2D({ project, positions, previousPositions, selectedIds, onSelect, onMove, tool, showLabels, showPaths, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateDecimals = 2 }: Field2DProps) {
+export function Field2D({ project, positions, previousPositions, selectedIds, onSelect, onMove, tool, showLabels, showPaths, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateDecimals = 2, presentation }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const readoutId = useId();
   const keyboardHelpId = useId();
@@ -139,6 +158,9 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
   const [keyboardFocus, setKeyboardFocus] = useState(false);
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
+  const hitCycle = useRef<HitCycle | null>(null);
+  const display = { ...DEFAULT_FIELD_PRESENTATION, ...presentation };
+  const [screen, setScreen] = useState<DrawingProps['screen']>();
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [preview, setPreview] = useState<Record<string, Point>>({});
   const [marquee, setMarquee] = useState<{ start: Point; current: Point } | null>(null);
@@ -153,13 +175,46 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
   const focusedId = rememberedFocus?.project === project.id && positions[rememberedFocus.id]
     ? rememberedFocus.id : selectedIds.find(id => positions[id]) ?? project.performers[0]?.id ?? null;
 
-  function focusPerformer(id: string | null) {
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const measure = () => {
+      const matrix = svg.getScreenCTM(); if (!matrix) return;
+      const scale = Math.hypot(matrix.a, matrix.b); if (!scale) return;
+      const rect = svg.getBoundingClientRect();
+      const topLeft = new DOMPoint(rect.left, rect.top).matrixTransform(matrix.inverse());
+      const bottomRight = new DOMPoint(rect.right, rect.bottom).matrixTransform(matrix.inverse());
+      const next = { scale, bounds: { left: topLeft.x * scale, top: topLeft.y * scale, right: bottomRight.x * scale, bottom: bottomRight.y * scale } };
+      setScreen(old => old && old.scale === next.scale && Object.keys(next.bounds).every(key => old.bounds[key as keyof ScreenBox] === next.bounds[key as keyof ScreenBox]) ? old : next);
+    };
+    let frame = 0;
+    const refresh = () => { measure(); cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
+    refresh(); const observer = new ResizeObserver(refresh); observer.observe(svg);
+    let resolution = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    const displayChanged = () => {
+      resolution.removeEventListener('change', displayChanged);
+      refresh(); resolution = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      resolution.addEventListener('change', displayChanged);
+    };
+    resolution.addEventListener('change', displayChanged);
+    window.addEventListener('resize', refresh);
+    window.visualViewport?.addEventListener('resize', refresh);
+    return () => {
+      cancelAnimationFrame(frame); observer.disconnect(); resolution.removeEventListener('change', displayChanged);
+      window.removeEventListener('resize', refresh); window.visualViewport?.removeEventListener('resize', refresh);
+    };
+  }, [viewport]);
+
+  useEffect(() => { hitCycle.current = null; }, [project.id, positions, tool, viewport]);
+
+  function focusPerformer(id: string | null, reveal = true) {
     if (!id) { svgRef.current?.focus({ preventScroll: true }); return; }
     setRememberedFocus({ project: project.id, id });
     const dot = [...(svgRef.current?.querySelectorAll<SVGGElement>('[data-performer-id]') ?? [])].find(node => node.dataset.performerId === id);
     dot?.focus({ preventScroll: true });
     const point = positions[id];
-    if (point && (Math.abs(point.x - width / 2 - pan.x) > viewWidth / 2 - 2 || Math.abs(point.y - height / 2 - pan.y) > viewHeight / 2 - 2)) setPan({ x: point.x - width / 2, y: point.y - height / 2 });
+    const margin = Math.max(2, (display.pointerRadiusPx + 2) / (screen?.scale ?? 1));
+    if (reveal && point && (Math.abs(point.x - width / 2 - pan.x) > viewWidth / 2 - margin || Math.abs(point.y - height / 2 - pan.y) > viewHeight / 2 - margin)) setPan({ x: point.x - width / 2, y: point.y - height / 2 });
   }
   useLayoutEffect(() => {
     if (fieldHasFocus.current && document.activeElement === document.body) focusPerformer(focusedId);
@@ -184,6 +239,18 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
     if (!matrix) return { x: 0, y: 0 };
     const point = new DOMPoint(clientX, clientY).matrixTransform(matrix.inverse());
     return { x: point.x, y: point.y };
+  }
+
+  function hitsAt(clientX: number, clientY: number, pointerType = 'mouse') {
+    const matrix = svgRef.current?.getScreenCTM();
+    if (!matrix) return [];
+    const dots = project.performers.flatMap(person => {
+      const point = displayedPositions[person.id];
+      if (!point) return [];
+      const client = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+      return [{ id: person.id, x: client.x, y: client.y }];
+    });
+    return nearestFieldDots(dots, { x: clientX, y: clientY }, pointerType === 'touch' ? display.touchRadiusPx : display.pointerRadiusPx);
   }
 
   useEffect(() => {
@@ -224,9 +291,11 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
       setMoving(true);
       return;
     }
-    const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id');
+    const idsAtPointer = hitsAt(event.clientX, event.clientY, event.pointerType);
+    hitCycle.current = cycleFieldHit(idsAtPointer, { x: event.clientX, y: event.clientY }, hitCycle.current);
+    const id = idsAtPointer[hitCycle.current.index];
     if (id && positions[id]) {
-      focusPerformer(id);
+      focusPerformer(id, false);
       if (event.shiftKey && selectionMembership(selectedIds).has(id)) {
         onSelect(selectedIds.filter(selectedId => selectedId !== id));
         return;
@@ -256,8 +325,11 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
     } else {
       let dx = point.x - current.start.x;
       let dy = point.y - current.start.y;
-      if (Math.abs(dx) + Math.abs(dy) < 0.15 && !current.moved) return;
+      const scale = Math.hypot(svgRef.current?.getScreenCTM()?.a ?? 1, svgRef.current?.getScreenCTM()?.b ?? 0);
+      const threshold = event.pointerType === 'touch' ? 8 : 3;
+      if (Math.hypot(dx, dy) * scale < threshold && !current.moved) return;
       current.moved = true;
+      hitCycle.current = null;
       if (snap) {
         dx = Math.round((current.anchor.x + dx) / 0.625) * 0.625 - current.anchor.x;
         dy = Math.round((current.anchor.y + dy) / 0.625) * 0.625 - current.anchor.y;
@@ -328,12 +400,12 @@ export function Field2D({ project, positions, previousPositions, selectedIds, on
   }
 
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
-    <svg ref={svgRef} className="field-stage__svg" viewBox={`${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`} tabIndex={focusedId ? -1 : 0} role="group" aria-label={readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!(event.target as Element).closest('[data-performer-id]')) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
-      <FieldDrawing project={project} positions={displayedPositions} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} coordinateDecimals={coordinateDecimals} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} />
+    <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
+      <FieldDrawing project={project} positions={displayedPositions} previousPositions={previousPositions} selectedIds={selectedIds} showLabels={showLabels} showPaths={showPaths} showGrid={showGrid} coordinateDecimals={coordinateDecimals} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} />
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#c5f47b18" stroke="#caf38a" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
     </svg>
     <div id={keyboardHelpId} className="field-keyboard-help">Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · Alt+arrows: move selection · Shift+Alt: {fastNudgeStep} yd · Page Up/Down: roster · Home/End: first/last</div>
-    <FieldReadout id={readoutId} svgRef={svgRef} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateDecimals={coordinateDecimals} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} />
+    <FieldReadout id={readoutId} svgRef={svgRef} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateDecimals={coordinateDecimals} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
     <div className="field-stage__hint">{readOnly ? 'PLAYBACK PREVIEW' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
     <div className="field-stage__orientation" aria-hidden="true"><span>↑</span> BACK</div>

@@ -21,6 +21,7 @@
     "test:recovery": "node scripts/recovery-qa.mjs",
     "test:editor": "node scripts/editor-qa.mjs",
     "test:accessibility": "node scripts/accessibility-qa.mjs",
+    "test:field": "node scripts/field-presentation-qa.mjs",
     "test:tooltips": "node scripts/tooltip-qa.mjs",
     "test:preferences": "node scripts/preferences-qa.mjs",
     "test:thumbnails": "node scripts/thumbnail-qa.mjs",
