@@ -6,6 +6,7 @@ import { createEditorState } from './state';
 import type { EditorState, ProjectHistory, SessionSlice } from './state';
 import { applyProjectPatches, estimatePatchBytes, projectPatches, retainHistory } from './history';
 import type { HistoryPatch } from './history';
+import { transformSessionCurrent } from './transformSession';
 import { historyName } from './historyNames';
 
 export const AUTOSAVE_KEY = 'squidware.autosave.v1';
@@ -42,6 +43,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
   let active: { name: string; history: ProjectHistory; selection: EditorState['selection']; playback: EditorState['playback']; error?: Error } | null = null;
   const publish = (next: EditorState) => {
     if (next === state) return;
+    if (next.ui.transformPreview && !transformSessionCurrent(next)) next = { ...next, ui: { ...next.ui, transformPreview: null } };
     state = next; changed = true;
     if (!transactionDepth) { changed = false; listeners.forEach(listener => listener()); }
   };

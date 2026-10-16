@@ -4,6 +4,8 @@ import type { Dialog, EditorState, SessionSlice } from './state';
 import { addPicture, reconnectSets, updateSetProperties } from './projectEdits';
 import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
+import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
+import { currentTransformResult, transformSessionCurrent } from './transformSession';
 
 export interface CommandArguments {
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
@@ -16,6 +18,9 @@ export interface CommandArguments {
   'section.add': undefined; 'section.update': { id: string; update: Partial<Pick<Section, 'name' | 'color'>> };
   'positions.move': { index: number; updates: Record<string, Point> };
   'selection.transform': { index: number; ids: string[]; options: { dx?: number; dy?: number; rotation?: number; scale?: number } };
+  'transform.preview': { operation?: TransformOperation; angle?: number; scale?: number };
+  'transform.update': { options: ExactTransform };
+  'transform.apply': undefined; 'transform.cancel': undefined;
   'formation.apply': { index: number; ids: string[]; kind: FormationKind; options: FormationOptions };
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
   'playback.toggle': undefined; 'playback.scrub': { count: number }; 'tool.select': { tool: 'select' | 'pan' };
@@ -55,6 +60,17 @@ const selectSet = (context: CommandContext, index: number) => {
 };
 
 export const commandRegistry = {
+  'transform.preview': define({ id: 'transform.preview', name: 'Preview exact transform', description: 'Preview rotation, scaling or a field mirror on the explicit selection.', arguments: { operation: 'rotate-scale | across-50 | front-back', angle: 'degrees?', scale: 'factor?' }, enabled: s => editable(s) && !s.ui.dialog && !s.project.transactionName && !s.ui.pendingDraft && s.selection.selectedIds.length > 0,
+    execute: (c, a) => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: '2d', transformPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: { ...defaultTransform(), operation: a.operation ?? 'rotate-scale', angle: a.angle ?? 0, scale: a.scale ?? 1 } } }); } }),
+  'transform.update': define({ id: 'transform.update', name: 'Adjust transform preview', description: 'Update the preview without changing saved geometry or history.', arguments: { options: 'ExactTransform' }, enabled: transformSessionCurrent,
+    execute: (c, a) => c.patch('ui', { transformPreview: { ...c.getState().ui.transformPreview!, options: a.options } }) }),
+  'transform.cancel': define({ id: 'transform.cancel', name: 'Cancel transform', description: 'Discard the transform preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.transformPreview, execute: c => c.patch('ui', { transformPreview: null }) }),
+  'transform.apply': define({ id: 'transform.apply', name: 'Apply transform', description: 'Commit the exact preview as one undoable selection edit.', arguments: {}, enabled: s => { const result = currentTransformResult(s); return !s.ui.pendingDraft && !!result?.changed && !result.error; },
+    execute: c => { const state = c.getState(); const session = state.ui.transformPreview!; const result = currentTransformResult(state)!;
+      if (result.error || !result.changed) throw new Error(result.error ?? 'The preview matches the original positions.');
+      c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === session.setId ? { ...set, positions: { ...set.positions, ...result.updates } } : set) }));
+      c.patch('ui', { transformPreview: null });
+    } }),
   'project.update': define({ id: 'project.update', name: 'Update production', description: 'Edit production metadata, field markings or audio synchronization.', arguments: { title: 'string?', ensemble: 'string?', audioOffsetSeconds: 'number?', preset: 'college | high-school?' }, enabled: always,
     execute: (c, { preset, ...update }) => c.edit(p => ({ ...p, ...update, field: preset ? { ...p.field, preset } : p.field })) }),
   'project.load': define({ id: 'project.load', name: 'Load production', description: 'Replace the production and reset edit history.', arguments: { project: 'Project v2' }, enabled: always, execute: (c, a) => c.load(a.project) }),

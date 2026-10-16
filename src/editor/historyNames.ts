@@ -19,6 +19,10 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'set.reorder': name = `Reorder ${picture}`; break;
     case 'positions.move': name = `Move ${selection} — ${picture}`; break;
     case 'selection.transform': name = `Transform ${selection} — ${picture}`; break;
+    case 'transform.apply': {
+      const session = state.ui.transformPreview;
+      name = `${session?.options.operation === 'across-50' ? 'Mirror across 50' : session?.options.operation === 'front-back' ? 'Flip front/back' : 'Rotate/scale'} ${session?.ids.length ?? 0} performers — ${picture}`; break;
+    }
     case 'formation.apply': name = `Apply ${a.kind} to ${selection} — ${picture}`; break;
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;

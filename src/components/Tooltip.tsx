@@ -51,7 +51,7 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     setPosition(previous => previous.left === left && previous.top === top ? previous : { left, top });
   };
   useLayoutEffect(() => { if (open) place(); }, [open, name, description, state, disabledReason]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;

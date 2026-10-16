@@ -39,7 +39,7 @@ export function useCommandController() {
       else if (event.code === 'Space') {
         if (target.closest('button, a[href], [role="button"]')) return;
         event.preventDefault(); if (!store.dispatch('playback.toggle')) store.setValue('ui', 'toast', 'Add a second set to rehearse a transition.');
-      } else if (event.key === 'Escape') store.dispatch('selection.clear');
+      } else if (event.key === 'Escape') store.dispatch(state.ui.transformPreview ? 'transform.cancel' : 'selection.clear');
       else if (key === 'v' || key === 'h') store.dispatch('tool.select', { tool: key === 'v' ? 'select' : 'pan' });
       else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && state.selection.selectedIds.length) {
         event.preventDefault(); const step = event.shiftKey ? state.preferences.value.fastNudgeStep : state.preferences.value.nudgeStep;

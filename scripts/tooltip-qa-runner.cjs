@@ -89,11 +89,12 @@ app.whenReady().then(async () => {
       assert.match(await tooltip(), /Unavailable:.*Select performers first/);
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
       assert.match(await tooltip(), /Reshape 1 selected performer/);
-      for (const name of ['Mirror selection', 'Align selection']) {
+      for (const name of ['Align selection']) {
         await focus(name); assert.match(await tooltip(), /Unavailable:.*tools are not available yet/);
         await key('Return'); await key('Space');
         assert.equal(await evaluate(`${editor}.getState().project.revision`), revision);
       }
+      await focus('Mirror selection'); assert.match(await tooltip(), /Preview a mirror across the 50/);
       pass('Escape dismisses help without clearing selection; toggle and formation explanations stay current');
 
       await evaluate(`${editor}.dispatch('set.select', { index: 0 })`); await focus('Counts'); await pause(150);

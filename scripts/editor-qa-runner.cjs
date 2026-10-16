@@ -285,7 +285,7 @@ async function checkSelectionInspector() {
   await uiWait("document.querySelector('.selection-count').textContent === '1 selected'", 'single selection');
   assert.match(await evaluate("document.querySelector('.selection-bounds').textContent"), /X 30 · Y 20 yd/);
   assert.equal(await evaluate("!!document.querySelector('.exact-position')"), true);
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Rotate selection\"]').getAttribute('aria-disabled')"), 'true');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Rotate selection\"]').getAttribute('aria-disabled')"), null);
   await selectionCapture('selection-single.png');
 
   await pointer('.field-legend button:first-child');
@@ -306,8 +306,11 @@ async function checkSelectionInspector() {
   await clickSelector('.modal [aria-label="Close dialog"]');
   menuAction('Undo drill edit'); assert.deepEqual(await snapshot(), fixture);
   await keyboard('[aria-label="Rotate selection"]');
-  await uiWait("document.activeElement.getAttribute('aria-label') === 'Rotate selection 15° clockwise'", 'rotate action focus');
-  await sendKey(window, 'Return');
+  await uiWait("!!document.querySelector('.transform-panel')", 'rotate preview panel');
+  await uiWait("document.activeElement.getAttribute('aria-label') === 'Transform operation'", 'transform panel focus');
+  await editNumber('Angle · degrees', 15);
+  await keyboard('[aria-label="Apply transform"]');
+  await uiWait("!document.querySelector('.transform-panel')", 'rotation applied');
   const rotated = await snapshot();
   const first = rotated.sets[0].positions[fixture.performers[0].id];
   assert.ok(Math.abs(first.x - (33 - 3 * Math.cos(Math.PI / 12))) < 1e-9);
@@ -367,9 +370,12 @@ async function checkSelectionInspector() {
   }
   window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
   await keyboard('[aria-label="Mirror selection"]');
+  await uiWait("!!document.querySelector('.transform-panel')", 'mirror preview open');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Mirror selection\"]').getAttribute('aria-disabled')"), 'true');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Align selection\"]').getAttribute('aria-disabled')"), 'true');
   assert.deepEqual(await snapshot(), fixture);
+  await keyboard('[aria-label="Cancel transform"]');
+  await uiWait("!document.querySelector('.transform-panel')", 'mirror preview canceled');
   await scrubCount(1);
   await uiWait("document.querySelector('.selection-bar .return-to-set') !== null", 'preview selection recovery');
   for (const name of ['Move selection','Rotate selection','Shape selection','Apply formation']) {
@@ -379,7 +385,113 @@ async function checkSelectionInspector() {
   await keyboard('.selection-bar .return-to-set');
   await uiWait("!document.querySelector('.field-preview-banner')", 'selection return to set');
   await fs.writeFile(path.join(output,'selection-measurements.json'),JSON.stringify(measurements,null,2));
-  pass('selection actions remain unclipped at 1366/1120 px and 100/125%; preview locks edits and offers keyboard recovery; future mirror/align explain availability');
+  pass('selection actions remain unclipped at 1366/1120 px and 100/125%; preview locks edits and offers keyboard recovery; mirrors preview and future alignment explains availability');
+}
+
+
+async function checkExactTransforms() {
+  openPath = path.join(output, 'selection.squid'); menuAction('Open project…');
+  await uiWait("document.querySelector('.project-title').textContent.includes('Selection Inspector QA') && document.querySelector('.set-card:first-child').classList.contains('selected')", 'exact transform fixture');
+  window.setContentSize(1366,768); window.webContents.setZoomFactor(1);
+  const fixture=JSON.parse(await fs.readFile(openPath,'utf8')); const ids=fixture.performers.slice(0,2).map(p=>p.id);
+  let sequence=0;
+  async function keyboard(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window,'Return'); }
+  async function savedSnapshot() {
+    destination=path.join(output,`transform-${process.pid}-${sequence++}.squid`); menuAction('Save As…');
+    const project=await savedProject(p=>p.title===fixture.title,destination);
+    await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'",'transform snapshot'); return project;
+  }
+  async function choose(label,value) {
+    await evaluate(`(() => { const n=document.querySelector('select[aria-label="${label}"]'); n.value=${JSON.stringify(value)}; n.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+    await uiWait(`document.querySelector('select[aria-label="${label}"]').value === ${JSON.stringify(value)}`,'transform choice');
+  }
+  async function open(operation='Rotate selection') {
+    await keyboard(`[aria-label="${operation}"]`); await uiWait("!!document.querySelector('.transform-panel')",'exact preview open');
+    await uiWait("document.activeElement.getAttribute('aria-label')==='Transform operation'",'exact panel keyboard focus');
+  }
+  async function cancel() { await keyboard('[aria-label="Cancel transform"]'); await uiWait("!document.querySelector('.transform-panel')",'exact preview canceled'); }
+  async function apply() { await keyboard('[aria-label="Apply transform"]'); await uiWait("!document.querySelector('.transform-panel')",'exact preview applied'); }
+  const displayed = () => evaluate("Object.fromEntries([...document.querySelectorAll('[data-performer-id]')].map(n=>{const m=n.transform.baseVal.consolidate().matrix;return [n.dataset.performerId,{x:m.e,y:m.f}]}))");
+  function near(actual,expected) { for(const id of ids) for(const axis of ['x','y']) assert.ok(Math.abs(actual[id][axis]-expected[id][axis])<.0001,`${id} ${axis}: ${actual[id][axis]} vs ${expected[id][axis]}`); }
+  async function nativeDrag(kind, convert, escape=false) {
+    const geometry=await evaluate(`(() => { const get=kind=>{const m=document.querySelector('[data-transform-handle="'+kind+'"]').transform.baseVal.consolidate().matrix;return {x:m.e,y:m.f}};return {start:get('${kind}'),pivot:get('pivot')}; })()`);
+    const end=convert(geometry.start,geometry.pivot); const start=await screenPoint(geometry.start.x,geometry.start.y); const target=await screenPoint(end.x,end.y);
+    for(const event of [{type:'mouseMoved',...start},{type:'mousePressed',...start,button:'left',buttons:1,clickCount:1},{type:'mouseMoved',...target,button:'left',buttons:1}]) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',event);
+    if(escape) await sendKey(window,'Escape');
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',buttons:0,clickCount:1});
+  }
+  async function captureExact(name) {
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0});
+    await evaluate('document.querySelector(\'.toast [aria-label="Dismiss notification"]\')?.click(); document.activeElement?.blur(); document.querySelector(\'.inspector-scroll\').scrollTop=0');
+    await uiWait("!document.querySelector('[role=tooltip]') && !document.querySelector('.toast')",'clean transform evidence'); await capture(name);
+  }
+  await keyboard('.field-legend button:first-child'); await uiWait("document.querySelector('.selection-count').textContent==='2 selected'",'exact selection');
+  assert.deepEqual(await savedSnapshot(),fixture);
+  await open(); await editNumber('Angle · degrees',90);
+  const typed=await displayed(); near(typed,{[ids[0]]:{x:33,y:17},[ids[1]]:{x:33,y:23}});
+  assert.deepEqual(await savedSnapshot(),fixture,'preview must not leak into a project save');
+  await captureExact('transform-rotation.png');
+  const layout=[];
+  for(const [width,zoom] of [[1366,1],[1366,1.25],[1120,1],[1120,1.25]]) {
+    window.setContentSize(width,768); window.webContents.setZoomFactor(zoom);
+    await uiWait(`Math.abs(innerWidth-${width/zoom})<1`,'transform viewport');
+    const clipped=await evaluate(`['Apply transform','Cancel transform','Save','Undo','Export'].filter(name=>{const n=document.querySelector('[aria-label="'+name+'"]');const r=n.getBoundingClientRect();return r.width===0||r.left<0||r.right>innerWidth+.5||r.top<0||r.bottom>innerHeight+.5||!n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})`);
+    assert.deepEqual(clipped,[]); layout.push({width,zoom,clipped}); await captureExact(`transform-${width}-${zoom}.png`);
+  }
+  window.setContentSize(1366,768); window.webContents.setZoomFactor(1); await cancel();
+  near(await displayed(),fixture.sets[0].positions); assert.deepEqual(await savedSnapshot(),fixture);
+  await open();
+  await nativeDrag('rotate',(p,c)=>({x:c.x-(p.y-c.y),y:c.y+(p.x-c.x)}));
+  await uiWait(`Math.abs(Number(${numberSelector('Angle · degrees')}.value)-90)<.0001`,'native rotation preview');
+  near(await displayed(),typed); assert.deepEqual(await savedSnapshot(),fixture);
+  await apply(); const committed=await savedSnapshot(); near(committed.sets[0].positions,typed);
+  assert.deepEqual(committed.sets[1],fixture.sets[1]); for(const p of fixture.performers.slice(2)) assert.deepEqual(committed.sets[0].positions[p.id],fixture.sets[0].positions[p.id]);
+  const history=await openHistory(); assert.equal(history.length,1); assert.match(history[0],/Rotate\/scale 2 performers/); await clickSelector('.modal [aria-label="Close dialog"]');
+  menuAction('Undo drill edit'); assert.deepEqual(await savedSnapshot(),fixture);
+  pass('typed and native dragged rotation agree; saves retain original geometry during preview; Apply affects selected/current-set dots with one undo');
+
+  await open();
+  await clickSelector('[aria-label="Zoom in"]'); await clickSelector('[aria-label="Zoom in"]'); await clickSelector('[aria-label="Zoom in"]');
+  await nativeDrag('scale',(p,c)=>({x:c.x+2*(p.x-c.x),y:c.y+2*(p.y-c.y)}));
+  await uiWait(`Math.abs(Number(${numberSelector('Scale · percent')}.value)-200)<.001`,'native scale preview');
+  const scaled=await displayed(); near(scaled,{[ids[0]]:{x:27,y:20},[ids[1]]:{x:39,y:20}}); await cancel();
+  await clickSelector('[aria-label="Fit field"]'); await open(); await editNumber('Scale · percent',200); near(await displayed(),scaled); await cancel();
+  await open(); await nativeDrag('rotate',(p,c)=>({x:c.x-(p.y-c.y),y:c.y+(p.x-c.x)}),true);
+  await uiWait(`Number(${numberSelector('Angle · degrees')}.value)===0`,'Escape restores handle draft');
+  assert.ok(await evaluate("!!document.querySelector('.transform-panel')")); await cancel();
+  pass('scale handle at 160% field zoom matches typed percentage; Escape cancels an active handle gesture without applying or leaving the preview');
+
+  await open(); await clickSelector('[aria-label="Pan field"]');
+  const panStart=await screenPoint(80,40);
+  for(const event of [{type:'mouseMoved',...panStart},{type:'mousePressed',...panStart,button:'left',buttons:1,clickCount:1},{type:'mouseMoved',x:panStart.x+24,y:panStart.y+12,button:'left',buttons:1},{type:'mouseReleased',x:panStart.x+24,y:panStart.y+12,button:'left',buttons:0,clickCount:1}]) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',event);
+  await clickSelector('[aria-label="Select performers"]'); await nativeDrag('pivot',()=>({x:40,y:25}));
+  await uiWait("document.querySelector('select[aria-label=\"Transform pivot\"]').value==='custom'",'dragged custom pivot');
+  assert.ok(Math.abs(Number(await evaluate(`${numberSelector('Pivot X · yards')}.value`))-40)<.0001);
+  await editNumber('Angle · degrees',180); near(await displayed(),{[ids[0]]:{x:50,y:30},[ids[1]]:{x:44,y:30}});
+  await choose('Transform pivot','performer'); await choose('Pivot performer',ids[1]); await editNumber('Angle · degrees',90);
+  near(await displayed(),{[ids[0]]:{x:36,y:14},[ids[1]]:{x:36,y:20}});
+  await choose('Transform pivot','field'); await choose('Pivot field reference','back-hash'); await editNumber('Angle · degrees',180);
+  near(await displayed(),{[ids[0]]:{x:70,y:20},[ids[1]]:{x:64,y:20}}); await captureExact('transform-field-pivot.png'); await cancel();
+  pass('pivot handle, chosen performer and field hash references share the numeric transform geometry');
+
+  await open('Mirror selection'); near(await displayed(),{[ids[0]]:{x:70,y:20},[ids[1]]:{x:64,y:20}}); await captureExact('transform-mirror.png');
+  await apply(); const mirrored=await savedSnapshot(); assert.deepEqual(mirrored.performers,fixture.performers); assert.deepEqual(mirrored.sets[1],fixture.sets[1]);
+  menuAction('Undo drill edit'); assert.deepEqual(await savedSnapshot(),fixture);
+  await open('Mirror selection'); await choose('Transform operation','front-back'); near(await displayed(),{[ids[0]]:{x:30,y:fixture.field.height-20},[ids[1]]:{x:36,y:fixture.field.height-20}}); await cancel();
+  await open(); await editNumber('Scale · percent',10000);
+  await uiWait("document.querySelector('.transform-result--error')?.textContent.includes('boundary')",'invalid boundary preview');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply transform\"]').getAttribute('aria-disabled')"),'true');
+  await keyboard('[aria-label="Apply transform"]'); assert.deepEqual(await savedSnapshot(),fixture); await captureExact('transform-boundary.png'); await cancel();
+  await open(); await editNumber('Scale · percent',0); await keyboard('[aria-label="Apply transform"]'); assert.ok(await evaluate("!!document.querySelector('.transform-panel [aria-invalid=true]')")); await cancel();
+  await open(); await editNumber('Angle · degrees',15); await keyboard('.field-legend button:nth-child(2)');
+  await uiWait("!document.querySelector('.transform-panel')",'selection change invalidates transform'); assert.deepEqual(await savedSnapshot(),fixture);
+  const first=fixture.performers[0].id; await keyboard('.field-legend button:first-child');
+  await evaluate(`document.querySelector('[data-performer-id="${first}"]').focus()`); await sendKey(window,'Return');
+  await open(); await choose('Transform pivot','field'); await editNumber('Angle · degrees',180);
+  near(await displayed(),{[ids[0]]:{x:70,y:fixture.field.height-20},[ids[1]]:fixture.sets[0].positions[ids[1]]}); await cancel();
+  assert.deepEqual(await savedSnapshot(),fixture);
+  await fs.writeFile(path.join(output,'transform-layouts.json'),JSON.stringify(layout,null,2));
+  pass('field-axis mirrors preserve identity; invalid scales/bounds cannot apply; selection changes discard stale previews; singleton transforms allow non-origin pivots');
 }
 
 
@@ -779,6 +891,7 @@ app.whenReady().then(async () => {
 
     await checkCompactChrome();
     await checkSelectionInspector();
+    await checkExactTransforms();
     await capture('editor.png');
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, saveDialogs: saves, rendererNodeAccess: false }, null, 2));
 
