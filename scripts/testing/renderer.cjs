@@ -26,9 +26,24 @@ async function key(window, keyCode, modifiers = [], settleMs = 5) {
   await pause(settleMs);
 }
 
+const viewportExpression = '({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})';
+async function waitViewport(window, expected, label = 'restored viewport', { timeoutMs = 20000 } = {}) {
+  let observed;
+  try {
+    await waitFor(async () => {
+      // The browser's resize acknowledgement can precede renderer layout.
+      observed = await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(${viewportExpression}))))`);
+      return observed.width === expected.width && observed.height === expected.height && observed.dpr === expected.dpr;
+    }, label, { timeoutMs });
+  } catch (error) {
+    throw new Error(`${error.message}; expected ${JSON.stringify(expected)}, observed ${JSON.stringify(observed ?? null)}`, { cause: error });
+  }
+}
+
 /** Only compositor capture is retried; behavior assertions are never rerun here. */
 async function capturePage(window, output, name) {
   const [width, height] = window.getSize();
+  const viewport = await window.webContents.executeJavaScript(viewportExpression);
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
       window.setSize(width + 1 + attempt % 2, height); await pause(150);
@@ -41,6 +56,9 @@ async function capturePage(window, output, name) {
         console.warn(`Capture retry ${attempt + 1} for ${name}: ${error.message}`);
       }
     }
-  } finally { window.setSize(width, height); }
+  } finally {
+    window.setSize(width, height);
+    await waitViewport(window, viewport, `viewport restored after ${name}`);
+  }
 }
-module.exports = { pause, waitFor, key, capturePage };
+module.exports = { pause, waitFor, key, capturePage, waitViewport };

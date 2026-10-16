@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, key: sendKey, waitFor: waitUntil } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor: waitUntil, waitViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const { root, output, profile, fixture, baseline } = require(process.argv.find(arg => arg.startsWith('--field-manifest=')).slice('--field-manifest='.length));
@@ -104,8 +104,7 @@ async function checkNeighbors(project) {
   window.setContentSize(1366, 768);
   // Windows can deliver the resize after setContentSize returns. Native input
   // must use geometry from the restored viewport, after the narrow capture.
-  await wait('innerWidth===1366 && innerHeight===768', 'neighbor viewport restored before flipped selection');
-  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+  await waitViewport(window, { width:1366, height:768, dpr:await evaluate('devicePixelRatio') }, 'neighbor viewport restored before flipped selection');
   await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'}); ${editor}.setValue('selection','selectedIds',[])`);
   await wait("!!document.querySelector('[data-field-geometry=audience-top]') && document.querySelectorAll('[data-neighbor]').length===2", 'flipped neighboring sets');
   await click(await center(performers[1].id)); await selected(performers[1].id);

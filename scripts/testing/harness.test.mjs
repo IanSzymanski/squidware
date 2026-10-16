@@ -7,6 +7,7 @@ import { runProcess } from './process.mjs';
 import { runChecks, selectSuites } from './suites.mjs';
 import { outputDirectory } from './launcher.mjs';
 import renderer from './renderer.cjs';
+import vm from 'node:vm';
 
 async function temporary(t) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'squidware-harness-'));
@@ -65,4 +66,14 @@ test('renderer waits use observed state and time out even when a probe never res
   assert.equal(probes, 3);
   await assert.rejects(renderer.waitFor(() => new Promise(() => {}), 'hung renderer', { timeoutMs: 30 }), /Timed out: hung renderer/);
   await assert.rejects(renderer.waitFor(() => true, 'crashed renderer', { failure: () => new Error('Renderer exited') }), /Renderer exited/);
+});
+
+test('viewport settlement waits for delayed native resize and reports mismatched geometry', async () => {
+  const context = { innerWidth: 1120, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => setTimeout(callback, 1) };
+  const window = { webContents: { executeJavaScript: source => Promise.resolve(vm.runInNewContext(source, context)) } };
+  const resized = setTimeout(() => { context.innerWidth = 1366; }, 30);
+  try { await renderer.waitViewport(window, { width: 1366, height: 768, dpr: 1 }, 'native resize', { timeoutMs: 1000 }); }
+  finally { clearTimeout(resized); }
+  assert.equal(context.innerWidth, 1366);
+  await assert.rejects(renderer.waitViewport(window, { width: 999, height: 768, dpr: 1 }, 'bad viewport', { timeoutMs: 30 }), /bad viewport; expected.*999.*observed.*1366/);
 });
