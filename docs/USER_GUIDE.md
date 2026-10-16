@@ -34,6 +34,8 @@ In browser preview, Save downloads a project and PDF export opens the browser pr
 
 ## Personal preferences
 
+The **2D field display** section sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
+
 Open **Project menu → Preferences** for device settings: panel layout, 2D/3D view, labels, paths, grid visibility, snap, zoom, keyboard increments, formation tool defaults, coordinate decimals, paper size, packet type, and geometric check thresholds. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
 
 Choose **Reset defaults** to restore the personal settings. If storage is unavailable, your choices work for the session and Preferences shows the error with **Retry save**. Unsupported newer preferences remain preserved until you update the app or reset them. Invalid numeric entries stay in Preferences until corrected or canceled with Escape. Production settings still belong to each show. See [the persistence policy](PREFERENCES.md).

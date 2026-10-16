@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { defaultPreferences, validatePreferences } from './preferences';
 import { analyzeTransition, coordinateDescription, createDemoProject, serializeProject } from './domain';
 describe('personal preferences codec', () => {
+  it('validates display preferences with safe readable defaults for older files', () => {
+    expect(validatePreferences({ version: 1 })).toMatchObject({ fieldDotRadiusPx: 3, fieldLabelSizePx: 12, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', selectionLabelsOnly: false });
+    const settings = { fieldOrientation: 'audience-top', fieldDotRadiusPx: 8, fieldLabelSizePx: 24, fieldColorMode: 'custom', fieldCustomColor: '#eEbB22', selectionLabelsOnly: true };
+    expect(validatePreferences(settings)).toMatchObject(settings);
+    for (const input of [{ fieldDotRadiusPx: 0 }, { fieldLabelSizePx: 10 }, { fieldLabelSizePx: Infinity }, { fieldOrientation: 'mirror' }, { fieldColorMode: 'unknown' }, { fieldCustomColor: 'red' }, { fieldCustomColor: '#abcdef00' }, { fieldCustomColor: null }]) expect(() => validatePreferences(input)).toThrow();
+  });
   it('fills older records and discards project and transient fields', () => {
     expect(validatePreferences({ version: 0, showLabels: false, zoom: 2, count: 8, positions: { p: { x: 1 } }, grid: { spacing: 2 } })).toEqual({ ...defaultPreferences(), showLabels: false, zoom: 2 });
     expect(validatePreferences({ paperSize: 'a4' }).version).toBe(1);

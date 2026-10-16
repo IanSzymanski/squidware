@@ -1,7 +1,9 @@
 import type { Point } from '../types';
 
-/** CSS pixels, independent of drill yards, zoom and device-pixel ratio. #42 owns persistence. */
+/** CSS pixels, independent of drill yards, zoom and device-pixel ratio. */
 export interface FieldPresentation {
+  colorMode: 'section' | 'selection' | 'custom';
+  customColor: string;
   dotRadiusPx: number;
   pointerRadiusPx: number;
   touchRadiusPx: number;
@@ -9,7 +11,7 @@ export interface FieldPresentation {
   labelMode: 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
-  dotRadiusPx: 3, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 12, labelMode: 'all',
+  colorMode: 'section', customColor: '#b9ed85', dotRadiusPx: 3, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 12, labelMode: 'all',
 };
 export interface ScreenDot extends Point { id: string }
 export interface ScreenBox { left: number; top: number; right: number; bottom: number }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Modal } from '../components/Modal';
+import { FieldDisplayPreferences } from './FieldDisplayPreferences';
 import { NumberField } from '../components/NumberField';
 import type { EditorController } from './useEditorController';
 export function PreferencesPanel({ controller }: { controller: EditorController }) {
@@ -22,7 +23,8 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
     <fieldset key={resetVersion} className="preferences-fields" disabled={preferences.status === 'loading'}>
       <label className="form-label">Panel layout<select value={p.panelLayout} onChange={e => update({ panelLayout: e.target.value as typeof p.panelLayout })}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
       <label className="form-label">Start view<select value={p.view} onChange={e => update({ view: e.target.value as typeof p.view })}><option value="2d">2D field</option><option value="3d">3D preview</option></select></label>
-      <div className="preferences-toggles">{(['showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap'] as const).map((key, i) => <label key={key}><input type="checkbox" checked={p[key]} onChange={e => update({ [key]: e.target.checked })} />{['Performer labels', 'Previous paths', 'Next paths', 'Field grid', 'Snap to grid'][i]}</label>)}</div>
+      <div className="preferences-toggles">{(['showPaths', 'showNextPaths', 'showGrid', 'snap'] as const).map((key, i) => <label key={key}><input type="checkbox" checked={p[key]} onChange={e => update({ [key]: e.target.checked })} />{['Previous paths', 'Next paths', 'Field grid', 'Snap to grid'][i]}</label>)}</div>
+      <FieldDisplayPreferences preferences={preferences} />
       <NumberField label="Field zoom" value={p.zoom} min={.6} max={3} step={.1} onChange={zoom => update({ zoom })} />
       <div className="form-row"><NumberField label="Nudge · yards" value={p.nudgeStep} min={.125} max={5} step={.125} onChange={nudgeStep => update({ nudgeStep })} /><NumberField label="Fast nudge · yards" value={p.fastNudgeStep} min={.125} max={10} step={.125} onChange={fastNudgeStep => update({ fastNudgeStep })} /></div>
       <label className="form-label">Coordinate precision<select value={p.coordinatePrecision} onChange={e => update({ coordinatePrecision: e.target.value as typeof p.coordinatePrecision })}><option value="whole">Whole steps</option><option value="half">Half steps</option><option value="quarter">Quarter steps</option><option value="decimal">Decimal steps (legacy)</option></select></label>{p.coordinatePrecision === 'decimal' && <label className="form-label">Coordinate decimals<select value={p.coordinateDecimals} onChange={e => update({ coordinateDecimals: Number(e.target.value) as typeof p.coordinateDecimals })}>{[0, 1, 2].map(value => <option key={value} value={value}>{value}</option>)}</select></label>}<p className="microcopy">Round displayed coordinates in 8-to-5 steps (0.625 yd per step). Stored positions and movement geometry stay exact. See Help for side, goal-line and hash conventions.</p>

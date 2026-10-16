@@ -102,6 +102,15 @@ async function checkNeighbors(project) {
   window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await pause(100); await capture('neighbors-narrow.png');
   for (const selector of [previous, next]) assert.ok(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()`));
   window.setContentSize(1366, 768);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'}); ${editor}.setValue('selection','selectedIds',[])`);
+  await wait("!!document.querySelector('[data-field-geometry=audience-top]') && document.querySelectorAll('[data-neighbor]').length===2", 'flipped neighboring sets');
+  await click(await center(performers[1].id)); await selected(performers[1].id);
+  assert.equal(await evaluate("document.querySelectorAll('[data-neighbor-dot]').length"), 2);
+  assert.ok(await evaluate("document.querySelector('[data-neighbor-path]').getScreenCTM().a < 0"));
+  assert.deepEqual((await evaluate(`${state}.project`)).present, before.present);
+  await capture('neighbors-flipped.png');
+  pass('flipped previous/next ghosts and paths turn with the field while native hit testing still selects the canonical performer');
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom'})`);
 }
 const center = id => evaluate(`(() => { const n = [...document.querySelectorAll('.field-performer')].find(n=>n.dataset.performerId===${JSON.stringify(id)}); const p = new DOMPoint(0,0).matrixTransform(n.getScreenCTM()); return {x:p.x,y:p.y}; })()`);
 async function selected(id) { await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'selected '+id); }
@@ -184,6 +193,7 @@ app.whenReady().then(async () => {
     window.webContents.setZoomFactor(1); window.setContentSize(1024,768); await pause(100); await assertLabels(); await capture('narrow-1024.png');
     const narrowViewport = await evaluate('({width:innerWidth,height:innerHeight})');
     pass('labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size');
+    await require('./field-display-qa.cjs')({project,editor,state,evaluate,wait,click,key,input,capture,window,pass});
     await checkNeighbors(project);
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
      app.exit(0);

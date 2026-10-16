@@ -114,3 +114,8 @@
   .count-display { flex: 0 0 auto; }
   .field-topline > span:last-child { display: none; }
 }
+.field-display-preferences > .microcopy { margin-bottom: 12px; }
+.display-color-control { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
+.display-color-control input[type=color] { width: 48px; height: 34px; }
+.display-color-control input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.display-color-control input[type=color]::-webkit-color-swatch { border: 0; border-radius: 3px; }
