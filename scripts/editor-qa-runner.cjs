@@ -262,6 +262,16 @@ async function checkSelectionInspector() {
     await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window, 'Return');
   }
   const section = name => `summary[aria-label="${name} section"]`;
+  async function cancelNumberDraft(label, sectionName) {
+    const input = numberSelector(label);
+    if (!await evaluate(`${input}.closest('details').open`)) await keyboard(section(sectionName));
+    await uiWait(`${input}.getBoundingClientRect().height > 0`, 'number draft visible for cancellation');
+    await evaluate(`${input}.focus()`);
+    await uiWait(`document.activeElement === ${input}`, 'number draft focused for cancellation');
+    await sendKey(window, 'Escape');
+    await uiWait(`${input}.getAttribute('aria-invalid') === 'false'`, 'number draft canceled');
+  }
+
   // Inspect collapsed sections without discarding their mounted drafts.
   if (await evaluate("document.querySelector('.formation-section').open")) await keyboard(section('Formation tools'));
   if (!await evaluate("document.querySelector('[data-inspector-section=inspectorSetOpen]').open")) await keyboard(section('Set properties'));
@@ -315,7 +325,7 @@ async function checkSelectionInspector() {
   await keyboard('[aria-label="Shape selection"]');
   assert.equal(await evaluate(`${numberSelector('Width · yd')}.value`), '0');
   assert.equal(await evaluate(`${numberSelector('Width · yd')}.getAttribute('aria-invalid')`), 'true');
-  await evaluate(`${numberSelector('Width · yd')}.focus()`); await sendKey(window, 'Escape');
+  await cancelNumberDraft('Width · yd', 'Formation tools');
   // Set properties are unrelated to selection and must also retain incomplete input.
   await clickSelector('.set-card:nth-child(2)');
   await editNumber('Counts', 0);
@@ -323,7 +333,7 @@ async function checkSelectionInspector() {
   await keyboard(section('Set properties')); await keyboard(section('Set properties'));
   assert.equal(await evaluate(`${numberSelector('Counts')}.value`), '0');
   assert.equal(await evaluate(`${numberSelector('Counts')}.getAttribute('aria-invalid')`), 'true');
-  await evaluate(`${numberSelector('Counts')}.focus()`); await sendKey(window, 'Escape');
+  await cancelNumberDraft('Counts', 'Set properties');
   pass('selection changes and collapsed Inspector sections retain unrelated invalid formation and set drafts until explicit cancellation');
 
   await keyboard('[aria-label="Shape selection"]');
