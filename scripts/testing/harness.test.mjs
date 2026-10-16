@@ -75,7 +75,12 @@ test('viewport settlement waits for delayed native resize and reports mismatched
   try { await renderer.waitViewport(window, { width: 1366, height: 768, dpr: 1 }, 'native resize', { timeoutMs: 1000 }); }
   finally { clearTimeout(resized); }
   assert.equal(context.innerWidth, 1366);
-  await assert.rejects(renderer.waitViewport(window, { width: 999, height: 768, dpr: 1 }, 'bad viewport', { timeoutMs: 30 }), /bad viewport; expected.*999.*observed.*1366/);
+  // Diagnostic sampling must not assume two scheduled frames finish within a
+  // 30 ms deadline when the other native tests are using the worker pool.
+  const fixed = { webContents: { executeJavaScript: async () => ({ width: 1366, height: 768, dpr: 1 }) } };
+  await assert.rejects(renderer.waitViewport(fixed, { width: 999, height: 768, dpr: 1 }, 'bad viewport', { timeoutMs: 30 }), /bad viewport; expected.*999.*observed.*1366/);
+  const hung = { webContents: { executeJavaScript: () => new Promise(() => {}) } };
+  await assert.rejects(renderer.waitViewport(hung, { width: 999, height: 768 }, 'hung viewport', { timeoutMs: 30 }), /hung viewport; expected.*999.*observed null/);
 });
 
 test('capture settles pending native size and zoom before recording the restoration viewport', async t => {
