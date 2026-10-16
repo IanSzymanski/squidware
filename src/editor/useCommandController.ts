@@ -1,3 +1,4 @@
+import { fieldDirection } from '../components/fieldOrientation';
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import type { CommandId } from './commands';
@@ -44,7 +45,7 @@ export function useCommandController() {
       else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && state.selection.selectedIds.length) {
         event.preventDefault(); const step = event.shiftKey ? state.preferences.value.fastNudgeStep : state.preferences.value.nudgeStep;
         store.dispatch('selection.transform', { index: state.selection.activeIndex, ids: state.selection.selectedIds,
-          options: { dx: event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, dy: event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0 } });
+          options: fieldDirection(event.key, step, state.preferences.value.fieldOrientation) });
       } else if (event.key === '[' || event.key === ']') store.dispatch('set.select', { index: state.selection.activeIndex + (event.key === '[' ? -1 : 1) });
     }
     const unsubscribe = window.squidware?.onMenuAction(menuAction);

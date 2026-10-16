@@ -63,8 +63,8 @@ describe('readable field labels', () => {
   });
   it('keeps static print geometry independent of screen presentation and does not mutate the project', () => {
     const project = createDemoProject(); const before = structuredClone(project);
-    const render = (presentation?: object) => renderToStaticMarkup(createElement('svg', {}, createElement(FieldDrawing, { project, positions: project.sets[0].positions, presentation })));
-    expect(render({ dotRadiusPx: 20, labelSizePx: 40, labelMode: 'selected' })).toBe(render());
+    const render = (presentation?: object, orientation: 'audience-top' | 'audience-bottom' = 'audience-bottom') => renderToStaticMarkup(createElement('svg', {}, createElement(FieldDrawing, { project, positions: project.sets[0].positions, presentation, orientation })));
+    expect(render({ dotRadiusPx: 20, labelSizePx: 40, labelMode: 'selected', colorMode: 'custom', customColor: '#ff0000' }, 'audience-top')).toBe(render());
     expect(project).toEqual(before);
   });
 });

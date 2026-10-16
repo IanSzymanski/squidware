@@ -319,7 +319,10 @@ async function checkSelectionInspector() {
   pass('selection bar reports single coordinates and group bounds; native pointer/keyboard moves and rotates only the selection with one undo');
 
   await keyboard('[aria-label="Shape selection"]');
-  await typeText('input[aria-label="Set name"]', 'Unrelated set draft'); await sendKey(window, 'Escape');
+  await uiWait("document.activeElement?.matches('.formation-grid button')", 'formation reveal settled before unrelated text draft');
+  await typeText('input[aria-label="Set name"]', 'Unrelated set draft');
+  await uiWait("document.activeElement?.matches('input[aria-label=\"Set name\"]') && document.activeElement.value==='Unrelated set draft'", 'unrelated text draft focused');
+  await sendKey(window, 'Escape');
   // An invalid formation draft must survive both section collapse and a selection change.
   await editNumber('Width · yd', 0);
   await keyboard(section('Formation tools'));

@@ -10,6 +10,7 @@ export interface FieldTransformPreview {
 }
 
 export function TransformHandles({ preview, field, scale }: { preview: FieldTransformPreview; field: Project['field']; scale: number }) {
+  const geometry = useRef<SVGGElement>(null);
   const { session, result, original, onUpdate } = preview;
   const drag = useRef<{ handle: TransformHandle; start: Point; pivot: Point; options: ExactTransform } | null>(null);
   const callback = useRef(onUpdate); callback.current = onUpdate;
@@ -24,7 +25,7 @@ export function TransformHandles({ preview, field, scale }: { preview: FieldTran
   const pivot = result.pivot;
   if (!pivot) return null;
   const pointAt = (event: PointerEvent<SVGGElement>) => {
-    const matrix = event.currentTarget.ownerSVGElement?.getScreenCTM();
+    const matrix = geometry.current?.getScreenCTM();
     if (!matrix) return null;
     const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
     return { x: p.x, y: p.y };
@@ -60,7 +61,7 @@ export function TransformHandles({ preview, field, scale }: { preview: FieldTran
       : <circle r={kind === 'pivot' ? 7/scale : 6/scale} fill={kind === 'pivot' ? '#d4e6ff' : '#fff'} strokeWidth={2/scale} />}
     {kind === 'pivot' && <path d={`M${-10/scale},0h${20/scale}M0,${-10/scale}v${20/scale}`} strokeWidth={1.5/scale} />}
   </g>;
-  return <g className={`transform-handles${result.error ? ' transform-handles--invalid' : ''}`} aria-hidden="true" stroke={result.error ? '#ffb6aa' : '#8dc8ff'}>
+  return <g ref={geometry} className={`transform-handles${result.error ? ' transform-handles--invalid' : ''}`} aria-hidden="true" stroke={result.error ? '#ffb6aa' : '#8dc8ff'}>
     <g pointerEvents="none" fill="none" strokeWidth={1.5/scale} strokeDasharray={`${4/scale} ${3/scale}`}>
       {session.ids.map(id => <circle key={id} cx={original[id].x} cy={original[id].y} r={6/scale} />)}
       {session.options.operation === 'rotate-scale' ? <><path d={`M${pivot.x},${pivot.y}L${endpoint.x},${endpoint.y}L${rotate.x},${rotate.y}`} /><circle cx={pivot.x} cy={pivot.y} r={radial} /></>

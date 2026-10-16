@@ -5,10 +5,13 @@ import { coordinateDescription } from '../domain';
 import type { Point, Project } from '../types';
 import { DEFAULT_FIELD_PRESENTATION, nearestFieldDots } from './fieldPresentation';
 import type { FieldPresentation } from './fieldPresentation';
+import type { FieldOrientation } from './fieldOrientation';
 
 interface FieldReadoutProps {
   id: string;
   svgRef: RefObject<SVGSVGElement | null>;
+  geometryRef: RefObject<SVGGElement | null>;
+  orientation: FieldOrientation;
   project: Project;
   positions: Record<string, Point>;
   selectedIds: string[];
@@ -22,7 +25,7 @@ interface FieldReadoutProps {
 const performerId = (target: EventTarget | null) => target instanceof Element ? target.closest('[data-performer-id]')?.getAttribute('data-performer-id') ?? null : null;
 
 /** Pointer feedback lives here so moving across empty field does not redraw the dots. */
-export function FieldReadout({ id, svgRef, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId, coordinateFormat, presentation }: FieldReadoutProps) {
+export function FieldReadout({ id, svgRef, geometryRef, orientation, project, positions, selectedIds, viewport, readOnly, keyboardFocusedId, coordinateFormat, presentation }: FieldReadoutProps) {
   const pointerRadius = presentation?.pointerRadiusPx ?? DEFAULT_FIELD_PRESENTATION.pointerRadiusPx;
   const touchRadius = presentation?.touchRadiusPx ?? DEFAULT_FIELD_PRESENTATION.touchRadiusPx;
   const [cursor, setCursor] = useState<{ x: number; y: number; pointerType: string } | null>(null);
@@ -66,7 +69,7 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
 
   useLayoutEffect(() => {
     const svg = svgRef.current;
-    const matrix = svg?.getScreenCTM();
+    const matrix = geometryRef.current?.getScreenCTM();
     if (!svg || !matrix) { setReadout(null); return; }
     // Re-hit-test after zoom, pan or playback moves a dot beneath a stationary cursor.
     const hits = cursor ? nearestFieldDots(project.performers.flatMap(person => {
@@ -93,7 +96,7 @@ export function FieldReadout({ id, svgRef, project, positions, selectedIds, view
       left: Math.max(8, Math.min(bounds.width - 308, anchor.x - bounds.left + 14)),
       top: Math.max(readOnly ? 150 : 60, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
     });
-  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, readOnly, coordinateFormat, pointerRadius, touchRadius]);
+  }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, geometryRef, orientation, readOnly, coordinateFormat, pointerRadius, touchRadius]);
 
   return readout && <div id={id} className="field-readout" style={{ left: readout.left, top: readout.top }}><strong>{readout.title}</strong><span>{readout.description}</span></div>;
 }

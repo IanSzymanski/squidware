@@ -1,0 +1,123 @@
+'use strict';
+const assert = require('node:assert/strict');
+
+module.exports = async function checkDisplay({ project, editor, state, evaluate, wait, click, key, input, capture, window, pass }) {
+  const ids = project.performers.map(p => p.id);
+  const before = await evaluate(`${state}.project`);
+  const original = before.present;
+  const center = id => evaluate(`(() => {const n=document.querySelector('[data-performer-id="${id}"] .field-dot'),r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+  const select = async id => { await click(await center(id)); await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'flipped nearest selection'); };
+  const preferences = update => evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,...${JSON.stringify(update)}})`);
+  const clickControl = async selector => { await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`); await click(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`)); };
+  const undo = async () => { await evaluate(`${editor}.dispatch('history.undo')`); await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x}`, 'undo flipped edit'); };
+  window.setContentSize(1366, 768); window.webContents.setZoomFactor(1);
+  await evaluate(`${editor}.setValue('ui','zoom',1); ${editor}.setValue('ui','fitVersion',100); ${editor}.setValue('selection','selectedIds',[])`);
+  await preferences({ fieldOrientation: 'audience-bottom' });
+  await wait("!!document.querySelector('[data-field-geometry=audience-bottom]')", 'normal orientation');
+  await capture('display-before.png');
+  const initialCenter = await center(ids[212]);
+  await evaluate(`${editor}.dispatch('dialog.open',{dialog:'preferences'})`);
+  await wait("!!document.querySelector('dialog[open] [aria-label=\"Audience orientation\"]')", 'visible display preferences');
+  await evaluate("(() => {const n=document.querySelector('[aria-label=\"Audience orientation\"]');n.scrollIntoView({block:'center'});n.focus()})()");
+  await wait("document.activeElement?.getAttribute('aria-label')==='Audience orientation'", 'orientation preference focused');
+  // Use the same select change-event path as the Preferences suite. Native OS
+  // select popups cannot be exercised consistently in hidden desktop windows.
+  await evaluate("(() => {const n=document.querySelector('[aria-label=\"Audience orientation\"]');n.value='audience-top';n.dispatchEvent(new Event('change',{bubbles:true}))})()");
+  await wait(`${state}.preferences.value.fieldOrientation==='audience-top'`, 'orientation preference change');
+  await clickControl('.modal-actions .primary');
+  await wait("!document.querySelector('dialog[open]') && !!document.querySelector('[data-field-geometry=audience-top]')", 'flipped field');
+  const flippedCenter = await center(ids[212]);
+  assert.ok(Math.hypot(flippedCenter.x-initialCenter.x,flippedCenter.y-initialCenter.y)>10, JSON.stringify({initialCenter,flippedCenter}));
+  assert.deepEqual((await evaluate(`${state}.project`)).present, original);
+  for (const id of [ids[212], ids[213], ids[237]]) await select(id);
+  await select(ids[212]); await input('mouseMoved', await center(ids[212]));
+  await wait(`document.querySelector('.field-readout strong')?.textContent.includes(${JSON.stringify(project.performers[212].label)})`, 'flipped hover coordinates');
+  const accessible = await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').getAttribute('aria-label')`);
+  const description = await evaluate("document.querySelector('.field-readout span').textContent");
+  assert.ok(accessible.includes(description));
+  pass('the preference flips the personal view; native nearest clicks and hover still report canonical performer coordinates');
+
+  await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').focus()`);
+  await key('Left');
+  assert.equal(await evaluate("document.activeElement.getAttribute('data-performer-id')"), ids[213]);
+  await key('Home'); await key('PageDown');
+  assert.equal(await evaluate("document.activeElement.getAttribute('data-performer-id')"), original.performers[1].id);
+  await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').focus()`);
+  await key('Right', ['alt']);
+  await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x-.625}`, 'flipped field nudge');
+  await undo();
+  await evaluate("document.querySelector('[aria-label=\"Show field grid\"]').focus()");
+  await key('Right', ['alt']);
+  await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x-.625}`, 'flipped global nudge');
+  await undo();
+  const from = await center(ids[212]);
+  await input('mousePressed', from, {button:'left',clickCount:1});
+  await input('mouseMoved', {x:from.x+18,y:from.y}, {button:'left',buttons:1});
+  await input('mouseReleased', {x:from.x+18,y:from.y}, {button:'left',clickCount:1});
+  await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x<${original.sets[0].positions[ids[212]].x}`, 'flipped drag');
+  assert.deepEqual((await evaluate(`${state}.project.present`)).sets[1], original.sets[1]);
+  await undo();
+  await clickControl('.move-selection-left');
+  await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x-.625}`, 'field-relative Inspector nudge');
+  await undo();
+  pass('spatial focus, field/global Alt+arrows and native dragging follow screen direction; Inspector directions stay field-relative with rotated icons; one undo restores geometry');
+
+  const block = await evaluate(`(() => {const r=[...document.querySelectorAll('.field-dot')].map(n=>n.getBoundingClientRect());return {left:Math.min(...r.map(b=>b.x))-16,top:Math.min(...r.map(b=>b.y))-16,right:Math.max(...r.map(b=>b.right))+16,bottom:Math.max(...r.map(b=>b.bottom))+16}})()`);
+  await input('mousePressed', {x:block.left,y:block.top}, {button:'left',clickCount:1});
+  await input('mouseMoved', {x:block.right,y:block.bottom}, {button:'left',buttons:1});
+  await input('mouseReleased', {x:block.right,y:block.bottom}, {button:'left',clickCount:1});
+  await wait(`${state}.selection.selectedIds.length===500`, 'flipped marquee');
+  await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
+  await select(ids[212]);
+  await evaluate(`${editor}.setValue('ui','tool','pan')`);
+  const panFrom = await center(ids[212]);
+  await input('mousePressed', panFrom, {button:'left',clickCount:1});
+  await input('mouseMoved', {x:panFrom.x+20,y:panFrom.y+10}, {button:'left',buttons:1});
+  await input('mouseReleased', {x:panFrom.x+20,y:panFrom.y+10}, {button:'left',clickCount:1});
+  const panTo = await center(ids[212]);
+  assert.ok(Math.abs(panTo.x-panFrom.x-20)<1 && Math.abs(panTo.y-panFrom.y-10)<1);
+  await evaluate(`${editor}.setValue('ui','tool','select'); ${editor}.setValue('ui','zoom',1.6); ${editor}.setValue('selection','selectedIds',${JSON.stringify([ids[212],ids[213]])}); ${editor}.dispatch('transform.preview',{})`);
+  await wait("!!document.querySelector('[data-transform-handle=pivot]')", 'flipped handles');
+  const pivot = await evaluate(`${state}.ui.transformPreview.options.pivot`); assert.equal(pivot.kind,'centroid');
+  const handle = await evaluate("(() => {const r=document.querySelector('[data-transform-handle=pivot]').getBoundingClientRect(),m=document.querySelector('[data-field-geometry]').getScreenCTM();return {x:r.x+r.width/2,y:r.y+r.height/2,scale:Math.hypot(m.a,m.b)}})()");
+  const centroid = {x:(original.sets[0].positions[ids[212]].x+original.sets[0].positions[ids[213]].x)/2,y:original.sets[0].positions[ids[212]].y};
+  await input('mousePressed', handle, {button:'left',clickCount:1});
+  await input('mouseMoved', {x:handle.x+12,y:handle.y+8}, {button:'left',buttons:1});
+  await input('mouseReleased', {x:handle.x+12,y:handle.y+8}, {button:'left',clickCount:1});
+  await wait(`${state}.ui.transformPreview.options.pivot.kind==='custom'`, 'flipped pivot drag');
+  const result = await evaluate(`${state}.ui.transformPreview.options.pivot.point`);
+  assert.ok(Math.abs(result.x-(centroid.x-12/handle.scale))<.25 && Math.abs(result.y-(centroid.y-8/handle.scale))<.25, JSON.stringify({result,centroid,handle}));
+  await evaluate(`${editor}.dispatch('transform.cancel')`);
+  assert.deepEqual((await evaluate(`${state}.project`)).present, original);
+  pass('flipped marquee selects the full dense block; pan and exact pivot handles share the view matrix after zoom without committing a preview');
+
+  await preferences({fieldColorMode:'selection',fieldDotRadiusPx:6,fieldLabelSizePx:16});
+  await wait("document.querySelector('.field-dot').getAttribute('fill')==='#b3c5bd'", 'selection coloring');
+  assert.equal(await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"] .field-dot').getAttribute('fill')`), '#8dc8ff');
+  assert.ok(await evaluate(`!!document.querySelector('[data-performer-id="${ids[212]}"] circle[stroke="#ffffff"]')`));
+  await preferences({fieldColorMode:'custom',fieldCustomColor:'#ee99dd'});
+  for (const zoom of [.6,1,3]) {
+    await evaluate(`${editor}.setValue('ui','zoom',${zoom}); ${editor}.setValue('ui','fitVersion',${zoom+200})`);
+    await wait("(() => {const n=document.querySelector('.field-dot'),m=n.getScreenCTM();return Math.abs(Number(n.getAttribute('r'))*Math.hypot(m.a,m.b)-6)<.05})()", 'pixel dot sizing');
+    const labels = await evaluate("[...document.querySelectorAll('[data-performer-label]')].map(n=>{const m=n.getScreenCTM();return {size:Number(n.getAttribute('font-size'))*Math.hypot(m.a,m.b),upright:m.a>0&&m.d>0}})");
+    assert.ok(labels.length && labels.every(n=>Math.abs(n.size-16)<.1 && n.upright));
+    assert.equal(await evaluate("document.querySelector('.field-dot').getAttribute('fill')"), '#ee99dd');
+  }
+  await evaluate(`${editor}.setValue('ui','zoom',1); ${editor}.setValue('ui','showLabels',true); ${editor}.setValue('ui','selectionLabelsOnly',false)`);
+  for (const [width,zoom,name] of [[1366,1,'display-flipped-1366.png'],[1120,1,'display-flipped-1120.png'],[1120,1.25,'display-flipped-1120-125.png']]) {
+    window.setContentSize(width,768); window.webContents.setZoomFactor(zoom);
+    await capture(name);
+  }
+  window.setContentSize(1366,768); window.webContents.setZoomFactor(1);
+  await wait('innerWidth===1366 && innerHeight===768', 'native viewport restored before DPI emulation');
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+  await window.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:2,mobile:false});
+  await wait('devicePixelRatio===2 && innerWidth===1366', 'DPI viewport applied');
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+  await select(ids[237]); await capture('display-dpi2.png');
+  await window.webContents.debugger.sendCommand('Emulation.clearDeviceMetricsOverride');
+  assert.deepEqual((await evaluate(`${state}.project`)).present, original);
+  pass('section/selection/custom colors retain selection geometry; 12px dots and 16px upright labels remain pixel-sized through zoom, 2x DPI, narrow windows and 125% UI scale');
+  await preferences({fieldOrientation:'audience-bottom',fieldColorMode:'section',fieldDotRadiusPx:3,fieldLabelSizePx:12});
+  await evaluate(`${editor}.setValue('selection','selectedIds',[]); ${editor}.setValue('ui','fitVersion',500)`);
+};

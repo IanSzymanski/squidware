@@ -15,6 +15,10 @@ Persisted choices:
 | Panel layout; field view | Comfortable; 2D |
 | Labels; previous paths; grid visibility; snap | On; off; on; on |
 | Field zoom | 1×; 0.6–3× |
+| Audience orientation | Bottom; top turns the 2D view 180° |
+| Dot radius; label size | 3 / 12 CSS px; 2–8 / 11–24 px |
+| Label visibility | All; selected/focused or hidden also persist from the toolbar |
+| Performer coloring; custom color | Section colors; selection groups or custom RGB (`#B9ED85`) |
 | Formation tool kind | Arc; line, arc, circle, block or curve |
 | Formation width, depth, rotation, columns | 45 yd, 22 yd, 0°, 8; 1–95 yd, 1–48 yd, −180–180°, 1–500 whole columns |
 | Normal / fast keyboard nudge | 0.625 / 2.5 yd; 0.125–5 / 0.125–10 yd |
@@ -23,6 +27,8 @@ Persisted choices:
 | Geometric review spacing / stride | 1 yd / 1.25 yd per count; each 0.1–5 |
 
 Toolbar changes to the persisted view, toggles, zoom and formation inputs update the same settings. Formation preferences configure the tools; they change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
+
+See [2D field display](FIELD_DISPLAY.md) for orientation, sizing and coloring. These choices do not change project coordinates, print/SVG geometry or the 3D camera. Flipped dragging and keyboard arrows follow the screen; Inspector directions retain their field meaning.
 
 Production cast, positions, field markings, movement counts/tempo/easing, notes and audio offset stay in the project. The grid toggle controls visibility and the snap toggle enables the existing fixed step grid; neither defines a show grid. Current v2 projects do not support custom grids, meter or shared review-rule fields. This change adds no such fields and does not inject personal defaults into project data. Future shared rules must override personal review defaults; unsupported newer project data retains the existing refusal-to-open behavior.
 
