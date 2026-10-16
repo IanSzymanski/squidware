@@ -90,9 +90,11 @@ Select the hand tool with **H** and drag to pan; return to selection with **V**.
 
 ### Create formations
 
-The Inspector provides **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select the performers you want to arrange, set the formation's width, depth, rotation, and block columns, then choose **Apply formation**. With no selection, the formation applies to the full ensemble.
+The Inspector's selection bar keeps the selected count, coordinates or group bounds, and **Move**, **Rotate**, and **Shape** actions visible. **Move** and **Rotate** open the group's controls; **Shape** opens formation parameters. Inspector sections can be collapsed by clicking their headings or using Enter/Space, and your expansion choices survive restart. Mirror and Align explain their availability when focused; their tools are still planned.
 
-The selected performers' center is the formation center; the full ensemble defaults to the center of the field. Assignment follows cast order. There is no automatic shortest-travel assignment solver in this release.
+Formation tools provide **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select the performers you want to arrange, set width, depth, rotation, and block columns, then choose **Apply formation**. An empty selection cannot apply a formation. Choose **Select all** explicitly to reshape the ensemble.
+
+The selected performers' center is the formation center. Assignment follows cast order. Each accepted edit can be undone. There is no automatic shortest-travel assignment solver in this release.
 
 Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 

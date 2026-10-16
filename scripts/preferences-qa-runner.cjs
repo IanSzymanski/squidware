@@ -127,6 +127,18 @@ app.whenReady().then(async () => {
     if (phase === 'write') {
       assert.ok(before.preferences.error.includes('Older')); assert.equal(before.ui.zoom, 1.1);
       await checkCoordinateOutput(original);
+      await done();
+      for (const section of ['Set properties', 'Formation tools', 'Transition check']) {
+        await evaluate(`document.querySelector('summary[aria-label="${section} section"]').focus()`);
+        await sendKey(window, 'Return');
+        const key = section === 'Set properties' ? 'inspectorSetOpen' : section === 'Formation tools' ? 'inspectorFormationOpen' : 'inspectorChecksOpen';
+        await uiWait(`window.__preferencesQA.editor.getState().preferences.value.${key} === ${section !== 'Set properties'}`, 'disclosure preference updated');
+      }
+      await saved();
+      const expansion = (await state()).preferences.value;
+      assert.equal(expansion.inspectorSetOpen, false); assert.equal(expansion.inspectorFormationOpen, true); assert.equal(expansion.inspectorChecksOpen, true);
+      assert.deepEqual((await state()).project.present, original);
+      await openPreferences();
       await select('Panel layout', 'compact'); await toggle('Performer labels'); await toggle('Previous paths'); await toggle('Next paths'); await toggle('Field grid'); await toggle('Snap to grid');
       await number('Field zoom', 1.6); await number('Nudge · yards', 1.25); await number('Fast nudge', 5);
       await select('Coordinate precision', 'half'); await select('Paper', 'a4'); await select('Packet default', 'coordinates'); await select('Shape', 'block');
@@ -153,6 +165,10 @@ app.whenReady().then(async () => {
       const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
       assert.equal(expected.selectionHintDismissed, true);
       assert.equal(expected.coordinatePrecision, 'half');
+      assert.equal(expected.inspectorSetOpen, false); assert.equal(expected.inspectorFormationOpen, true); assert.equal(expected.inspectorChecksOpen, true);
+      for (const [key, open] of [['inspectorSetOpen', false], ['inspectorFormationOpen', true], ['inspectorChecksOpen', true]]) {
+        assert.equal(await evaluate(`document.querySelector('[data-inspector-section="${key}"]').open`), open);
+      }
       assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
       assert.ok(await evaluate("document.querySelector('.studio').classList.contains('studio--compact')"));
       const audit = await evaluate('(' + auditText.toString() + ')()'); assert.deepEqual(audit.failures, []); assert.ok(audit.checked > 100);

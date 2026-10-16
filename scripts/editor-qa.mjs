@@ -22,8 +22,16 @@ await esbuild.build({
     project.moves[0].tempo = PROJECT_LIMITS.tempo.max;
     project.sets[1].notes = 'N'.repeat(PROJECT_LIMITS.text.notes);
     export const fixture = JSON.stringify(projectV2AsLegacy(project));
+    const selection = createDemoProject();
+    selection.title = 'Selection Inspector QA';
+    selection.sections = selection.sections.slice(0, 2);
+    selection.performers = selection.performers.slice(0, 4).map((p, i) => ({ ...p, sectionId: selection.sections[i < 2 ? 0 : 1].id }));
+    selection.sets = selection.sets.slice(0, 2).map(set => ({ ...set, positions: Object.fromEntries(selection.performers.map((p, i) => [p.id, [{x:30,y:20},{x:36,y:20},{x:44,y:30},{x:50,y:35}][i]])) }));
+    selection.moves = selection.moves.slice(0, 1);
+    export const selectionFixture = JSON.stringify(selection);
   `, resolveDir: root, loader: 'ts' },
   outfile: bundle, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent',
 });
 await fs.writeFile(path.join(output, 'boundary.squid'), require(bundle).fixture);
+await fs.writeFile(path.join(output, 'selection.squid'), require(bundle).selectionFixture);
 await qa.run('editor-qa-runner.cjs', 'editor-qa-manifest', {});

@@ -106,6 +106,12 @@ describe('editor store and command registry', () => {
     expect(store.getState().project.present.sets[1].positions[otherId]).toEqual(from[otherId]);
   });
 
+  it('never treats an empty formation selection as the ensemble', () => {
+    const store = createEditorStore(createDemoProject()); const before = store.getState().project;
+    expect(store.dispatch('formation.apply', { index: 0, ids: [], kind: 'line', options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } })).toBe(false);
+    expect(store.getState().project).toBe(before);
+  });
+
   it('locks every positional command between arrivals and recovers without editing history', () => {
     const project = createDemoProject();
     const store = createEditorStore(project);

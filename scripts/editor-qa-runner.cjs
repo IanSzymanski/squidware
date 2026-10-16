@@ -232,6 +232,157 @@ async function checkCompactChrome() {
   pass('compact field/header/timeline budgets, no empty audio lane, decoded audio, and unclipped create/edit/play/save at 1366/1120 px and 100/125% scale');
 }
 
+async function checkSelectionInspector() {
+  openPath = path.join(output, 'selection.squid');
+  menuAction('Open project…');
+  await uiWait("document.querySelector('.project-title').textContent.includes('Selection Inspector QA')", 'selection fixture');
+  window.setContentSize(1366, 768); window.webContents.setZoomFactor(1);
+  const fixture = JSON.parse(await fs.readFile(openPath, 'utf8'));
+  async function selectionCapture(name) {
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
+    await evaluate('document.querySelector(\'.toast [aria-label="Dismiss notification"]\')?.click(); document.activeElement?.blur()');
+    await uiWait("!document.querySelector('.toast')", 'clean selection capture');
+    await uiWait("!document.querySelector('[role=tooltip]')", 'selection help dismissed for capture');
+    await evaluate("document.querySelector('.inspector-scroll').scrollTop = 0");
+    await capture(name);
+  }
+  let saveSequence = 0;
+  async function snapshot() {
+    destination = path.join(output, `selection-${process.pid}-${saveSequence++}.squid`);
+    menuAction('Save As…');
+    const saved = await savedProject(p => p.title === fixture.title, destination);
+    await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'selection snapshot saved');
+    return saved;
+  }
+  async function pointer(selector) {
+    const point = await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}; })()`);
+    for (const type of ['mouseDown', 'mouseUp']) window.webContents.sendInputEvent({ type, ...point, button: 'left', clickCount: 1 });
+  }
+  async function keyboard(selector) {
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window, 'Return');
+  }
+  const section = name => `summary[aria-label="${name} section"]`;
+  async function cancelNumberDraft(label, sectionName) {
+    const input = numberSelector(label);
+    if (!await evaluate(`${input}.closest('details').open`)) await keyboard(section(sectionName));
+    await uiWait(`${input}.getBoundingClientRect().height > 0`, 'number draft visible for cancellation');
+    await evaluate(`${input}.focus()`);
+    await uiWait(`document.activeElement === ${input}`, 'number draft focused for cancellation');
+    await sendKey(window, 'Escape');
+    await uiWait(`${input}.getAttribute('aria-invalid') === 'false'`, 'number draft canceled');
+  }
+
+  // Inspect collapsed sections without discarding their mounted drafts.
+  if (await evaluate("document.querySelector('.formation-section').open")) await keyboard(section('Formation tools'));
+  if (!await evaluate("document.querySelector('[data-inspector-section=inspectorSetOpen]').open")) await keyboard(section('Set properties'));
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Shape selection\"]').getAttribute('aria-disabled')"), 'true');
+  await keyboard(section('Formation tools'));
+  await keyboard('[aria-label="Apply formation"]');
+  assert.deepEqual(await snapshot(), fixture, 'empty selection does not reshape the ensemble');
+  await selectionCapture('selection-empty.png');
+
+  await pointer(`[data-performer-id="${fixture.performers[0].id}"]`);
+  await uiWait("document.querySelector('.selection-count').textContent === '1 selected'", 'single selection');
+  assert.match(await evaluate("document.querySelector('.selection-bounds').textContent"), /X 30 · Y 20 yd/);
+  assert.equal(await evaluate("!!document.querySelector('.exact-position')"), true);
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Rotate selection\"]').getAttribute('aria-disabled')"), 'true');
+  await selectionCapture('selection-single.png');
+
+  await pointer('.field-legend button:first-child');
+  await uiWait("document.querySelector('.selection-count').textContent === '2 selected'", 'group selection');
+  assert.match(await evaluate("document.querySelector('.selection-bounds').textContent"), /Center 33, 20 ydBounds 6 × 0 yd/);
+  assert.equal(await evaluate("!!document.querySelector('.exact-position')"), false);
+  await keyboard('[aria-label="Move selection"]');
+  await uiWait("document.activeElement.getAttribute('aria-label') === 'Move selection left'", 'move action focus');
+  await sendKey(window, 'Tab');
+  assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Move selection right');
+  await sendKey(window, 'Return');
+  const moved = await snapshot();
+  for (const [i, performer] of fixture.performers.entries()) {
+    assert.deepEqual(moved.sets[0].positions[performer.id], {x:fixture.sets[0].positions[performer.id].x + (i < 2 ? .625 : 0), y:fixture.sets[0].positions[performer.id].y});
+  }
+  assert.deepEqual(moved.sets[1], fixture.sets[1]);
+  const moveHistory = await openHistory(); assert.equal(moveHistory.length, 1); assert.match(moveHistory[0], /Transform 2 performers/);
+  await clickSelector('.modal [aria-label="Close dialog"]');
+  menuAction('Undo drill edit'); assert.deepEqual(await snapshot(), fixture);
+  await keyboard('[aria-label="Rotate selection"]');
+  await uiWait("document.activeElement.getAttribute('aria-label') === 'Rotate selection 15° clockwise'", 'rotate action focus');
+  await sendKey(window, 'Return');
+  const rotated = await snapshot();
+  const first = rotated.sets[0].positions[fixture.performers[0].id];
+  assert.ok(Math.abs(first.x - (33 - 3 * Math.cos(Math.PI / 12))) < 1e-9);
+  assert.ok(Math.abs(first.y - (20 - 3 * Math.sin(Math.PI / 12))) < 1e-9);
+  menuAction('Undo drill edit'); assert.deepEqual(await snapshot(), fixture);
+  pass('selection bar reports single coordinates and group bounds; native pointer/keyboard moves and rotates only the selection with one undo');
+
+  await keyboard('[aria-label="Shape selection"]');
+  await typeText('input[aria-label="Set name"]', 'Unrelated set draft'); await sendKey(window, 'Escape');
+  // An invalid formation draft must survive both section collapse and a selection change.
+  await editNumber('Width · yd', 0);
+  await keyboard(section('Formation tools'));
+  await pointer('.field-legend button:nth-child(2)');
+  await uiWait("document.querySelector('.field-legend button:nth-child(2)').getAttribute('aria-pressed') === 'true'", 'changed selection');
+  await keyboard('[aria-label="Shape selection"]');
+  assert.equal(await evaluate(`${numberSelector('Width · yd')}.value`), '0');
+  assert.equal(await evaluate(`${numberSelector('Width · yd')}.getAttribute('aria-invalid')`), 'true');
+  await cancelNumberDraft('Width · yd', 'Formation tools');
+  // Set properties are unrelated to selection and must also retain incomplete input.
+  await clickSelector('.set-card:nth-child(2)');
+  await editNumber('Counts', 0);
+  await pointer('.field-legend button:first-child');
+  await keyboard(section('Set properties')); await keyboard(section('Set properties'));
+  assert.equal(await evaluate(`${numberSelector('Counts')}.value`), '0');
+  assert.equal(await evaluate(`${numberSelector('Counts')}.getAttribute('aria-invalid')`), 'true');
+  await cancelNumberDraft('Counts', 'Set properties');
+  pass('selection changes and collapsed Inspector sections retain unrelated invalid formation and set drafts until explicit cancellation');
+
+  await keyboard('[aria-label="Shape selection"]');
+  await keyboard('[aria-label="Line formation"]'); await editNumber('Width · yd', 10);
+  await uiWait("document.querySelector('[aria-label=\"Line formation\"]').getAttribute('aria-pressed') === 'true'", 'line chosen');
+  await keyboard('[aria-label="Apply formation"]');
+  const shaped = await snapshot();
+  assert.deepEqual(shaped.sets[0], fixture.sets[0]);
+  for (const [i, performer] of fixture.performers.entries()) {
+    assert.deepEqual(shaped.sets[1].positions[performer.id], i < 2 ? {x:i===0?28:38,y:20} : fixture.sets[1].positions[performer.id]);
+  }
+  const shapeHistory = await openHistory(); assert.equal(shapeHistory.length,1); assert.match(shapeHistory[0],/Apply line to 2 performers/);
+  await clickSelector('.modal [aria-label="Close dialog"]');
+  menuAction('Undo drill edit'); assert.deepEqual(await snapshot(),fixture);
+  pass('keyboard formation application reshapes only the explicitly selected pair on the active set and undoes in one step');
+
+  const measurements = [];
+  for (const [width, scale] of [[1366, 1], [1366, 1.25], [1120, 1], [1120, 1.25]]) {
+    window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
+    await uiWait(`Math.abs(innerWidth-${width/scale})<1`, 'selection viewport');
+    await evaluate('document.activeElement?.blur()');
+    const clipped = await evaluate(`['Move selection','Rotate selection','Shape selection','Mirror selection','Align selection'].filter(name => {
+      const n=document.querySelector('[aria-label="'+name+'"]'); const r=n.getBoundingClientRect(); const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+      return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !n.contains(hit);
+    })`);
+    assert.deepEqual(clipped, []);
+    const fieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
+    if (width===1366 && scale===1) assert.ok(fieldHeight>=470);
+    measurements.push({width,scale,fieldHeight,clipped});
+    await selectionCapture(`selection-group-${width}-${scale}.png`);
+  }
+  window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
+  await keyboard('[aria-label="Mirror selection"]');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Mirror selection\"]').getAttribute('aria-disabled')"), 'true');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Align selection\"]').getAttribute('aria-disabled')"), 'true');
+  assert.deepEqual(await snapshot(), fixture);
+  await scrubCount(1);
+  await uiWait("document.querySelector('.selection-bar .return-to-set') !== null", 'preview selection recovery');
+  for (const name of ['Move selection','Rotate selection','Shape selection','Apply formation']) {
+    assert.equal(await evaluate(`document.querySelector('[aria-label="${name}"]').getAttribute('aria-disabled')`), 'true');
+  }
+  await selectionCapture('selection-preview.png');
+  await keyboard('.selection-bar .return-to-set');
+  await uiWait("!document.querySelector('.field-preview-banner')", 'selection return to set');
+  await fs.writeFile(path.join(output,'selection-measurements.json'),JSON.stringify(measurements,null,2));
+  pass('selection actions remain unclipped at 1366/1120 px and 100/125%; preview locks edits and offers keyboard recovery; future mirror/align explain availability');
+}
+
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'production window');
@@ -305,6 +456,7 @@ app.whenReady().then(async () => {
     menuAction('Save');
     saved = await savedProject(p => p.moves[0].counts === 1024);
     const beforeFormation = JSON.stringify(saved.sets[1].positions);
+    await clickSelector('[aria-label="Shape selection"]');
     await editNumber('Width · yd', 0);
     await clickText('Apply formation');
     await keyOnNumber('Width · yd', 'Escape');
@@ -626,6 +778,7 @@ app.whenReady().then(async () => {
     await capture('file-save-status.png');
 
     await checkCompactChrome();
+    await checkSelectionInspector();
     await capture('editor.png');
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, saveDialogs: saves, rendererNodeAccess: false }, null, 2));
 

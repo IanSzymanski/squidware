@@ -129,8 +129,8 @@ export function useEditorController() {
   function reorderSet(direction: -1 | 1) { dispatch('set.reorder', { index, direction }); }
   function applyFormation() {
     if (document.querySelector('.formation-section input[aria-invalid="true"]')) { notify('Correct the formation values before applying.'); return; }
-    if (readOnly) return;
-    const ids = selectedIds.length ? project.performers.filter(p => selectedSet.has(p.id)).map(p => p.id) : project.performers.map(p => p.id);
+    if (readOnly || !selectedIds.length) return;
+    const ids = project.performers.filter(p => selectedSet.has(p.id)).map(p => p.id);
     if (dispatch('formation.apply', { index, ids, kind: formation, options: { center: selectionCenter, width: formationWidth, height: formationHeight, rotation: formationRotation, columns: formationColumns } })) notify(`${formations.find(f => f.kind === formation)?.label} applied to ${ids.length} performers`);
   }
   function loadProject(next: Project) {

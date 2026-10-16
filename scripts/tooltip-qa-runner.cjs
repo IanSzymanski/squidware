@@ -85,10 +85,15 @@ app.whenReady().then(async () => {
       await key('Escape'); assert.equal(await tooltip(), '');
       assert.equal(await evaluate(`${editor}.getState().selection.selectedIds.length`), 1);
       await key('Return'); await focus('Show field grid'); assert.match(await tooltip(), /Current: Off/);
-      await evaluate(`${editor}.setValue('selection', 'selectedIds', [])`); await focus('Apply formation');
-      assert.match(await tooltip(), /Reshape all \d+ performers/);
+      await evaluate(`${editor}.setValue('selection', 'selectedIds', []); ${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, inspectorFormationOpen: true})`); await focus('Apply formation');
+      assert.match(await tooltip(), /Unavailable:.*Select performers first/);
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
       assert.match(await tooltip(), /Reshape 1 selected performer/);
+      for (const name of ['Mirror selection', 'Align selection']) {
+        await focus(name); assert.match(await tooltip(), /Unavailable:.*tools are not available yet/);
+        await key('Return'); await key('Space');
+        assert.equal(await evaluate(`${editor}.getState().project.revision`), revision);
+      }
       pass('Escape dismisses help without clearing selection; toggle and formation explanations stay current');
 
       await evaluate(`${editor}.dispatch('set.select', { index: 0 })`); await focus('Counts'); await pause(150);
