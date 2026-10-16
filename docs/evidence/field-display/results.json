@@ -9,7 +9,7 @@
     "pointer selection, labels and zoom preserve physical coordinates and edit revision",
     "labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size",
     "native keyboard flips the personal view; nearest clicks and hover still report canonical performer coordinates",
-    "spatial focus, field/global Alt+arrows and native dragging follow screen direction in flipped view; one undo restores geometry",
+    "spatial focus, field/global Alt+arrows and native dragging follow screen direction; Inspector directions stay field-relative with rotated icons; one undo restores geometry",
     "flipped marquee selects the full dense block; pan and exact pivot handles share the view matrix after zoom without committing a preview",
     "section/selection/custom colors retain selection geometry; 12px dots and 16px upright labels remain pixel-sized through zoom, 2x DPI, narrow windows and 125% UI scale",
     "both neighbors use ordered endpoints, distinct circle/diamond ghosts and dashed/dotted paths; ghosts do not intercept native selection",

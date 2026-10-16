@@ -54,7 +54,10 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x<${original.sets[0].positions[ids[212]].x}`, 'flipped drag');
   assert.deepEqual((await evaluate(`${state}.project.present`)).sets[1], original.sets[1]);
   await undo();
-  pass('spatial focus, field/global Alt+arrows and native dragging follow screen direction in flipped view; one undo restores geometry');
+  await clickControl('.move-selection-left');
+  await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x-.625}`, 'field-relative Inspector nudge');
+  await undo();
+  pass('spatial focus, field/global Alt+arrows and native dragging follow screen direction; Inspector directions stay field-relative with rotated icons; one undo restores geometry');
 
   const block = await evaluate(`(() => {const r=[...document.querySelectorAll('.field-dot')].map(n=>n.getBoundingClientRect());return {left:Math.min(...r.map(b=>b.x))-16,top:Math.min(...r.map(b=>b.y))-16,right:Math.max(...r.map(b=>b.right))+16,bottom:Math.max(...r.map(b=>b.bottom))+16}})()`);
   await input('mousePressed', {x:block.left,y:block.top}, {button:'left',clickCount:1});
