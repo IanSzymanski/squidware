@@ -26,7 +26,7 @@ Persisted choices:
 | Paper; rehearsal packet | Letter landscape; field charts; A4 and coordinate sheets also available |
 | Geometric review spacing / stride | 1 yd / 1.25 yd per count; each 0.1–5 |
 
-Toolbar changes to the persisted view, toggles, zoom and formation inputs update the same settings. Formation preferences configure the tools; they change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
+Toolbar changes to the persisted view, toggles, zoom and selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
 
 See [2D field display](FIELD_DISPLAY.md) for orientation, sizing and coloring. These choices do not change project coordinates, print/SVG geometry or the 3D camera. Flipped dragging and keyboard arrows follow the screen; Inspector directions retain their field meaning.
 

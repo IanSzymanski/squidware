@@ -38,7 +38,10 @@ describe('reversible named history', () => {
     const store = createEditorStore(createPerformanceFixture('maximum'));
     store.dispatch('set.select', { index: 1 });
     const before = store.getState().project.present;
-    store.dispatch('formation.apply', { index: 1, ids: before.performers.map(p => p.id), kind: 'circle', options: { center: { x: 50, y: 25 }, width: 60, height: 40, rotation: 0, columns: 20 } });
+    store.dispatch('selection.all');
+    store.dispatch('formation.preview', { kind: 'circle' });
+    store.dispatch('formation.update', { options: { center: { x: 50, y: 25 }, width: 60, height: 40, rotation: 0, columns: 20 } });
+    expect(store.dispatch('formation.apply')).toBe(true);
     const formed = store.getState().project.present;
     store.dispatch('history.undo');
     expect(store.getState().project.present).toEqual(before);

@@ -102,6 +102,10 @@ async function checkNeighbors(project) {
   window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await pause(100); await capture('neighbors-narrow.png');
   for (const selector of [previous, next]) assert.ok(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()`));
   window.setContentSize(1366, 768);
+  // Windows can deliver the resize after setContentSize returns. Native input
+  // must use geometry from the restored viewport, after the narrow capture.
+  await wait('innerWidth===1366 && innerHeight===768', 'neighbor viewport restored before flipped selection');
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
   await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'}); ${editor}.setValue('selection','selectedIds',[])`);
   await wait("!!document.querySelector('[data-field-geometry=audience-top]') && document.querySelectorAll('[data-neighbor]').length===2", 'flipped neighboring sets');
   await click(await center(performers[1].id)); await selected(performers[1].id);

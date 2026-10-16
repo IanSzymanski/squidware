@@ -85,10 +85,10 @@ app.whenReady().then(async () => {
       await key('Escape'); assert.equal(await tooltip(), '');
       assert.equal(await evaluate(`${editor}.getState().selection.selectedIds.length`), 1);
       await key('Return'); await focus('Show field grid'); assert.match(await tooltip(), /Current: Off/);
-      await evaluate(`${editor}.setValue('selection', 'selectedIds', []); ${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, inspectorFormationOpen: true})`); await focus('Apply formation');
+      await evaluate(`${editor}.setValue('selection', 'selectedIds', []); ${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, inspectorFormationOpen: true})`); await focus('Preview formation');
       assert.match(await tooltip(), /Unavailable:.*Select performers first/);
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
-      assert.match(await tooltip(), /Reshape 1 selected performer/);
+      assert.match(await tooltip(), /Preview a shape for 1 selected performer/);
       for (const name of ['Align selection']) {
         await focus(name); assert.match(await tooltip(), /Unavailable:.*tools are not available yet/);
         await key('Return'); await key('Space');
@@ -108,7 +108,7 @@ app.whenReady().then(async () => {
       assert.ok(await evaluate("document.activeElement.getAttribute('aria-describedby').split(' ').every(id => document.getElementById(id))"));
       pass('Inspector fields retain native disabled behavior and expose focusable explanations');
 
-      await evaluate(`${editor}.dispatch('playback.scrub', { count: 1 })`); await focus('Apply formation');
+      await evaluate(`${editor}.dispatch('playback.scrub', { count: 1 })`); await focus('Preview formation');
       assert.match(await tooltip(), /Unavailable:.*Return to a set/);
       await key('Return'); assert.equal(await evaluate(`${editor}.getState().project.revision`), revision);
       await evaluate(`${editor}.dispatch('set.select', { index: 0 })`);

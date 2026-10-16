@@ -34,6 +34,10 @@ export function useCommandController() {
         if (window.squidware) return;
         event.preventDefault(); menuAction(key === 's' ? event.shiftKey ? 'save-as' : 'save' : key === 'o' ? 'open' : 'new'); return;
       }
+      if (state.ui.formationPreview && !input && !cmd && !event.altKey) {
+        if (event.key === 'Escape') { event.preventDefault(); store.dispatch('formation.cancel'); return; }
+        if (event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('formation.apply'); return; }
+      }
       if (input) return;
       if (cmd && key === 'z') { event.preventDefault(); if (!window.squidware) menuAction(event.shiftKey ? 'redo' : 'undo'); return; }
       if (cmd && key === 'a') { event.preventDefault(); store.dispatch('selection.all'); }

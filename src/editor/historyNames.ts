@@ -23,7 +23,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
       const session = state.ui.transformPreview;
       name = `${session?.options.operation === 'across-50' ? 'Mirror across 50' : session?.options.operation === 'front-back' ? 'Flip front/back' : 'Rotate/scale'} ${session?.ids.length ?? 0} performers — ${picture}`; break;
     }
-    case 'formation.apply': name = `Apply ${a.kind} to ${selection} — ${picture}`; break;
+    case 'formation.apply': name = `Apply ${state.ui.formationPreview?.kind} to ${state.ui.formationPreview?.ids.length ?? 0} performers — ${picture}`; break;
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;

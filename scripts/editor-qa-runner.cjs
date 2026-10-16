@@ -277,7 +277,7 @@ async function checkSelectionInspector() {
   if (!await evaluate("document.querySelector('[data-inspector-section=inspectorSetOpen]').open")) await keyboard(section('Set properties'));
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Shape selection\"]').getAttribute('aria-disabled')"), 'true');
   await keyboard(section('Formation tools'));
-  await keyboard('[aria-label="Apply formation"]');
+  await keyboard('[aria-label="Preview formation"]');
   assert.deepEqual(await snapshot(), fixture, 'empty selection does not reshape the ensemble');
   await selectionCapture('selection-empty.png');
 
@@ -323,15 +323,16 @@ async function checkSelectionInspector() {
   await typeText('input[aria-label="Set name"]', 'Unrelated set draft');
   await uiWait("document.activeElement?.matches('input[aria-label=\"Set name\"]') && document.activeElement.value==='Unrelated set draft'", 'unrelated text draft focused');
   await sendKey(window, 'Escape');
-  // An invalid formation draft must survive both section collapse and a selection change.
+  // A contextual formation draft survives collapse until canceled; selection changes discard the preview.
   await editNumber('Width · yd', 0);
   await keyboard(section('Formation tools'));
-  await pointer('.field-legend button:nth-child(2)');
-  await uiWait("document.querySelector('.field-legend button:nth-child(2)').getAttribute('aria-pressed') === 'true'", 'changed selection');
-  await keyboard('[aria-label="Shape selection"]');
+  await keyboard(section('Formation tools'));
   assert.equal(await evaluate(`${numberSelector('Width · yd')}.value`), '0');
   assert.equal(await evaluate(`${numberSelector('Width · yd')}.getAttribute('aria-invalid')`), 'true');
   await cancelNumberDraft('Width · yd', 'Formation tools');
+  await pointer('.field-legend button:nth-child(2)');
+  await uiWait("!document.querySelector('.formation-parameters')", 'selection change discards contextual preview');
+  assert.deepEqual(await snapshot(), fixture);
   // Set properties are unrelated to selection and must also retain incomplete input.
   await clickSelector('.set-card:nth-child(2)');
   await editNumber('Counts', 0);
@@ -340,7 +341,7 @@ async function checkSelectionInspector() {
   assert.equal(await evaluate(`${numberSelector('Counts')}.value`), '0');
   assert.equal(await evaluate(`${numberSelector('Counts')}.getAttribute('aria-invalid')`), 'true');
   await cancelNumberDraft('Counts', 'Set properties');
-  pass('selection changes and collapsed Inspector sections retain unrelated invalid formation and set drafts until explicit cancellation');
+  pass('collapsed formation drafts survive until cancellation; changed selection cancels contextual previews and preserves unrelated invalid set drafts');
 
   await keyboard('[aria-label="Shape selection"]');
   await keyboard('[aria-label="Line formation"]'); await editNumber('Width · yd', 10);
@@ -381,7 +382,7 @@ async function checkSelectionInspector() {
   await uiWait("!document.querySelector('.transform-panel')", 'mirror preview canceled');
   await scrubCount(1);
   await uiWait("document.querySelector('.selection-bar .return-to-set') !== null", 'preview selection recovery');
-  for (const name of ['Move selection','Rotate selection','Shape selection','Apply formation']) {
+  for (const name of ['Move selection','Rotate selection','Shape selection','Preview formation']) {
     assert.equal(await evaluate(`document.querySelector('[aria-label="${name}"]').getAttribute('aria-disabled')`), 'true');
   }
   await selectionCapture('selection-preview.png');
@@ -573,7 +574,8 @@ app.whenReady().then(async () => {
     const beforeFormation = JSON.stringify(saved.sets[1].positions);
     await clickSelector('[aria-label="Shape selection"]');
     await editNumber('Width · yd', 0);
-    await clickText('Apply formation');
+    assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply formation\"]').getAttribute('aria-disabled')"), 'true');
+    await clickText('Apply formation', 'body', true);
     await keyOnNumber('Width · yd', 'Escape');
     menuAction('Save');
     await pause(150);
@@ -667,11 +669,11 @@ app.whenReady().then(async () => {
     await uiWait("!!document.querySelector('.field-preview-banner')", 'visible between-set banner');
     assert.match(await evaluate("document.querySelector('.field-preview-banner').textContent"), /Move 1 → 2.*Count 512.*512 \/ 1024/);
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled && ${numberSelector('Y · yards from back')}.disabled`), true);
-    assert.equal(await evaluate("document.querySelector('.apply-formation').getAttribute('aria-disabled') === 'true'"), true);
+    assert.equal(await evaluate("document.querySelector('.preview-formation').getAttribute('aria-disabled') === 'true'"), true);
     assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(dotSelector)})).cursor`), 'default');
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby').split(/\\s+/).includes('field-preview-message')"), true);
     const beforePreview = JSON.stringify(saved.sets[1].positions);
-    await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); document.querySelector('.apply-formation').click()`);
+    await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); document.querySelector('.preview-formation').click()`);
     const previewDot = await evaluate(`(() => { const element = document.querySelector(${JSON.stringify(dotSelector)}); const point = new DOMPoint(0, 0).matrixTransform(element.getScreenCTM()); return { x: point.x, y: point.y }; })()`);
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', ...previewDot, button: 'left', clickCount: 1 });
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: previewDot.x + 40, y: previewDot.y, buttons: 1 });
@@ -685,7 +687,7 @@ app.whenReady().then(async () => {
     await uiWait("!document.querySelector('.field-preview-banner')", 'one-click editing recovery');
     assert.equal(await evaluate("document.querySelector('.timeline-scrubber').value"), '1024');
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled`), false);
-    assert.equal(await evaluate("document.querySelector('.apply-formation').getAttribute('aria-disabled') === 'true'"), false);
+    assert.equal(await evaluate("document.querySelector('.preview-formation').getAttribute('aria-disabled') === 'true'"), false);
     pass('between-set preview blocks drag, nudge, formation and Inspector edits and recovers at the named arrival');
 
     await clickSelector('[aria-label="Play show"]');
@@ -895,6 +897,11 @@ app.whenReady().then(async () => {
     await checkCompactChrome();
     await checkSelectionInspector();
     await checkExactTransforms();
+    openPath = path.join(output, 'selection.squid'); menuAction('Open project…');
+    await uiWait("document.querySelector('.project-title').textContent.includes('Selection Inspector QA') && document.querySelector('.set-card:first-child').classList.contains('selected')", 'formation fixture');
+    await require('./formation-preview-qa.cjs')({ window, output, evaluate, uiWait, clickSelector, editNumber, numberSelector, capture, pass, menuAction, openHistory,
+      fixture: JSON.parse(await fs.readFile(openPath, 'utf8')),
+      snapshot: async filename => { destination = filename; menuAction('Save As…'); const project = await savedProject(p => p.title === 'Selection Inspector QA', filename); await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'formation snapshot'); return project; } });
     await capture('editor.png');
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, saveDialogs: saves, rendererNodeAccess: false }, null, 2));
 

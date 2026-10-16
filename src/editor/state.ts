@@ -1,4 +1,5 @@
-import type { FormationKind, Project } from '../types';
+import type { FormationKind, FormationOptions, Project } from '../types';
+import type { FormationSession } from '../formationPreview';
 import type { HistoryEntry } from './history';
 import { defaultPreferences } from '../preferences';
 import type { Preferences } from '../preferences';
@@ -23,6 +24,8 @@ export interface EditorState {
     castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
     printMode: 'charts' | 'coordinates'; printing: boolean;
     transformPreview: TransformSession | null;
+    formationPreview: FormationSession | null;
+    formationDrafts: Partial<Record<FormationKind, FormationOptions>>;
   };
   fileSession: {
     savedRevision: number | null; needsSaveAs: boolean; saveStatus: string;
@@ -42,7 +45,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       pendingDraft: false, menu: false, toast: '', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
-      castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null },
+      castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, formationPreview: null, formationDrafts: {} },
     fileSession: { savedRevision: null, needsSaveAs: true, fileOperation: null,
       saveStatus: 'Save a project file', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };

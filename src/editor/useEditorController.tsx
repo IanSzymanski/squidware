@@ -12,7 +12,7 @@ import { useEditorSelector, useEditorStore, useEditorValue } from './react';
 import type { Dialog } from './state';
 import { selectionMembership } from '../selection';
 import { createThumbnailRosterSelector, sectionMemberships } from './thumbnailRoster';
-import { formations } from './formations';
+import { previewFormation } from '../formationPreview';
 import { usePlaybackController } from './usePlaybackController';
 import { useCommandController } from './useCommandController';
 import { createDraftTracker } from './drafts';
@@ -53,6 +53,7 @@ export function useEditorController() {
   const [showGrid, setShowGrid] = useEditorValue('ui', 'showGrid');
   const [snap, setSnap] = useEditorValue('ui', 'snap');
   const transformPreview = useEditorSelector(state => state.ui.transformPreview);
+  const formationPreview = useEditorSelector(state => state.ui.formationPreview);
   const [dialog] = useEditorValue('ui', 'dialog');
   function setDialog(next: Dialog) { flushSync(() => (document.activeElement as HTMLElement | null)?.blur()); dispatch('dialog.open', { dialog: next }); }
   const [pendingDraft, setPendingDraftState] = useEditorValue('ui', 'pendingDraft');
@@ -93,6 +94,7 @@ export function useEditorController() {
   const activeSet = project.sets[index];
   const transformResult = useMemo(() => transformPreview ? previewExactTransform(activeSet.positions, transformPreview.ids, transformPreview.options, project.field) : null, [transformPreview, activeSet.positions, project.field]);
   function openTransform(operation: TransformOperation = 'rotate-scale', angle = 0, scale = 1) { dispatch('transform.preview', { operation, angle, scale }); }
+  const formationResult = useMemo(() => formationPreview ? previewFormation(activeSet.positions, formationPreview.ids, formationPreview.kind, formationPreview.options, project.field) : null, [formationPreview, activeSet.positions, project.field]);
   const duration = useMemo(() => totalCounts(project), [project.moves]);
   const readOnly = !useEditorSelector(canEditPositions);
   const issues = useMemo(() => analyzeTransition(project, index, preferences.value), [project, index, preferences.value.minimumSpacing, preferences.value.maximumStride]);
@@ -132,12 +134,7 @@ export function useEditorController() {
   function duplicateSet() { addSet(); }
   function removeSet() { dispatch('set.remove', { index }); }
   function reorderSet(direction: -1 | 1) { dispatch('set.reorder', { index, direction }); }
-  function applyFormation() {
-    if (document.querySelector('.formation-section input[aria-invalid="true"]')) { notify('Correct the formation values before applying.'); return; }
-    if (readOnly || !selectedIds.length) return;
-    const ids = project.performers.filter(p => selectedSet.has(p.id)).map(p => p.id);
-    if (dispatch('formation.apply', { index, ids, kind: formation, options: { center: selectionCenter, width: formationWidth, height: formationHeight, rotation: formationRotation, columns: formationColumns } })) notify(`${formations.find(f => f.kind === formation)?.label} applied to ${ids.length} performers`);
-  }
+  function applyFormation() { if (dispatch('formation.apply')) notify('Formation applied to the selection.'); }
   function loadProject(next: Project) {
     draftTracker.current.clear();
     dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
@@ -258,6 +255,6 @@ export function useEditorController() {
 
   const filteredCast = useMemo(() => { const query = castQuery.toLowerCase(); return project.performers.filter(p => (sectionFilter === 'all' || p.sectionId === sectionFilter) && `${p.name} ${p.label}`.toLowerCase().includes(query)); }, [project.performers, sectionFilter, castQuery]);
   const visibleSet = activeSet;
-  return { transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, issues, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;

@@ -115,6 +115,10 @@
   .field-topline > span:last-child { display: none; }
 }
 .field-display-preferences > .microcopy { margin-bottom: 12px; }
+.formation-panel .preview-formation { width: 100%; margin-top: 8px; }
+.formation-parameters { margin-top: 10px; }
+.formation-panel .transform-result { margin-top: 8px; }
+.formation-handles { color: #8dc8ff; }
 .display-color-control { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
 .display-color-control input[type=color] { width: 48px; height: 34px; }
 .display-color-control input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }

@@ -102,13 +102,17 @@ describe('editor store and command registry', () => {
     expect(store.getState().playback.playing).toBe(false);
     expect(store.dispatch('positions.move', { index: store.getState().selection.activeIndex, updates: { [id]: { x: 20, y: 20 } } })).toBe(false);
     store.dispatch('set.select', { index: 1 });
-    expect(store.dispatch('formation.apply', { index: 1, ids: [id], kind: 'line', options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } })).toBe(true);
+    store.setValue('selection', 'selectedIds', [id]);
+    expect(store.dispatch('formation.preview', { kind: 'line' })).toBe(true);
+    store.dispatch('formation.update', { options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } });
+    expect(store.dispatch('formation.apply')).toBe(true);
     expect(store.getState().project.present.sets[1].positions[otherId]).toEqual(from[otherId]);
   });
 
   it('never treats an empty formation selection as the ensemble', () => {
     const store = createEditorStore(createDemoProject()); const before = store.getState().project;
-    expect(store.dispatch('formation.apply', { index: 0, ids: [], kind: 'line', options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } })).toBe(false);
+    expect(store.dispatch('formation.preview', { kind: 'line' })).toBe(false);
+    expect(store.dispatch('formation.apply')).toBe(false);
     expect(store.getState().project).toBe(before);
   });
 
@@ -124,7 +128,8 @@ describe('editor store and command registry', () => {
       expect(canEditPositions(store.getState())).toBe(false);
       expect(store.dispatch('positions.move', { index, updates: { [id]: { x: 20, y: 20 } } })).toBe(false);
       expect(store.dispatch('selection.transform', { index, ids: [id], options: { dx: 0.625 } })).toBe(false);
-      expect(store.dispatch('formation.apply', { index, ids: [id], kind: 'line', options: { center: { x: 50, y: 25 }, width: 30, height: 10, rotation: 0, columns: 8 } })).toBe(false);
+      expect(store.dispatch('formation.preview', { kind: 'line' })).toBe(false);
+      expect(store.dispatch('formation.apply')).toBe(false);
       expect(store.getState().project).toBe(before);
       store.dispatch('set.select', { index });
       expect(store.getState().playback.count).toBe(setStartCount(project, index));
