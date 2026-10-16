@@ -13,7 +13,7 @@ This is an independent early release of a Pyware-style alternative. It implement
 ## What you can do
 
 - **Design in 2D:** select individual performers or groups, marquee-select, drag, enter exact coordinates, snap to an 8-to-5 step grid, nudge, pan, zoom, and inspect paths from the previous set.
-- **Shape formations:** create lines, arcs, circles, blocks, and waves; adjust width, depth, rotation, and block columns; rotate or scale a selection.
+- **Shape formations:** explicitly select performers, then create lines, arcs, circles, blocks, and waves; adjust width, depth, rotation, and block columns; rotate or scale a selection. The [contextual Inspector](docs/SELECTION_INSPECTOR.md) keeps selection actions visible and remembers collapsed sections.
 - **Rehearse in 3D:** orbit an actual WebGL field with section-colored performer markers, shadows, and perspective, front, and overhead cameras.
 - **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo named actions, review session History, and cancel text/color drafts.
 - **Manage the ensemble:** add performers, import a CSV roster, edit names and sections, and select sections from the field legend.
