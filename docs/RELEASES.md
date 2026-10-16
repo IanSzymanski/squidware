@@ -1,6 +1,6 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 2 of 19 issues completed and 17 open. Start with [#36 — consistent action labels, icons and controls](https://github.com/IanSzymanski/squidware/issues/36).
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 4 of 19 issues completed and 15 open. Start with [#18 — selection controls acceptance reconciliation](https://github.com/IanSzymanski/squidware/issues/18).
 
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
@@ -32,9 +32,11 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 
 Dense-field selection, formations, exact transforms, coordinate entry, spacing and snapping, shared Cast selection, workspace controls and accessible display choices.
 
-2/19 implementation issues completed at reconciliation.
+4/19 implementation issues completed at reconciliation.
 
-- [ ] [#16 · Audit A15 Reclaim field space with compact editor chrome](https://github.com/IanSzymanski/squidware/issues/16)
+**Merged work still open:** [#18](https://github.com/IanSzymanski/squidware/issues/18), [#25](https://github.com/IanSzymanski/squidware/issues/25), [#27](https://github.com/IanSzymanski/squidware/issues/27) and [#42](https://github.com/IanSzymanski/squidware/issues/42) have merged implementation and passing current three-platform CI; their remaining estimates cover acceptance reconciliation and targeted follow-up, not rebuilding the features. [#36](https://github.com/IanSzymanski/squidware/issues/36) specifically awaits its first-time reviewer discovery check. All five remain unfulfilled for release readiness until their acceptance criteria are satisfied and they are closed as completed. Independent work may continue without treating these open prerequisites as fulfilled.
+
+- [x] [#16 · Audit A15 Reclaim field space with compact editor chrome](https://github.com/IanSzymanski/squidware/issues/16)
 - [ ] [#18 · Audit A17 Expose context-sensitive selection actions and Inspector sections](https://github.com/IanSzymanski/squidware/issues/18)
 - [x] [#20 · Audit A20 Fix dense-formation hit testing and label readability](https://github.com/IanSzymanski/squidware/issues/20)
 - [ ] [#21 · Audit A21 Support configurable grids and explicit group snapping modes](https://github.com/IanSzymanski/squidware/issues/21)
@@ -45,7 +47,7 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 - [x] [#30 · Audit A30 Show previous and next set ghosts with neighboring paths](https://github.com/IanSzymanski/squidware/issues/30)
 - [ ] [#32 · Audit A34 Make Cast a panel with shared field selection](https://github.com/IanSzymanski/squidware/issues/32)
 - [ ] [#33 · Audit A27 Add additive section selection, lasso, rank/file selection and saved groups](https://github.com/IanSzymanski/squidware/issues/33)
-- [ ] [#34 · Audit A36 Make coordinate output precision and move descriptions configurable](https://github.com/IanSzymanski/squidware/issues/34)
+- [x] [#34 · Audit A36 Make coordinate output precision and move descriptions configurable](https://github.com/IanSzymanski/squidware/issues/34)
 - [ ] [#36 · Audit A37 Standardize action labels, icons and redundant entry points](https://github.com/IanSzymanski/squidware/issues/36)
 - [ ] [#40 · Audit A42 Add resizable panels, workspace presets and focus mode](https://github.com/IanSzymanski/squidware/issues/40)
 - [ ] [#42 · Audit A43 Add field display preferences and reversible orientation](https://github.com/IanSzymanski/squidware/issues/42)
