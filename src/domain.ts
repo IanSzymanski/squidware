@@ -1,3 +1,4 @@
+import { affinePoint } from './transforms';
 import type { LegacyDrillSet, FormationKind, FormationOptions, Move, Performer, Point, Project, Section, TimelineSample, TransitionIssue } from './types';
 import { PROJECT_LIMITS } from './projectValidation';
 import { migrateProjectV1, validateProjectV2 } from './projectV2';
@@ -142,14 +143,9 @@ export function transformPositions(
     return result;
   }
   const center = selected.reduce((sum, id) => ({ x: sum.x + positions[id].x / selected.length, y: sum.y + positions[id].y / selected.length }), { x: 0, y: 0 });
-  const angle = rotation * Math.PI / 180;
   const transformed = selected.map(id => {
-    const x = (positions[id].x - center.x) * scale;
-    const y = (positions[id].y - center.y) * scale;
-    return {
-      x: center.x + x * Math.cos(angle) - y * Math.sin(angle) + dx,
-      y: center.y + x * Math.sin(angle) + y * Math.cos(angle) + dy,
-    };
+    const point = affinePoint(positions[id], center, rotation, scale);
+    return { x: point.x + dx, y: point.y + dy };
   });
   fitFormationToField(transformed, field).forEach((point, index) => { result[selected[index]] = point; });
   return result;

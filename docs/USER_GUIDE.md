@@ -90,7 +90,9 @@ Select the hand tool with **H** and drag to pan; return to selection with **V**.
 
 ### Create formations
 
-The Inspector's selection bar keeps the selected count, coordinates or group bounds, and **Move**, **Rotate**, and **Shape** actions visible. **Move** and **Rotate** open the group's controls; **Shape** opens formation parameters. Inspector sections can be collapsed by clicking their headings or using Enter/Space, and your expansion choices survive restart. Mirror and Align explain their availability when focused; their tools are still planned.
+The Inspector's selection bar keeps the selected count, coordinates or group bounds, and **Move**, **Rotate**, **Shape**, and **Mirror** actions visible. **Move** opens position controls; **Shape** opens formation parameters. Inspector sections can be collapsed by clicking their headings or using Enter/Space, and your expansion choices survive restart. Align explains its availability when focused; alignment tools are still planned.
+
+**Rotate** opens an [exact transform preview](EXACT_TRANSFORMS.md). Enter an angle and scale percentage; choose the selection center, a performer, custom coordinates or a field reference as pivot. The round field handle rotates, the square handle scales, and the crosshair moves the pivot. **Mirror** previews reflection across the 50; choose **Flip front to back** for the other field axis. Original dots have dashed outlines. Choose **Apply transform** for one undoable edit, or **Cancel** to keep original positions. Out-of-field previews cannot be applied. Selecting another set or changing the selection cancels the preview.
 
 Formation tools provide **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select the performers you want to arrange, set width, depth, rotation, and block columns, then choose **Apply formation**. An empty selection cannot apply a formation. Choose **Select all** explicitly to reshape the ensemble.
 

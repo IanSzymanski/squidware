@@ -84,6 +84,16 @@
 .inspector-section-content .section-title > span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; }
 .selection-section .transform-buttons { margin-top: 5px; }
 .formation-section .section-description { margin-top: 2px; }
+.transform-commit-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.transform-commit-actions > button { flex: 1; padding: 6px; }
+.transform-panel { background: #eef5fd; }
+.transform-panel h3 { font-size: 13px; }
+.transform-panel .microcopy { margin-top: 8px; }
+.transform-result { margin-top: 10px; font-size: 12px; line-height: 1.5; color: #294767; }
+.transform-result--error { color: #8b2f25; font-weight: 600; }
+.transform-preview-banner { min-height: 0; padding: 6px 10px; border-color: #8dc8ff; background: #20364ff5; color: #e5f1ff; pointer-events: none; }
+.transform-preview-banner strong { font-size: 11px; line-height: 1.4; }
+.transform-preview-banner--error { border-color: #f6aaa0; background: #54271ff5; color: #fff0ed; }
 @media (max-width: 1250px) {
   .app-header { gap: 6px 10px; }
   .brand > span:first-of-type { display: none; }
