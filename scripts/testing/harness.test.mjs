@@ -85,7 +85,10 @@ test('viewport settlement waits for delayed native resize and reports mismatched
 
 test('capture settles pending native size and zoom before recording the restoration viewport', async t => {
   const output = await temporary(t);
-  const context = { innerWidth: 1366, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => setTimeout(callback, 1) };
+  const context = { innerWidth: 1366, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => {
+    assert.ok(context.innerWidth < 1000, 'Layout frames must follow the observed native viewport');
+    return setTimeout(callback, 1);
+  } };
   let bounds = [1136, 807];
   const timers = [];
   const apply = () => {

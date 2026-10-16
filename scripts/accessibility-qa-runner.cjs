@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, key: sendKey, waitFor: waitUntil } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor: waitUntil, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -155,7 +155,7 @@ app.whenReady().then(async () => {
     assert.equal((await fs.readFile(csvFile, 'utf8')).trim().split('\n').length, 500 * 128 + 1);
     pass('the 500-performer production completes a keyboard-only native save and coordinate export');
 
-    window.webContents.setZoomFactor(1.25); await pause(100);
+    window.webContents.setZoomFactor(1.25); await settleNativeViewport(window, 'enlarged accessibility viewport');
     await audit('design at 125% UI zoom');
     await tabTo('.header-actions > .button.primary', true);
     assert.equal(await evaluate("(() => { const bounds = document.activeElement.getBoundingClientRect(); return bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight; })()"), true);
