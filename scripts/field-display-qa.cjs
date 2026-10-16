@@ -20,8 +20,10 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await wait("!!document.querySelector('dialog[open] [aria-label=\"Audience orientation\"]')", 'visible display preferences');
   await evaluate("(() => {const n=document.querySelector('[aria-label=\"Audience orientation\"]');n.scrollIntoView({block:'center'});n.focus()})()");
   await wait("document.activeElement?.getAttribute('aria-label')==='Audience orientation'", 'orientation preference focused');
-  await key('Down'); await key('Return');
-  await wait(`${state}.preferences.value.fieldOrientation==='audience-top'`, 'keyboard orientation preference');
+  // Use the same select change-event path as the Preferences suite. Native OS
+  // select popups cannot be exercised consistently in hidden desktop windows.
+  await evaluate("(() => {const n=document.querySelector('[aria-label=\"Audience orientation\"]');n.value='audience-top';n.dispatchEvent(new Event('change',{bubbles:true}))})()");
+  await wait(`${state}.preferences.value.fieldOrientation==='audience-top'`, 'orientation preference change');
   await clickControl('.modal-actions .primary');
   await wait("!document.querySelector('dialog[open]') && !!document.querySelector('[data-field-geometry=audience-top]')", 'flipped field');
   const flippedCenter = await center(ids[212]);
@@ -33,7 +35,7 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   const accessible = await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').getAttribute('aria-label')`);
   const description = await evaluate("document.querySelector('.field-readout span').textContent");
   assert.ok(accessible.includes(description));
-  pass('native keyboard flips the personal view; nearest clicks and hover still report canonical performer coordinates');
+  pass('the preference flips the personal view; native nearest clicks and hover still report canonical performer coordinates');
 
   await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').focus()`);
   await key('Left');

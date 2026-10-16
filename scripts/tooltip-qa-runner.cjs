@@ -149,6 +149,7 @@ app.whenReady().then(async () => {
       await fs.writeFile(path.join(output, 'camera-layouts.json'), JSON.stringify(layouts,null,2));
       window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
       await uiWait('innerWidth===1366 && innerHeight===768', 'restored 3D viewport');
+      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
       await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled:true });
       await evaluate(`${editor}.dispatch('set.select', {index:0})`);
       pass('3D camera buttons and quality remain unobstructed by the section legend and preview banner at default and narrow enlarged sizes');
