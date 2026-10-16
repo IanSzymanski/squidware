@@ -1,5 +1,5 @@
 'use strict';
-const { key: sendKey, waitFor: waitUntil, capturePage } = require('./testing/renderer.cjs');
+const { key: sendKey, waitFor: waitUntil, capturePage, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const { root, output, profile, force3DFallback } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
@@ -129,7 +129,7 @@ app.whenReady().then(async () => {
       await uiWait("!document.querySelector('[role=tooltip]')", 'clear camera layout overlays');
       for (const [width, scale] of [[1366, 1], [1120, 1.25]]) {
         window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
-        await uiWait(`Math.abs(innerWidth-${width / scale})<1 && Math.abs(innerHeight-${768 / scale})<1`, '3D viewport scale');
+        await settleNativeViewport(window, '3D viewport scale');
         for (const preview of [false, true]) {
           await evaluate(`${editor}.dispatch(${JSON.stringify(preview ? 'playback.scrub' : 'set.select')}, ${JSON.stringify(preview ? {count:1} : {index:0})})`);
           await uiWait(`!!document.querySelector('.field-preview-banner') === ${preview}`, '3D preview state');
@@ -148,8 +148,7 @@ app.whenReady().then(async () => {
       }
       await fs.writeFile(path.join(output, 'camera-layouts.json'), JSON.stringify(layouts,null,2));
       window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
-      await uiWait('innerWidth===1366 && innerHeight===768', 'restored 3D viewport');
-      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+      await settleNativeViewport(window, 'restored 3D viewport');
       await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled:true });
       await evaluate(`${editor}.dispatch('set.select', {index:0})`);
       pass('3D camera buttons and quality remain unobstructed by the section legend and preview banner at default and narrow enlarged sizes');

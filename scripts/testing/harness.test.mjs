@@ -7,6 +7,7 @@ import { runProcess } from './process.mjs';
 import { runChecks, selectSuites } from './suites.mjs';
 import { outputDirectory } from './launcher.mjs';
 import renderer from './renderer.cjs';
+import vm from 'node:vm';
 
 async function temporary(t) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'squidware-harness-'));
@@ -65,4 +66,54 @@ test('renderer waits use observed state and time out even when a probe never res
   assert.equal(probes, 3);
   await assert.rejects(renderer.waitFor(() => new Promise(() => {}), 'hung renderer', { timeoutMs: 30 }), /Timed out: hung renderer/);
   await assert.rejects(renderer.waitFor(() => true, 'crashed renderer', { failure: () => new Error('Renderer exited') }), /Renderer exited/);
+});
+
+test('viewport settlement waits for delayed native resize and reports mismatched geometry', async () => {
+  const context = { innerWidth: 1120, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => setTimeout(callback, 1) };
+  const window = { webContents: { executeJavaScript: source => Promise.resolve(vm.runInNewContext(source, context)) } };
+  const resized = setTimeout(() => { context.innerWidth = 1366; }, 30);
+  try { await renderer.waitViewport(window, { width: 1366, height: 768, dpr: 1 }, 'native resize', { timeoutMs: 1000 }); }
+  finally { clearTimeout(resized); }
+  assert.equal(context.innerWidth, 1366);
+  // Diagnostic sampling must not assume two scheduled frames finish within a
+  // 30 ms deadline when the other native tests are using the worker pool.
+  const fixed = { webContents: { executeJavaScript: async () => ({ width: 1366, height: 768, dpr: 1 }) } };
+  await assert.rejects(renderer.waitViewport(fixed, { width: 999, height: 768, dpr: 1 }, 'bad viewport', { timeoutMs: 30 }), /bad viewport; expected.*999.*observed.*1366/);
+  const hung = { webContents: { executeJavaScript: () => new Promise(() => {}) } };
+  await assert.rejects(renderer.waitViewport(hung, { width: 999, height: 768 }, 'hung viewport', { timeoutMs: 30 }), /hung viewport; expected.*999.*observed null/);
+});
+
+test('capture settles pending native size and zoom before recording the restoration viewport', async t => {
+  const output = await temporary(t);
+  const context = { innerWidth: 1366, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => {
+    assert.ok(context.innerWidth < 1000, 'Layout frames must follow the observed native viewport');
+    return setTimeout(callback, 1);
+  } };
+  let bounds = [1136, 807];
+  const timers = [];
+  const apply = () => {
+    context.innerWidth = Math.round((bounds[0] - 16) / 1.25);
+    context.innerHeight = Math.round((bounds[1] - 39) / 1.25);
+    context.devicePixelRatio = 1.25;
+  };
+  const window = {
+    getSize: () => [...bounds], getContentSize: () => [bounds[0] - 16, bounds[1] - 39],
+    setSize(width, height) { bounds = [width, height]; timers.push(setTimeout(apply, 30)); },
+    webContents: {
+      getZoomFactor: () => 1.25,
+      executeJavaScript: source => Promise.resolve(vm.runInNewContext(source, context)),
+      async capturePage() {
+        assert.equal(context.devicePixelRatio, 1.25, 'Pending zoom must settle before capture');
+        assert.ok(context.innerWidth < 1000, 'Pending resize must settle before capture');
+        return { isEmpty: () => false, toPNG: () => Buffer.from('fixture pixels') };
+      },
+    },
+  };
+  timers.push(setTimeout(apply, 40));
+  try { await renderer.capturePage(window, output, 'settled.png', { timeoutMs: 1000 }); }
+  finally { timers.forEach(clearTimeout); }
+  assert.equal(context.innerWidth, 896);
+  assert.equal(context.innerHeight, 614);
+  assert.equal(context.devicePixelRatio, 1.25);
+  assert.equal(await readFile(path.join(output, 'settled.png'), 'utf8'), 'fixture pixels');
 });

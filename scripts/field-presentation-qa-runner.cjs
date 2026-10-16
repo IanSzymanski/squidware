@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, key: sendKey, waitFor: waitUntil } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor: waitUntil, waitViewport, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const { root, output, profile, fixture, baseline } = require(process.argv.find(arg => arg.startsWith('--field-manifest=')).slice('--field-manifest='.length));
@@ -98,14 +98,13 @@ async function checkNeighbors(project) {
   await wait("!!document.querySelector('[data-neighbor]')", 'drag review restored');
   await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
   pass('uncommitted drag previews suppress ghosts and restore them on release');
-  window.webContents.setZoomFactor(1.25); await pause(100); await capture('neighbors-enlarged.png');
-  window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await pause(100); await capture('neighbors-narrow.png');
+  window.webContents.setZoomFactor(1.25); await capture('neighbors-enlarged.png');
+  window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await capture('neighbors-narrow.png');
   for (const selector of [previous, next]) assert.ok(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight})()`));
   window.setContentSize(1366, 768);
   // Windows can deliver the resize after setContentSize returns. Native input
   // must use geometry from the restored viewport, after the narrow capture.
-  await wait('innerWidth===1366 && innerHeight===768', 'neighbor viewport restored before flipped selection');
-  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+  await waitViewport(window, { width:1366, height:768, dpr:await evaluate('devicePixelRatio') }, 'neighbor viewport restored before flipped selection');
   await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'}); ${editor}.setValue('selection','selectedIds',[])`);
   await wait("!!document.querySelector('[data-field-geometry=audience-top]') && document.querySelectorAll('[data-neighbor]').length===2", 'flipped neighboring sets');
   await click(await center(performers[1].id)); await selected(performers[1].id);
@@ -190,11 +189,12 @@ app.whenReady().then(async () => {
     assert.deepEqual(await evaluate(state+'.project.present.sets[0].positions'), positions);
     assert.equal(await evaluate(state+'.project.revision'), reloadedRevision);
     pass('pointer selection, labels and zoom preserve physical coordinates and edit revision');
-    await window.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:2,mobile:false}); await pause(100);
+    await window.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:2,mobile:false});
+    await waitViewport(window, { width:1366, height:768, dpr:2 }, 'dense DPI viewport');
     await assertLabels(); await click(await center(ids[237])); await selected(ids[237]); await capture('dense-dpi2.png');
     await window.webContents.debugger.sendCommand('Emulation.clearDeviceMetricsOverride');
-    window.webContents.setZoomFactor(1.25); await pause(100); await assertLabels(); await capture('enlarged-125.png');
-    window.webContents.setZoomFactor(1); window.setContentSize(1024,768); await pause(100); await assertLabels(); await capture('narrow-1024.png');
+    window.webContents.setZoomFactor(1.25); await settleNativeViewport(window, 'enlarged label viewport'); await assertLabels(); await capture('enlarged-125.png');
+    window.webContents.setZoomFactor(1); window.setContentSize(1024,768); await settleNativeViewport(window, 'narrow label viewport'); await assertLabels(); await capture('narrow-1024.png');
     const narrowViewport = await evaluate('({width:innerWidth,height:innerHeight})');
     pass('labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size');
     await require('./field-display-qa.cjs')({project,editor,state,evaluate,wait,click,key,input,capture,window,pass});

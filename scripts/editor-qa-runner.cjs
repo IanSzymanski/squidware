@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, waitFor: waitUntil, key: sendKey } = require('./testing/renderer.cjs');
+const { capturePage, waitFor: waitUntil, key: sendKey, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -180,7 +180,7 @@ async function checkCompactChrome() {
   const measurements = [];
   for (const [width, scale] of [[1366, 1], [1366, 1.25], [1120, 1], [1120, 1.25]]) {
     window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
-    await uiWait(`Math.abs(innerWidth-${width / scale})<1 && Math.abs(innerHeight-${768 / scale})<1`, 'viewport scale applied');
+    await settleNativeViewport(window, 'compact viewport scale applied');
     await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="New production"]');
     await clickSelector('.new-options button:nth-child(2)');
     await uiWait("document.querySelectorAll('.field-performer').length === 64", 'compact demo creation');
@@ -229,6 +229,7 @@ async function checkCompactChrome() {
   }
   await fs.writeFile(path.join(output, 'compact-measurements.json'), JSON.stringify(measurements, null, 2));
   window.webContents.setZoomFactor(1); window.setContentSize(1366, 768);
+  await settleNativeViewport(window, 'restored compact viewport');
   pass('compact field/header/timeline budgets, no empty audio lane, decoded audio, and unclipped create/edit/play/save at 1366/1120 px and 100/125% scale');
 }
 
@@ -237,6 +238,7 @@ async function checkSelectionInspector() {
   menuAction('Open project…');
   await uiWait("document.querySelector('.project-title').textContent.includes('Selection Inspector QA')", 'selection fixture');
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1);
+  await settleNativeViewport(window, 'selection Inspector viewport');
   const fixture = JSON.parse(await fs.readFile(openPath, 'utf8'));
   async function selectionCapture(name) {
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
@@ -360,7 +362,7 @@ async function checkSelectionInspector() {
   const measurements = [];
   for (const [width, scale] of [[1366, 1], [1366, 1.25], [1120, 1], [1120, 1.25]]) {
     window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
-    await uiWait(`Math.abs(innerWidth-${width/scale})<1`, 'selection viewport');
+    await settleNativeViewport(window, 'selection viewport');
     await evaluate('document.activeElement?.blur()');
     const clipped = await evaluate(`['Move selection','Rotate selection','Shape selection','Mirror selection','Align selection'].filter(name => {
       const n=document.querySelector('[aria-label="'+name+'"]'); const r=n.getBoundingClientRect(); const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
@@ -373,6 +375,7 @@ async function checkSelectionInspector() {
     await selectionCapture(`selection-group-${width}-${scale}.png`);
   }
   window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
+  await settleNativeViewport(window, 'restored selection viewport');
   await keyboard('[aria-label="Mirror selection"]');
   await uiWait("!!document.querySelector('.transform-panel')", 'mirror preview open');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Mirror selection\"]').getAttribute('aria-disabled')"), 'true');
@@ -397,6 +400,7 @@ async function checkExactTransforms() {
   openPath = path.join(output, 'selection.squid'); menuAction('Open project…');
   await uiWait("document.querySelector('.project-title').textContent.includes('Selection Inspector QA') && document.querySelector('.set-card:first-child').classList.contains('selected')", 'exact transform fixture');
   window.setContentSize(1366,768); window.webContents.setZoomFactor(1);
+  await settleNativeViewport(window, 'exact transform viewport');
   const fixture=JSON.parse(await fs.readFile(openPath,'utf8')); const ids=fixture.performers.slice(0,2).map(p=>p.id);
   let sequence=0;
   async function keyboard(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window,'Return'); }
@@ -438,11 +442,11 @@ async function checkExactTransforms() {
   const layout=[];
   for(const [width,zoom] of [[1366,1],[1366,1.25],[1120,1],[1120,1.25]]) {
     window.setContentSize(width,768); window.webContents.setZoomFactor(zoom);
-    await uiWait(`Math.abs(innerWidth-${width/zoom})<1`,'transform viewport');
+    await settleNativeViewport(window, 'transform viewport');
     const clipped=await evaluate(`['Apply transform','Cancel transform','Save','Undo','Export'].filter(name=>{const n=document.querySelector('[aria-label="'+name+'"]');const r=n.getBoundingClientRect();return r.width===0||r.left<0||r.right>innerWidth+.5||r.top<0||r.bottom>innerHeight+.5||!n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})`);
     assert.deepEqual(clipped,[]); layout.push({width,zoom,clipped}); await captureExact(`transform-${width}-${zoom}.png`);
   }
-  window.setContentSize(1366,768); window.webContents.setZoomFactor(1); await cancel();
+  window.setContentSize(1366,768); window.webContents.setZoomFactor(1); await settleNativeViewport(window, 'restored transform viewport'); await cancel();
   near(await displayed(),fixture.sets[0].positions); assert.deepEqual(await savedSnapshot(),fixture);
   await open();
   await nativeDrag('rotate',(p,c)=>({x:c.x-(p.y-c.y),y:c.y+(p.x-c.x)}));
@@ -816,7 +820,7 @@ app.whenReady().then(async () => {
     await typeText('.inspector textarea', 'A pending draft on a saved file');
     assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes · Draft pending');
     for (const width of [1120, 1250]) {
-      window.setSize(width, 800); await pause(60);
+      window.setSize(width, 800); await settleNativeViewport(window, 'draft-status viewport');
       assert.equal(await evaluate("getComputedStyle(document.querySelector('.save-state')).display !== 'none' && document.querySelector('.save-state').getBoundingClientRect().right <= document.querySelector('.header-actions').getBoundingClientRect().left"), true);
     }
     await capture('file-draft-status.png');

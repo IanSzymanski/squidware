@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 import { root } from './testing/launcher.mjs';
 import { runProcess } from './testing/process.mjs';
 import { desktopSuites, selectSuites, runChecks } from './testing/suites.mjs';
+import { runtimeIdentity, sourceIdentity, verifyBuild } from './testing/provenance.mjs';
+import { successfulPrintOutput } from './testing/certification.mjs';
 
 const argv = process.argv.slice(2);
 const selected = selectSuites(argv);
@@ -13,15 +15,17 @@ if (argv.includes('--list')) {
   for (const suite of desktopSuites) console.log(`${suite.name}: ${suite.title}`);
 } else if (argv.includes('--print-output')) {
   const report = JSON.parse(await fs.readFile(reportFile, 'utf8'));
-  const print = report.checks.find(check => check.name === 'print');
-  if (report.state !== 'completed' || print?.status !== 'passed') throw new Error('This run has no successful print suite.');
-  console.log(print.output);
+  const source = await sourceIdentity(root);
+  await verifyBuild(root, source);
+  console.log(successfulPrintOutput(report, source.contentHash));
 } else {
   const require = createRequire(import.meta.url);
   const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}`;
   const outputRoot = path.join(root, '.qa/desktop-matrix', runId);
   await fs.mkdir(outputRoot, { recursive: true });
-  const report = { runId, state: 'running', platform: process.platform, node: process.versions.node, selected: selected.map(suite => suite.name), checks: [] };
+  const report = { runId, state: 'running', platform: process.platform, node: process.versions.node, runtime: runtimeIdentity(),
+    source: await sourceIdentity(root), scope: selected.length === desktopSuites.filter(suite => !suite.optional).length && selected.every(suite => !suite.optional) ? 'full-desktop' : 'targeted',
+    selected: selected.map(suite => suite.name), checks: [] };
   const save = async () => {
     const data = JSON.stringify(report, null, 2);
     await fs.writeFile(path.join(outputRoot, 'results.json'), data);
@@ -29,6 +33,8 @@ if (argv.includes('--list')) {
     await fs.writeFile(temporary, data); await fs.rename(temporary, reportFile);
   };
   await save();
+  try { report.build = await verifyBuild(root, report.source); }
+  catch (error) { report.state = 'preflight_failed'; report.error = error.message; await save(); throw error; }
   report.checks = await runChecks(selected, async suite => {
     console.log(`\nRUN ${suite.name}: ${suite.title}`);
     const output = path.join(outputRoot, suite.name);
@@ -38,6 +44,11 @@ if (argv.includes('--list')) {
     console.log(`${suite.name}: ${result.status} (${(result.elapsedMs / 1000).toFixed(1)}s)`);
     return { ...result, output };
   }, async checks => { report.checks = [...checks]; await save(); });
+  try {
+    const after = await sourceIdentity(root);
+    if (after.contentHash !== report.source.contentHash) throw new Error('Source changed during desktop tests. Rebuild and rerun.');
+    await verifyBuild(root, after);
+  } catch (error) { report.state = 'postflight_failed'; report.error = error.message; await save(); throw error; }
   report.state = 'completed'; await save();
   const failures = report.checks.filter(check => check.status !== 'passed');
   console.log(`\n${report.checks.length - failures.length}/${report.checks.length} desktop suites passed. Report: ${reportFile}`);

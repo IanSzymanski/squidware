@@ -26,9 +26,39 @@ async function key(window, keyCode, modifiers = [], settleMs = 5) {
   await pause(settleMs);
 }
 
+const viewportExpression = '({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})';
+async function waitViewport(window, expected, label = 'restored viewport', { timeoutMs = 20000 } = {}) {
+  let observed;
+  const matches = value => value.width === expected.width && value.height === expected.height && (expected.dpr === undefined || value.dpr === expected.dpr);
+  try {
+    await waitFor(async () => {
+      // The browser's resize acknowledgement can precede renderer layout.
+      observed = await window.webContents.executeJavaScript(viewportExpression);
+      if (!matches(observed)) return false;
+      // Give ResizeObserver/React two frames after the target is observed,
+      // rather than spending those frames while the old viewport is present.
+      observed = await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(${viewportExpression}))))`);
+      return matches(observed);
+    }, label, { timeoutMs });
+  } catch (error) {
+    throw new Error(`${error.message}; expected ${JSON.stringify(expected)}, observed ${JSON.stringify(observed ?? null)}`, { cause: error });
+  }
+}
+
+/** Await native content/zoom propagation before deriving or asserting geometry. */
+async function settleNativeViewport(window, label = 'native viewport', options = {}) {
+  const [contentWidth, contentHeight] = window.getContentSize();
+  const zoom = window.webContents.getZoomFactor();
+  await waitViewport(window, { width: Math.round(contentWidth / zoom), height: Math.round(contentHeight / zoom) }, label, options);
+}
+
 /** Only compositor capture is retried; behavior assertions are never rerun here. */
-async function capturePage(window, output, name) {
+async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
+  // A caller may have just resized or zoomed. The old renderer viewport is not
+  // a restoration target: derive CSS dimensions from the native content size.
+  await settleNativeViewport(window, `viewport settled before ${name}`, { timeoutMs });
   const [width, height] = window.getSize();
+  const viewport = await window.webContents.executeJavaScript(viewportExpression);
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
       window.setSize(width + 1 + attempt % 2, height); await pause(150);
@@ -41,6 +71,9 @@ async function capturePage(window, output, name) {
         console.warn(`Capture retry ${attempt + 1} for ${name}: ${error.message}`);
       }
     }
-  } finally { window.setSize(width, height); }
+  } finally {
+    window.setSize(width, height);
+    await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
+  }
 }
-module.exports = { pause, waitFor, key, capturePage };
+module.exports = { pause, waitFor, key, capturePage, waitViewport, settleNativeViewport };

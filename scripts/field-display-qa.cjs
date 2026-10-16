@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
+const { settleNativeViewport, waitViewport } = require('./testing/renderer.cjs');
 
 module.exports = async function checkDisplay({ project, editor, state, evaluate, wait, click, key, input, capture, window, pass }) {
   const ids = project.performers.map(p => p.id);
@@ -11,6 +12,7 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   const clickControl = async selector => { await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`); await click(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`)); };
   const undo = async () => { await evaluate(`${editor}.dispatch('history.undo')`); await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x}`, 'undo flipped edit'); };
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1);
+  await settleNativeViewport(window, 'display preference viewport');
   await evaluate(`${editor}.setValue('ui','zoom',1); ${editor}.setValue('ui','fitVersion',100); ${editor}.setValue('selection','selectedIds',[])`);
   await preferences({ fieldOrientation: 'audience-bottom' });
   await wait("!!document.querySelector('[data-field-geometry=audience-bottom]')", 'normal orientation');
@@ -109,11 +111,9 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
     await capture(name);
   }
   window.setContentSize(1366,768); window.webContents.setZoomFactor(1);
-  await wait('innerWidth===1366 && innerHeight===768', 'native viewport restored before DPI emulation');
-  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+  await settleNativeViewport(window, 'native viewport restored before DPI emulation');
   await window.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:2,mobile:false});
-  await wait('devicePixelRatio===2 && innerWidth===1366', 'DPI viewport applied');
-  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
+  await waitViewport(window, { width:1366, height:768, dpr:2 }, 'DPI viewport applied');
   await select(ids[237]); await capture('display-dpi2.png');
   await window.webContents.debugger.sendCommand('Emulation.clearDeviceMetricsOverride');
   assert.deepEqual((await evaluate(`${state}.project`)).present, original);

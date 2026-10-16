@@ -2,6 +2,18 @@
 
 Tests should identify broken user behavior or a violated boundary. Adding another end-to-end path for an already-owned contract makes the suite slower without necessarily making it safer. Start with this map before adding a regression.
 
+## Local and hosted certification
+
+Run `pnpm certify` to perform the complete certification for the current OS: frozen dependency install, source/contracts, Electron/Python setup, a fresh production build, native tests, all eleven production desktop suites, independent PDF inspection, unpacked packaging, and packaged startup/recovery. Install Node 24, pnpm 11.25.0 and Python 3.12 first. `SQUIDWARE_PYTHON` can select an explicit Python executable. Linux also needs Xvfb; `--configure-sandbox` explicitly permits the two `sudo chown/chmod` pairs used by hosted CI for Electron and the packaged Chromium helper.
+
+CI uses the same plan split into `pnpm certify --layer=source` and `pnpm certify --layer=desktop`: source/contracts run once, then the desktop phase runs on Windows, macOS and Linux. A local pass certifies only its recorded OS. The `CI required` job succeeds only when both hosted layers succeed; failed, skipped and cancelled dependencies fail that gate. Configure main's required status checks to require **CI required**; adding the job to YAML alone does not enable repository branch protection.
+
+Certification reports and per-step logs live in `.qa/certification/<run-id>/`. Every planned step has a status, including `not_run` after an earlier failure. Reports identify source revision/tree, dirty state, working-content and lockfile hashes, runtime/OS/image, workflow run and built output. Dirty development builds are supported: the working-content hash must still match. Committing those identical contents does not require a redundant rebuild. Git revision and tree record provenance; raw working-content hashes can differ across OS line-ending conventions.
+
+`pnpm build` stamps the renderer and both generated native codecs. Ordinary standalone desktop suites and the full workflow runner reject missing/stale stamps, changed outputs, and source edits during execution. Rebuild after source changes, including test or workflow changes. The workflow summary labels targeted runs separately from full desktop coverage. `--print-output` accepts only successful print output for the current source and build. Historical `--baseline` performance captures remain explicitly labeled comparisons; they do not certify the current application and may use an alternate build snapshot.
+
+Screenshot capture first settles the renderer against native content size and zoom, then records its viewport/DPI. It restores that viewport through two animation frames before returning. Failures include expected/observed geometry. Behavior assertions still run once; compositor capture retains its existing bounded retry. Native OS dropdown/accelerator coverage remains subject to the hidden-window limitations documented by the runners; change-event setup is not proof of native keyboard navigation.
+
 ## Layers
 
 | Layer | Command | Owns |
