@@ -33,7 +33,7 @@ async function waitViewport(window, expected, label = 'restored viewport', { tim
     await waitFor(async () => {
       // The browser's resize acknowledgement can precede renderer layout.
       observed = await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(${viewportExpression}))))`);
-      return observed.width === expected.width && observed.height === expected.height && observed.dpr === expected.dpr;
+      return observed.width === expected.width && observed.height === expected.height && (expected.dpr === undefined || observed.dpr === expected.dpr);
     }, label, { timeoutMs });
   } catch (error) {
     throw new Error(`${error.message}; expected ${JSON.stringify(expected)}, observed ${JSON.stringify(observed ?? null)}`, { cause: error });
@@ -41,7 +41,12 @@ async function waitViewport(window, expected, label = 'restored viewport', { tim
 }
 
 /** Only compositor capture is retried; behavior assertions are never rerun here. */
-async function capturePage(window, output, name) {
+async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
+  // A caller may have just resized or zoomed. The old renderer viewport is not
+  // a restoration target: derive CSS dimensions from the native content size.
+  const [contentWidth, contentHeight] = window.getContentSize();
+  const zoom = window.webContents.getZoomFactor();
+  await waitViewport(window, { width: Math.round(contentWidth / zoom), height: Math.round(contentHeight / zoom) }, `viewport settled before ${name}`, { timeoutMs });
   const [width, height] = window.getSize();
   const viewport = await window.webContents.executeJavaScript(viewportExpression);
   try {
@@ -58,7 +63,7 @@ async function capturePage(window, output, name) {
     }
   } finally {
     window.setSize(width, height);
-    await waitViewport(window, viewport, `viewport restored after ${name}`);
+    await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }
 module.exports = { pause, waitFor, key, capturePage, waitViewport };

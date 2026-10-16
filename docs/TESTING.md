@@ -12,7 +12,7 @@ Certification reports and per-step logs live in `.qa/certification/<run-id>/`. E
 
 `pnpm build` stamps the renderer and both generated native codecs. Ordinary standalone desktop suites and the full workflow runner reject missing/stale stamps, changed outputs, and source edits during execution. Rebuild after source changes, including test or workflow changes. The workflow summary labels targeted runs separately from full desktop coverage. `--print-output` accepts only successful print output for the current source and build. Historical `--baseline` performance captures remain explicitly labeled comparisons; they do not certify the current application and may use an alternate build snapshot.
 
-Screenshot capture restores native window size and waits for the recorded renderer viewport/DPI through two animation frames before returning. Failures include expected/observed geometry. Behavior assertions still run once; compositor capture retains its existing bounded retry. Native OS dropdown/accelerator coverage remains subject to the hidden-window limitations documented by the runners; change-event setup is not proof of native keyboard navigation.
+Screenshot capture first settles the renderer against native content size and zoom, then records its viewport/DPI. It restores that viewport through two animation frames before returning. Failures include expected/observed geometry. Behavior assertions still run once; compositor capture retains its existing bounded retry. Native OS dropdown/accelerator coverage remains subject to the hidden-window limitations documented by the runners; change-event setup is not proof of native keyboard navigation.
 
 ## Layers
 
