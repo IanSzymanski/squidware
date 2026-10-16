@@ -1,4 +1,4 @@
-import { fitFormationToField, generateFormation, PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
+import { PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
 import type { Dialog, EditorState, SessionSlice } from './state';
 import { addPicture, reconnectSets, updateSetProperties } from './projectEdits';
@@ -6,6 +6,7 @@ import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
+import { currentFormationResult, formationSessionCurrent } from './formationSession';
 
 export interface CommandArguments {
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
@@ -21,7 +22,9 @@ export interface CommandArguments {
   'transform.preview': { operation?: TransformOperation; angle?: number; scale?: number };
   'transform.update': { options: ExactTransform };
   'transform.apply': undefined; 'transform.cancel': undefined;
-  'formation.apply': { index: number; ids: string[]; kind: FormationKind; options: FormationOptions };
+  'formation.preview': { kind?: FormationKind };
+  'formation.update': { options: FormationOptions };
+  'formation.apply': undefined; 'formation.cancel': undefined;
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
   'playback.toggle': undefined; 'playback.scrub': { count: number }; 'tool.select': { tool: 'select' | 'pan' };
   'dialog.open': { dialog: Dialog };
@@ -60,6 +63,26 @@ const selectSet = (context: CommandContext, index: number) => {
 };
 
 export const commandRegistry = {
+  'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
+    execute: (c, a) => {
+      const s = c.getState(); const kind = a.kind ?? s.ui.formation;
+      const ids = s.ui.formationPreview?.ids ?? s.project.present.performers.filter(p => s.selection.selectedIds.includes(p.id)).map(p => p.id);
+      const positions = s.project.present.sets[s.selection.activeIndex].positions;
+      const center = s.ui.formationPreview?.options.center ?? ids.reduce((sum, id) => ({ x: sum.x + positions[id].x/ids.length, y: sum.y + positions[id].y/ids.length }), { x: 0, y: 0 });
+      const options = { ...(s.ui.formationDrafts[kind] ?? { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns }), center };
+      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options } });
+    } }),
+  'formation.update': define({ id: 'formation.update', name: 'Adjust formation preview', description: 'Update shape parameters without changing the project or history.', arguments: { options: 'FormationOptions' }, enabled: formationSessionCurrent,
+    execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
+      c.patch('ui', { formationPreview: { ...session, options: a.options }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: a.options } });
+    } }),
+  'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
+    execute: c => c.patch('ui', { formationPreview: null }) }),
+  'formation.apply': define({ id: 'formation.apply', name: 'Apply formation', description: 'Commit the visible formation as one undoable edit.', arguments: {}, enabled: s => { const result = currentFormationResult(s); return !s.ui.pendingDraft && !!result?.changed && !result.error; },
+    execute: c => { const s = c.getState(); const session = s.ui.formationPreview!; const result = currentFormationResult(s)!;
+      c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === session.setId ? { ...set, positions: { ...set.positions, ...result.updates } } : set) }));
+      c.patch('ui', { formationPreview: null });
+    } }),
   'transform.preview': define({ id: 'transform.preview', name: 'Preview exact transform', description: 'Preview rotation, scaling or a field mirror on the explicit selection.', arguments: { operation: 'rotate-scale | across-50 | front-back', angle: 'degrees?', scale: 'factor?' }, enabled: s => editable(s) && !s.ui.dialog && !s.project.transactionName && !s.ui.pendingDraft && s.selection.selectedIds.length > 0,
     execute: (c, a) => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: '2d', transformPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: { ...defaultTransform(), operation: a.operation ?? 'rotate-scale', angle: a.angle ?? 0, scale: a.scale ?? 1 } } }); } }),
   'transform.update': define({ id: 'transform.update', name: 'Adjust transform preview', description: 'Update the preview without changing saved geometry or history.', arguments: { options: 'ExactTransform' }, enabled: transformSessionCurrent,
@@ -95,7 +118,6 @@ export const commandRegistry = {
   'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name or color.', arguments: { id: 'string', update: 'name? | color?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => section.id === a.id ? { ...section, ...a.update } : section) })) }),
   'positions.move': define({ id: 'positions.move', name: 'Move performers', description: 'Set performer coordinates on the active editable set.', arguments: { index: 'integer', updates: 'Record<performerId, Point>' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...a.updates } } : set) })) }),
   'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow', enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: transformPositions(set.positions, a.ids, a.options, p.field) } : set) })) }),
-  'formation.apply': define({ id: 'formation.apply', name: 'Apply formation', description: 'Shape explicitly selected performers into a fitted formation.', arguments: { index: 'integer', ids: 'string[]', kind: 'FormationKind', options: 'FormationOptions' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => { const points = fitFormationToField(generateFormation(a.kind, a.ids.length, a.options), p.field); const positions = Object.fromEntries(a.ids.map((id, i) => [id, { x: Math.max(0, Math.min(p.field.width, points[i].x)), y: Math.max(0, Math.min(p.field.height, points[i].y)) }])); return { ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...positions } } : set) }; }) }),
   'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, shortcut: 'Ctrl / ⌘ A', enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
   'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, shortcut: 'Esc', enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
   'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, shortcut: '[ / ]', enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),

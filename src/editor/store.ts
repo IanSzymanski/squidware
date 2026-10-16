@@ -7,6 +7,7 @@ import type { EditorState, ProjectHistory, SessionSlice } from './state';
 import { applyProjectPatches, estimatePatchBytes, projectPatches, retainHistory } from './history';
 import type { HistoryPatch } from './history';
 import { transformSessionCurrent } from './transformSession';
+import { formationSessionCurrent } from './formationSession';
 import { historyName } from './historyNames';
 
 export const AUTOSAVE_KEY = 'squidware.autosave.v1';
@@ -44,6 +45,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
   const publish = (next: EditorState) => {
     if (next === state) return;
     if (next.ui.transformPreview && !transformSessionCurrent(next)) next = { ...next, ui: { ...next.ui, transformPreview: null } };
+    if (next.ui.formationPreview && !formationSessionCurrent(next)) next = { ...next, ui: { ...next.ui, formationPreview: null } };
     state = next; changed = true;
     if (!transactionDepth) { changed = false; listeners.forEach(listener => listener()); }
   };
