@@ -17,9 +17,10 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await capture('display-before.png');
   const initialCenter = await center(ids[212]);
   await evaluate(`${editor}.dispatch('dialog.open',{dialog:'preferences'})`);
-  await wait("!!document.querySelector('[aria-label=\"Audience orientation\"]')", 'display preferences');
-  await evaluate("document.querySelector('[aria-label=\"Audience orientation\"]').focus()");
-  await key('End'); await key('Return');
+  await wait("!!document.querySelector('dialog[open] [aria-label=\"Audience orientation\"]')", 'visible display preferences');
+  await evaluate("(() => {const n=document.querySelector('[aria-label=\"Audience orientation\"]');n.scrollIntoView({block:'center'});n.focus()})()");
+  await wait("document.activeElement?.getAttribute('aria-label')==='Audience orientation'", 'orientation preference focused');
+  await key('Down'); await key('Return');
   await wait(`${state}.preferences.value.fieldOrientation==='audience-top'`, 'keyboard orientation preference');
   await clickControl('.modal-actions .primary');
   await wait("!document.querySelector('dialog[open]') && !!document.querySelector('[data-field-geometry=audience-top]')", 'flipped field');
@@ -106,7 +107,11 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
     await capture(name);
   }
   window.setContentSize(1366,768); window.webContents.setZoomFactor(1);
+  await wait('innerWidth===1366 && innerHeight===768', 'native viewport restored before DPI emulation');
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
   await window.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:2,mobile:false});
+  await wait('devicePixelRatio===2 && innerWidth===1366', 'DPI viewport applied');
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))');
   await select(ids[237]); await capture('display-dpi2.png');
   await window.webContents.debugger.sendCommand('Emulation.clearDeviceMetricsOverride');
   assert.deepEqual((await evaluate(`${state}.project`)).present, original);
