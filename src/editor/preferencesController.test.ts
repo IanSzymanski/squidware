@@ -15,6 +15,15 @@ function setup(override: Partial<PreferencesBridge> = {}) {
   return { store, saved, controller };
 }
 describe('preferences lifecycle', () => {
+  it('saves nested placement defaults once without changing the current show or looping', async () => {
+    const { store, saved, controller } = setup(); await controller.ready;
+    const before = serializeProject(store.getState().project.present);
+    controller.update({ snapDefaults: { steps: 6, subdivision: 2, group: 'individual', target: 'markings' } });
+    await controller.flush(); await Promise.resolve(); await controller.flush();
+    expect(saved).toHaveLength(1); expect(saved[0].snapDefaults.steps).toBe(6);
+    expect(serializeProject(store.getState().project.present)).toBe(before);
+    controller.stop();
+  });
   it('persists only intentional choices without project revisions or dirty state', async () => {
     const { store, saved, controller } = setup(); await controller.ready;
     const original = serializeProject(store.getState().project.present); const revision = store.getState().project.revision;

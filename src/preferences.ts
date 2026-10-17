@@ -1,4 +1,5 @@
 import type { CoordinatePrecision } from './coordinates';
+import { DEFAULT_SNAPPING, validateSnapSettings, type SnapSettings } from './snapping';
 export interface Preferences {
   version: 1;
   panelLayout: 'comfortable' | 'compact'; view: '2d' | '3d';
@@ -14,6 +15,7 @@ export interface Preferences {
   coordinatePrecision: CoordinatePrecision;
   paperSize: 'letter' | 'a4'; printMode: 'charts' | 'coordinates';
   minimumSpacing: number; maximumStride: number;
+  snapDefaults: SnapSettings;
 }
 export interface PreferencesResult { preferences: Preferences; warning?: string; readOnly?: boolean }
 export interface PreferencesBridge {
@@ -22,7 +24,7 @@ export interface PreferencesBridge {
   resetPreferences: () => Promise<Preferences>;
 }
 export function defaultPreferences(): Preferences {
-  return { version: 1, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false,
+  return { version: 1, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false,
     selectionLabelsOnly: false, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
@@ -42,6 +44,7 @@ export function validatePreferences(input: unknown): Preferences {
   for (const key of Object.keys(result).filter(key => key !== 'version')) {
     if (source[key] === undefined) continue;
     const value = source[key];
+    if (key === 'snapDefaults') { result[key] = validateSnapSettings(value); continue; }
     if (key === 'fieldCustomColor') {
       if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) throw new Error(`Invalid preference: ${key}.`);
       result[key] = value; continue;

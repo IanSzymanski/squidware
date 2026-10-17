@@ -359,3 +359,14 @@ test('recovery IPC uses trusted frames, fixed application data and opaque versio
   assert.deepEqual(await fs.readdir(h.directory), ['recovery']);
   assert.ok((await h.invoke('read-recovery', session, version.id)).project.schemaVersion === 2);
 });
+
+test('native project save/open retains show snapping rules and rejects invalid rules without replacing the file', async t => {
+  const h = await harness(t); const filename = path.join(h.directory, 'grid-show.squid');
+  const show = JSON.parse(project); show.snapping = { steps: 6, subdivision: 4, target: 'markings', group: 'individual' };
+  const content = JSON.stringify(show); h.dialog({ canceled: false, filePath: filename });
+  await h.invoke('save-project', content, 'Grid show'); h.dialog({ canceled: false, filePaths: [filename] });
+  assert.deepEqual(JSON.parse((await h.invoke('open-project')).content).snapping, show.snapping);
+  show.snapping.steps = 7;
+  await assert.rejects(h.invoke('save-project', JSON.stringify(show), 'Grid show'), /snapping/);
+  assert.equal(await fs.readFile(filename, 'utf8'), content);
+});

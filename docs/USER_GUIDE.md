@@ -16,6 +16,8 @@ The opening set has zero move counts. Every later set stores the timing of the m
 
 ## Saving and recovery
 
+Use **Grid and snapping** beside the field magnet to choose a production's step grid, subdivision, targets and group behavior. **Keep spacing** moves groups rigidly; **Individual dots** changes spacing and shows a drag preview before release. Escape cancels a drag, and Undo restores it. The active mode appears on the field. See [Grid and group snapping](GRID_SNAPPING.md) for numeric/nudge behavior, boundaries and personal defaults.
+
 **Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid` or JSON project files; a JSON import receives a `.squid` destination when saved.
 
 **Unsaved changes** beside the production title includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).

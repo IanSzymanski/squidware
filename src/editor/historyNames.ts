@@ -12,6 +12,8 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
   const selection = ids.length === 1 ? project.performers.find(p => p.id === ids[0])?.label ?? '1 performer' : `${ids.length} performers`;
   let name: string;
   switch (id) {
+    case 'snapping.update': name = 'Change grid and snapping'; break;
+    case 'positions.place': name = `Place ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'} — ${picture}`; break;
     case 'project.update': name = Object.hasOwn(update, 'title') ? 'Rename production' : Object.hasOwn(update, 'ensemble') ? 'Edit ensemble' : Object.hasOwn(update, 'preset') ? 'Change field markings' : 'Edit production settings'; break;
     case 'set.update': name = `${Object.hasOwn(update, 'notes') ? 'Edit notes' : Object.hasOwn(update, 'name') ? 'Rename picture' : 'Edit move timing'} — ${picture}`; break;
     case 'set.add': name = `Add picture after ${picture}`; break;

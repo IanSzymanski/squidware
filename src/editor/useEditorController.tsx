@@ -144,7 +144,7 @@ export function useEditorController() {
       flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
       assertCanReplace(store.getState());
       if (hasUnsavedWork(store.getState()) && !window.confirm('Replace this production? Your unsaved changes will be discarded. Save a project file first to keep them.')) return;
-      loadProject(next); window.squidware?.resetProject();
+      loadProject({ ...next, snapping: { ...preferences.value.snapDefaults } }); window.squidware?.resetProject();
       if (cast) setWorkspace('cast');
     } catch (error) { notify((error as Error).message); }
   }

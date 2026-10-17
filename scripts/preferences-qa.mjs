@@ -14,6 +14,6 @@ const fixtureFile = path.join(output, 'original.squid');
 const fixture = JSON.parse(await fs.readFile(path.join(root, 'src/fixtures/schema-v2.squid'), 'utf8'));
 fixture.sets[0].positions[fixture.performers[0].id] = { x: .21875, y: 160 / 9 + .21875 };
 await fs.writeFile(fixtureFile, JSON.stringify(fixture));
-const other = structuredClone(fixture); other.title = 'Another production with its own rules'; other.field.preset = 'high-school'; other.audioOffsetSeconds = 4; other.moves[0].tempo = 144;
+const other = structuredClone(fixture); other.title = 'Another production with its own rules'; other.field.preset = 'high-school'; other.audioOffsetSeconds = 4; other.moves[0].tempo = 144; other.snapping = { steps: 12, subdivision: 4, target: 'markings', group: 'anchor' };
 const otherFile = path.join(output, 'other.squid'); await fs.writeFile(otherFile, JSON.stringify(other));
 await qa.run('preferences-qa-runner.cjs', 'preferences-manifest', { fixtureFile, otherFile, coordinateBundle }, ["write","restart","reset-restart","quit-restart"]);

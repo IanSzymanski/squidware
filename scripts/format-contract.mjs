@@ -38,6 +38,7 @@ export function formatSchema(version, limits) {
     definitions.segment = object({id:ref('id'),kind:{const:'line'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true)});
     definitions.path = object({segments:array(ref('segment'),1,1)});
     definitions.move = object({id:ref('id'),fromSetId:ref('id'),toSetId:ref('id'),counts:number(limits.counts.min,limits.counts.max,true),...timing,paths:{type:'object',maxProperties:limits.performers,propertyNames:ref('id'),additionalProperties:ref('path')}});
+    properties.snapping = object({ steps: { enum: [8,6,12] }, subdivision: { enum: [1,2,4] }, target: { enum: ['grid','markings'] }, group: { enum: ['anchor','individual'] } });
     properties.moves = array(ref('move'),0,limits.sets-1); properties.openingTiming = object(timing);
   } else {
     definitions.picture = object({...picture,counts:number(0,limits.counts.max,true),...timing});
@@ -45,7 +46,7 @@ export function formatSchema(version, limits) {
   }
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping')),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});

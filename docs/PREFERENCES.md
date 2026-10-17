@@ -14,6 +14,7 @@ Persisted choices:
 | --- | --- |
 | Panel layout; field view | Comfortable; 2D |
 | Labels; previous paths; grid visibility; snap | On; off; on; on |
+| New production placement defaults | 8-to-5, whole steps, grid targets, keep spacing; 6/12-to-5, half/quarter steps, markings and individual mode also available |
 | Field zoom | 1×; 0.6–3× |
 | Audience orientation | Bottom; top turns the 2D view 180° |
 | Dot radius; label size | 3 / 12 CSS px; 2–8 / 11–24 px |
@@ -30,7 +31,7 @@ Toolbar changes to the persisted view, toggles, zoom and selected formation kind
 
 See [2D field display](FIELD_DISPLAY.md) for orientation, sizing and coloring. These choices do not change project coordinates, print/SVG geometry or the 3D camera. Flipped dragging and keyboard arrows follow the screen; Inspector directions retain their field meaning.
 
-Production cast, positions, field markings, movement counts/tempo/easing, notes and audio offset stay in the project. The grid toggle controls visibility and the snap toggle enables the existing fixed step grid; neither defines a show grid. Current v2 projects do not support custom grids, meter or shared review-rule fields. This change adds no such fields and does not inject personal defaults into project data. Future shared rules must override personal review defaults; unsupported newer project data retains the existing refusal-to-open behavior.
+Production cast, positions, field markings, movement counts/tempo/easing, notes, audio offset and optional placement rules stay in the project. The grid toggle controls visibility; the magnet enables the production's snapping rules. Personal placement defaults seed only newly created productions and never override opened shows. Files without rules use 8-to-5 whole steps with rigid anchor snapping. See [Grid and group snapping](GRID_SNAPPING.md). Meter and shared review rules remain separate future features.
 
 Selection, active set, workspace, search, pointer hover, drag/pan previews, playback count, speed/loop, audio attachment, undo history, draft text and file destinations are excluded.
 

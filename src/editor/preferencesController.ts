@@ -4,13 +4,14 @@ import type { EditorState } from './state';
 import type { EditorStore } from './store';
 const UI_KEYS = ['selectionLabelsOnly', 'view', 'showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
 const KEYS = Object.keys(defaultPreferences()) as (keyof Preferences)[];
-const equal = (a: Preferences, b: Preferences) => KEYS.every(key => a[key] === b[key]);
+const sameValue = (a: Preferences, b: Preferences, key: keyof Preferences) => key === 'snapDefaults' ? JSON.stringify(a[key]) === JSON.stringify(b[key]) : a[key] === b[key];
+const equal = (a: Preferences, b: Preferences) => KEYS.every(key => sameValue(a, b, key));
 export const preferencesSnapshot = (state: EditorState) => validatePreferences({ ...state.preferences.value, ...Object.fromEntries(UI_KEYS.map(key => [key, state.ui[key]])) });
 function apply(store: EditorStore, value: Preferences) {
   store.setValue('preferences', 'value', value);
   for (const key of UI_KEYS) store.setValue('ui', key, value[key]);
 }
-const mergeIntervening = (before: Preferences, current: Preferences, loaded: Preferences) => validatePreferences({ ...loaded, ...Object.fromEntries(KEYS.filter(key => current[key] !== before[key]).map(key => [key, current[key]])) });
+const mergeIntervening = (before: Preferences, current: Preferences, loaded: Preferences) => validatePreferences({ ...loaded, ...Object.fromEntries(KEYS.filter(key => !sameValue(current, before, key)).map(key => [key, current[key]])) });
 
 export function startPreferencesController(store: EditorStore, bridge: PreferencesBridge) {
   let active = true; let scheduled = false; let submitted: Preferences | undefined;

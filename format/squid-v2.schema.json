@@ -75,6 +75,43 @@
       "minimum": -3600,
       "maximum": 3600
     },
+    "snapping": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "enum": [
+            8,
+            6,
+            12
+          ]
+        },
+        "subdivision": {
+          "enum": [
+            1,
+            2,
+            4
+          ]
+        },
+        "target": {
+          "enum": [
+            "grid",
+            "markings"
+          ]
+        },
+        "group": {
+          "enum": [
+            "anchor",
+            "individual"
+          ]
+        }
+      },
+      "required": [
+        "steps",
+        "subdivision",
+        "target",
+        "group"
+      ]
+    },
     "moves": {
       "type": "array",
       "items": {
