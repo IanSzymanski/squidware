@@ -170,7 +170,7 @@ async function checkActionClarity() {
   await evaluate('document.querySelector(\'.canvas-toolbar [aria-label="Clear selection"]\').focus()'); await sendKey(window, 'Return');
   await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
   assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
-  await clickSelector('.workspace-tab[aria-label="Cast"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Cast')", 'Cast heading');
+  await clickSelector('.workspace-tab[aria-label="Cast"]'); await uiWait("!!document.querySelector('.cast-dock h2') && !!document.querySelector('.field-stage__svg')", 'Cast beside field');
   await clickSelector('.workspace-tab[aria-label="Production sheet"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
   await clickSelector('.workspace-tab[aria-label="Design"]');
   pass('native pointer and Tab/Enter select sections with pressed state; hint stays retired after clearing; Cast and Production sheet have direct headings');
@@ -557,7 +557,7 @@ app.whenReady().then(async () => {
     pass('native undo/redo use the shared commands');
 
     await clickText('Cast');
-    await clickText('Add performers');
+    await clickSelector('[aria-label="Add performers"]');
     await editNumber('Number of performers', 0);
     await clickText('Add performers', '.modal', true);
     assert.equal(await evaluate("!!document.querySelector('.modal[open]')"), true);
@@ -760,6 +760,8 @@ app.whenReady().then(async () => {
     pass('Escape cancels a text draft without creating history or changing the production');
 
     await clickText('Cast');
+    await clickSelector('[aria-label="Full Cast table"]');
+    await uiWait("!!document.querySelector('.cast-table')", 'full Cast table');
     await typeText('.cast-table input[placeholder="Add a name"]', 'A'.repeat(40));
     await fieldKey('.cast-table input[placeholder="Add a name"]', 'Enter');
     await clickText('Design');

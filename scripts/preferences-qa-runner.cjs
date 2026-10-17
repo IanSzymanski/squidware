@@ -79,6 +79,8 @@ async function checkCoordinateOutput(project) {
       window.setContentSize(1366, 768);
     }
     await click('.workspace-tab[aria-label="Cast"]');
+    await uiWait("!!document.querySelector('[aria-label=\"Full Cast table\"]')", 'Cast dock');
+    await click('[aria-label="Full Cast table"]');
     await uiWait(`document.querySelector('.coordinate-cell')?.textContent === ${JSON.stringify(expected)}`, 'Cast coordinate precision');
     await click('.workspace-tab[aria-label="Design"]');
     savedFile = path.join(output, `coordinates-${precision}-${process.pid}.csv`);

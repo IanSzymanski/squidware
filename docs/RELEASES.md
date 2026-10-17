@@ -32,7 +32,7 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 
 Dense-field selection, formations, exact transforms, coordinate entry, spacing and snapping, shared Cast selection, workspace controls and accessible display choices.
 
-4/19 implementation issues completed at reconciliation.
+5/19 implementation issues completed at reconciliation.
 
 **Merged work still open:** [#18](https://github.com/IanSzymanski/squidware/issues/18), [#25](https://github.com/IanSzymanski/squidware/issues/25), [#27](https://github.com/IanSzymanski/squidware/issues/27) and [#42](https://github.com/IanSzymanski/squidware/issues/42) have merged implementation and passing current three-platform CI; their remaining estimates cover acceptance reconciliation and targeted follow-up, not rebuilding the features. [#36](https://github.com/IanSzymanski/squidware/issues/36) specifically awaits its first-time reviewer discovery check. All five remain unfulfilled for release readiness until their acceptance criteria are satisfied and they are closed as completed. Independent work may continue without treating these open prerequisites as fulfilled.
 

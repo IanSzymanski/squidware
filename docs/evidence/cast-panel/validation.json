@@ -1,0 +1,202 @@
+{
+  "implementationRevision": "e420c498b562fc2d3aead7cfd93d39450112e177",
+  "platform": "win32",
+  "node": "24.19.0",
+  "os": "10.0.19045",
+  "sourceTests": 293,
+  "contractTests": 17,
+  "nativeTests": 50,
+  "runId": "2026-10-17T22-15-28-306Z-2f77e41b",
+  "source": {
+    "revision": "0cf4ec64e60fe5a039f049132209d7596e2f4d53",
+    "tree": "841471b83c5d164d90101030badcf106edfe6ff8",
+    "dirty": true,
+    "contentHash": "d0cc084bc391278eeba83e1d90c012c0e26c35611affe15a75f2744c31c4bd94",
+    "lockfileHash": "09a380b31b7652787d3a753706b7618e17fba587a1e4cc0a3498a79468320abf"
+  },
+  "builtOutputHash": "cfb7fbb076b3fbe08e2b761c7b5c7d5aab62f1e8ecc3d130679bb09ef182fcad",
+  "workflows": [
+    {
+      "name": "cast",
+      "status": "passed",
+      "elapsedMs": 37383
+    },
+    {
+      "name": "preferences",
+      "status": "passed",
+      "elapsedMs": 21580
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "elapsedMs": 179318
+    },
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "elapsedMs": 96850
+    },
+    {
+      "name": "thumbnails",
+      "status": "passed",
+      "elapsedMs": 7699
+    },
+    {
+      "name": "playback",
+      "status": "passed",
+      "elapsedMs": 17979
+    }
+  ],
+  "castChecks": [
+    "Cast docks beside the field without reducing its height; native row/dot selection shares IDs and reveals rows without stealing field focus",
+    "search and section selection retain hidden IDs; visible bulk selection only changes filtered members and explicit reveal clears filters",
+    "maximum Cast uses one list Tab stop; native arrows/Home/End navigate, Space toggles and Shift ranges preserve selection without editing history",
+    "name drafts survive shared selection changes, Enter commits one named undo and Escape cancels; section reassignment preserves identity and all set geometry",
+    "full table and dock retain selection; confirmed removal reconciles rows, selection and every set, and undo restores the performer",
+    "Cast, editing controls and field remain visible at 1366/1120px and 125% UI zoom; closing the dock restores Inspector without changing selection"
+  ],
+  "metrics": {
+    "beforeFieldHeight": 485,
+    "layouts": [
+      {
+        "nativeWidth": 1366,
+        "zoom": 1,
+        "width": 1366,
+        "height": 768,
+        "field": {
+          "top": 130,
+          "bottom": 615,
+          "left": 228,
+          "right": 1054,
+          "width": 826,
+          "height": 485
+        },
+        "cast": {
+          "top": 48,
+          "bottom": 740,
+          "left": 1066,
+          "right": 1366,
+          "width": 300,
+          "height": 692
+        },
+        "edit": {
+          "top": 475,
+          "bottom": 664,
+          "left": 1067,
+          "right": 1366,
+          "width": 299,
+          "height": 189
+        },
+        "list": {
+          "top": 225,
+          "bottom": 475,
+          "left": 1067,
+          "right": 1366,
+          "width": 299,
+          "height": 250
+        },
+        "footer": {
+          "top": 740,
+          "bottom": 768,
+          "left": 0,
+          "right": 1366,
+          "width": 1366,
+          "height": 28
+        }
+      },
+      {
+        "nativeWidth": 1366,
+        "zoom": 1.25,
+        "width": 1093,
+        "height": 614,
+        "field": {
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "left": 188,
+          "right": 800.7999877929688,
+          "width": 612.7999877929688,
+          "height": 332.20001220703125
+        },
+        "cast": {
+          "top": 48,
+          "bottom": 586.4000244140625,
+          "left": 812.7999877929688,
+          "right": 1092.7999877929688,
+          "width": 280,
+          "height": 538.4000244140625
+        },
+        "edit": {
+          "top": 321.6000061035156,
+          "bottom": 510.6000061035156,
+          "left": 813.6000366210938,
+          "right": 1092.800048828125,
+          "width": 279.20001220703125,
+          "height": 189
+        },
+        "list": {
+          "top": 222.8000030517578,
+          "bottom": 321.6000061035156,
+          "left": 813.6000366210938,
+          "right": 1092.800048828125,
+          "width": 279.20001220703125,
+          "height": 98.80000305175781
+        },
+        "footer": {
+          "top": 586.4000244140625,
+          "bottom": 614.4000244140625,
+          "left": 0,
+          "right": 1092.800048828125,
+          "width": 1092.800048828125,
+          "height": 28
+        }
+      },
+      {
+        "nativeWidth": 1120,
+        "zoom": 1,
+        "width": 1120,
+        "height": 768,
+        "field": {
+          "top": 130,
+          "bottom": 615,
+          "left": 188,
+          "right": 828,
+          "width": 640,
+          "height": 485
+        },
+        "cast": {
+          "top": 48,
+          "bottom": 740,
+          "left": 840,
+          "right": 1120,
+          "width": 280,
+          "height": 692
+        },
+        "edit": {
+          "top": 475,
+          "bottom": 664,
+          "left": 841,
+          "right": 1120,
+          "width": 279,
+          "height": 189
+        },
+        "list": {
+          "top": 225,
+          "bottom": 475,
+          "left": 841,
+          "right": 1120,
+          "width": 279,
+          "height": 250
+        },
+        "footer": {
+          "top": 740,
+          "bottom": 768,
+          "left": 0,
+          "right": 1120,
+          "width": 1120,
+          "height": 28
+        }
+      }
+    ]
+  },
+  "note": "Targeted Windows automation on the complete implementation. The testing-guide owner row and evidence files were added after this run; neither changes application behavior. The raw source identity is preserved. Cross-platform CI and physical writer/device acceptance are separate evidence."
+}
