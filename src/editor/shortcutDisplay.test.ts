@@ -8,7 +8,7 @@ describe('current shortcut presentation', () => {
     expect(shortcutPlatform('Win32')).toBe('other');
     expect(commandKeycaps('file.save', undefined, 'mac', true)).toEqual([['Cmd', 'S']]);
     expect(commandKeycaps('history.redo', undefined, 'other', true)).toEqual([['Ctrl', 'Shift', 'Z']]);
-    expect(commandKeycaps('selection.transform', undefined, 'mac', true)).toEqual([['Alt', 'Arrow'], ['Shift', 'Alt', 'Arrow']]);
+    expect(commandKeycaps('selection.nudge', undefined, 'mac', true)).toEqual([['Alt', 'Arrow'], ['Shift', 'Alt', 'Arrow']]);
   });
   it('only advertises existing bindings and the appropriate tool/navigation variant', () => {
     expect(commandKeycaps('file.export', undefined, 'other', false)).toEqual([]);

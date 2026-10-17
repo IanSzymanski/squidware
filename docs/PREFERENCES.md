@@ -22,12 +22,15 @@ Persisted choices:
 | Performer coloring; custom color | Section colors; selection groups or custom RGB (`#B9ED85`) |
 | Formation tool kind | Arc; line, arc, circle, block or curve |
 | Formation width, depth, rotation, columns | 45 yd, 22 yd, 0°, 8; 1–95 yd, 1–48 yd, −180–180°, 1–500 whole columns |
-| Normal / fast keyboard nudge | 0.625 / 2.5 yd; 0.125–5 / 0.125–10 yd |
+| Normal / fast nudge; unit | 0.625 / 2.5, in yards by default; 0.125–5 / 0.125–10. Optional production-step units use the current 8/6/12-to-5 grid step, independent of subdivision. |
+| Rotation / scale presets | 15° / 10%; 0.1–180° / 0.1–99%. Buttons open an exact preview before Apply. |
 | Coordinate description decimals | 2; 0, 1 or 2 |
 | Paper; rehearsal packet | Letter landscape; field charts; A4 and coordinate sheets also available |
 | Geometric review spacing / stride | 1 yd / 1.25 yd per count; each 0.1–5 |
 
 Toolbar changes to the persisted view, toggles, zoom and selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
+
+See [editing increments](EDIT_INCREMENTS.md) for shared command routing, modifiers and exact preview behavior.
 
 See [2D field display](FIELD_DISPLAY.md) for orientation, sizing and coloring. These choices do not change project coordinates, print/SVG geometry or the 3D camera. Flipped dragging and keyboard arrows follow the screen; Inspector directions retain their field meaning.
 

@@ -1,6 +1,6 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
 
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 
 import type { Point } from '../types';
 import type { ThumbnailDot } from './thumbnailRoster';
@@ -8,7 +8,7 @@ import { HelpButton } from './ControlHelp';
 import type { ControlHelpProps } from './ControlHelp';
 import { Tooltip } from '../components/Tooltip';
 
-export function Button({ children, onClick, active, className = '', ...help }: ControlHelpProps & { children: ReactNode; onClick: () => void; disabled?: boolean; className?: string }) {
+export function Button({ children, onClick, active, className = '', ...help }: ControlHelpProps & { children: ReactNode; onClick: MouseEventHandler<HTMLButtonElement>; disabled?: boolean; className?: string }) {
   return <HelpButton {...help} active={active} className={`icon-button ${active ? 'active' : ''} ${className}`} onClick={onClick}>{children}</HelpButton>;
 }
 export const MiniField = memo(function MiniField({ positions, dots }: { positions: Readonly<Record<string, Point>>; dots: readonly ThumbnailDot[] }) {
