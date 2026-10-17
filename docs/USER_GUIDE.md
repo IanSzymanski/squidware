@@ -44,7 +44,9 @@ Choose **Reset defaults** to restore the personal settings. If storage is unavai
 
 ## Cast and sections
 
-Open **Cast** to see the ensemble table. You can search by label or performer name, filter by section, edit names, and change section assignments. Select rows to remove performers; removal affects every set and can be undone.
+Open **Cast** to select and edit performers beside the field. Clicking a row highlights its dot; clicking a dot reveals its row. Ctrl/Command-click toggles rows and Shift-click adds a range. Arrows/Home/End navigate the list, Space toggles selection and Enter selects the focused row. Select one performer to edit their name and section. Enter or blur applies a name edit; Escape cancels it. Each accepted edit can be undone.
+
+Search by label/name and filter by section. Hidden selections are kept and explained; **Show selected performers** clears the filters to reveal them. Select all visible changes only filtered rows. Use **Full Cast table** for the expanded roster, **Dock Cast beside field** to return, or **Show Inspector** for position tools. Removal affects every set and can be undone. See [Cast panel behavior](CAST_PANEL.md).
 
 **Add performers** takes a count, a label prefix, and an existing section. Labels are generated sequentially while avoiding labels already in the production. The editing interface supports adding up to 500 performers.
 

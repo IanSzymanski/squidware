@@ -131,7 +131,8 @@ app.whenReady().then(async () => {
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');
     assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);
     await audit('production overview');
-    await tabTo('.workspace-tab[aria-label="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'cast review');
+    await tabTo('.workspace-tab[aria-label="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-list li').length === 500", 'docked Cast review');
+    await tabTo('[aria-label="Full Cast table"]'); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'full Cast review');
     await audit('cast');
     await tabTo('.workspace-tab[aria-label="Design"]', true); await key('Return');
     await tabTo('[aria-label="Next set"]'); await key('Return');
