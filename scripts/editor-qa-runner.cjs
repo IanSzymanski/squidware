@@ -304,7 +304,7 @@ async function checkSelectionInspector() {
     assert.deepEqual(moved.sets[0].positions[performer.id], {x:fixture.sets[0].positions[performer.id].x + (i < 2 ? .625 : 0), y:fixture.sets[0].positions[performer.id].y});
   }
   assert.deepEqual(moved.sets[1], fixture.sets[1]);
-  const moveHistory = await openHistory(); assert.equal(moveHistory.length, 1); assert.match(moveHistory[0], /Transform 2 performers/);
+  const moveHistory = await openHistory(); assert.equal(moveHistory.length, 1); assert.match(moveHistory[0], /Nudge 2 performers/);
   await clickSelector('.modal [aria-label="Close dialog"]');
   menuAction('Undo drill edit'); assert.deepEqual(await snapshot(), fixture);
   await keyboard('[aria-label="Rotate selection"]');

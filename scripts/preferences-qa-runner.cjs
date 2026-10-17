@@ -142,6 +142,7 @@ app.whenReady().then(async () => {
       await select('Panel layout', 'compact'); await select('Label visibility', 'none'); await toggle('Previous paths'); await toggle('Next paths'); await toggle('Field grid'); await toggle('Snap to grid');
       await select('Step grid', 6); await select('Grid subdivision', 2); await select('Group snapping', 'individual');
       await number('Field zoom', 1.6); await number('Nudge · yards', 1.25); await number('Fast nudge', 5);
+      await select('Nudge units','steps'); await number('Rotate preset · degrees',30); await number('Scale preset · %',25);
       await select('Coordinate precision', 'half'); await select('Paper', 'a4'); await select('Packet default', 'coordinates'); await select('Shape', 'block');
       await number('Width · yards', 30); await number('Depth · yards', 15); await number('Rotation', 30); await number('Block columns', 4); await number('Spacing', 2); await number('Stride', .75);
       await saved();
@@ -152,7 +153,7 @@ app.whenReady().then(async () => {
       await evaluate("(() => {const n=document.querySelector('[aria-label=\"Custom performer color\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(n,'#ee99dd');n.dispatchEvent(new Event('input',{bubbles:true}));n.dispatchEvent(new Event('change',{bubbles:true}))})()");
       await saved();
       const chosen = (await state()).preferences.value; await fs.writeFile(path.join(output, 'expected.json'), JSON.stringify(chosen));
-      await number('Nudge · yards', '', false); assert.equal((await state()).ui.pendingDraft, false); assert.equal((await state()).project.revision, revision);
+      await number('Nudge · steps', '', false); assert.equal((await state()).ui.pendingDraft, false); assert.equal((await state()).project.revision, revision);
       await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Done').click()"); await pause(50);
       assert.ok(await evaluate("!!document.querySelector('dialog[open]')")); assert.equal((await state()).fileSession.savedRevision, revision);
       await evaluate("document.querySelector('.preferences-fields [aria-invalid=true]').focus()");
@@ -175,6 +176,7 @@ app.whenReady().then(async () => {
       assert.equal(expected.fieldOrientation, 'audience-top'); assert.equal(expected.fieldDotRadiusPx, 5); assert.equal(expected.fieldLabelSizePx, 16);
       assert.equal(expected.selectionLabelsOnly, true); assert.equal(expected.fieldColorMode, 'custom'); assert.equal(expected.fieldCustomColor, '#ee99dd');
       assert.equal(expected.coordinatePrecision, 'half');
+      assert.equal(expected.nudgeUnit,'steps'); assert.equal(expected.rotationStep,30); assert.equal(expected.scaleStep,25);
       assert.deepEqual(expected.snapDefaults, { steps:6, subdivision:2, target:'grid', group:'individual' });
       assert.equal(expected.inspectorSetOpen, false); assert.equal(expected.inspectorFormationOpen, true); assert.equal(expected.inspectorChecksOpen, true);
       for (const [key, open] of [['inspectorSetOpen', false], ['inspectorFormationOpen', true], ['inspectorChecksOpen', true]]) {
@@ -189,8 +191,8 @@ app.whenReady().then(async () => {
       const id = original.performers[0].id; const point = original.sets[0].positions[id];
       await evaluate(`window.__preferencesQA.editor.setValue('selection','selectedIds',[${JSON.stringify(id)}]); document.querySelector('[data-performer-id="${id}"]').focus()`);
       window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Left', modifiers: ['alt'] }); window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Left', modifiers: ['alt'] }); await pause(100);
-      assert.equal((await state()).project.present.sets[0].positions[id].x, point.x + 1.25); native('Undo drill edit'); await uiWait(`window.__preferencesQA.editor.getState().project.present.sets[0].positions[${JSON.stringify(id)}].x === ${point.x}`, 'undo nudge');
-      pass('the saved nudge increment controls actual field keyboard movement');
+      assert.equal((await state()).project.present.sets[0].positions[id].x, point.x + .78125); native('Undo drill edit'); await uiWait(`window.__preferencesQA.editor.getState().project.present.sets[0].positions[${JSON.stringify(id)}].x === ${point.x}`, 'undo nudge');
+      pass('the saved step unit and nudge amount control actual field keyboard movement; rotation/scale increments also survive restart');
       await pdf('a4'); await openPreferences(); await select('Paper', 'letter'); await saved(); await done(); await pdf('letter');
       pass('native PDF exports honor A4 and Letter landscape page dimensions');
       native('New production'); await uiWait("document.querySelector('.modal h2')?.textContent === 'New production'", 'new grid production');

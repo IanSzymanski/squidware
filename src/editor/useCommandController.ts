@@ -1,4 +1,4 @@
-import { fieldDirection } from '../components/fieldOrientation';
+import { isNudgeKey } from '../editIncrements';
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import type { CommandId } from './commands';
@@ -25,6 +25,7 @@ export function useCommandController() {
       if (command) void store.dispatch(command);
     }
     function keyboard(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.isComposing || !(event.target instanceof Element)) return;
       const state = store.getState();
       const target = event.target as HTMLElement;
       const input = /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable;
@@ -46,10 +47,8 @@ export function useCommandController() {
         event.preventDefault(); if (!store.dispatch('playback.toggle')) store.setValue('ui', 'toast', 'Add a second set to rehearse a transition.');
       } else if (event.key === 'Escape') store.dispatch(state.ui.transformPreview ? 'transform.cancel' : 'selection.clear');
       else if (key === 'v' || key === 'h') store.dispatch('tool.select', { tool: key === 'v' ? 'select' : 'pan' });
-      else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && state.selection.selectedIds.length) {
-        event.preventDefault(); const step = event.shiftKey ? state.preferences.value.fastNudgeStep : state.preferences.value.nudgeStep;
-        store.dispatch('selection.transform', { index: state.selection.activeIndex, ids: state.selection.selectedIds,
-          options: fieldDirection(event.key, step, state.preferences.value.fieldOrientation) });
+      else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && isNudgeKey(event.key)) {
+        event.preventDefault(); store.dispatch('selection.nudge', { key: event.key, fast: event.shiftKey });
       } else if (event.key === '[' || event.key === ']') store.dispatch('set.select', { index: state.selection.activeIndex + (event.key === '[' ? -1 : 1) });
     }
     const unsubscribe = window.squidware?.onMenuAction(menuAction);

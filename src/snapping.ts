@@ -60,6 +60,10 @@ export function moveSelection(positions: Record<string, Point>, ids: readonly st
     const targets = settings.target === 'markings' && axis === 'y' ? hashLines(field) : undefined;
     let result = snapAxis(value, min, max, spacing, targets);
     // A short nudge advances to the next target instead of getting stuck on the current one.
+    // Once a rigid group reaches an off-grid edge, another nudge must stay there,
+    // rather than snapping backward and alternating between the edge and grid.
+    if (axes.advance && delta[axis] > 0 && max <= from + 1e-9) return clamp(from, min, max);
+    if (axes.advance && delta[axis] < 0 && min >= from - 1e-9) return clamp(from, min, max);
     if (axes.advance && delta[axis] > 0 && result <= from + 1e-9 && max > from + 1e-9) result = snapAxis(value, Math.min(max, from + 1e-7), max, spacing, targets);
     if (axes.advance && delta[axis] < 0 && result >= from - 1e-9 && min < from - 1e-9) result = snapAxis(value, min, Math.max(min, from - 1e-7), spacing, targets);
     return result;

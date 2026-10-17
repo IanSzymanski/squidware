@@ -17,6 +17,16 @@ test('missing preferences get defaults; canonical settings survive a fresh servi
   assert.deepEqual((await createPreferencesService(h.directory, h.atomic).read()).preferences, { ...defaultPreferences(), panelLayout: 'compact', paperSize: 'a4', zoom: 2 });
   assert.deepEqual(await fs.readdir(h.directory), ['preferences.json']);
 });
+test('editing increments persist across native services and invalid increments cannot replace them', async t => {
+  const h = await setup(t);
+  const chosen = { ...defaultPreferences(), nudgeUnit: 'steps', nudgeStep: 1, fastNudgeStep: 4, rotationStep: 30, scaleStep: 25 };
+  await h.service.save(chosen);
+  const restarted = createPreferencesService(h.directory, h.atomic);
+  assert.deepEqual((await restarted.read()).preferences, chosen);
+  const original = await fs.readFile(h.filename, 'utf8');
+  assert.throws(() => restarted.save({ ...chosen, scaleStep: 100 }), /scaleStep/);
+  assert.equal(await fs.readFile(h.filename, 'utf8'), original);
+});
 test('older and corrupt files recover defaults and preserve exact originals on first write', async t => {
   for (const original of ['{"version":0,"zoom":2}', '{broken', 'x'.repeat(32769), '{"zoom":-10}']) {
     const h = await setup(t, original); const read = await h.service.read(); assert.ok(read.warning);
