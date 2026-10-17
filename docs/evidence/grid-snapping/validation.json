@@ -1,0 +1,47 @@
+{
+  "sourceRevision": "d31098a798cbfac49235bb7ad709b663b15ffaa8",
+  "sourceContentHash": "1bf26e4b31ae8c0d1718dcc6bffa2e4223874bb107d5a63be2853d41b0f95de7",
+  "platform": "win32",
+  "runId": "2026-10-17T21-22-37-972Z-8f109e3e",
+  "sourceTests": 281,
+  "contractTests": 17,
+  "nativeTests": 50,
+  "workflows": [
+    {
+      "name": "field",
+      "status": "passed"
+    },
+    {
+      "name": "preferences",
+      "status": "passed"
+    }
+  ],
+  "fieldChecks": [
+    "every distinct center in an 8x8 two-step block is mouse-selectable within the 500-performer cast",
+    "nearest selection, 6px dots and 12px collision-free labels work at 60%, 100% and 300% zoom",
+    "repeated native clicks cycle coincident dots in stable ID order",
+    "reversing the roster preserves nearest and initial tied hit results",
+    "Chromium touch input selects the nearest dense-field dot",
+    "the existing keyboard-accessible label button cycles all / selected-focus / hidden; hover uses the same nearest hit",
+    "pointer selection, labels and zoom preserve physical coordinates and edit revision",
+    "labels remain readable without overlaps at 2x DPI, 125% UI zoom and the minimum supported window size",
+    "the preference flips the personal view; native nearest clicks and hover still report canonical performer coordinates",
+    "spatial focus, field/global Alt+arrows and native dragging follow screen direction; Inspector directions stay field-relative with rotated icons; one undo restores geometry",
+    "flipped marquee selects the full dense block; pan and exact pivot handles share the view matrix after zoom without committing a preview",
+    "section/selection/custom colors retain selection geometry; 12px dots and 16px upright labels remain pixel-sized through zoom, 2x DPI, narrow windows and 125% UI scale",
+    "both neighbors use ordered endpoints, distinct circle/diamond ghosts and dashed/dotted paths; ghosts do not intercept native selection",
+    "selection intersects the section filter and real Tab/Enter input controls the next overlay independently",
+    "first/last sets have no phantom neighbors; playback, scrubbing and 3D hide review geometry without changing project or history",
+    "uncommitted drag previews suppress ghosts and restore them on release",
+    "flipped previous/next ghosts and paths turn with the field while native hit testing still selects the canonical performer",
+    "Grid dialog exposes keyboard-reachable choices and Apply/Cancel; changing rules is one undoable edit without moving dots",
+    "native drag previews individual snapping without an edit; Escape cancels; release commits exactly the preview and Undo restores offsets",
+    "native Alt-arrow, Inspector and flipped-field movement share targets and keep rigid group offsets",
+    "placement controls fit 1366×768, enlarged 125% UI and a 1120px content width"
+  ],
+  "layouts": [
+    "1366x768, 100%",
+    "1366x768, 125% UI zoom",
+    "1120x768, 100%"
+  ]
+}
