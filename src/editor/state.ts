@@ -5,7 +5,7 @@ import { defaultPreferences } from '../preferences';
 import type { Preferences } from '../preferences';
 import type { TransformSession } from '../transforms';
 
-export type Dialog = 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;

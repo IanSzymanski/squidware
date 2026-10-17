@@ -1,3 +1,4 @@
+import { DEFAULT_SNAPPING, gridInterval, hashLines, moveSelection, snapDescription } from '../snapping';
 import type { CoordinateOptions } from '../coordinates';
 import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
@@ -33,8 +34,10 @@ interface DrawingProps {
   screen?: { scale: number; bounds: ScreenBox };
 }
 
-export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, height, preset, showGrid, flipped = false }: Project['field'] & { showGrid: boolean; flipped?: boolean }) {
+export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING }: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping'] }) {
   const hashInset = preset === 'college' ? 20 : height / 3;
+  const interval = snapping.target === 'grid' ? gridInterval(snapping) : 5;
+  const gridY = snapping.target === 'grid' ? Array.from({ length: Math.floor(height / interval) + 1 }, (_, i) => i * interval) : hashLines({ width, height, preset });
   const yardLines = Array.from({ length: Math.floor(width / 5) + 1 }, (_, index) => index * 5);
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
   return <g data-field-markings="true" aria-hidden="true">
@@ -42,8 +45,8 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, he
     <rect width={width} height={height} fill="#233c31" />
     {yardLines.filter((_, i) => i % 2 === 0).map(x => <rect key={`stripe-${x}`} x={x} width={Math.min(5, width - x)} height={height} fill="#294438" opacity="0.5" />)}
     {showGrid && <g stroke="#a3c0a4" strokeWidth="0.045" opacity="0.2">
-      {Array.from({ length: Math.ceil(width / 1.25) }, (_, i) => <line key={`gx-${i}`} x1={i * 1.25} x2={i * 1.25} y1={0} y2={height} />)}
-      {Array.from({ length: Math.ceil(height / 1.25) }, (_, i) => <line key={`gy-${i}`} x1={0} x2={width} y1={i * 1.25} y2={i * 1.25} />)}
+      {Array.from({ length: Math.floor(width / interval) + 1 }, (_, i) => <line key={`gx-${i}`} x1={i * interval} x2={i * interval} y1={0} y2={height} />)}
+      {gridY.map((y, i) => <line key={`gy-${i}`} x1={0} x2={width} y1={y} y2={y} />)}
     </g>}
     <g stroke="#ccdcc9" opacity="0.5" strokeWidth="0.14">
       {yardLines.map(x => <line key={`yard-${x}`} x1={x} x2={x} y1={0} y2={height} opacity={x % 10 === 0 ? 1 : 0.6} />)}
@@ -94,7 +97,7 @@ export function FieldDrawing({ project, positions, neighbors, selectedIds = [], 
     labelWidth: labelWidths.get(person.id)!, selected: selected.has(person.id), focused: keyboardFocusId === person.id,
   }] : []), screen.bounds, { ...display, labelMode: showLabels ? display.labelMode : 'none' }) : null;
   return <>
-    <StaticFieldMarkings width={width} height={height} preset={preset} showGrid={showGrid} flipped={flipped} />
+    <StaticFieldMarkings width={width} height={height} preset={preset} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />
     {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
       const point = positions[performer.id];
@@ -141,17 +144,9 @@ interface Field2DProps extends DrawingProps {
 type Gesture =
   | { kind: 'pan'; startClient: Point; startPan: Point; scale: number }
   | { kind: 'marquee'; start: Point; current: Point; initialIds: string[] }
-  | { kind: 'move'; start: Point; anchor: Point; originals: Record<string, Point>; updates: Record<string, Point>; moved: boolean };
+  | { kind: 'move'; start: Point; anchorId: string; originals: Record<string, Point>; updates: Record<string, Point>; moved: boolean };
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
-
-function translatedGroup(originals: Record<string, Point>, delta: Point, width: number, height: number) {
-  const points = Object.values(originals);
-  if (!points.length) return {};
-  const dx = clamp(delta.x, -Math.min(...points.map(point => point.x)), width - Math.max(...points.map(point => point.x)));
-  const dy = clamp(delta.y, -Math.min(...points.map(point => point.y)), height - Math.max(...points.map(point => point.y)));
-  return Object.fromEntries(Object.entries(originals).map(([id, point]) => [id, { x: point.x + dx, y: point.y + dy }]));
-}
 
 export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateFormat, presentation, transformPreview, formationPreview, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -278,7 +273,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     setPreview({});
     setMarquee(null);
     setMoving(false);
-  }, [positions, readOnly, project.id, orientation]);
+  }, [positions, readOnly, project.id, orientation, snap, project.snapping]);
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
@@ -309,7 +304,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       onSelect(ids);
       if (readOnly) return;
       const originals = Object.fromEntries(ids.filter(selectedId => positions[selectedId]).map(selectedId => [selectedId, { ...positions[selectedId] }]));
-      gesture.current = { kind: 'move', start: point, anchor: positions[id], originals, updates: {}, moved: false };
+      gesture.current = { kind: 'move', start: point, anchorId: id, originals, updates: {}, moved: false };
     } else {
       gesture.current = { kind: 'marquee', start: point, current: point, initialIds: event.shiftKey ? selectedIds : [] };
       setMarquee({ start: point, current: point });
@@ -328,18 +323,14 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       current.current = point;
       setMarquee({ start: current.start, current: point });
     } else {
-      let dx = point.x - current.start.x;
-      let dy = point.y - current.start.y;
+      const dx = point.x - current.start.x;
+      const dy = point.y - current.start.y;
       const scale = Math.hypot(svgRef.current?.getScreenCTM()?.a ?? 1, svgRef.current?.getScreenCTM()?.b ?? 0);
       const threshold = event.pointerType === 'touch' ? 8 : 3;
       if (Math.hypot(dx, dy) * scale < threshold && !current.moved) return;
       current.moved = true;
       hitCycle.current = null;
-      if (snap) {
-        dx = Math.round((current.anchor.x + dx) / 0.625) * 0.625 - current.anchor.x;
-        dy = Math.round((current.anchor.y + dy) / 0.625) * 0.625 - current.anchor.y;
-      }
-      current.updates = translatedGroup(current.originals, { x: dx, y: dy }, width, height);
+      current.updates = moveSelection(current.originals, Object.keys(current.originals), { x: dx, y: dy }, project.field, project.snapping ?? DEFAULT_SNAPPING, snap, current.anchorId);
       setPreview(current.updates);
       setMoving(true);
     }
@@ -405,7 +396,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       const distance = event.shiftKey ? fastNudgeStep : nudgeStep;
       const originals = Object.fromEntries(selectedIds.filter(id => positions[id]).map(id => [id, positions[id]]));
       const delta = fieldDirection(event.key, distance, orientation);
-      onMove(translatedGroup(originals, { x: delta.dx, y: delta.dy }, width, height));
+      onMove(moveSelection(originals, Object.keys(originals), { x: delta.dx, y: delta.dy }, project.field, project.snapping ?? DEFAULT_SNAPPING, snap, undefined, { x: !!delta.dx, y: !!delta.dy, advance: true }));
     }
   }
 
@@ -415,10 +406,12 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       <FieldDrawing project={project} positions={displayedPositions} neighbors={moving ? [] : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
       {formationPreview && <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />}
       {transformPreview && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
+      {moving && Object.keys(preview).length > 0 && <g data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke="#fff" strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#c5f47b18" stroke="#caf38a" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
       </g>
     </svg>
     <div id={keyboardHelpId} className="field-keyboard-help">{formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · Alt+arrows: move selection · Shift+Alt: {fastNudgeStep} yd · Page Up/Down: roster · Home/End: first/last</>}</div>
+    <div className="field-snap-status" role="status">{snapDescription(project.snapping ?? DEFAULT_SNAPPING, snap)}{moving && Object.keys(preview).length ? " · Release to apply · Escape to cancel" : ""}</div>
     <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
     <div className="field-stage__hint">{formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>

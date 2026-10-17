@@ -92,6 +92,7 @@ describe('editor store and command registry', () => {
     const id = project.performers[0].id; const otherId = project.performers[1].id;
     store.dispatch('set.select', { index: 1 });
     const from = store.getState().project.present.sets[1].positions;
+    store.setValue('ui', 'snap', false); // This test owns read-only guards and exact translation, not quantization.
     expect(store.dispatch('selection.transform', { index: 1, ids: [id], options: { dx: 0.625 } })).toBe(true);
     expect(store.getState().project.present.sets[1].positions[id].x).toBeCloseTo(from[id].x + 0.625);
     expect(store.getState().project.present.sets[1].positions[otherId]).toEqual(from[otherId]);

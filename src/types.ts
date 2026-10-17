@@ -1,4 +1,5 @@
 import type { PreferencesBridge } from './preferences';
+import type { SnapSettings } from './snapping';
 export interface Point { x: number; y: number }
 export interface Section { id: string; name: string; color: string }
 export interface Performer { id: string; label: string; name: string; sectionId: string }
@@ -32,6 +33,7 @@ export interface Move extends OpeningTiming {
 }
 export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   schemaVersion: 2;
+  snapping?: SnapSettings;
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;

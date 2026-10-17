@@ -7,6 +7,7 @@ import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
 import { currentFormationResult, formationSessionCurrent } from './formationSession';
+import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
 
 export interface CommandArguments {
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
@@ -18,6 +19,8 @@ export interface CommandArguments {
   'performer.update': { id: string; update: Partial<Pick<Performer, 'name' | 'sectionId'>> };
   'section.add': undefined; 'section.update': { id: string; update: Partial<Pick<Section, 'name' | 'color'>> };
   'positions.move': { index: number; updates: Record<string, Point> };
+  'positions.place': { index: number; id: string; axis: 'x' | 'y'; value: number };
+  'snapping.update': { settings: SnapSettings };
   'selection.transform': { index: number; ids: string[]; options: { dx?: number; dy?: number; rotation?: number; scale?: number } };
   'transform.preview': { operation?: TransformOperation; angle?: number; scale?: number };
   'transform.update': { options: ExactTransform };
@@ -63,6 +66,15 @@ const selectSet = (context: CommandContext, index: number) => {
 };
 
 export const commandRegistry = {
+  'snapping.update': define({ id: 'snapping.update', name: 'Change grid and snapping', description: 'Save placement rules with this production without moving any performers.', arguments: { settings: 'SnapSettings' }, enabled: s => !s.ui.pendingDraft && !s.ui.transformPreview && !s.ui.formationPreview && !s.project.transactionName,
+    execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => ({ ...p, snapping })); } }),
+  'positions.place': define({ id: 'positions.place', name: 'Place performer', description: 'Place a performer using the active snap targets; the other coordinate stays unchanged.', arguments: { index: 'integer', id: 'performerId', axis: 'x | y', value: 'yards' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && !!s.project.present.sets[a.index].positions[a.id],
+    execute: (c, a) => { const s = c.getState(); const project = s.project.present; const positions = project.sets[a.index].positions;
+      if (!['x', 'y'].includes(a.axis) || !Number.isFinite(a.value) || a.value < 0 || a.value > (a.axis === 'x' ? project.field.width : project.field.height)) throw new Error('Enter a coordinate inside the field.');
+      const delta = { x: 0, y: 0 }; delta[a.axis] = a.value - positions[a.id][a.axis];
+      const updates = moveSelection(positions, [a.id], delta, project.field, project.snapping ?? DEFAULT_SNAPPING, s.ui.snap, a.id, { x: a.axis === 'x', y: a.axis === 'y' });
+      c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...updates } } : set) }));
+    } }),
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
       const s = c.getState(); const kind = a.kind ?? s.ui.formation;
@@ -117,7 +129,7 @@ export const commandRegistry = {
   'section.add': define({ id: 'section.add', name: 'Add section', description: 'Add an ensemble section.', arguments: {}, enabled: s => s.project.present.sections.length < PROJECT_LIMITS.sections, execute: c => c.edit(p => ({ ...p, sections: [...p.sections, { id: uid(), name: `Section ${p.sections.length + 1}`, color: '#a6cce2' }] })) }),
   'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name or color.', arguments: { id: 'string', update: 'name? | color?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => section.id === a.id ? { ...section, ...a.update } : section) })) }),
   'positions.move': define({ id: 'positions.move', name: 'Move performers', description: 'Set performer coordinates on the active editable set.', arguments: { index: 'integer', updates: 'Record<performerId, Point>' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...a.updates } } : set) })) }),
-  'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow', enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: transformPositions(set.positions, a.ids, a.options, p.field) } : set) })) }),
+  'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow', enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: a.options.rotation !== undefined || a.options.scale !== undefined ? transformPositions(set.positions, a.ids, a.options, p.field) : { ...set.positions, ...moveSelection(set.positions, a.ids, { x: a.options.dx ?? 0, y: a.options.dy ?? 0 }, p.field, p.snapping ?? DEFAULT_SNAPPING, c.getState().ui.snap, undefined, { x: !!a.options.dx, y: !!a.options.dy, advance: true }) } } : set) })) }),
   'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, shortcut: 'Ctrl / ⌘ A', enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
   'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, shortcut: 'Esc', enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
   'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, shortcut: '[ / ]', enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),

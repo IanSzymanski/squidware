@@ -23,6 +23,14 @@ test('published sampling example and migration agree at zero, fractions, boundar
   assert.equal(tools.countToSeconds(project,24),16);
   for(const count of [0,.25,8,15.99,16,16.01,20,24,100]) {assert.deepEqual(tools.sampleProject(project,count),tools.sampleProject(legacy,count));assert.ok(Math.abs(tools.secondsToCount(project,tools.countToSeconds(project,count))-Math.min(24,count))<1e-8);}
 });
+test('optional show snapping rules pass independent schema and canonical/native codecs without moving dots',()=>{
+  const project=smallExample(); project.snapping={steps:6,subdivision:4,target:'markings',group:'individual'};
+  assert.ok(check(project)); const reopened=tools.parseProject(tools.serializeProject(project));
+  assert.deepEqual(reopened.snapping,project.snapping); assert.deepEqual(reopened.sets,project.sets);
+  for(const invalid of [null,{}, {...project.snapping,steps:5}, {...project.snapping,subdivision:3}, {...project.snapping,target:'both'}, {...project.snapping,group:'unknown'}]) {
+    const bad={...project,snapping:invalid}; assert.equal(check(bad),false); assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/snapping/);
+  }
+});
 test('structural defects fail schema and parser; semantic defects require the canonical validation pass',()=>{
   for(const edit of [p=>p.field.width=99,p=>p.performers[0].id='__proto__',p=>p.moves[0].counts=0,p=>p.moves[0].paths.a.segments[0].kind='curve',p=>p.sets[0].counts=0,p=>p.sets[0].positions.a.x=-1]) {
     const project=smallExample();edit(project);assert.equal(check(project),false);assert.throws(()=>tools.parseProject(JSON.stringify(project)));

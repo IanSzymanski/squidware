@@ -140,6 +140,7 @@ app.whenReady().then(async () => {
       assert.deepEqual((await state()).project.present, original);
       await openPreferences();
       await select('Panel layout', 'compact'); await select('Label visibility', 'none'); await toggle('Previous paths'); await toggle('Next paths'); await toggle('Field grid'); await toggle('Snap to grid');
+      await select('Step grid', 6); await select('Grid subdivision', 2); await select('Group snapping', 'individual');
       await number('Field zoom', 1.6); await number('Nudge · yards', 1.25); await number('Fast nudge', 5);
       await select('Coordinate precision', 'half'); await select('Paper', 'a4'); await select('Packet default', 'coordinates'); await select('Shape', 'block');
       await number('Width · yards', 30); await number('Depth · yards', 15); await number('Rotation', 30); await number('Block columns', 4); await number('Spacing', 2); await number('Stride', .75);
@@ -164,7 +165,8 @@ app.whenReady().then(async () => {
       pass('personal settings and invalid preference drafts leave project data, revision and save state unchanged');
       openedFile = otherFile; native('Open project…'); await uiWait("window.__preferencesQA.editor.getState().project.present.title.includes('Another production')", 'other show');
       const other = (await state()).project.present; assert.equal(other.field.preset, 'high-school'); assert.equal(other.audioOffsetSeconds, 4); assert.equal(other.moves[0].tempo, 144); assert.deepEqual((await state()).preferences.value, chosen);
-      pass('opening another production retains its field, timing and audio rules and the personal settings');
+      assert.deepEqual(other.snapping, { steps:12, subdivision:4, target:'markings', group:'anchor' });
+      pass('opening another production retains its own grid, field, timing and audio rules and the personal defaults');
       assert.equal((await fs.readdir(profile)).filter(name => name.startsWith('preferences-preserved-')).length, 1);
       pass('the older preferences original is preserved when the upgraded file is written');
     } else if (phase === 'restart') {
@@ -173,6 +175,7 @@ app.whenReady().then(async () => {
       assert.equal(expected.fieldOrientation, 'audience-top'); assert.equal(expected.fieldDotRadiusPx, 5); assert.equal(expected.fieldLabelSizePx, 16);
       assert.equal(expected.selectionLabelsOnly, true); assert.equal(expected.fieldColorMode, 'custom'); assert.equal(expected.fieldCustomColor, '#ee99dd');
       assert.equal(expected.coordinatePrecision, 'half');
+      assert.deepEqual(expected.snapDefaults, { steps:6, subdivision:2, target:'grid', group:'individual' });
       assert.equal(expected.inspectorSetOpen, false); assert.equal(expected.inspectorFormationOpen, true); assert.equal(expected.inspectorChecksOpen, true);
       for (const [key, open] of [['inspectorSetOpen', false], ['inspectorFormationOpen', true], ['inspectorChecksOpen', true]]) {
         assert.equal(await evaluate(`document.querySelector('[data-inspector-section="${key}"]').open`), open);
@@ -190,6 +193,16 @@ app.whenReady().then(async () => {
       pass('the saved nudge increment controls actual field keyboard movement');
       await pdf('a4'); await openPreferences(); await select('Paper', 'letter'); await saved(); await done(); await pdf('letter');
       pass('native PDF exports honor A4 and Letter landscape page dimensions');
+      native('New production'); await uiWait("document.querySelector('.modal h2')?.textContent === 'New production'", 'new grid production');
+      await click('.new-options button:first-child');
+      await uiWait("window.__preferencesQA.editor.getState().project.present.performers.length === 0", 'blank grid show');
+      assert.deepEqual((await state()).project.present.snapping, expected.snapDefaults);
+      savedFile = path.join(output, 'new-grid-show.squid'); native('Save As…');
+      await waitFor(async () => { try { return JSON.parse(await fs.readFile(savedFile, 'utf8')).snapping?.steps === 6; } catch { return false; } }, 'new grid show saved');
+      await uiWait("window.__preferencesQA.editor.getState().fileSession.fileOperation === null", 'new grid save completed');
+      openedFile = fixtureFile; native('Open project…'); await uiWait("window.__preferencesQA.editor.getState().project.present.performers.length > 0", 'original show reopened');
+      assert.deepEqual((await state()).project.present, original);
+      pass('placement defaults survive restart, seed and save a new show, and never override an opened show');
       await openPreferences(); await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Reset defaults').click()"); await saved();
       assert.deepEqual((await state()).preferences.value, defaultPreferences()); assert.deepEqual((await state()).project.present, original); await done();
       pass('Reset defaults restores personal choices without changing the production');

@@ -16,6 +16,8 @@ Every entity ID is a nonempty string of at most 128 ASCII letters, digits, under
 
 All listed properties are required; empty optional content uses the indicated empty value.
 
+V2 additionally accepts optional `snapping: {steps: 8|6|12, subdivision: 1|2|4, target: "grid"|"markings", group: "anchor"|"individual"}`. All four fields are required when the object is present. These saved editing rules do not alter geometry or sampling. Missing rules, including v1 migrations, mean 8-to-5 whole steps and rigid anchor snapping. Older v2 readers discard this newly recognized optional property on save. See [grid semantics](../docs/GRID_SNAPPING.md).
+
 | Property | Meaning |
 | --- | --- |
 | `schemaVersion` | Integer 2. |
