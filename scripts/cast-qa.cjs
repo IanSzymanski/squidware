@@ -100,6 +100,9 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   await selected([ids[212]]); await capture('cast-full-table.png');
   await control('[aria-label="Dock Cast beside field"]'); await wait("!!document.querySelector('.cast-dock') && !!document.querySelector('.field-stage__svg')",'redocked');
   await control('[aria-label="Remove selected performers"]'); await wait("!!document.querySelector('dialog[open]')",'remove Cast confirmation');
+  // showModal focuses Close; dismiss its focus help by moving to Cancel.
+  // The tooltip can cover the confirmation button until focus leaves Close.
+  await key('Tab'); await wait("document.activeElement.matches('.modal-actions .subtle') && !document.querySelector('dialog .tooltip-panel')",'confirmation keyboard focus');
   await control('.modal .danger'); await wait("document.querySelectorAll('.cast-list li').length===499",'removed Cast row');
   await selected([]); assert.ok(await evaluate(`${state}.project.present.sets.every(s=>!s.positions[${JSON.stringify(ids[212])}])`));
   await evaluate(`${editor}.dispatch('history.undo')`); await wait("document.querySelectorAll('.cast-list li').length===500",'removed performer undo');
