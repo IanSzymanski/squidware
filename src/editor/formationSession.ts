@@ -13,5 +13,5 @@ export function formationSessionCurrent(state: EditorState): boolean {
 }
 export function currentFormationResult(state: EditorState) {
   const session = state.ui.formationPreview;
-  return session && formationSessionCurrent(state) ? previewFormation(state.project.present.sets[state.selection.activeIndex].positions, session.ids, session.kind, session.options, state.project.present.field) : null;
+  return session && formationSessionCurrent(state) ? previewFormation(state.project.present.sets[state.selection.activeIndex].positions, session.ids, session.kind, session.options, state.project.present.field, session.order) : null;
 }

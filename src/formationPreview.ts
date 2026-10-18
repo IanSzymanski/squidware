@@ -1,38 +1,49 @@
 import { generateFormation } from './domain';
+import { formationAssignmentOrder } from './formationAssignment';
 import type { FormationKind, FormationOptions, Point, Project } from './types';
 import { affinePoint } from './transforms';
 
 export interface FormationSession {
   revision: number; setId: string; ids: string[]; kind: FormationKind; options: FormationOptions;
+  /** Frozen while moving/rotating dimensions; recompute only for an explicit reassignment. */
+  order?: string[]; assignmentRotation?: number;
 }
 export interface FormationResult {
-  positions: Record<string, Point>; updates: Record<string, Point>; changed: boolean; error: string | null;
+  positions: Record<string, Point>; updates: Record<string, Point>; changed: boolean; error: string | null; travel: { total: number; maximum: number } | null;
 }
 export type FormationHandle = 'start' | 'end' | 'width' | 'depth' | 'bulge' | 'rotate' | 'center';
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
 /** Preview and acceptance use these exact destinations. Never silently fit a shape. */
-export function previewFormation(positions: Record<string, Point>, ids: readonly string[], kind: FormationKind, options: FormationOptions, field: Project['field']): FormationResult {
+export function previewFormation(positions: Record<string, Point>, ids: readonly string[], kind: FormationKind, options: FormationOptions, field: Project['field'], assignmentOrder?: readonly string[]): FormationResult {
   try {
     if (!ids.length || new Set(ids).size !== ids.length || ids.some(id => !Object.hasOwn(positions, id))) throw new Error('Select performers on this set before shaping.');
     if (![options.center.x, options.center.y].every(Number.isFinite) || options.center.x < 0 || options.center.y < 0 || options.center.x > field.width || options.center.y > field.height) throw new Error('The formation center must be inside the field.');
     if (!Number.isInteger(options.columns) || options.columns < 1 || options.columns > 500) throw new Error('Block columns must be a whole number from 1 to 500.');
     if (options.width < .1 || options.width > 200 || options.height < 0 || options.height > 200 || Math.abs(options.rotation) > 3600) throw new Error('Use width 0.1–200 yd, depth 0–200 yd and rotation −3600°–3600°.');
+    if (options.assignment !== undefined && !['position','roster'].includes(options.assignment)) throw new Error('Choose positional or roster assignment.');
     const points = generateFormation(kind, ids.length, options);
+    const order = assignmentOrder ?? formationAssignmentOrder(positions, ids, kind, options);
+    const selected = new Set(ids);
+    if (order.length !== ids.length || new Set(order).size !== ids.length || order.some(id => !selected.has(id))) throw new Error('The assignment must include every selected performer exactly once.');
+    let total = 0, maximum = 0;
     let changed = false;
     let outside = false;
-    const updates = Object.fromEntries(ids.map((id, index) => {
+    const updates = Object.fromEntries(order.map((id, index) => {
       const point = points[index];
       if (point.x < -1e-8 || point.y < -1e-8 || point.x > field.width + 1e-8 || point.y > field.height + 1e-8) outside = true;
       const after = { x: Math.abs(point.x) < 1e-8 ? 0 : point.x, y: Math.abs(point.y) < 1e-8 ? 0 : point.y };
       // Absorb floating-point overshoot at the far edges too.
       if (Math.abs(after.x - field.width) < 1e-8) after.x = field.width;
       if (Math.abs(after.y - field.height) < 1e-8) after.y = field.height;
-      if (Math.hypot(after.x - positions[id].x, after.y - positions[id].y) > 1e-9) changed = true;
+      const distance = Math.hypot(after.x - positions[id].x, after.y - positions[id].y);
+      if (!Number.isFinite(distance)) throw new Error('Formation source positions must be finite.');
+      total += distance; maximum = Math.max(maximum, distance);
+      if (distance > 1e-9) changed = true;
       return [id, after];
     }));
-    return { updates, positions: { ...positions, ...updates }, changed, error: outside ? 'The preview crosses a field boundary. Move its center or reduce its dimensions before applying.' : null };
-  } catch (error) { return { positions, updates: {}, changed: false, error: (error as Error).message }; }
+    return { updates, positions: { ...positions, ...updates }, changed, travel: { total, maximum }, error: outside ? 'The preview crosses a field boundary. Move its center or reduce its dimensions before applying.' : null };
+  } catch (error) { return { positions, updates: {}, changed: false, travel: null, error: (error as Error).message }; }
 }
 
 export function formationPoint(options: FormationOptions, x: number, y: number): Point {

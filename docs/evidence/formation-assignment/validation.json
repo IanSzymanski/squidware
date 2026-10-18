@@ -1,0 +1,242 @@
+{
+  "source": {
+    "revision": "53be79a9ee693f29211a17f391f8827c8ba2fc57",
+    "tree": "9e23530bbc98802be95ff56517b14da4233aca28",
+    "dirty": true,
+    "contentHash": "e12368e50823fff145c727299987d699b81541abff5d36e98039ba43dd651a3a",
+    "lockfileHash": "09a380b31b7652787d3a753706b7618e17fba587a1e4cc0a3498a79468320abf"
+  },
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-18T05:42:22.380Z",
+    "source": {
+      "revision": "53be79a9ee693f29211a17f391f8827c8ba2fc57",
+      "tree": "9e23530bbc98802be95ff56517b14da4233aca28",
+      "dirty": true,
+      "contentHash": "e12368e50823fff145c727299987d699b81541abff5d36e98039ba43dd651a3a",
+      "lockfileHash": "09a380b31b7652787d3a753706b7618e17fba587a1e4cc0a3498a79468320abf"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "win32",
+      "arch": "x64",
+      "os": "10.0.19045",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "3d238718a490d2029b4c0717d27dd07a6fff78bee88fb3e79d523e327f78c3bf"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "win32",
+    "arch": "x64",
+    "os": "10.0.19045",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "runId": "2026-10-18T05-45-52-453Z-981fca66",
+  "checks": [
+    {
+      "name": "formation-assignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 48215,
+      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-45-52-453Z-981fca66\\formation-assignment.log",
+      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-45-52-453Z-981fca66\\formation-assignment"
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 186844,
+      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-42-22-915Z-dcfc0798\\editor.log",
+      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-42-22-915Z-dcfc0798\\editor"
+    }
+  ],
+  "assignment": {
+    "passed": [
+      "native keyboard assignment choice changes visible ID paths and travel; reversed groups retain positional order and preview adds no history",
+      "rotation keeps assignment identity; laptop/enlarged layouts retain controls; Apply is one named undo and native save/reopen preserves roster identity and geometry"
+    ],
+    "metrics": {
+      "layouts": [
+        {
+          "width": 1366,
+          "zoom": 1,
+          "baselineHeight": 485,
+          "viewport": {
+            "width": 1366,
+            "height": 768
+          },
+          "field": {
+            "left": 228,
+            "right": 1096,
+            "top": 130,
+            "bottom": 615,
+            "width": 868,
+            "height": 485
+          },
+          "assignment": {
+            "left": 1121,
+            "right": 1344,
+            "top": 416,
+            "bottom": 450,
+            "width": 223,
+            "height": 34
+          },
+          "apply": {
+            "left": 1121,
+            "right": 1234.5,
+            "top": 247,
+            "bottom": 281,
+            "width": 113.5,
+            "height": 34
+          },
+          "cancel": {
+            "left": 1240.5,
+            "right": 1354,
+            "top": 247,
+            "bottom": 281,
+            "width": 113.5,
+            "height": 34
+          }
+        },
+        {
+          "width": 1366,
+          "zoom": 1.25,
+          "baselineHeight": 332.20001220703125,
+          "viewport": {
+            "width": 1093,
+            "height": 614
+          },
+          "field": {
+            "left": 188,
+            "right": 845.7999877929688,
+            "top": 129.40000915527344,
+            "bottom": 461.6000213623047,
+            "width": 657.7999877929688,
+            "height": 332.20001220703125
+          },
+          "assignment": {
+            "left": 870.6000366210938,
+            "right": 1072.800033569336,
+            "top": 289.6000061035156,
+            "bottom": 322.8000068664551,
+            "width": 202.1999969482422,
+            "height": 33.20000076293945
+          },
+          "apply": {
+            "left": 870.6000366210938,
+            "right": 972.7000350952148,
+            "top": 247,
+            "bottom": 281,
+            "width": 102.0999984741211,
+            "height": 34
+          },
+          "cancel": {
+            "left": 978.7000122070312,
+            "right": 1080.8000106811523,
+            "top": 247,
+            "bottom": 281,
+            "width": 102.0999984741211,
+            "height": 34
+          }
+        },
+        {
+          "width": 1120,
+          "zoom": 1,
+          "baselineHeight": 485,
+          "viewport": {
+            "width": 1120,
+            "height": 768
+          },
+          "field": {
+            "left": 188,
+            "right": 873,
+            "top": 130,
+            "bottom": 615,
+            "width": 685,
+            "height": 485
+          },
+          "assignment": {
+            "left": 898,
+            "right": 1098,
+            "top": 386,
+            "bottom": 420,
+            "width": 200,
+            "height": 34
+          },
+          "apply": {
+            "left": 898,
+            "right": 1000,
+            "top": 247,
+            "bottom": 281,
+            "width": 102,
+            "height": 34
+          },
+          "cancel": {
+            "left": 1006,
+            "right": 1108,
+            "top": 247,
+            "bottom": 281,
+            "width": 102,
+            "height": 34
+          }
+        },
+        {
+          "width": 1120,
+          "zoom": 1.25,
+          "baselineHeight": 305.3999938964844,
+          "viewport": {
+            "width": 896,
+            "height": 614
+          },
+          "field": {
+            "left": 160,
+            "right": 649,
+            "top": 129.40000915527344,
+            "bottom": 434.8000030517578,
+            "width": 489,
+            "height": 305.3999938964844
+          },
+          "assignment": {
+            "left": 673.7999877929688,
+            "right": 875.9999847412109,
+            "top": 361.6000061035156,
+            "bottom": 394.8000068664551,
+            "width": 202.1999969482422,
+            "height": 33.20000076293945
+          },
+          "apply": {
+            "left": 673.7999877929688,
+            "right": 775.8999862670898,
+            "top": 247,
+            "bottom": 281,
+            "width": 102.0999984741211,
+            "height": 34
+          },
+          "cancel": {
+            "left": 781.9000244140625,
+            "right": 884.0000228881836,
+            "top": 247,
+            "bottom": 281,
+            "width": 102.0999984741211,
+            "height": 34
+          }
+        }
+      ],
+      "positionalTravel": "Total travel 21.86 yd · Longest 5.83 yd",
+      "rosterTravel": "Total travel 75.51 yd · Longest 27.46 yd"
+    },
+    "platform": "win32"
+  },
+  "note": "Captured on the recorded working source before adding these evidence/docs files. Full hosted certification on the final PR source is linked in the PR."
+}

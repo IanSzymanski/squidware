@@ -104,7 +104,7 @@ The Inspector's selection bar keeps the selected count, coordinates or group bou
 
 Formation tools provide **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select performers and choose a shape to open a [formation preview](FORMATION_PREVIEWS.md). Adjust width, depth/bulge, rotation, center and block columns with numbers or field handles. Each shape retains its own parameters for the session. **Apply formation**, or Enter on the field, accepts the visible positions as one undoable action. **Cancel**, or Escape outside an input, keeps the original positions. Shapes crossing a field boundary cannot apply. Choose **Select all** explicitly to reshape the ensemble.
 
-The initial formation center is the selected performers' center. Assignment follows cast order. Each accepted edit can be undone. There is no automatic shortest-travel assignment solver in this release.
+The initial formation center is the selected performers' center. **Positional order** preserves their spatial order; choose **Roster order** to use Cast order instead. Review the dashed paths and total/longest travel before applying. Assignment stays fixed as you move or rotate a preview, and each accepted edit can be undone. Pinning and a shortest-travel solver remain planned.
 
 Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 

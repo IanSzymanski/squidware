@@ -102,7 +102,7 @@ export function useEditorController() {
   const activeSet = project.sets[index];
   const transformResult = useMemo(() => transformPreview ? previewExactTransform(activeSet.positions, transformPreview.ids, transformPreview.options, project.field) : null, [transformPreview, activeSet.positions, project.field]);
   function openTransform(operation: TransformOperation = 'rotate-scale', angle = 0, scale = 1) { dispatch('transform.preview', { operation, angle, scale }); }
-  const formationResult = useMemo(() => formationPreview ? previewFormation(activeSet.positions, formationPreview.ids, formationPreview.kind, formationPreview.options, project.field) : null, [formationPreview, activeSet.positions, project.field]);
+  const formationResult = useMemo(() => formationPreview ? previewFormation(activeSet.positions, formationPreview.ids, formationPreview.kind, formationPreview.options, project.field, formationPreview.order) : null, [formationPreview, activeSet.positions, project.field]);
   const duration = useMemo(() => totalCounts(project), [project.moves]);
   const readOnly = !useEditorSelector(canEditPositions);
   const issues = useMemo(() => analyzeTransition(project, index, preferences.value), [project, index, preferences.value.minimumSpacing, preferences.value.maximumStride]);
