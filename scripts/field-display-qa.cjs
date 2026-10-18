@@ -72,12 +72,18 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
   await select(ids[212]);
   await evaluate(`${editor}.setValue('ui','tool','pan')`);
+  // sendInputEvent has no renderer acknowledgement. Observe the installed tool
+  // and each gesture stage before measuring or releasing native input.
+  await wait("!!document.querySelector('.field-stage--pan') && !document.querySelector('.field-stage--moving')", 'pan tool ready');
   const panFrom = await center(ids[212]);
   await input('mousePressed', panFrom, {button:'left',clickCount:1});
+  await wait("!!document.querySelector('.field-stage--moving')", 'native pan gesture started');
   await input('mouseMoved', {x:panFrom.x+20,y:panFrom.y+10}, {button:'left',buttons:1});
+  await wait(`(() => {const r=document.querySelector('[data-performer-id="${ids[212]}"] .field-dot').getBoundingClientRect();return Math.abs(r.x+r.width/2-${panFrom.x}-20)<1 && Math.abs(r.y+r.height/2-${panFrom.y}-10)<1})()`, 'native pan movement rendered');
   await input('mouseReleased', {x:panFrom.x+20,y:panFrom.y+10}, {button:'left',clickCount:1});
+  await wait("!document.querySelector('.field-stage--moving')", 'native pan gesture finished');
   const panTo = await center(ids[212]);
-  assert.ok(Math.abs(panTo.x-panFrom.x-20)<1 && Math.abs(panTo.y-panFrom.y-10)<1);
+  assert.ok(Math.abs(panTo.x-panFrom.x-20)<1 && Math.abs(panTo.y-panFrom.y-10)<1, JSON.stringify({panFrom,panTo}));
   await evaluate(`${editor}.setValue('ui','tool','select'); ${editor}.setValue('ui','zoom',1.6); ${editor}.setValue('selection','selectedIds',${JSON.stringify([ids[212],ids[213]])}); ${editor}.dispatch('transform.preview',{})`);
   await wait("!!document.querySelector('[data-transform-handle=pivot]')", 'flipped handles');
   const pivot = await evaluate(`${state}.ui.transformPreview.options.pivot`); assert.equal(pivot.kind,'centroid');
