@@ -52,14 +52,25 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await activate('Anchor start');near(await positions(),expected([35,38.5,42]));await activate('Anchor end');near(await positions(),expected([44,47.5,51]));await activate('Anchor center');
   pass('native pointer entry and Enter/Space choices align/distribute two irregular ranks; step/yard conversion and anchors agree with visible coordinates without project edits');
   await capture('spacing-interval.png');
-  async function dragInterval(delta,cancel=false) {
-    const points=await evaluate(`(()=>{const n=document.querySelector('[data-spacing-handle]');const m=n.getScreenCTM();const a=new DOMPoint(0,0).matrixTransform(m),b=new DOMPoint(${delta},0).matrixTransform(m);return {a:{x:a.x,y:a.y},b:{x:b.x,y:b.y}}})()`);
-    for(const [type,p] of [['mouseMoved',points.a],['mousePressed',points.a],['mouseMoved',points.b]])await debug('Input.dispatchMouseEvent',{type,...p,button:type==='mousePressed'?'left':'none',buttons:type==='mouseMoved'&&p===points.b?1:type==='mousePressed'?1:0,clickCount:type==='mousePressed'?1:0});
-    if(cancel)await key('Escape');
+  async function dragInterval(delta,expectedInterval,cancel=false) {
+    await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
+    await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});
+    const points=await evaluate(`(()=>{const n=document.querySelector('[data-spacing-handle]');const m=n.getScreenCTM();const a=new DOMPoint(0,0).matrixTransform(m),b=new DOMPoint(${delta},0).matrixTransform(m);window.__spacingDragPointer=null;window.__spacingDragEvents=[];window.__spacingDragObserver?.abort();window.__spacingDragObserver=new AbortController();for(const type of ['pointerdown','pointermove','pointerup','pointercancel','gotpointercapture','lostpointercapture'])n.addEventListener(type,event=>{if(type==='pointerdown')window.__spacingDragPointer=event.pointerId;window.__spacingDragEvents.push({type,x:event.clientX,y:event.clientY,buttons:event.buttons,captured:n.hasPointerCapture(event.pointerId)})},{signal:window.__spacingDragObserver.signal});return {a:{x:a.x,y:a.y},b:{x:b.x,y:b.y},hit:n.contains(document.elementFromPoint(a.x,a.y)),before:${session}.options.interval}})()`);
+    assert.ok(points.hit,'interval handle must receive the native pointer: '+JSON.stringify(points));
+    await debug('Input.dispatchMouseEvent',{type:'mouseMoved',...points.a,button:'none',buttons:0});
+    await debug('Input.dispatchMouseEvent',{type:'mousePressed',...points.a,button:'left',buttons:1,clickCount:1});
+    await wait("window.__spacingDragPointer!==null && document.querySelector('[data-spacing-handle]').hasPointerCapture(window.__spacingDragPointer)",'interval handle captured pointer');
+    await debug('Input.dispatchMouseEvent',{type:'mouseMoved',...points.b,button:'left',buttons:1});
+    // Continuous mouse movement may be coalesced until a frame. Observe its
+    // effect before release or Escape; never replay a gesture or assertion.
+    try {await wait(`Math.abs(${session}.options.interval-${expectedInterval})<1e-4`,'interval drag rendered before release');}
+    catch(error){throw new Error(error.message+'; '+JSON.stringify({points,expectedInterval,observed:await evaluate(`({options:${session}.options,events:window.__spacingDragEvents})`)}),{cause:error});}
+    if(cancel){await key('Escape');await wait(`Math.abs(${session}.options.interval-${points.before})<1e-4`,'gesture Escape restored interval before release');}
     await debug('Input.dispatchMouseEvent',{type:'mouseReleased',...points.b,button:'left',buttons:0,clickCount:1});
+    await wait("!document.querySelector('[data-spacing-handle]').hasPointerCapture(window.__spacingDragPointer)",'interval handle released pointer');
   }
-  await dragInterval(2);await wait(`Math.abs(${session}.options.interval-5.5)<1e-4`,'handle numeric agreement');near(await positions(),expected([37.5,43,48.5]));
-  await dragInterval(1,true);await wait(`Math.abs(${session}.options.interval-5.5)<1e-4`,'escape restores handle gesture');
+  await dragInterval(2,5.5);await wait(`Math.abs(${session}.options.interval-5.5)<1e-4`,'handle numeric agreement');near(await positions(),expected([37.5,43,48.5]));
+  await dragInterval(1,6.5,true);await wait(`Math.abs(${session}.options.interval-5.5)<1e-4`,'escape restores handle gesture');
   await edit('Interval · yards',3.5);await draft('Interval · yards',-2);await key('Return');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply spacing\"]').getAttribute('aria-disabled')"),'true');
   await evaluate(`${number('Interval · yards')}.focus()`);await key('Escape');await wait(`!${state}.ui.pendingDraft`,'invalid draft canceled');
@@ -88,7 +99,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   assert.equal(await evaluate("[...document.querySelectorAll('.spacing-guides text')].every(n=>{const m=n.getScreenCTM();return m.a>0&&m.d>0})"),true,'flipped interval labels stay upright');
   await evaluate(`${editor}.setValue('ui','zoom',1.6)`);
   await wait("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))",'zoomed spacing layout');
-  await dragInterval(1);await wait(`Math.abs(${session}.options.interval-4.5)<1e-4`,'flipped zoomed handle agrees');near(await positions(),expected([38.5,43,47.5]));
+  await dragInterval(1,4.5);await wait(`Math.abs(${session}.options.interval-4.5)<1e-4`,'flipped zoomed handle agrees');near(await positions(),expected([38.5,43,47.5]));
   await edit('Interval · yards',3.5);await evaluate(`${editor}.setValue('ui','zoom',1)`);
   await fieldKey('Return');await wait(`!${session}`,'field Enter applies');
   const applied=await evaluate(`${state}.project.present`);near(applied.sets[0].positions,expected([39.5,43,46.5]));
