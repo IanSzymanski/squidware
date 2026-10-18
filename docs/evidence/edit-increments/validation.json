@@ -1,0 +1,73 @@
+{
+  "implementationRevision": "290b514d24f8698fc21943d6300149b8031d8368",
+  "platform": "win32",
+  "node": "24.19.0",
+  "os": "10.0.19045",
+  "sourceTests": 301,
+  "contractTests": 17,
+  "nativeTests": 51,
+  "workflowRuns": [
+    {
+      "runId": "2026-10-17T21-49-34-468Z-bd041c12",
+      "sourceRevision": "0cf4ec64e60fe5a039f049132209d7596e2f4d53",
+      "sourceDirty": true,
+      "sourceContentHash": "f18afff71517500f940f451a6369ac93e81aa14ffc7b8aec5061a65f4f49bf08",
+      "builtOutputHash": "27dadcbe7047bbd89ff94d5800d3dc78cc08faff4eb381542c2573f44fb69dfa",
+      "checks": [
+        {
+          "name": "field",
+          "status": "failed",
+          "elapsedMs": 95889
+        },
+        {
+          "name": "preferences",
+          "status": "passed",
+          "elapsedMs": 20641
+        },
+        {
+          "name": "editor",
+          "status": "passed",
+          "elapsedMs": 186904
+        },
+        {
+          "name": "accessibility",
+          "status": "passed",
+          "elapsedMs": 77009
+        },
+        {
+          "name": "playback",
+          "status": "passed",
+          "elapsedMs": 17011
+        }
+      ]
+    },
+    {
+      "runId": "2026-10-17T21-57-05-836Z-f7e77de4",
+      "sourceRevision": "0cf4ec64e60fe5a039f049132209d7596e2f4d53",
+      "sourceDirty": true,
+      "sourceContentHash": "32688d58e2dadccb04f42e4f40abf9b95a1e1ecd4adce450fcd7ca7356e1ff09",
+      "builtOutputHash": "27dadcbe7047bbd89ff94d5800d3dc78cc08faff4eb381542c2573f44fb69dfa",
+      "checks": [
+        {
+          "name": "field",
+          "status": "passed",
+          "elapsedMs": 98603
+        }
+      ]
+    }
+  ],
+  "note": "Both runs used identical built application output. The first field run reached all behavior checks then failed because the screenshot helper queried Preferences before the Project menu mounted. The second run adds an explicit menu-available wait and passes the complete field owner. Other four owners passed in the first run. Evidence is bounded Windows automation, not cross-platform or physical-device qualification.",
+  "layouts": [
+    "1366x768, 100%",
+    "1366x768, 125% UI zoom",
+    "1120x768, 100%"
+  ],
+  "incrementChecks": [
+    "direct command, field/global keys, normal/Shift-click buttons and flipped keys produce identical normal/fast positions and one named undo",
+    "trusted held-key events, including two auto-repeats, execute once each and undo one increment",
+    "production step units use 6/12-to-5 full steps independently of quarter-grid subdivision and help shows both configured amounts",
+    "plain arrows navigate; inputs/contenteditable, empty selection, drafts, previews and playback reject nudges; repeated off-grid edge nudges remain still",
+    "configured 30-degree/25-percent buttons enter exact previews without editing; Apply is one reversible edit",
+    "configured editing controls remain reachable at 1366/1120px and 125% UI zoom; step help stays separate from field information"
+  ]
+}

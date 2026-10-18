@@ -200,6 +200,7 @@ app.whenReady().then(async () => {
     await require('./field-display-qa.cjs')({project,editor,state,evaluate,wait,click,key,input,capture,window,pass});
     await checkNeighbors(project);
     await require('./snapping-qa.cjs')({project,editor,state,evaluate,wait,click,key,input,capture,window,pass});
+    await require('./nudge-qa.cjs')({project,editor,state,evaluate,wait,click,key,capture,window,pass});
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
      app.exit(0);
   } catch (error) {  console.error(error); if (window && !window.isDestroyed()) await capture('failure.png').catch(() => {}); app.exit(1); }
