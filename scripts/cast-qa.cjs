@@ -11,11 +11,18 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
     // Native dialog centering and selection reveal can settle after React commits.
     // Wait for an actionable target; never retry a click or its behavior assertion.
     await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n || n.disabled || n.getAttribute('aria-disabled')==='true'){resolve(false);return;}n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!n.isConnected){resolve(false);return;}const r=n.getBoundingClientRect();const x=Math.round(r.x+r.width/2),y=Math.round(r.y+r.height/2);const hit=document.elementFromPoint(x,y);window.__castClickPoint={x,y};resolve(!!hit && n.contains(hit));}));})`, 'native click target '+selector);
+    // Read back the compositor after programmatic scrolling, then await native
+    // input acknowledgements. DOM animation frames alone can precede hit testing.
+    await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});
     const point = await evaluate('window.__castClickPoint');
-    for (const type of ['mouseMove', 'mouseDown', 'mouseUp']) window.webContents.sendInputEvent({type,...point,button:'left',clickCount:1,modifiers});
+    await evaluate(`window.__castExpectedClick=document.querySelector(${JSON.stringify(selector)});window.__castActualClick=null;document.addEventListener('click',e=>{window.__castActualClick=e.target},{capture:true,once:true})`);
+    const mask = modifiers.reduce((value,key)=>value+({alt:1,control:2,meta:4,shift:8}[key]??0),0);
+    for (const type of ['mouseMoved','mousePressed','mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1,modifiers:mask});
+    await wait('!!window.__castActualClick','acknowledged native click '+selector);
+    assert.ok(await evaluate('window.__castExpectedClick.contains(window.__castActualClick)'), 'Native click must hit '+selector);
   };
   const selection = () => evaluate(`${state}.selection.selectedIds`);
-  const selected = async expected => { try { await wait(`JSON.stringify([...${state}.selection.selectedIds].sort())===${JSON.stringify(JSON.stringify([...expected].sort()))}`, 'Cast shared selection '+expected.map(id=>project.performers.find(p=>p.id===id)?.label).join(',')); } catch(error) { console.error('Expected selection',expected,'Observed',await selection(),'Native events',await evaluate('window.__castEvents ?? []')); throw error; } };
+  const selected = async expected => { try { await wait(`JSON.stringify([...${state}.selection.selectedIds].sort())===${JSON.stringify(JSON.stringify([...expected].sort()))}`, 'Cast shared selection '+expected.map(id=>project.performers.find(p=>p.id===id)?.label).join(',')); } catch(error) { console.error(JSON.stringify({expected,observed:await selection(),events:await evaluate('window.__castEvents ?? []')})); throw error; } };
   const text = async (selector, value) => {
     await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.focus();n.select()})()`);
     await window.webContents.debugger.sendCommand('Input.insertText', {text:value});
@@ -52,7 +59,7 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   assert.equal(await evaluate("document.querySelectorAll('.cast-list .selected').length"),members.length);
   pass('search and section selection retain hidden IDs; visible bulk selection only changes filtered members and explicit reveal clears filters');
 
-  await control(row(ids[212])); await control(row(ids[214]),['shift']); await selected(ids.slice(212,215));
+  await control(row(ids[212])); await selected([ids[212]]); await control(row(ids[214]),['shift']); await selected(ids.slice(212,215));
   await control(row(ids[213]),[process.platform==='darwin'?'meta':'control']); await selected([ids[212],ids[214]]);
   await key('Down');
   assert.equal(await evaluate("document.activeElement.closest('[data-cast-id]').dataset.castId"),ids[214]);
