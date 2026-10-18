@@ -105,7 +105,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       // Loading geometry alone is not evidence of a saved project file.
       patch('fileSession', { savedRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
       patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false });
-      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false });
+      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false, castQuery: '', sectionFilter: 'all' });
     },
     history: direction => {
       const history = state.project;

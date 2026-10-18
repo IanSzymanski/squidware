@@ -39,6 +39,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `editor` | Native open/save/export, invalid drafts, editing integration, one undoable drag, save races and cancellation | Complete codec matrices or every keyboard traversal. |
 | `accessibility` | One field Tab stop, all 500 performers including overlaps, native keyboard workflows, focus, text size/contrast and enlarged UI | Nearest-pointer selection algorithms. |
 | `field` | Nearest hit, tie cycling, touch, label modes/collisions, zoom and display scale | Roving Tab-stop tests owned by accessibility. |
+| `cast` | Dock/table transitions, row/dot/section selection, filtered/hidden selections, maximum-roster keyboard navigation, name/section edits, removal/undo and dock layouts | Nearest field hit-testing and native file-dialog permutations. |
 | `tooltips` | Hover delay, keyboard help, disabled activation, modal layers, keycaps and touch behavior | Basic file/state tests. |
 | `tooltips-fallback` | Unavailable WebGL, usable return to 2D, post-fallback help and compositor capture | Repeating the full normal tooltip suite. |
 | `preferences` | Choices across desktop restarts, reset/quit and native paper size | Every preference-codec invalid value. |
