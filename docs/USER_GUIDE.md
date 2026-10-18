@@ -14,6 +14,8 @@ Squidware is a desktop workspace for designing marching ensemble drill and prepa
 
 The opening set has zero move counts. Every later set stores the timing of the move **into that set**. If set 2 has 32 counts and set 3 has 24, the ensemble arrives at set 2 on count 32 and set 3 on count 56.
 
+Alt+arrows nudges the selection; Shift+Alt uses the fast amount. Move buttons share the same command, with Shift-click for fast movement. Configure yard or production-step units and rotation/scale preset sizes in Preferences. See [editing increments](EDIT_INCREMENTS.md).
+
 ## Saving and recovery
 
 Use **Grid and snapping** beside the field magnet to choose a production's step grid, subdivision, targets and group behavior. **Keep spacing** moves groups rigidly; **Individual dots** changes spacing and shows a drag preview before release. Escape cancels a drag, and Undo restores it. The active mode appears on the field. See [Grid and group snapping](GRID_SNAPPING.md) for numeric/nudge behavior, boundaries and personal defaults.

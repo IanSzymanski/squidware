@@ -8,6 +8,7 @@ import { defaultTransform, type ExactTransform, type TransformOperation } from '
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
 import { currentFormationResult, formationSessionCurrent } from './formationSession';
 import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
+import { isNudgeKey, nudgeDelta, type NudgeRequest } from '../editIncrements';
 
 export interface CommandArguments {
   'cast.show': { mode: 'panel' | 'table' | 'closed' };
@@ -23,6 +24,8 @@ export interface CommandArguments {
   'positions.place': { index: number; id: string; axis: 'x' | 'y'; value: number };
   'snapping.update': { settings: SnapSettings };
   'selection.transform': { index: number; ids: string[]; options: { dx?: number; dy?: number; rotation?: number; scale?: number } };
+  'selection.nudge': NudgeRequest;
+  'selection.increment': { operation: 'rotate' | 'scale'; direction: -1 | 1 };
   'transform.preview': { operation?: TransformOperation; angle?: number; scale?: number };
   'transform.update': { options: ExactTransform };
   'transform.apply': undefined; 'transform.cancel': undefined;
@@ -59,6 +62,11 @@ const showDialog = (context: CommandContext, dialog: Dialog) => {
   context.patch('ui', { dialog });
 };
 const editable = canEditPositions;
+const canIncrement = (s: EditorState) => editable(s) && !s.ui.dialog && !s.project.transactionName && !s.ui.pendingDraft && s.selection.selectedIds.length > 0;
+function beginTransform(c: CommandContext, args: CommandArguments['transform.preview']) {
+  const s = c.getState();
+  c.patch('ui', { workspace: 'design', view: '2d', transformPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: { ...defaultTransform(), operation: args.operation ?? 'rotate-scale', angle: args.angle ?? 0, scale: args.scale ?? 1 } } });
+}
 const setExists = (state: EditorState, index: number) => Number.isInteger(index) && index >= 0 && index < state.project.present.sets.length;
 const selectSet = (context: CommandContext, index: number) => {
   const project = context.getState().project.present;
@@ -70,6 +78,15 @@ export const commandRegistry = {
   'cast.show': define({ id: 'cast.show', name: 'Show Cast', description: 'Dock the Cast beside the field, expand its table or return to the Inspector without changing selection.', arguments: { mode: 'panel | table | closed' },
     enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview,
     execute: (c, a) => c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }) }),
+  'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow',
+    enabled: (s, a) => canIncrement(s) && !!a && isNudgeKey(a.key) && (a.fast === undefined || typeof a.fast === 'boolean') && (a.fieldRelative === undefined || typeof a.fieldRelative === 'boolean'),
+    execute: (c, a) => { const s = c.getState(); const delta = nudgeDelta(s.preferences.value, s.project.present, a); const index = s.selection.activeIndex;
+      const updates = moveSelection(s.project.present.sets[index].positions, s.selection.selectedIds, { x: delta.dx, y: delta.dy }, s.project.present.field, s.project.present.snapping ?? DEFAULT_SNAPPING, s.ui.snap, undefined, { x: !!delta.dx, y: !!delta.dy, advance: true });
+      c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === index ? { ...set, positions: { ...set.positions, ...updates } } : set) }));
+    } }),
+  'selection.increment': define({ id: 'selection.increment', name: 'Preview edit increment', description: 'Preview the configured rotation in degrees or scale percentage, then Apply or Cancel.', arguments: { operation: 'rotate | scale', direction: '-1 | 1' },
+    enabled: (s, a) => canIncrement(s) && !!a && ['rotate', 'scale'].includes(a.operation) && [-1, 1].includes(a.direction),
+    execute: (c, a) => { const p = c.getState().preferences.value; beginTransform(c, { angle: a.operation === 'rotate' ? a.direction * p.rotationStep : 0, scale: a.operation === 'scale' ? 1 + a.direction * p.scaleStep / 100 : 1 }); } }),
   'snapping.update': define({ id: 'snapping.update', name: 'Change grid and snapping', description: 'Save placement rules with this production without moving any performers.', arguments: { settings: 'SnapSettings' }, enabled: s => !s.ui.pendingDraft && !s.ui.transformPreview && !s.ui.formationPreview && !s.project.transactionName,
     execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => ({ ...p, snapping })); } }),
   'positions.place': define({ id: 'positions.place', name: 'Place performer', description: 'Place a performer using the active snap targets; the other coordinate stays unchanged.', arguments: { index: 'integer', id: 'performerId', axis: 'x | y', value: 'yards' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && !!s.project.present.sets[a.index].positions[a.id],
@@ -99,8 +116,8 @@ export const commandRegistry = {
       c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === session.setId ? { ...set, positions: { ...set.positions, ...result.updates } } : set) }));
       c.patch('ui', { formationPreview: null });
     } }),
-  'transform.preview': define({ id: 'transform.preview', name: 'Preview exact transform', description: 'Preview rotation, scaling or a field mirror on the explicit selection.', arguments: { operation: 'rotate-scale | across-50 | front-back', angle: 'degrees?', scale: 'factor?' }, enabled: s => editable(s) && !s.ui.dialog && !s.project.transactionName && !s.ui.pendingDraft && s.selection.selectedIds.length > 0,
-    execute: (c, a) => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: '2d', transformPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: { ...defaultTransform(), operation: a.operation ?? 'rotate-scale', angle: a.angle ?? 0, scale: a.scale ?? 1 } } }); } }),
+  'transform.preview': define({ id: 'transform.preview', name: 'Preview exact transform', description: 'Preview rotation, scaling or a field mirror on the explicit selection.', arguments: { operation: 'rotate-scale | across-50 | front-back', angle: 'degrees?', scale: 'factor?' }, enabled: canIncrement,
+    execute: beginTransform }),
   'transform.update': define({ id: 'transform.update', name: 'Adjust transform preview', description: 'Update the preview without changing saved geometry or history.', arguments: { options: 'ExactTransform' }, enabled: transformSessionCurrent,
     execute: (c, a) => c.patch('ui', { transformPreview: { ...c.getState().ui.transformPreview!, options: a.options } }) }),
   'transform.cancel': define({ id: 'transform.cancel', name: 'Cancel transform', description: 'Discard the transform preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.transformPreview, execute: c => c.patch('ui', { transformPreview: null }) }),
@@ -133,7 +150,7 @@ export const commandRegistry = {
   'section.add': define({ id: 'section.add', name: 'Add section', description: 'Add an ensemble section.', arguments: {}, enabled: s => s.project.present.sections.length < PROJECT_LIMITS.sections, execute: c => c.edit(p => ({ ...p, sections: [...p.sections, { id: uid(), name: `Section ${p.sections.length + 1}`, color: '#a6cce2' }] })) }),
   'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name or color.', arguments: { id: 'string', update: 'name? | color?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => section.id === a.id ? { ...section, ...a.update } : section) })) }),
   'positions.move': define({ id: 'positions.move', name: 'Move performers', description: 'Set performer coordinates on the active editable set.', arguments: { index: 'integer', updates: 'Record<performerId, Point>' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...a.updates } } : set) })) }),
-  'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow', enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: a.options.rotation !== undefined || a.options.scale !== undefined ? transformPositions(set.positions, a.ids, a.options, p.field) : { ...set.positions, ...moveSelection(set.positions, a.ids, { x: a.options.dx ?? 0, y: a.options.dy ?? 0 }, p.field, p.snapping ?? DEFAULT_SNAPPING, c.getState().ui.snap, undefined, { x: !!a.options.dx, y: !!a.options.dy, advance: true }) } } : set) })) }),
+  'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: a.options.rotation !== undefined || a.options.scale !== undefined ? transformPositions(set.positions, a.ids, a.options, p.field) : { ...set.positions, ...moveSelection(set.positions, a.ids, { x: a.options.dx ?? 0, y: a.options.dy ?? 0 }, p.field, p.snapping ?? DEFAULT_SNAPPING, c.getState().ui.snap, undefined, { x: !!a.options.dx, y: !!a.options.dy, advance: true }) } } : set) })) }),
   'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, shortcut: 'Ctrl / ⌘ A', enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
   'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, shortcut: 'Esc', enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
   'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, shortcut: '[ / ]', enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),

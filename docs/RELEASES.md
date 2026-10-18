@@ -1,6 +1,6 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 4 of 19 issues completed and 15 open. Start with [#18 — selection controls acceptance reconciliation](https://github.com/IanSzymanski/squidware/issues/18).
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is the active release, with 5 of 19 issues completed and 14 open. Start with [#18 — selection controls acceptance reconciliation](https://github.com/IanSzymanski/squidware/issues/18).
 
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
@@ -39,7 +39,7 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 - [x] [#16 · Audit A15 Reclaim field space with compact editor chrome](https://github.com/IanSzymanski/squidware/issues/16)
 - [ ] [#18 · Audit A17 Expose context-sensitive selection actions and Inspector sections](https://github.com/IanSzymanski/squidware/issues/18)
 - [x] [#20 · Audit A20 Fix dense-formation hit testing and label readability](https://github.com/IanSzymanski/squidware/issues/20)
-- [ ] [#21 · Audit A21 Support configurable grids and explicit group snapping modes](https://github.com/IanSzymanski/squidware/issues/21)
+- [x] [#21 · Audit A21 Support configurable grids and explicit group snapping modes](https://github.com/IanSzymanski/squidware/issues/21)
 - [ ] [#22 · Audit A19 Parse drill-language coordinates and support exact group moves](https://github.com/IanSzymanski/squidware/issues/22)
 - [ ] [#25 · Audit A24 Preview formations with direct field handles and safe application](https://github.com/IanSzymanski/squidware/issues/25)
 - [ ] [#26 · Audit A25 Preserve positional order when assigning performers to formations](https://github.com/IanSzymanski/squidware/issues/26)

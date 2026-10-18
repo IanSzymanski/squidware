@@ -1,3 +1,4 @@
+import { isNudgeKey, type NudgeKey } from '../editIncrements';
 import { DEFAULT_SNAPPING, gridInterval, hashLines, moveSelection, snapDescription } from '../snapping';
 import type { CoordinateOptions } from '../coordinates';
 import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -15,7 +16,7 @@ import { NeighborDrawing } from './NeighborDrawing';
 import { FormationHandles, type FieldFormationPreview } from './FormationHandles';
 import { TransformHandles, type FieldTransformPreview } from './TransformHandles';
 import type { NeighborOverlay } from '../neighborPaths';
-import { fieldDirection, fieldViewPoint, fieldViewTransform, type FieldOrientation } from './fieldOrientation';
+import { fieldViewPoint, fieldViewTransform, type FieldOrientation } from './fieldOrientation';
 
 interface DrawingProps {
   orientation?: FieldOrientation;
@@ -138,7 +139,7 @@ interface Field2DProps extends DrawingProps {
   onZoom: (zoom: number) => void;
   readOnly: boolean;
   fitVersion?: number;
-  nudgeStep?: number; fastNudgeStep?: number; coordinateFormat?: CoordinateOptions;
+  onNudge: (key: NudgeKey, fast: boolean) => void; nudgeHelp: string; coordinateFormat?: CoordinateOptions;
 }
 
 type Gesture =
@@ -148,7 +149,7 @@ type Gesture =
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, nudgeStep = .625, fastNudgeStep = 2.5, coordinateFormat, presentation, transformPreview, formationPreview, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const readoutId = useId();
@@ -357,6 +358,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   }
 
   function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
+    if (event.nativeEvent.isComposing) return;
     if (event.key === 'Enter' && formationPreview) { event.preventDefault(); event.stopPropagation(); formationPreview.onApply(); return; }
     if (event.key === 'Escape' && formationPreview) { event.preventDefault(); event.stopPropagation(); formationPreview.onCancel(); return; }
     if (event.key === 'Escape' && transformPreview) { event.preventDefault(); event.stopPropagation(); transformPreview.onCancel(); return; }
@@ -391,12 +393,8 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
         focusPerformer(nextFieldFocus(project.performers.map(person => person.id), viewPositions, targetId, event.key as FieldKey));
         return;
       }
-      if (!event.key.startsWith('Arrow') || !selectedIds.length) return;
-      if (readOnly) return;
-      const distance = event.shiftKey ? fastNudgeStep : nudgeStep;
-      const originals = Object.fromEntries(selectedIds.filter(id => positions[id]).map(id => [id, positions[id]]));
-      const delta = fieldDirection(event.key, distance, orientation);
-      onMove(moveSelection(originals, Object.keys(originals), { x: delta.dx, y: delta.dy }, project.field, project.snapping ?? DEFAULT_SNAPPING, snap, undefined, { x: !!delta.dx, y: !!delta.dy, advance: true }));
+      if (!isNudgeKey(event.key) || !selectedIds.length || readOnly) return;
+      onNudge(event.key, event.shiftKey);
     }
   }
 
@@ -410,7 +408,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#c5f47b18" stroke="#caf38a" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
       </g>
     </svg>
-    <div id={keyboardHelpId} className="field-keyboard-help">{formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · Alt+arrows: move selection · Shift+Alt: {fastNudgeStep} yd · Page Up/Down: roster · Home/End: first/last</>}</div>
+    <div id={keyboardHelpId} className="field-keyboard-help">{formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · {nudgeHelp} · Page Up/Down: roster · Home/End: first/last</>}</div>
     <div className="field-snap-status" role="status">{snapDescription(project.snapping ?? DEFAULT_SNAPPING, snap)}{moving && Object.keys(preview).length ? " · Release to apply · Escape to cancel" : ""}</div>
     <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
