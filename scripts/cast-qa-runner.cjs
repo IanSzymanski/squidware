@@ -9,6 +9,7 @@ dialog.showMessageBox = async () => ({ response: 1 });
 let window; let failure; const checks = [];
 app.on('browser-window-created', (_event, created) => {
   window = created; window.webContents.setBackgroundThrottling(false);
+  window.webContents.on('console-message', details => { if(details.level==='error')console.error(details.message); });
   window.webContents.on('render-process-gone', (_event, details) => { failure = new Error(`Renderer exited: ${details.reason}`); });
 });
 require(path.join(root, 'electron/main.cjs'));

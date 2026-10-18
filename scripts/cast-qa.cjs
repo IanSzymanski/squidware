@@ -7,8 +7,10 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   const ids = project.performers.map(p => p.id);
   const row = id => `.cast-dock [data-cast-id="${id}"] button`;
   const control = async (selector, modifiers = []) => {
-    await evaluate(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({block:'nearest'})`);
-    const point = await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n || n.disabled || n.getAttribute('aria-disabled')==='true')throw new Error('Unavailable: '+${JSON.stringify(selector)});const r=n.getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);
+    // Native dialog centering and selection reveal can settle after React commits.
+    // Wait for an actionable target; never retry a click or its behavior assertion.
+    await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n || n.disabled || n.getAttribute('aria-disabled')==='true'){resolve(false);return;}n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!n.isConnected){resolve(false);return;}const r=n.getBoundingClientRect();const x=Math.round(r.x+r.width/2),y=Math.round(r.y+r.height/2);const hit=document.elementFromPoint(x,y);window.__castClickPoint={x,y};resolve(!!hit && n.contains(hit));}));})`, 'native click target '+selector);
+    const point = await evaluate('window.__castClickPoint');
     for (const type of ['mouseMove', 'mouseDown', 'mouseUp']) window.webContents.sendInputEvent({type,...point,button:'left',clickCount:1,modifiers});
   };
   const selection = () => evaluate(`${state}.selection.selectedIds`);
