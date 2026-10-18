@@ -94,6 +94,8 @@ Move edits apply to the current set. Editing is disabled during playback and bet
 
 ### Navigate the field
 
+Choose **Place** in the selection bar for [drill-language entry](COORDINATE_ENTRY.md). For one performer, enter both axes, such as `Side 1: 4 outside the 40; 6 behind front hash`. For a selection, use a relative phrase such as `3 steps forward, 1.5 yards right`. The visible side/unit choices resolve bare numbers; steps use the production step size. Enter focuses Apply, Escape cancels, and one accepted action creates one undo. Boundary crossings reject the entire preview. Rehearsal coordinate output retains its documented 8-to-5 convention.
+
 Select the hand tool with **H** and drag to pan; return to selection with **V**. Alt-drag and middle-button drag also pan. Scroll to zoom around the pointer. Use the zoom buttons or **Fit field** to restore an overview. Double-click empty field space also fits the field.
 
 ### Create formations

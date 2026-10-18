@@ -41,6 +41,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `field` | Nearest hit, tie cycling, touch, label modes/collisions, zoom and display scale | Roving Tab-stop tests owned by accessibility. |
 | `formation-assignment` | Positional/roster mode, rendered identity paths, travel, rotation continuity, cancel, acceptance/undo and native save/reopen | Shape-handle math and the full file-dialog race matrix owned by editor. |
 | `spacing` | Alignment/distribution, unit and anchor choices, lane guides, interval-handle/number agreement, bounds/drafts, orientation/layout, undo and native save/reopen | Full snapping permutations, general nearest-hit and file-dialog race matrices. |
+| `coordinate-entry` | Inline drill phrases, explicit side/units, singleton/group preview and Apply, invalid/boundary text, orientation, layouts, named undo and native save/reopen | Parser precision matrices owned by source tests and the full file-dialog race matrix owned by editor. |
 | `cast` | Dock/table transitions, row/dot/section selection, filtered/hidden selections, maximum-roster keyboard navigation, name/section edits, removal/undo and dock layouts | Nearest field hit-testing and native file-dialog permutations. |
 | `tooltips` | Hover delay, keyboard help, disabled activation, modal layers, keycaps and touch behavior | Basic file/state tests. |
 | `tooltips-fallback` | Unavailable WebGL, usable return to 2D, post-fallback help and compositor capture | Repeating the full normal tooltip suite. |

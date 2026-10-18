@@ -1,0 +1,75 @@
+'use strict';
+const assert=require('node:assert/strict');const fs=require('node:fs/promises');
+const {settleNativeViewport}=require('./testing/renderer.cjs');
+module.exports=async function({project,editor,state,evaluate,wait,key,capture:takeScreenshot,window,pass,saved,Menu}){
+  const ids=project.performers.slice(0,3).map(p=>p.id);const layouts=[];const session=state+'.ui.coordinatePreview';
+  const debug=(method,args)=>window.webContents.debugger.sendCommand(method,args);
+  const button=title=>'[aria-label='+JSON.stringify(title)+']';
+  const capture=async name=>{await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('.tooltip-panel')",'dismissed help before capture');await takeScreenshot(name);};
+  const control=async selector=>{
+    await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
+    await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__entryPoint={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__entryPoint.x,window.__entryPoint.y)));}));})`,'actionable '+selector);
+    await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});const point=await evaluate('window.__entryPoint');
+    for(const type of ['mouseMoved','mousePressed','mouseReleased'])await debug('Input.dispatchMouseEvent',{type,...point,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
+  };
+  const activate=async title=>{const selector=JSON.stringify(button(title));await evaluate(`document.querySelector(${selector}).focus()`);await key('Return');await wait(`document.querySelector(${selector})?.getAttribute('aria-pressed')==='true'`,'activated '+title);};
+  const type=async text=>{await evaluate("(()=>{const n=document.querySelector('[aria-label=\"Drill phrase\"]');n.scrollIntoView({block:'nearest'});n.focus();n.select()})()");await debug('Input.insertText',{text});await wait(`${session}.options.text===${JSON.stringify(text)} && document.querySelector('[aria-label="Drill phrase"]').value===${JSON.stringify(text)}`,'observed phrase');};
+  const positions=(selected=ids)=>evaluate(`Object.fromEntries(${JSON.stringify(selected)}.map(id=>{const m=document.querySelector('[data-performer-id="'+id+'"]').transform.baseVal.consolidate().matrix;return [id,{x:m.e,y:m.f}]}))`);
+  const near=(actual,expected)=>{for(const id of Object.keys(expected))for(const axis of ['x','y'])assert.ok(Math.abs(actual[id][axis]-expected[id][axis])<1e-5,JSON.stringify({id,actual:actual[id],expected:expected[id]}));};
+  const fieldKey=async code=>{await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate("document.querySelector('.field-stage__svg').focus()");await key(code);};
+  const menu=label=>{function find(m){for(const item of m?.items??[]){if(item.label===label)return item;const child=find(item.submenu);if(child)return child;}}const item=find(Menu.getApplicationMenu());assert.ok(item?.click);item.click(item,window,{});};
+  async function load(p,selected){await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(p)}});${editor}.setValue('selection','selectedIds',${JSON.stringify(selected)});${editor}.setValue('ui','workspace','design');${editor}.setValue('ui','view','2d');${editor}.setValue('ui','castPanelOpen',false);${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom'});`);}
+  window.setContentSize(1366,768);window.webContents.setZoomFactor(1);await settleNativeViewport(window,'coordinate baseline');
+  await load(project,[ids[0]]);await capture('coordinate-before.png');await control(button('Enter coordinates'));await wait(`!!${session}`,'coordinate preview');
+  await wait("document.querySelector('[role=tooltip] strong')?.textContent==='Drill phrase'",'phrase focus help');
+  assert.equal(await evaluate("(()=>{const n=document.querySelector('[aria-label=\"Use current coordinate\"]'),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})()"),true,'phrase focus help must not block the neighboring pointer control');
+  await control(button('Use current coordinate'));await wait(`${session}.options.text.length>0`,'formatted current coordinate');near(await positions([ids[0]]),{[ids[0]]:{x:30.15625,y:20}});
+  await evaluate("document.querySelector('[aria-label=\"Drill phrase\"]').focus()");await key('Escape');await wait(`!${session}`,'phrase Escape cancels');assert.deepEqual(await evaluate(`${state}.project.present`),project);
+  await control(button('Enter coordinates'));await wait(`!!${session}`,'reopened coordinate entry');
+  await wait("document.activeElement?.getAttribute('aria-label')==='Drill phrase'",'entry receives focus');
+  await key('Tab');assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"),'Use example phrase');await key('Tab',['shift']);assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"),'Drill phrase');
+  await type('4 outside the 40; 6 behind front hash');await wait("document.querySelector('.coordinate-panel [role=status]').textContent.includes('Choose Side')",'ambiguous side explained');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply coordinates\"]').getAttribute('aria-disabled')"),'true');await key('Return');assert.deepEqual(await evaluate(`${state}.project.present`),project);await capture('coordinate-side-error.png');
+  await activate('Use Side 1 for coordinate entry');const target={[ids[0]]:{x:37.5,y:project.field.height-23.75}};near(await positions([ids[0]]),target);
+  assert.equal(await evaluate("document.querySelectorAll('[data-coordinate-path]').length"),1);await capture('coordinate-absolute.png');
+  menu('Save As…');await wait("document.querySelector('.save-state').textContent==='Project file saved'",'preview saves committed positions');assert.deepEqual(JSON.parse(await fs.readFile(saved,'utf8')),project);assert.equal(await evaluate(`${state}.project.past.length`),0);
+  await evaluate("document.querySelector('[aria-label=\"Drill phrase\"]').focus()");await key('Return');await wait("document.activeElement?.getAttribute('aria-label')==='Apply coordinates'",'Enter focuses Apply');assert.deepEqual(await evaluate(`${state}.project.present`),project);
+  await key('Return');await wait(`!${session}`,'keyboard applies coordinate');const placed=await evaluate(`${state}.project.present`);near(placed.sets[0].positions,target);assert.deepEqual(placed.sets.slice(1),project.sets.slice(1));assert.deepEqual(placed.performers,project.performers);
+  assert.equal(await evaluate(`${state}.project.past.length`),1);assert.match(await evaluate(`${state}.project.past[0].name`),/^Place /);
+  menu('Undo drill edit');await wait(`${state}.project.future.length===1`,'coordinate undo');assert.deepEqual(await evaluate(`${state}.project.present`),project);menu('Redo drill edit');await wait(`${state}.project.past.length===1`,'coordinate redo');
+  menu('Save As…');await wait("document.querySelector('.save-state').textContent==='Project file saved'",'saved placement');assert.deepEqual(JSON.parse(await fs.readFile(saved,'utf8')),placed);menu('Open project…');await wait(`${state}.project.past.length===0`,'reopened placement');assert.deepEqual(await evaluate(`${state}.project.present`),placed);
+  pass('pointer and Tab/Enter inline entry resolve ambiguous sides explicitly; preview save keeps committed geometry; singleton Apply is one named undo and native save/reopen retains the target');
+  const group=structuredClone(project);group.snapping={steps:6,subdivision:4,target:'markings',group:'individual'};
+  await load(group,ids);await control(button('Enter coordinates'));await wait(`${session}.options.mode==='relative'`,'group relative mode');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Absolute performer placement\"]').getAttribute('aria-disabled')"),'true');
+  await type('3 forward, 2 right');let expected=Object.fromEntries(ids.map(id=>[id,{x:group.sets[0].positions[id].x+10/6,y:group.sets[0].positions[id].y+2.5}]));near(await positions(),expected);
+  await activate('Bare numbers mean yards');expected=Object.fromEntries(ids.map(id=>[id,{x:group.sets[0].positions[id].x+2,y:group.sets[0].positions[id].y+3}]));near(await positions(),expected);
+  await activate('Require units in the phrase');await wait("document.querySelector('.coordinate-panel [role=status]').textContent.includes('Units are missing')",'bare units require a decision');
+  await type('3 steps forward, 1.5 yards right');expected=Object.fromEntries(ids.map(id=>[id,{x:group.sets[0].positions[id].x+1.5,y:group.sets[0].positions[id].y+2.5}]));near(await positions(),expected);await capture('coordinate-relative.png');
+  await type('3 steps');await wait("document.querySelector('[aria-label=\"Apply coordinates\"]').getAttribute('aria-disabled')==='true'",'incomplete input cannot apply a prior parse');near(await positions(),Object.fromEntries(ids.map(id=>[id,group.sets[0].positions[id]])));
+  await type('100 yards forward');await wait("document.querySelector('.coordinate-panel [role=status]').textContent.includes('field boundary')",'boundary policy visible');await fieldKey('Return');assert.deepEqual(await evaluate(`${state}.project.present`),group);await capture('coordinate-boundary.png');await fieldKey('Escape');await wait(`!${session}`,'field Escape cancels');
+  await control(button('Enter coordinates'));await type('3 steps forward, 1.5 yards right');await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'})`);near(await positions(),expected);await capture('coordinate-flipped.png');
+  await evaluate(`${editor}.setValue('selection','selectedIds',${JSON.stringify([ids[0],ids[1]])})`);await wait(`!${session}`,'membership change cancels stale group');assert.deepEqual(await evaluate(`${state}.project.present`),group);await evaluate(`${editor}.setValue('selection','selectedIds',${JSON.stringify(ids)})`);
+  pass('6-to-5 steps and explicit/bare unit choices resolve exact group deltas; invalid or boundary input cannot reuse a previous preview; orientation preserves physical direction and selection changes cancel stale membership');
+  for(const [width,zoom] of [[1366,1],[1366,1.25],[1120,1],[1120,1.25]]){
+    window.setContentSize(width,768);window.webContents.setZoomFactor(zoom);await settleNativeViewport(window,'coordinate layout');
+    const baselineHeight=await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
+    await control(button('Enter coordinates'));await type('3 steps forward, 1.5 yards right');
+    const metrics=await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),apply:rect('[aria-label=\"Apply coordinates\"]'),cancel:rect('[aria-label=\"Cancel coordinate entry\"]'),input:rect('[aria-label=\"Drill phrase\"]'),actions:[...document.querySelectorAll('.selection-actions>button')].map(n=>{const r=n.getBoundingClientRect();return {name:n.getAttribute('aria-label'),left:r.left,right:r.right,top:r.top,bottom:r.bottom}})}})()");
+    for(const r of [metrics.apply,metrics.cancel,metrics.input,...metrics.actions])assert.ok(r.left>=0&&r.right<=metrics.viewport.width+.5&&r.top>=0&&r.bottom<=metrics.viewport.height+.5,JSON.stringify(metrics));
+    assert.ok(Math.abs(metrics.field.height-baselineHeight)<.5);if(width===1366&&zoom===1)assert.ok(metrics.field.height>=470);assert.ok(metrics.field.height*zoom>=300);
+    layouts.push({width,zoom,baselineHeight,...metrics});await capture('coordinate-'+width+'-'+zoom+'.png');
+    await evaluate("document.querySelector('[aria-label=\"Coordinate bare-number units\"]').scrollIntoView({block:'nearest'})");
+    assert.equal(await evaluate("(()=>{const r=document.querySelector('[aria-label=\"Coordinate bare-number units\"]').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()"),true);
+    if(width===1120&&zoom===1.25)await capture('coordinate-units-enlarged.png');
+    if(width!==1120||zoom!==1.25){await control(button('Cancel coordinate entry'));await wait(`!${session}`,'layout preview canceled');}
+  }
+  window.webContents.setZoomFactor(1);window.setContentSize(1366,768);await settleNativeViewport(window,'coordinate restored');await fieldKey('Return');await wait(`!${session}`,'group field Enter applies');
+  const applied=await evaluate(`${state}.project.present`);near(applied.sets[0].positions,expected);assert.deepEqual(applied.sets.slice(1),group.sets.slice(1));assert.deepEqual(applied.performers,group.performers);assert.deepEqual(applied.moves,group.moves);
+  for(const person of group.performers.slice(3))assert.deepEqual(applied.sets[0].positions[person.id],group.sets[0].positions[person.id]);
+  assert.equal(await evaluate(`${state}.project.past.length`),1);assert.match(await evaluate(`${state}.project.past[0].name`),/^Move 3 performers/);
+  menu('Undo drill edit');await wait(`${state}.project.future.length===1`,'group undo');assert.deepEqual(await evaluate(`${state}.project.present`),group);menu('Redo drill edit');await wait(`${state}.project.past.length===1`,'group redo');
+  menu('Save As…');await wait("document.querySelector('.save-state').textContent==='Project file saved'",'saved group move');assert.deepEqual(JSON.parse(await fs.readFile(saved,'utf8')),applied);menu('Open project…');await wait(`${state}.project.past.length===0`,'reopened group move');assert.deepEqual(await evaluate(`${state}.project.present`),applied);
+  pass('default/enlarged laptop and narrow layouts retain field height, all selection actions and reachable entry/unit controls; exact group Apply preserves offsets, identities and other sets through one undo and native save/reopen');
+  return {layouts};
+};

@@ -43,6 +43,10 @@ export function useCommandController() {
         if (event.key === 'Escape') { event.preventDefault(); store.dispatch('spacing.cancel'); return; }
         if (event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('spacing.apply'); return; }
       }
+      if (state.ui.coordinatePreview && !input && !cmd && !event.altKey) {
+        if (event.key === 'Escape') { event.preventDefault(); store.dispatch('coordinates.cancel'); return; }
+        if (event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('coordinates.apply'); return; }
+      }
       if (input) return;
       if (cmd && key === 'z') { event.preventDefault(); if (!window.squidware) menuAction(event.shiftKey ? 'redo' : 'undo'); return; }
       if (cmd && key === 'a') { event.preventDefault(); store.dispatch('selection.all'); }

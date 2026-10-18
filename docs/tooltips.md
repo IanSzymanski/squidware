@@ -2,6 +2,8 @@
 
 `Tooltip` supplies one shared presentation for pointer and keyboard help. Hover waits 400 ms; focus shows help immediately. It displays a concise name/effect, current state, an unavailable reason and shortcut keycaps where a binding exists. A help link can sit beside the description, outside the noninteractive `role="tooltip"` element.
 
+The inline drill-phrase field uses `pointerPassThrough`: its descriptive popup ignores pointer hits and dismisses when the pointer moves off the field, while retaining text focus and keyboard/ARIA help. This keeps nearby example/current-coordinate and side/unit controls reachable after automatic focus. A popup containing a help link always retains the default hoverable behavior. Other controls keep the default policy.
+
 `HelpButton` and the icon `Button` use command descriptions from the registry, with explicit context overrides for actions such as applying a formation to the selection or the entire cast. `commandKeycaps` presents the current registry shortcut with Cmd on macOS and Ctrl elsewhere. Help and project-menu hints use the same formatter. Export's current binding is desktop-only; controls without bindings do not advertise invented keys. Previous/next and select/pan use the corresponding registry variant.
 
 Disabled buttons use `aria-disabled`, remain in the normal Tab order, and block click/Enter/Space activation. Disabled number/select fields keep native disabling and have a focusable group to explain why editing is unavailable. The existing input error description is preserved alongside the tooltip description. Escape dismisses help; text/number fields retain Escape draft cancellation. Tab moves normally, touching controls does not leave hover help, and activating a control dismisses its tooltip.

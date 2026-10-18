@@ -21,33 +21,38 @@ export function coordinatePrecisionLabel(options: CoordinateOptions = {}): strin
 }
 
 /** Step increments round halfway values away from zero; legacy decimals retain toFixed. */
-function roundedSteps(distance: number, options: CoordinateOptions): number {
+function roundedSteps(distance: number, options: CoordinateOptions, stepsPerFive: 6 | 8 | 12): number {
   const format = resolvedFormat(options);
   const precision = format.coordinatePrecision;
-  if (precision === 'decimal') return Number((Math.abs(distance) * 8 / 5).toFixed(format.coordinateDecimals));
+  if (precision === 'decimal') return Number((Math.abs(distance) * stepsPerFive / 5).toFixed(format.coordinateDecimals));
   const divisions = precision === 'whole' ? 1 : precision === 'half' ? 2 : 4;
-  return Math.floor(Math.abs(distance) * 8 / 5 * divisions + .5 + 1e-9) / divisions;
+  return Math.floor(Math.abs(distance) * stepsPerFive / 5 * divisions + .5 + 1e-9) / divisions;
 }
 const stepText = (value: number) => `${value} ${value === 1 ? 'step' : 'steps'}`;
 
-export function coordinateDescription(point: Point, field: Project['field'], options: CoordinateOptions = {}): string {
+export function coordinateReferences(field: Project['field']) {
+  const hashOffset = field.preset === 'college' ? 20 : 160 / 9;
+  return [
+    { name: 'back sideline', y: 0 }, { name: 'back hash', y: Math.min(hashOffset, field.height / 2) },
+    { name: 'front hash', y: Math.max(field.height - hashOffset, field.height / 2) }, { name: 'front sideline', y: field.height },
+  ];
+}
+
+/** Entry can choose a basis explicitly; existing readout/export calls retain 8-to-5. */
+export function coordinateDescription(point: Point, field: Project['field'], options: CoordinateOptions = {}, stepsPerFive: 6 | 8 | 12 = 8): string {
   const side = point.x <= field.width / 2 ? 1 : 2;
   const fromGoal = side === 1 ? point.x : field.width - point.x;
   const half = field.width / 2;
   // Restrict references to the field: outside positions refer to a goal, never a negative yard line.
   const yardLine = Math.max(0, Math.min(half, Math.round(fromGoal / 5) * 5));
   const xDifference = fromGoal - yardLine;
-  const xSteps = roundedSteps(xDifference, options);
+  const xSteps = roundedSteps(xDifference, options, stepsPerFive);
   const reference = yardLine === 0 ? 'goal line' : `${Number(yardLine.toFixed(3))}-yard line`;
   const horizontal = xSteps === 0 ? `on the ${reference}` : `${stepText(xSteps)} ${xDifference > 0 ? 'inside' : 'outside'} the ${reference}`;
-  const hashOffset = field.preset === 'college' ? 20 : 160 / 9;
-  const references = [
-    { name: 'back sideline', y: 0 }, { name: 'back hash', y: Math.min(hashOffset, field.height / 2) },
-    { name: 'front hash', y: Math.max(field.height - hashOffset, field.height / 2) }, { name: 'front sideline', y: field.height },
-  ];
+  const references = coordinateReferences(field);
   const nearest = references.reduce((best, ref) => Math.abs(point.y - ref.y) < Math.abs(point.y - best.y) - 1e-9 ? ref : best);
   const yDifference = point.y - nearest.y;
-  const ySteps = roundedSteps(yDifference, options);
+  const ySteps = roundedSteps(yDifference, options, stepsPerFive);
   const vertical = ySteps === 0 ? `on ${nearest.name}` : `${stepText(ySteps)} ${yDifference > 0 ? 'in front of' : 'behind'} ${nearest.name}`;
   return `${yardLine === half && xSteps === 0 ? `On the ${reference}` : `Side ${side}: ${horizontal}`}; ${vertical}`;
 }

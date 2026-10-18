@@ -1,7 +1,5 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is active, with 12 of 19 issues completed and 7 open. The next independent feature is [#79 — spacing and alignment](https://github.com/IanSzymanski/squidware/issues/79). [#36](https://github.com/IanSzymanski/squidware/issues/36) still awaits its first-time reviewer discovery check.
-
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
 ## v0.5 — Reliable foundation
@@ -32,7 +30,7 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 
 Dense-field selection, formations, exact transforms, coordinate entry, spacing and snapping, shared Cast selection, workspace controls and accessible display choices.
 
-12/19 implementation issues completed at reconciliation.
+13/19 implementation issues completed at reconciliation.
 
 - [x] [#16 · Audit A15 Reclaim field space with compact editor chrome](https://github.com/IanSzymanski/squidware/issues/16)
 - [x] [#18 · Audit A17 Expose context-sensitive selection actions and Inspector sections](https://github.com/IanSzymanski/squidware/issues/18)
@@ -52,7 +50,7 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 - [ ] [#43 · Audit A44 Introduce neutral dark/light themes, UI scaling and high contrast](https://github.com/IanSzymanski/squidware/issues/43)
 - [ ] [#65 · Audit A65 Add a drill-aware command palette and rebindable shortcuts](https://github.com/IanSzymanski/squidware/issues/65)
 - [x] [#67 · Audit A66 Unify nudge behavior and make edit increments configurable](https://github.com/IanSzymanski/squidware/issues/67)
-- [ ] [#79 · Roadmap Add spacing guides, exact interval controls, alignment and distribution](https://github.com/IanSzymanski/squidware/issues/79)
+- [x] [#79 · Roadmap Add spacing guides, exact interval controls, alignment and distribution](https://github.com/IanSzymanski/squidware/issues/79)
 
 ## v0.7 — Show timing and analysis
 

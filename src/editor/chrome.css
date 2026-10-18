@@ -94,6 +94,10 @@
 .spacing-choices button, .spacing-panel .form-row button { width: 100%; padding: 6px 4px; min-width: 0; font-size: 11px; }
 .spacing-panel .form-label { margin-top: 10px; }
 .spacing-panel .spacing-lanes { width: 100%; margin-top: 10px; font-size: 12px; }
+.coordinate-panel .form-label { margin-top: 12px; }
+.coordinate-panel textarea { min-height: 86px; font-size: 12px; line-height: 1.5; resize: vertical; }
+.coordinate-panel .spacing-choices button, .coordinate-examples button { min-width: 0; font-size: 11px; padding: 6px 3px; }
+.coordinate-resolved { margin-top: 10px; font-size: 12px; line-height: 1.5; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .transform-result { margin-top: 10px; font-size: 12px; line-height: 1.5; color: #294767; }
 .transform-result--error { color: #8b2f25; font-weight: 600; }
 .transform-preview-banner { min-height: 0; padding: 6px 10px; border-color: #8dc8ff; background: #20364ff5; color: #e5f1ff; pointer-events: none; }
