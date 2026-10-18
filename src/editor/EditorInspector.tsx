@@ -10,6 +10,7 @@ import { HelpButton } from './ControlHelp';
 import { Tooltip } from '../components/Tooltip';
 import { FormationPanel } from './FormationPanel';
 import { TransformPanel } from './TransformPanel';
+import { SpacingPanel } from './SpacingPanel';
 import type { EditorController } from './useEditorController';
 
 type SectionPreference = Extract<keyof Preferences, `inspector${string}Open`>;
@@ -33,7 +34,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
     setPendingDraft,
     updateSet, setPlaying, duplicateSet, setDialog, reorderSet, applyFormation, selectSet, setSelectedIds,
     setShowPaths, setWorkspace } = controller;
-  const displayPositions = controller.formationResult?.positions ?? controller.transformResult?.positions ?? activeSet.positions;
+  const displayPositions = controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? activeSet.positions;
   const points = useMemo(() => selectedPerformers.map(performer => displayPositions[performer.id]), [selectedPerformers, displayPositions]);
   const bounds = useMemo(() => points.length ? {
     x: Math.min(...points.map(p => p.x)), y: Math.min(...points.map(p => p.y)),
@@ -43,7 +44,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
     centerY: points.reduce((sum, point) => sum + point.y / points.length, 0),
   } : null, [points]);
   const format = (n: number) => Number(n.toFixed(2));
-  const unavailable = controller.formationPreview ? 'Apply or cancel the formation preview before other position edits.' : controller.transformPreview ? 'Apply or cancel the transform preview before other position edits.' : controller.pendingDraft ? 'Finish or cancel the pending input first.' : readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
+  const unavailable = controller.spacingPreview ? 'Apply or cancel the spacing preview before other position edits.' : controller.formationPreview ? 'Apply or cancel the formation preview before other position edits.' : controller.transformPreview ? 'Apply or cancel the transform preview before other position edits.' : controller.pendingDraft ? 'Finish or cancel the pending input first.' : readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   const single = selectedPerformers.length === 1 ? selectedPerformers[0] : undefined;
   function reveal(preference: SectionPreference, selector: string) {
     controller.preferences.update({ [preference]: true });
@@ -60,7 +61,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
           : <HelpButton command="selection.all" title="Select all for editing" disabled={!project.performers.length} disabledReason="Add performers to the cast first." onClick={() => setSelectedIds(project.performers.map(p => p.id))}><Users size={13} />Select all</HelpButton>}
       </div>
       <div className="selection-bounds">{bounds ? <>
-        <span>{controller.transformPreview || controller.formationPreview ? 'Preview' : 'Set ' + (index + 1)} · {single ? single.label : `Center ${format(bounds.centerX)}, ${format(bounds.centerY)} yd`}</span>
+        <span>{controller.transformPreview || controller.formationPreview || controller.spacingPreview ? 'Preview' : 'Set ' + (index + 1)} · {single ? single.label : `Center ${format(bounds.centerX)}, ${format(bounds.centerY)} yd`}</span>
         <span>{single ? `X ${format(bounds.x)} · Y ${format(bounds.y)} yd` : `Bounds ${format(bounds.width)} × ${format(bounds.height)} yd`}</span>
       </> : <span>Select dots or a section to edit.</span>}</div>
       <div className="selection-actions" role="group" aria-label="Edit selected performers">
@@ -68,7 +69,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
         <HelpButton command="transform.preview" title="Rotate selection" description="Preview exact rotation and scaling with numeric controls, field handles and a chosen pivot." disabled={!points.length || readOnly || controller.pendingDraft} disabledReason={unavailable} onClick={() => controller.openTransform()}><RotateCw size={14} />Rotate</HelpButton>
         <HelpButton title="Shape selection" description="Choose a formation and its dimensions for the explicit selection." disabled={!points.length || readOnly} disabledReason={unavailable} onClick={() => { controller.preferences.update({ inspectorFormationOpen: true }); controller.dispatch('formation.preview', {}); }}><Sparkles size={14} />Shape</HelpButton>
         <HelpButton command="transform.preview" title="Mirror selection" description="Preview a mirror across the 50 or a front-to-back flip. Apply or Cancel before editing other positions." disabled={!points.length || readOnly || controller.pendingDraft} disabledReason={unavailable} onClick={() => controller.openTransform('across-50')}><FlipHorizontal2 size={14} />Mirror</HelpButton>
-        <HelpButton title="Align selection" description="Align selected performers along an axis." disabled disabledReason={!points.length || readOnly ? unavailable : 'Alignment tools are not available yet.'}><AlignHorizontalJustifyCenter size={14} />Align</HelpButton>
+        <HelpButton command="spacing.preview" title="Align selection" description="Preview alignment, distribution or exact intervals for the selected performers." disabled={points.length < 2 || readOnly || controller.pendingDraft} disabledReason={points.length < 2 ? 'Select at least two performers to align or space.' : unavailable} onClick={() => controller.dispatch('spacing.preview')}><AlignHorizontalJustifyCenter size={14} />Align</HelpButton>
       </div>
       {controller.formationPreview && <div className="transform-commit-actions" role="group" aria-label="Commit formation preview">
         <HelpButton command="formation.apply" title="Apply formation" className="button primary apply-formation" disabled={controller.pendingDraft || !!controller.formationResult?.error || !controller.formationResult?.changed} disabledReason={controller.formationResult?.error || (controller.pendingDraft ? 'Finish or cancel incomplete inputs.' : 'The preview matches the original positions.')} onClick={applyFormation}>Apply formation</HelpButton>
@@ -78,10 +79,15 @@ export function EditorInspector({ controller }: { controller: EditorController }
         <HelpButton command="transform.apply" title="Apply transform" className="button primary" disabled={controller.pendingDraft || !!controller.transformResult?.error || !controller.transformResult?.changed} disabledReason={controller.transformResult?.error || (controller.pendingDraft ? 'Finish or cancel incomplete inputs.' : 'Change the angle, scale, pivot or mirror to preview a new position.')} onClick={() => controller.dispatch('transform.apply')}>Apply transform</HelpButton>
         <HelpButton command="transform.cancel" title="Cancel transform" className="button subtle" onClick={() => controller.dispatch('transform.cancel')}>Cancel</HelpButton>
       </div>}
-      {readOnly && !controller.transformPreview && !controller.formationPreview && <HelpButton command="set.select" showShortcut={false} title="Return to this set to edit" className="return-to-set" onClick={() => selectSet(index)}>Preview · return to set {index + 1} to edit<ArrowRight size={13} /></HelpButton>}
+      {controller.spacingPreview && <div className="transform-commit-actions" role="group" aria-label="Commit spacing preview">
+        <HelpButton command="spacing.apply" title="Apply spacing" className="button primary" disabled={controller.pendingDraft || !!controller.spacingResult?.error || !controller.spacingResult?.changed} disabledReason={controller.spacingResult?.error || (controller.pendingDraft ? 'Finish or cancel incomplete inputs.' : 'The preview matches the original positions.')} onClick={() => controller.dispatch('spacing.apply')}>Apply spacing</HelpButton>
+        <HelpButton command="spacing.cancel" title="Cancel spacing" className="button subtle" onClick={() => controller.dispatch('spacing.cancel')}>Cancel</HelpButton>
+      </div>}
+      {readOnly && !controller.transformPreview && !controller.formationPreview && !controller.spacingPreview && <HelpButton command="set.select" showShortcut={false} title="Return to this set to edit" className="return-to-set" onClick={() => selectSet(index)}>Preview · return to set {index + 1} to edit<ArrowRight size={13} /></HelpButton>}
     </div>
     <div className="inspector-scroll">
       {controller.transformPreview && <TransformPanel controller={controller} />}
+      {controller.spacingPreview && <SpacingPanel controller={controller} />}
       {points.length > 0 && <InspectorSection title={single ? 'Performer position' : 'Group selection'} preference="inspectorSelectionOpen" className="selection-section" controller={controller}>
         {single && <div key={`${projectEpoch}:${activeSet.id}:${single.id}`} className="selected-performer">
           <strong>{single.label}</strong><span>{single.name || project.sections.find(s => s.id === single.sectionId)?.name}</span>

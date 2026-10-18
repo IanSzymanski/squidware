@@ -90,7 +90,7 @@ app.whenReady().then(async () => {
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
       assert.match(await tooltip(), /Preview a shape for 1 selected performer/);
       for (const name of ['Align selection']) {
-        await focus(name); assert.match(await tooltip(), /Unavailable:.*tools are not available yet/);
+        await focus(name); assert.match(await tooltip(), /Unavailable:.*Select at least two performers/);
         await key('Return'); await key('Space');
         assert.equal(await evaluate(`${editor}.getState().project.revision`), revision);
       }

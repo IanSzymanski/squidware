@@ -28,6 +28,11 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
       name = `${session?.options.operation === 'across-50' ? 'Mirror across 50' : session?.options.operation === 'front-back' ? 'Flip front/back' : 'Rotate/scale'} ${session?.ids.length ?? 0} performers — ${picture}`; break;
     }
     case 'formation.apply': name = `Apply ${state.ui.formationPreview?.kind} to ${state.ui.formationPreview?.ids.length ?? 0} performers (${state.ui.formationPreview?.options.assignment === 'position' ? 'positional' : 'roster'} assignment) — ${picture}`; break;
+    case 'spacing.apply': {
+      const session = state.ui.spacingPreview; const options = session?.options;
+      const operation = options?.operation === 'align' ? 'Align' : options?.operation === 'distribute' ? 'Distribute' : `Space at ${options?.interval} ${options?.unit}`;
+      name = `${operation} ${session?.ids.length ?? 0} performers · ${options?.angle}° axis — ${picture}`; break;
+    }
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;
