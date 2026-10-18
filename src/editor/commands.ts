@@ -10,6 +10,8 @@ import { currentFormationResult, formationSessionCurrent } from './formationSess
 import { formationAssignmentOrder, formationCenter } from '../formationAssignment';
 import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
 import { isNudgeKey, nudgeDelta, type NudgeRequest } from '../editIncrements';
+import { defaultSpacing, type SpacingOptions } from '../spacing';
+import { currentSpacingResult, spacingSessionCurrent } from './spacingSession';
 
 export interface CommandArguments {
   'cast.show': { mode: 'panel' | 'table' | 'closed' };
@@ -30,6 +32,8 @@ export interface CommandArguments {
   'transform.preview': { operation?: TransformOperation; angle?: number; scale?: number };
   'transform.update': { options: ExactTransform };
   'transform.apply': undefined; 'transform.cancel': undefined;
+  'spacing.preview': undefined; 'spacing.update': { options: SpacingOptions };
+  'spacing.apply': undefined; 'spacing.cancel': undefined;
   'formation.preview': { kind?: FormationKind };
   'formation.update': { options: FormationOptions };
   'formation.apply': undefined; 'formation.cancel': undefined;
@@ -77,7 +81,7 @@ const selectSet = (context: CommandContext, index: number) => {
 
 export const commandRegistry = {
   'cast.show': define({ id: 'cast.show', name: 'Show Cast', description: 'Dock the Cast beside the field, expand its table or return to the Inspector without changing selection.', arguments: { mode: 'panel | table | closed' },
-    enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview,
+    enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview,
     execute: (c, a) => c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }) }),
   'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow',
     enabled: (s, a) => canIncrement(s) && !!a && isNudgeKey(a.key) && (a.fast === undefined || typeof a.fast === 'boolean') && (a.fieldRelative === undefined || typeof a.fieldRelative === 'boolean'),
@@ -88,7 +92,7 @@ export const commandRegistry = {
   'selection.increment': define({ id: 'selection.increment', name: 'Preview edit increment', description: 'Preview the configured rotation in degrees or scale percentage, then Apply or Cancel.', arguments: { operation: 'rotate | scale', direction: '-1 | 1' },
     enabled: (s, a) => canIncrement(s) && !!a && ['rotate', 'scale'].includes(a.operation) && [-1, 1].includes(a.direction),
     execute: (c, a) => { const p = c.getState().preferences.value; beginTransform(c, { angle: a.operation === 'rotate' ? a.direction * p.rotationStep : 0, scale: a.operation === 'scale' ? 1 + a.direction * p.scaleStep / 100 : 1 }); } }),
-  'snapping.update': define({ id: 'snapping.update', name: 'Change grid and snapping', description: 'Save placement rules with this production without moving any performers.', arguments: { settings: 'SnapSettings' }, enabled: s => !s.ui.pendingDraft && !s.ui.transformPreview && !s.ui.formationPreview && !s.project.transactionName,
+  'snapping.update': define({ id: 'snapping.update', name: 'Change grid and snapping', description: 'Save placement rules with this production without moving any performers.', arguments: { settings: 'SnapSettings' }, enabled: s => !s.ui.pendingDraft && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.project.transactionName,
     execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => ({ ...p, snapping })); } }),
   'positions.place': define({ id: 'positions.place', name: 'Place performer', description: 'Place a performer using the active snap targets; the other coordinate stays unchanged.', arguments: { index: 'integer', id: 'performerId', axis: 'x | y', value: 'yards' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && !!s.project.present.sets[a.index].positions[a.id],
     execute: (c, a) => { const s = c.getState(); const project = s.project.present; const positions = project.sets[a.index].positions;
@@ -135,6 +139,16 @@ export const commandRegistry = {
       if (result.error || !result.changed) throw new Error(result.error ?? 'The preview matches the original positions.');
       c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === session.setId ? { ...set, positions: { ...set.positions, ...result.updates } } : set) }));
       c.patch('ui', { transformPreview: null });
+    } }),
+  'spacing.preview': define({ id: 'spacing.preview', name: 'Align and space selection', description: 'Preview alignment, even distribution or exact intervals for at least two selected performers on this set.', arguments: {}, enabled: s => canIncrement(s) && s.selection.selectedIds.length >= 2,
+    execute: c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: '2d', spacingPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: defaultSpacing() } }); } }),
+  'spacing.update': define({ id: 'spacing.update', name: 'Adjust spacing preview', description: 'Update exact intervals and alignment guides without editing the project.', arguments: { options: 'SpacingOptions' }, enabled: spacingSessionCurrent,
+    execute: (c, a) => c.patch('ui', { spacingPreview: { ...c.getState().ui.spacingPreview!, options: a.options } }) }),
+  'spacing.cancel': define({ id: 'spacing.cancel', name: 'Cancel spacing', description: 'Discard spacing guides and keep original positions.', arguments: {}, enabled: s => !!s.ui.spacingPreview, execute: c => c.patch('ui', { spacingPreview: null }) }),
+  'spacing.apply': define({ id: 'spacing.apply', name: 'Apply spacing', description: 'Accept the visible spacing preview as one named undo action.', arguments: {}, enabled: s => { const result = currentSpacingResult(s); return !s.ui.pendingDraft && !!result?.changed && !result.error; },
+    execute: c => { const s = c.getState(); const session = s.ui.spacingPreview!; const result = currentSpacingResult(s)!;
+      c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === session.setId ? { ...set, positions: { ...set.positions, ...result.updates } } : set) }));
+      c.patch('ui', { spacingPreview: null });
     } }),
   'project.update': define({ id: 'project.update', name: 'Update production', description: 'Edit production metadata, field markings or audio synchronization.', arguments: { title: 'string?', ensemble: 'string?', audioOffsetSeconds: 'number?', preset: 'college | high-school?' }, enabled: always,
     execute: (c, { preset, ...update }) => c.edit(p => ({ ...p, ...update, field: preset ? { ...p.field, preset } : p.field })) }),

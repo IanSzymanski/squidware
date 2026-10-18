@@ -1,0 +1,176 @@
+{
+  "passed": [
+    "native pointer entry and Enter/Space choices align/distribute two irregular ranks; step/yard conversion and anchors agree with visible coordinates without project edits",
+    "interval handle matches numeric entry; gesture Escape restores parameters; invalid drafts and field crossings cannot apply; Cancel keeps history and positions intact",
+    "default/enlarged laptop and narrow layouts retain field height and reachable controls; orientation preserves geometry; Apply is one named undo; native save/reopen preserves identities, other sets and unselected dots"
+  ],
+  "metrics": {
+    "layouts": [
+      {
+        "width": 1366,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 228,
+          "right": 1096,
+          "top": 130,
+          "bottom": 615,
+          "width": 868,
+          "height": 485
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 247,
+          "bottom": 281,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 247,
+          "bottom": 281,
+          "width": 113.5,
+          "height": 34
+        },
+        "panel": {
+          "left": 1109,
+          "right": 1356,
+          "top": 290,
+          "bottom": 1192,
+          "width": 247,
+          "height": 902
+        }
+      },
+      {
+        "width": 1366,
+        "zoom": 1.25,
+        "baselineHeight": 332.20001220703125,
+        "viewport": {
+          "width": 1093,
+          "height": 614
+        },
+        "field": {
+          "left": 188,
+          "right": 845.7999877929688,
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "width": 657.7999877929688,
+          "height": 332.20001220703125
+        },
+        "apply": {
+          "left": 870.6000366210938,
+          "right": 972.7000350952148,
+          "top": 247,
+          "bottom": 281,
+          "width": 102.0999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 978.7000122070312,
+          "right": 1080.8000106811523,
+          "top": 247,
+          "bottom": 281,
+          "width": 102.0999984741211,
+          "height": 34
+        },
+        "panel": {
+          "left": 858.6000366210938,
+          "right": 1084.800033569336,
+          "top": 289.8000183105469,
+          "bottom": 1199.2000427246094,
+          "width": 226.1999969482422,
+          "height": 909.4000244140625
+        }
+      },
+      {
+        "width": 1120,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 188,
+          "right": 873,
+          "top": 130,
+          "bottom": 615,
+          "width": 685,
+          "height": 485
+        },
+        "apply": {
+          "left": 898,
+          "right": 1000,
+          "top": 247,
+          "bottom": 281,
+          "width": 102,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1006,
+          "right": 1108,
+          "top": 247,
+          "bottom": 281,
+          "width": 102,
+          "height": 34
+        },
+        "panel": {
+          "left": 886,
+          "right": 1110,
+          "top": 290,
+          "bottom": 1206,
+          "width": 224,
+          "height": 916
+        }
+      },
+      {
+        "width": 1120,
+        "zoom": 1.25,
+        "baselineHeight": 305.3999938964844,
+        "viewport": {
+          "width": 896,
+          "height": 614
+        },
+        "field": {
+          "left": 160,
+          "right": 649,
+          "top": 129.40000915527344,
+          "bottom": 434.8000030517578,
+          "width": 489,
+          "height": 305.3999938964844
+        },
+        "apply": {
+          "left": 673.7999877929688,
+          "right": 775.8999862670898,
+          "top": 247,
+          "bottom": 281,
+          "width": 102.0999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 781.9000244140625,
+          "right": 884.0000228881836,
+          "top": 247,
+          "bottom": 281,
+          "width": 102.0999984741211,
+          "height": 34
+        },
+        "panel": {
+          "left": 661.7999877929688,
+          "right": 887.9999847412109,
+          "top": 289.8000183105469,
+          "bottom": 1199.2000427246094,
+          "width": 226.1999969482422,
+          "height": 909.4000244140625
+        }
+      }
+    ]
+  },
+  "platform": "win32"
+}

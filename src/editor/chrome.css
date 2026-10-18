@@ -89,6 +89,11 @@
 .transform-panel { background: #eef5fd; }
 .transform-panel h3 { font-size: 13px; }
 .transform-panel .microcopy { margin-top: 8px; }
+.spacing-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.spacing-choices > span, .spacing-panel .form-row > span { display: flex; min-width: 0; flex: 1; }
+.spacing-choices button, .spacing-panel .form-row button { width: 100%; padding: 6px 4px; min-width: 0; font-size: 11px; }
+.spacing-panel .form-label { margin-top: 10px; }
+.spacing-panel .spacing-lanes { width: 100%; margin-top: 10px; font-size: 12px; }
 .transform-result { margin-top: 10px; font-size: 12px; line-height: 1.5; color: #294767; }
 .transform-result--error { color: #8b2f25; font-weight: 600; }
 .transform-preview-banner { min-height: 0; padding: 6px 10px; border-color: #8dc8ff; background: #20364ff5; color: #e5f1ff; pointer-events: none; }

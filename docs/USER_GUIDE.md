@@ -98,6 +98,8 @@ Select the hand tool with **H** and drag to pan; return to selection with **V**.
 
 ### Create formations
 
+Choose **Align** in the selection bar to [align coordinates, distribute evenly or set exact intervals](SPACING_ALIGNMENT.md) for at least two selected performers. Choose X, Y or a rotated axis, and an anchor. Intervals support yards or production step units; **Each rank/file** spaces block rows or columns separately using an explicit lane tolerance. Inspect the guides, then Apply or Cancel. Exact spacing bypasses snapping and rejects field crossings. Apply creates one named undo action.
+
 The Inspector's selection bar keeps the selected count, coordinates or group bounds, and **Move**, **Rotate**, **Shape**, and **Mirror** actions visible. **Move** opens position controls; **Shape** opens formation parameters. Inspector sections can be collapsed by clicking their headings or using Enter/Space, and your expansion choices survive restart. Align explains its availability when focused; alignment tools are still planned.
 
 **Rotate** opens an [exact transform preview](EXACT_TRANSFORMS.md). Enter an angle and scale percentage; choose the selection center, a performer, custom coordinates or a field reference as pivot. The round field handle rotates, the square handle scales, and the crosshair moves the pivot. **Mirror** previews reflection across the 50; choose **Flip front to back** for the other field axis. Original dots have dashed outlines. Choose **Apply transform** for one undoable edit, or **Cancel** to keep original positions. Out-of-field previews cannot be applied. Selecting another set or changing the selection cancels the preview.

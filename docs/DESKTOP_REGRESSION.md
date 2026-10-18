@@ -9,6 +9,7 @@ Each platform installs the locked application toolchain and pinned PDF inspectio
 | Native smoke | Sandboxed renderer, isolated bridge and recovery-worker round trip. |
 | Editor | Create/edit/save/reopen, native file handlers with injected cancel/error results, invalid/pending drafts, multi-frame drag, undo/redo, playback, preview locks, CSV/SVG exports. |
 | Accessibility | Keyboard entry/exit, reachability of all 500 performers including overlaps, selection/nudge distinctions, focus visibility, keyboard save/export, text sizes at 125% UI zoom. |
+| Spacing | Alignment, distribution, unit/anchor choices, lane guides, interval-handle/number agreement, invalid drafts, bounds, orientation, narrow/enlarged layouts, named undo and native save/reopen. |
 | Tooltip | Pointer/focus, disabled explanations and activation guards, native platform shortcut labels, modal layers, explicit unavailable-WebGL pass. |
 | Preferences | Multiple desktop launches, saved choices, reset, pending quit and A4/Letter PDF dimensions. |
 | Thumbnails | Maximum-size invalidation counts, roster/colors/selection, undo/redo and playback. |

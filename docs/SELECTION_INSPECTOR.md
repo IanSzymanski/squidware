@@ -8,7 +8,7 @@ Implements the workspace scope of [#18](https://github.com/IanSzymanski/squidwar
 - Move, Rotate and Shape reveal the relevant section and transfer keyboard focus to its controls. Shape parameters and the explicitly scoped Apply formation action stay together.
 - Between sets or during playback: label the summary with its source set, disable positional edits, and offer Return to this set to edit. The existing live field readout remains the authority for sampled preview positions.
 
-Mirror opens the [exact transform preview](EXACT_TRANSFORMS.md) from #27. Align remains a discoverable, focusable disabled action with an availability explanation until #79. Formation previews and formation handles remain #25; formation application retains its immediate, undoable command.
+Mirror opens the [exact transform preview](EXACT_TRANSFORMS.md) from #27. Align opens [spacing and alignment](SPACING_ALIGNMENT.md) for at least two selected performers, including exact intervals and even distribution. Formation controls use their own preview and field handles; each accepted operation is one named undo action.
 
 ## Section state and drafts
 

@@ -14,6 +14,7 @@ This is an independent early release of a Pyware-style alternative. It implement
 
 - **Design in 2D:** select individual performers or groups, marquee-select, drag, enter exact coordinates, snap to an 8-to-5 step grid, nudge, pan, zoom, and inspect paths from the previous set.
 - **Personalize the field:** save [dot/label sizes, coloring and audience orientation](docs/FIELD_DISPLAY.md) on this device while preserving production and print geometry.
+- **Align and space:** [preview alignment, distribution and exact intervals](docs/SPACING_ALIGNMENT.md) in yards or marching steps, with field guides, rotated axes and optional row/file grouping.
 - **Shape formations:** explicitly select performers, then [preview lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md) with field handles and independent parameters. Apply accepts one undoable edit; Cancel keeps the original geometry. [Exact transforms](docs/EXACT_TRANSFORMS.md) preview rotation, scale and field mirrors with numeric or direct controls and a chosen pivot. The [contextual Inspector](docs/SELECTION_INSPECTOR.md) keeps selection actions visible and remembers collapsed sections.
 - **Rehearse in 3D:** orbit an actual WebGL field with section-colored performer markers, shadows, and perspective, front, and overhead cameras.
 - **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo named actions, review session History, and cancel text/color drafts.
