@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { NumberField } from '../components/NumberField';
-import type { FormationAssignment, FormationOptions } from '../types';
+import type { FormationOptions } from '../types';
 import { formations } from './formations';
 import { HelpButton } from './ControlHelp';
 import type { EditorController } from './useEditorController';
@@ -22,7 +22,10 @@ export function FormationPanel({ controller: c }: { controller: EditorController
       disabled={c.pendingDraft || (!session && (c.readOnly || !c.selectedIds.length))} disabledReason={unavailable}
       onClick={() => c.dispatch('formation.preview', { kind: f.kind })}>{f.icon}<span>{f.label}</span></HelpButton>)}</div>
     {session && options && <div key={session.kind} className="formation-parameters">
-      <label className="form-label">Assignment<select aria-label="Formation assignment" value={options.assignment ?? 'roster'} disabled={c.pendingDraft} onChange={e => update({ assignment: e.target.value as FormationAssignment })}><option value="position">Positional order</option><option value="roster">Roster order</option></select></label>
+      <div className="form-label"><span>Assignment</span><div className="form-row" role="group" aria-label="Formation assignment">
+        <HelpButton title="Positional assignment" description="Assign destinations in the selected performers’ spatial order." aria-pressed={options.assignment === 'position'} className={options.assignment === 'position' ? 'button primary' : 'button subtle'} disabled={c.pendingDraft} disabledReason="Finish or cancel the pending input before changing assignment." onClick={() => update({ assignment: 'position' })}>Positional</HelpButton>
+        <HelpButton title="Roster assignment" description="Assign destinations in Cast order." aria-pressed={options.assignment !== 'position'} className={options.assignment !== 'position' ? 'button primary' : 'button subtle'} disabled={c.pendingDraft} disabledReason="Finish or cancel the pending input before changing assignment." onClick={() => update({ assignment: 'roster' })}>Roster</HelpButton>
+      </div></div>
       <div className="form-row"><NumberField label="Width · yd" value={display(options.width)} min={.1} max={200} step={.1} onDraftChange={c.setPendingDraft} onChange={width => update({ width })} />
         {session.kind !== 'line' && <NumberField label={session.kind === 'arc' ? 'Bulge · yd' : 'Depth · yd'} value={display(options.height)} min={0} max={200} step={.1} onDraftChange={c.setPendingDraft} onChange={height => update({ height })} />}</div>
       <div className="form-row"><NumberField label="Rotation · °" value={display(options.rotation)} min={-3600} max={3600} step={1} onDraftChange={c.setPendingDraft} onChange={rotation => update({ rotation })} />

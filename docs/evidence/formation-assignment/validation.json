@@ -1,19 +1,19 @@
 {
   "source": {
-    "revision": "53be79a9ee693f29211a17f391f8827c8ba2fc57",
-    "tree": "9e23530bbc98802be95ff56517b14da4233aca28",
+    "revision": "6ff429cfc3008fac3bd4d28e039a3b22867e86da",
+    "tree": "1bbe38e0031e13c994fea5d6bcfee7385673a5ad",
     "dirty": true,
-    "contentHash": "e12368e50823fff145c727299987d699b81541abff5d36e98039ba43dd651a3a",
+    "contentHash": "f7e368b16ad2a3d585ae9872df147c0819764e25e6360cb42d257aed12ac3355",
     "lockfileHash": "09a380b31b7652787d3a753706b7618e17fba587a1e4cc0a3498a79468320abf"
   },
   "build": {
     "schema": 1,
-    "builtAt": "2026-10-18T05:42:22.380Z",
+    "builtAt": "2026-10-18T05:54:53.227Z",
     "source": {
-      "revision": "53be79a9ee693f29211a17f391f8827c8ba2fc57",
-      "tree": "9e23530bbc98802be95ff56517b14da4233aca28",
+      "revision": "6ff429cfc3008fac3bd4d28e039a3b22867e86da",
+      "tree": "1bbe38e0031e13c994fea5d6bcfee7385673a5ad",
       "dirty": true,
-      "contentHash": "e12368e50823fff145c727299987d699b81541abff5d36e98039ba43dd651a3a",
+      "contentHash": "f7e368b16ad2a3d585ae9872df147c0819764e25e6360cb42d257aed12ac3355",
       "lockfileHash": "09a380b31b7652787d3a753706b7618e17fba587a1e4cc0a3498a79468320abf"
     },
     "runtime": {
@@ -27,7 +27,7 @@
       "runnerImage": null,
       "runnerImageVersion": null
     },
-    "outputHash": "3d238718a490d2029b4c0717d27dd07a6fff78bee88fb3e79d523e327f78c3bf"
+    "outputHash": "b1c68e656f6378d40d63e8b204e3f6e2045422f1651328f9fc6589c99bbdc17b"
   },
   "runtime": {
     "node": "24.19.0",
@@ -40,25 +40,34 @@
     "runnerImage": null,
     "runnerImageVersion": null
   },
-  "runId": "2026-10-18T05-45-52-453Z-981fca66",
+  "runId": "2026-10-18T05-54-53-741Z-7e9972de",
   "checks": [
     {
       "name": "formation-assignment",
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "elapsedMs": 48215,
-      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-45-52-453Z-981fca66\\formation-assignment.log",
-      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-45-52-453Z-981fca66\\formation-assignment"
+      "elapsedMs": 49121,
+      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-54-53-741Z-7e9972de\\formation-assignment.log",
+      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-54-53-741Z-7e9972de\\formation-assignment"
+    },
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 92215,
+      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-54-53-741Z-7e9972de\\accessibility.log",
+      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-54-53-741Z-7e9972de\\accessibility"
     },
     {
       "name": "editor",
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "elapsedMs": 186844,
-      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-42-22-915Z-dcfc0798\\editor.log",
-      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-42-22-915Z-dcfc0798\\editor"
+      "elapsedMs": 185977,
+      "logFile": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-54-53-741Z-7e9972de\\editor.log",
+      "output": "C:\\Users\\IwSzy\\Documents\\ChatGPT\\squidware 2\\.qa\\desktop-matrix\\2026-10-18T05-54-53-741Z-7e9972de\\editor"
     }
   ],
   "assignment": {
@@ -88,9 +97,9 @@
             "left": 1121,
             "right": 1344,
             "top": 416,
-            "bottom": 450,
+            "bottom": 450.5,
             "width": 223,
-            "height": 34
+            "height": 34.5
           },
           "apply": {
             "left": 1121,
@@ -129,9 +138,9 @@
             "left": 870.6000366210938,
             "right": 1072.800033569336,
             "top": 289.6000061035156,
-            "bottom": 322.8000068664551,
+            "bottom": 323.700008392334,
             "width": 202.1999969482422,
-            "height": 33.20000076293945
+            "height": 34.10000228881836
           },
           "apply": {
             "left": 870.6000366210938,
@@ -170,9 +179,9 @@
             "left": 898,
             "right": 1098,
             "top": 386,
-            "bottom": 420,
+            "bottom": 420.5,
             "width": 200,
-            "height": 34
+            "height": 34.5
           },
           "apply": {
             "left": 898,
@@ -210,10 +219,10 @@
           "assignment": {
             "left": 673.7999877929688,
             "right": 875.9999847412109,
-            "top": 361.6000061035156,
-            "bottom": 394.8000068664551,
+            "top": 360.8000183105469,
+            "bottom": 394.90002059936523,
             "width": 202.1999969482422,
-            "height": 33.20000076293945
+            "height": 34.10000228881836
           },
           "apply": {
             "left": 673.7999877929688,
@@ -238,5 +247,5 @@
     },
     "platform": "win32"
   },
-  "note": "Captured on the recorded working source before adding these evidence/docs files. Full hosted certification on the final PR source is linked in the PR."
+  "note": "Captured on the recorded working source before refreshing these evidence files. Full hosted certification on the final PR source is linked in the PR."
 }

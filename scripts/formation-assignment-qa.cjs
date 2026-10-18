@@ -18,9 +18,9 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   const number=label=>`[...document.querySelectorAll('label.form-label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)}).querySelector('input')`;
   const edit=async(label,value)=>{await evaluate(`(()=>{const n=${number(label)};n.focus();n.select()})()`);await window.webContents.debugger.sendCommand('Input.insertText',{text:String(value)});await key('Return');await wait(`!${state}.ui.pendingDraft`,'committed '+label);};
   const mode=async value=>{
-    await evaluate(`document.querySelector('[aria-label="Formation assignment"]').focus()`);
-    await key(value==='position'?'Home':'End');await key('Tab');
-    await wait(`${state}.ui.formationPreview.options.assignment===${JSON.stringify(value)}`,'native assignment choice');
+    const selector=value==='position'?'[aria-label="Positional assignment"]':'[aria-label="Roster assignment"]';
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);await key('Return');
+    await wait(`${state}.ui.formationPreview.options.assignment===${JSON.stringify(value)} && document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-pressed')==='true'`,'native assignment choice');
   };
   const positions=()=>evaluate(`Object.fromEntries(${JSON.stringify(ids)}.map(id=>{const n=document.querySelector('[data-performer-id="'+id+'"]');const m=n.transform.baseVal.consolidate().matrix;return [id,{x:m.e,y:m.f}]}))`);
   function near(actual,expected){for(const id of ids)for(const axis of ['x','y'])assert.ok(Math.abs(actual[id][axis]-expected[id][axis])<1e-5,JSON.stringify({id,actual:actual[id],expected:expected[id]}));}
@@ -31,7 +31,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await capture('assignment-before.png');
   await control('[aria-label="Line formation"]');await edit('Width · yd',24);await edit('Center X · yd',50);await edit('Center Y · yd',25);
   await wait("document.querySelectorAll('[data-formation-path]').length===4",'four assignment paths');
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Formation assignment\"]').value"),'position');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Positional assignment\"]').getAttribute('aria-pressed')"),'true');
   const positional=Object.fromEntries(ids.map((id,i)=>[id,{x:62-i*8,y:25}]));near(await positions(),positional);
   assert.deepEqual(await evaluate(`${state}.project.present`),project);assert.equal(await evaluate(`${state}.project.past.length`),0);
   await capture('assignment-positional.png');
