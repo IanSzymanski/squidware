@@ -14,11 +14,12 @@ export interface TooltipProps {
   state?: string;
   disabledReason?: string;
   help?: { label: string; href: string };
+  pointerPassThrough?: boolean;
   children: ReactElement<TriggerProps>;
 }
 
 /** A noninteractive description; an optional help link sits outside role=tooltip. */
-export function Tooltip({ name, description, keycaps = [], state, disabledReason, help, children }: TooltipProps) {
+export function Tooltip({ name, description, keycaps = [], state, disabledReason, help, pointerPassThrough = false, children }: TooltipProps) {
   const id = useId();
   const trigger = useRef<HTMLElement | null>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -26,6 +27,7 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
   const focused = useRef(false);
   const pointerFocus = useRef(false);
   const [open, setOpen] = useState(false);
+  const passThrough = pointerPassThrough && !help;
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const cancelTimer = () => { clearTimeout(timer.current); timer.current = undefined; };
   const close = () => { cancelTimer(); setOpen(false); };
@@ -69,17 +71,22 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
       if (focused.current && document.activeElement === trigger.current) place();
       else close();
     };
+    // Dense inline fields keep focus help without blocking neighboring pointer
+    // controls. Moving away dismisses only the description, not text focus.
+    const pointerMove = (event: PointerEvent) => { if (passThrough && !trigger.current?.contains(event.target as Node)) close(); };
     document.addEventListener('keydown', dismiss, true);
     document.addEventListener('pointerdown', outside, true);
     document.addEventListener('scroll', scroll, true);
+    document.addEventListener('pointermove', pointerMove, true);
     window.addEventListener('resize', close);
     return () => {
       document.removeEventListener('keydown', dismiss, true);
       document.removeEventListener('pointerdown', outside, true);
       document.removeEventListener('scroll', scroll, true);
+      document.removeEventListener('pointermove', pointerMove, true);
       window.removeEventListener('resize', close);
     };
-  }, [open]);
+  }, [open, passThrough]);
   const handlers: TriggerProps = {
     'aria-describedby': [children.props['aria-describedby'], open ? id : undefined].filter(Boolean).join(' ') || undefined,
     onPointerEnter: event => {
@@ -106,7 +113,7 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     ? <span {...handlers} className="tooltip-disabled-field" tabIndex={0} role="group" aria-label={name} aria-disabled="true" data-tooltip-name={name}
       onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); } }}>{children}</span>
     : cloneElement(children, { ...handlers, ...{ 'data-tooltip-name': name } });
-  return <>{control}{open && createPortal(<div ref={panel} className="tooltip-panel" style={position}
+  return <>{control}{open && createPortal(<div ref={panel} className={`tooltip-panel${passThrough ? ' tooltip-panel--pointer-through' : ''}`} style={position}
     onPointerEnter={() => { cancelTimer(); }} onPointerLeave={leave}
     onFocus={() => { focused.current = true; cancelTimer(); }} onBlur={event => { if (!panel.current?.contains(event.relatedTarget as Node) && event.relatedTarget !== trigger.current) { focused.current = false; close(); } }}>
     <div id={id} role="tooltip"><strong>{name}</strong><p>{description}</p>{state && <p className="tooltip-state">Current: {state}</p>}{disabledReason && <p className="tooltip-reason">Unavailable: {disabledReason}</p>}<Keycaps groups={keycaps} /></div>

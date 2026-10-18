@@ -6,6 +6,7 @@ export const desktopSuites = [
   { name: 'field', title: 'Nearest selection, labels and display scale', script: 'field-presentation-qa.mjs', timeoutMs: 270000 },
   { name: 'formation-assignment', title: 'Positional assignment, paths, travel and acceptance', script: 'formation-assignment-qa.mjs', timeoutMs: 180000 },
   { name: 'spacing', title: 'Alignment, distribution, intervals and field guides', script: 'spacing-qa.mjs', timeoutMs: 210000 },
+  { name: 'coordinate-entry', title: 'Drill phrases, exact group moves and acceptance', script: 'coordinate-entry-qa.mjs', timeoutMs: 270000 },
   { name: 'cast', title: 'Docked Cast, shared selection and roster edits', script: 'cast-qa.mjs', timeoutMs: 210000 },
   { name: 'tooltips', title: 'Pointer/focus help and disabled reasons', script: 'tooltip-qa.mjs', timeoutMs: 180000 },
   { name: 'tooltips-fallback', title: 'Help after unavailable WebGL', script: 'tooltip-qa.mjs', args: ['--force-3d-fallback'], timeoutMs: 180000 },

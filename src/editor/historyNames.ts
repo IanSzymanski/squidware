@@ -33,6 +33,11 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
       const operation = options?.operation === 'align' ? 'Align' : options?.operation === 'distribute' ? 'Distribute' : `Space at ${options?.interval} ${options?.unit}`;
       name = `${operation} ${session?.ids.length ?? 0} performers · ${options?.angle}° axis — ${picture}`; break;
     }
+    case 'coordinates.apply': {
+      const session=state.ui.coordinatePreview;const action=session?.options.mode==='absolute'?'Place':'Move';
+      const count=session?.ids.length??0;const target=count===1?project.performers.find(p=>p.id===session!.ids[0])?.label??'1 performer':`${count} performers`;
+      name=`${action} ${target} · ${session?.options.text.slice(0,96)??''} — ${picture}`;break;
+    }
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;

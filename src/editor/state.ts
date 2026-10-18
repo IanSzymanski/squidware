@@ -5,6 +5,7 @@ import { defaultPreferences } from '../preferences';
 import type { Preferences } from '../preferences';
 import type { TransformSession } from '../transforms';
 import type { SpacingSession } from '../spacing';
+import type { CoordinateEntrySession } from '../drillEntry';
 
 export type Dialog = 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
@@ -26,6 +27,7 @@ export interface EditorState {
     printMode: 'charts' | 'coordinates'; printing: boolean;
     transformPreview: TransformSession | null;
     spacingPreview: SpacingSession | null;
+    coordinatePreview: CoordinateEntrySession | null;
     formationPreview: FormationSession | null;
     formationDrafts: Partial<Record<FormationKind, FormationOptions>>;
   };
@@ -47,7 +49,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       pendingDraft: false, menu: false, toast: '', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
-      castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, formationPreview: null, formationDrafts: {} },
+      castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {} },
     fileSession: { savedRevision: null, needsSaveAs: true, fileOperation: null,
       saveStatus: 'Save a project file', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };

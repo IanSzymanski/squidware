@@ -10,6 +10,8 @@ Implements the workspace scope of [#18](https://github.com/IanSzymanski/squidwar
 
 Mirror opens the [exact transform preview](EXACT_TRANSFORMS.md) from #27. Align opens [spacing and alignment](SPACING_ALIGNMENT.md) for at least two selected performers, including exact intervals and even distribution. Formation controls use their own preview and field handles; each accepted operation is one named undo action.
 
+Place opens [drill-language coordinate entry](COORDINATE_ENTRY.md): absolute placement for one performer or an exact relative move for the explicit selection. Side and unit choices are visible, proposed positions have field paths/crosshairs, and Apply/Cancel stay in the selection bar.
+
 ## Section state and drafts
 
 Performer/group selection, Formation tools, Set properties and Transition check use native keyboard-operable disclosure controls. Four validated boolean personal preferences remember expansion through restart and reset with other personal settings. Older preferences receive defaults: selection and set properties open, formation and transition checks closed. They never enter `.squid` project data or change its saved revision.

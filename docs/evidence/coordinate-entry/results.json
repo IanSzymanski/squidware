@@ -1,0 +1,352 @@
+{
+  "passed": [
+    "pointer and Tab/Enter inline entry resolve ambiguous sides explicitly; preview save keeps committed geometry; singleton Apply is one named undo and native save/reopen retains the target",
+    "6-to-5 steps and explicit/bare unit choices resolve exact group deltas; invalid or boundary input cannot reuse a previous preview; orientation preserves physical direction and selection changes cancel stale membership",
+    "default/enlarged laptop and narrow layouts retain field height, all selection actions and reachable entry/unit controls; exact group Apply preserves offsets, identities and other sets through one undo and native save/reopen"
+  ],
+  "metrics": {
+    "layouts": [
+      {
+        "width": 1366,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 228,
+          "right": 1096,
+          "top": 130,
+          "bottom": 615,
+          "width": 868,
+          "height": 485
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 247,
+          "bottom": 281,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 247,
+          "bottom": 281,
+          "width": 113.5,
+          "height": 34
+        },
+        "input": {
+          "left": 1126,
+          "right": 1339,
+          "top": 433.5,
+          "bottom": 519.5,
+          "width": 213,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 1121,
+            "right": 1193.75,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Rotate selection",
+            "left": 1196.75,
+            "right": 1274.0625,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Shape selection",
+            "left": 1277.0625,
+            "right": 1354,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Mirror selection",
+            "left": 1121,
+            "right": 1199.484375,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Align selection",
+            "left": 1202.484375,
+            "right": 1275.546875,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 1278.546875,
+            "right": 1354,
+            "top": 211,
+            "bottom": 239
+          }
+        ]
+      },
+      {
+        "width": 1366,
+        "zoom": 1.25,
+        "baselineHeight": 332.20001220703125,
+        "viewport": {
+          "width": 1093,
+          "height": 614
+        },
+        "field": {
+          "left": 188,
+          "right": 845.7999877929688,
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "width": 657.7999877929688,
+          "height": 332.20001220703125
+        },
+        "apply": {
+          "left": 870.6000366210938,
+          "right": 981.2000350952148,
+          "top": 247,
+          "bottom": 281,
+          "width": 110.5999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 987.2000122070312,
+          "right": 1080.8000106811523,
+          "top": 247,
+          "bottom": 281,
+          "width": 93.5999984741211,
+          "height": 34
+        },
+        "input": {
+          "left": 872.6000366210938,
+          "right": 1070.800033569336,
+          "top": 428.70001220703125,
+          "bottom": 514.7000122070312,
+          "width": 198.1999969482422,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 870.6000366210938,
+            "right": 935.7500381469727,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Rotate selection",
+            "left": 938.75,
+            "right": 1008.4625015258789,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Shape selection",
+            "left": 1011.4625244140625,
+            "right": 1080.8000259399414,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Mirror selection",
+            "left": 870.6000366210938,
+            "right": 941.4875411987305,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Align selection",
+            "left": 944.4874877929688,
+            "right": 1009.9499893188477,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 1012.9500122070312,
+            "right": 1080.8000106811523,
+            "top": 211,
+            "bottom": 239
+          }
+        ]
+      },
+      {
+        "width": 1120,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 188,
+          "right": 873,
+          "top": 130,
+          "bottom": 615,
+          "width": 685,
+          "height": 485
+        },
+        "apply": {
+          "left": 898,
+          "right": 1009,
+          "top": 247,
+          "bottom": 281,
+          "width": 111,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1015,
+          "right": 1108,
+          "top": 247,
+          "bottom": 281,
+          "width": 93,
+          "height": 34
+        },
+        "input": {
+          "left": 900,
+          "right": 1096,
+          "top": 430.5,
+          "bottom": 516.5,
+          "width": 196,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 898,
+            "right": 963.078125,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Rotate selection",
+            "left": 966.078125,
+            "right": 1035.71875,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Shape selection",
+            "left": 1038.71875,
+            "right": 1108,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Mirror selection",
+            "left": 898,
+            "right": 968.8125,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Align selection",
+            "left": 971.8125,
+            "right": 1037.203125,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 1040.203125,
+            "right": 1108,
+            "top": 211,
+            "bottom": 239
+          }
+        ]
+      },
+      {
+        "width": 1120,
+        "zoom": 1.25,
+        "baselineHeight": 305.3999938964844,
+        "viewport": {
+          "width": 896,
+          "height": 614
+        },
+        "field": {
+          "left": 160,
+          "right": 649,
+          "top": 129.40000915527344,
+          "bottom": 434.8000030517578,
+          "width": 489,
+          "height": 305.3999938964844
+        },
+        "apply": {
+          "left": 673.7999877929688,
+          "right": 784.3999862670898,
+          "top": 247,
+          "bottom": 281,
+          "width": 110.5999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 790.4000244140625,
+          "right": 884.0000228881836,
+          "top": 247,
+          "bottom": 281,
+          "width": 93.5999984741211,
+          "height": 34
+        },
+        "input": {
+          "left": 675.7999877929688,
+          "right": 873.9999847412109,
+          "top": 428.70001220703125,
+          "bottom": 514.7000122070312,
+          "width": 198.1999969482422,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 673.7999877929688,
+            "right": 738.9499893188477,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Rotate selection",
+            "left": 741.9500122070312,
+            "right": 811.6625137329102,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Shape selection",
+            "left": 814.6625366210938,
+            "right": 884.0000381469727,
+            "top": 180,
+            "bottom": 208
+          },
+          {
+            "name": "Mirror selection",
+            "left": 673.7999877929688,
+            "right": 744.6874923706055,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Align selection",
+            "left": 747.6875,
+            "right": 813.1500015258789,
+            "top": 211,
+            "bottom": 239
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 816.1500244140625,
+            "right": 884.0000228881836,
+            "top": 211,
+            "bottom": 239
+          }
+        ]
+      }
+    ]
+  },
+  "platform": "win32"
+}
