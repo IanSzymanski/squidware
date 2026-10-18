@@ -34,6 +34,7 @@ app.whenReady().then(async()=>{
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});
     window.webContents.reload(); await wait(`!!${editor}`,'Cast store');
+    await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
     const project = JSON.parse(await fs.readFile(fixture,'utf8'));
     const metrics = await require('./cast-qa.cjs')({project,editor,state,evaluate,wait,click,key,capture,window,pass});
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({passed:checks,metrics,platform:process.platform},null,2));

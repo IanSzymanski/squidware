@@ -4,6 +4,7 @@ const { settleNativeViewport } = require('./testing/renderer.cjs');
 
 module.exports = async function checkCast({ project, editor, state, evaluate, wait, click, key, capture, window, pass }) {
   const layouts = [];
+  await evaluate(`window.__castEvents=[];for(const type of ['keydown','keyup','pointerdown','pointerup','click'])document.addEventListener(type,e=>{const n=e.target.closest?.('.cast-list button,dialog button');if(n){window.__castEvents.push({type,key:e.key,shift:e.shiftKey,ctrl:e.ctrlKey,meta:e.metaKey,detail:e.detail,trusted:e.isTrusted,label:n.getAttribute('aria-label')||n.textContent.trim(),selection:${state}.selection.selectedIds});window.__castEvents=window.__castEvents.slice(-40);}},true)`);
   const ids = project.performers.map(p => p.id);
   const row = id => `.cast-dock [data-cast-id="${id}"] button`;
   const control = async (selector, modifiers = []) => {
@@ -14,7 +15,7 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
     for (const type of ['mouseMove', 'mouseDown', 'mouseUp']) window.webContents.sendInputEvent({type,...point,button:'left',clickCount:1,modifiers});
   };
   const selection = () => evaluate(`${state}.selection.selectedIds`);
-  const selected = expected => wait(`JSON.stringify([...${state}.selection.selectedIds].sort())===${JSON.stringify(JSON.stringify([...expected].sort()))}`, 'Cast shared selection');
+  const selected = async expected => { try { await wait(`JSON.stringify([...${state}.selection.selectedIds].sort())===${JSON.stringify(JSON.stringify([...expected].sort()))}`, 'Cast shared selection '+expected.map(id=>project.performers.find(p=>p.id===id)?.label).join(',')); } catch(error) { console.error('Expected selection',expected,'Observed',await selection(),'Native events',await evaluate('window.__castEvents ?? []')); throw error; } };
   const text = async (selector, value) => {
     await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.focus();n.select()})()`);
     await window.webContents.debugger.sendCommand('Input.insertText', {text:value});
@@ -55,7 +56,9 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   await control(row(ids[213]),[process.platform==='darwin'?'meta':'control']); await selected([ids[212],ids[214]]);
   await key('Down');
   assert.equal(await evaluate("document.activeElement.closest('[data-cast-id]').dataset.castId"),ids[214]);
-  await selected([ids[212],ids[214]]); await key('Space'); await selected([ids[212]]);
+  await selected([ids[212],ids[214]]); await evaluate('window.__castEvents=[]'); await key('Space'); await selected([ids[212]]);
+  assert.equal(await evaluate("window.__castEvents.filter(e=>e.type==='click' && e.trusted && e.detail===0).length"),1,'Space must use one native button activation');
+  await key('Space'); await selected([ids[212],ids[214]]); await key('Space'); await selected([ids[212]]);
   await key('End'); assert.equal(await evaluate("document.activeElement.closest('[data-cast-id]').dataset.castId"),ids.at(-1));
   await key('Home'); await key('Return'); await selected([ids[0]]);
   assert.equal(await evaluate("document.querySelectorAll('.cast-list button[tabindex=\"0\"]').length"),1);
