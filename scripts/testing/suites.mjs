@@ -4,6 +4,7 @@ export const desktopSuites = [
   { name: 'editor', title: 'Editing, file dialogs, drafts and undo', script: 'editor-qa.mjs', timeoutMs: 270000 },
   { name: 'accessibility', title: 'Keyboard navigation and rendered text', script: 'accessibility-qa.mjs', timeoutMs: 270000 },
   { name: 'field', title: 'Nearest selection, labels and display scale', script: 'field-presentation-qa.mjs', timeoutMs: 270000 },
+  { name: 'formation-assignment', title: 'Positional assignment, paths, travel and acceptance', script: 'formation-assignment-qa.mjs', timeoutMs: 180000 },
   { name: 'cast', title: 'Docked Cast, shared selection and roster edits', script: 'cast-qa.mjs', timeoutMs: 210000 },
   { name: 'tooltips', title: 'Pointer/focus help and disabled reasons', script: 'tooltip-qa.mjs', timeoutMs: 180000 },
   { name: 'tooltips-fallback', title: 'Help after unavailable WebGL', script: 'tooltip-qa.mjs', args: ['--force-3d-fallback'], timeoutMs: 180000 },

@@ -7,6 +7,7 @@ import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
 import { currentFormationResult, formationSessionCurrent } from './formationSession';
+import { formationAssignmentOrder, formationCenter } from '../formationAssignment';
 import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
 import { isNudgeKey, nudgeDelta, type NudgeRequest } from '../editIncrements';
 
@@ -101,13 +102,21 @@ export const commandRegistry = {
       const s = c.getState(); const kind = a.kind ?? s.ui.formation;
       const ids = s.ui.formationPreview?.ids ?? s.project.present.performers.filter(p => s.selection.selectedIds.includes(p.id)).map(p => p.id);
       const positions = s.project.present.sets[s.selection.activeIndex].positions;
-      const center = s.ui.formationPreview?.options.center ?? ids.reduce((sum, id) => ({ x: sum.x + positions[id].x/ids.length, y: sum.y + positions[id].y/ids.length }), { x: 0, y: 0 });
-      const options = { ...(s.ui.formationDrafts[kind] ?? { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns }), center };
-      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options } });
+      const center = s.ui.formationPreview?.options.center ?? formationCenter(positions, ids);
+      const options: FormationOptions = { assignment: 'position', ...(s.ui.formationDrafts[kind] ?? { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns }), center };
+      const previous = s.ui.formationPreview;
+      const assignmentRotation = previous?.kind === kind ? previous.assignmentRotation ?? options.rotation : options.rotation;
+      const order = previous?.kind === kind && previous.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
+      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation } });
     } }),
   'formation.update': define({ id: 'formation.update', name: 'Adjust formation preview', description: 'Update shape parameters without changing the project or history.', arguments: { options: 'FormationOptions' }, enabled: formationSessionCurrent,
     execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
-      c.patch('ui', { formationPreview: { ...session, options: a.options }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: a.options } });
+      const options = { ...a.options, assignment: a.options.assignment ?? session.options.assignment ?? 'position' };
+      const changedMode = options.assignment !== session.options.assignment;
+      const assignmentRotation = changedMode ? options.rotation : session.assignmentRotation ?? session.options.rotation;
+      const reassign = changedMode || !session.order || (session.kind === 'block' && options.columns !== session.options.columns);
+      const order = reassign ? formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, { ...options, rotation: assignmentRotation }) : session.order;
+      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options } });
     } }),
   'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
     execute: c => c.patch('ui', { formationPreview: null }) }),

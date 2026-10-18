@@ -4,7 +4,7 @@ Tests should identify broken user behavior or a violated boundary. Adding anothe
 
 ## Local and hosted certification
 
-Run `pnpm certify` to perform the complete certification for the current OS: frozen dependency install, source/contracts, Electron/Python setup, a fresh production build, native tests, all eleven production desktop suites, independent PDF inspection, unpacked packaging, and packaged startup/recovery. Install Node 24, pnpm 11.25.0 and Python 3.12 first. `SQUIDWARE_PYTHON` can select an explicit Python executable. Linux also needs Xvfb; `--configure-sandbox` explicitly permits the two `sudo chown/chmod` pairs used by hosted CI for Electron and the packaged Chromium helper.
+Run `pnpm certify` to perform the complete certification for the current OS: frozen dependency install, source/contracts, Electron/Python setup, a fresh production build, native tests, all registered production desktop suites, independent PDF inspection, unpacked packaging, and packaged startup/recovery. Install Node 24, pnpm 11.25.0 and Python 3.12 first. `SQUIDWARE_PYTHON` can select an explicit Python executable. Linux also needs Xvfb; `--configure-sandbox` explicitly permits the two `sudo chown/chmod` pairs used by hosted CI for Electron and the packaged Chromium helper.
 
 CI uses the same plan split into `pnpm certify --layer=source` and `pnpm certify --layer=desktop`: source/contracts run once, then the desktop phase runs on Windows, macOS and Linux. A local pass certifies only its recorded OS. The `CI required` job succeeds only when both hosted layers succeed; failed, skipped and cancelled dependencies fail that gate. Configure main's required status checks to require **CI required**; adding the job to YAML alone does not enable repository branch protection.
 
@@ -39,6 +39,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `editor` | Native open/save/export, invalid drafts, editing integration, one undoable drag, save races and cancellation | Complete codec matrices or every keyboard traversal. |
 | `accessibility` | One field Tab stop, all 500 performers including overlaps, native keyboard workflows, focus, text size/contrast and enlarged UI | Nearest-pointer selection algorithms. |
 | `field` | Nearest hit, tie cycling, touch, label modes/collisions, zoom and display scale | Roving Tab-stop tests owned by accessibility. |
+| `formation-assignment` | Positional/roster mode, rendered identity paths, travel, rotation continuity, cancel, acceptance/undo and native save/reopen | Shape-handle math and the full file-dialog race matrix owned by editor. |
 | `cast` | Dock/table transitions, row/dot/section selection, filtered/hidden selections, maximum-roster keyboard navigation, name/section edits, removal/undo and dock layouts | Nearest field hit-testing and native file-dialog permutations. |
 | `tooltips` | Hover delay, keyboard help, disabled activation, modal layers, keycaps and touch behavior | Basic file/state tests. |
 | `tooltips-fallback` | Unavailable WebGL, usable return to 2D, post-fallback help and compositor capture | Repeating the full normal tooltip suite. |

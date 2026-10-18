@@ -108,12 +108,18 @@ async function focusFieldPerformer(selector) {
 
 async function typeText(selector, text) {
   await evaluate(`(() => { const input = document.querySelector(${JSON.stringify(selector)}); if (!input) throw new Error('Text field unavailable'); input.focus(); input.select(); })()`);
-  for (const character of text) await window.webContents.debugger.sendCommand('Input.insertText', { text: character });
-  await pause(30);
+  let entered = '';
+  for (const character of text) {
+    entered += character;
+    await window.webContents.debugger.sendCommand('Input.insertText', { text: character });
+    // Protocol input acknowledgement can precede React's controlled draft.
+    await uiWait(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});return document.activeElement===n && n.value===${JSON.stringify(entered)};})()`, 'native text draft ' + selector);
+  }
+  await uiWait(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(document.querySelector(${JSON.stringify(selector)}).value===${JSON.stringify(text)}))))`, 'settled text draft ' + selector);
 }
 async function fieldKey(selector, key) {
-  await evaluate(`document.querySelector(${JSON.stringify(selector)}).dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }))`);
-  await pause(30);
+  await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
+  await sendKey(window, key === 'Enter' ? 'Return' : key);
 }
 async function colorValue(selector, color) {
   await evaluate(`(() => { const input = document.querySelector(${JSON.stringify(selector)}); input.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(color)}); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); })()`);

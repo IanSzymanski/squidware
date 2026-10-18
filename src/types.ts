@@ -40,7 +40,8 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
 }
 export type SetPropertyUpdate = Partial<Pick<DrillSet, 'name' | 'notes'> & Pick<Move, 'counts' | 'tempo' | 'transition'>>;
 export type FormationKind = 'line' | 'arc' | 'circle' | 'block' | 'curve';
-export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number }
+export type FormationAssignment = 'position' | 'roster';
+export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number; assignment?: FormationAssignment }
 export interface TransitionIssue { type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number }
 export interface TimelineSample { positions: Record<string, Point>; setIndex: number; progress: number; localCount: number }
 export interface RecoveryVersion {
