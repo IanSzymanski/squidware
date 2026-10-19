@@ -45,7 +45,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
     centerY: points.reduce((sum, point) => sum + point.y / points.length, 0),
   } : null, [points]);
   const format = (n: number) => Number(n.toFixed(2));
-  const unavailable = controller.coordinatePreview ? 'Apply or cancel coordinate entry before other position edits.' : controller.spacingPreview ? 'Apply or cancel the spacing preview before other position edits.' : controller.formationPreview ? 'Apply or cancel the formation preview before other position edits.' : controller.transformPreview ? 'Apply or cancel the transform preview before other position edits.' : controller.pendingDraft ? 'Finish or cancel the pending input first.' : readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
+  const unavailable = controller.selectionPreview ? 'Apply or cancel the selection preview in Selection tools before editing positions.' : controller.coordinatePreview ? 'Apply or cancel coordinate entry before other position edits.' : controller.spacingPreview ? 'Apply or cancel the spacing preview before other position edits.' : controller.formationPreview ? 'Apply or cancel the formation preview before other position edits.' : controller.transformPreview ? 'Apply or cancel the transform preview before other position edits.' : controller.pendingDraft ? 'Finish or cancel the pending input first.' : readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   const single = selectedPerformers.length === 1 ? selectedPerformers[0] : undefined;
   function reveal(preference: SectionPreference, selector: string) {
     controller.preferences.update({ [preference]: true });
@@ -89,7 +89,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
         <HelpButton command="coordinates.apply" title="Apply coordinates" className="button primary" disabled={controller.pendingDraft || !!controller.coordinateResult?.error || !controller.coordinateResult?.changed} disabledReason={controller.coordinateResult?.error || (controller.pendingDraft ? 'Finish or cancel incomplete inputs.' : 'The preview matches the original positions.')} onClick={() => controller.dispatch('coordinates.apply')}>Apply coordinates</HelpButton>
         <HelpButton command="coordinates.cancel" title="Cancel coordinate entry" className="button subtle" onClick={() => controller.dispatch('coordinates.cancel')}>Cancel</HelpButton>
       </div>}
-      {readOnly && !controller.transformPreview && !controller.formationPreview && !controller.spacingPreview && !controller.coordinatePreview && <HelpButton command="set.select" showShortcut={false} title="Return to this set to edit" className="return-to-set" onClick={() => selectSet(index)}>Preview · return to set {index + 1} to edit<ArrowRight size={13} /></HelpButton>}
+      {readOnly && !controller.selectionPreview && !controller.transformPreview && !controller.formationPreview && !controller.spacingPreview && !controller.coordinatePreview && <HelpButton command="set.select" showShortcut={false} title="Return to this set to edit" className="return-to-set" onClick={() => selectSet(index)}>Preview · return to set {index + 1} to edit<ArrowRight size={13} /></HelpButton>}
     </div>
     <div className="inspector-scroll">
       {controller.transformPreview && <TransformPanel controller={controller} />}

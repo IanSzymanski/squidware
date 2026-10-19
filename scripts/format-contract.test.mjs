@@ -7,6 +7,16 @@ const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
 const schemas = new Map(await Promise.all([1,2].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
+test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
+  const project = smallExample();
+  assert.ok(check(project));
+  assert.deepEqual(tools.parseProject(tools.serializeProject(project)).selectionGroups, project.selectionGroups);
+  for (const selectionGroups of [null, [{ id: 'g', name: ' ', performerIds: [] }], [{ id: 'g', name: 'G', performerIds: ['a', 'a'] }], [{ id: 'g', name: 'G\n', performerIds: [] }], Array(tools.PROJECT_LIMITS.selectionGroups + 1).fill(project.selectionGroups[0])]) {
+    const bad = { ...project, selectionGroups }; assert.equal(check(bad), false); assert.throws(() => tools.parseProject(JSON.stringify(bad)), /selectionGroups/);
+  }
+  const stale = { ...project, selectionGroups: [{ id: 'g', name: 'G', performerIds: ['missing'] }] };
+  assert.ok(check(stale), 'roster references are a semantic constraint'); assert.throws(() => tools.parseProject(JSON.stringify(stale)), /existing performer/);
+});
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
   for(const name of ['basic-v1','basic-v2','maximum-v2']) {

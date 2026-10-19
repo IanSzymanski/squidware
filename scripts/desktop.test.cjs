@@ -108,6 +108,19 @@ test('save writes complete JSON and subsequent saves reuse only the approved pat
   assert.deepEqual(await fs.readdir(h.directory), ['show.squid']);
 });
 
+test('native save/open preserves overlapping selection groups and rejects stale IDs without replacing the durable file', async t => {
+  const h = await harness(t), data = JSON.parse(project), ids = data.performers.slice(0, 2).map(p => p.id);
+  data.selectionGroups = [{ id: 'pair', name: 'Lead pair', performerIds: ids }, { id: 'solo', name: 'Solo', performerIds: ids.slice(0, 1) }];
+  const filename = path.join(h.directory, 'groups.squid'), content = JSON.stringify(data);
+  h.dialog({ canceled: false, filePath: filename }); await h.invoke('save-project', content, 'Groups');
+  h.dialog({ canceled: false, filePaths: [filename] });
+  const reopened = JSON.parse((await h.invoke('open-project')).content);
+  assert.deepEqual(reopened.selectionGroups, data.selectionGroups); assert.deepEqual(reopened.sets, data.sets);
+  const before = await fs.readFile(filename, 'utf8'); data.selectionGroups[0].performerIds.push('missing');
+  await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Groups'), /existing performer/);
+  assert.equal(await fs.readFile(filename, 'utf8'), before);
+});
+
 test('failed atomic replacement preserves the previous file and removes its temporary file', async t => {
   const h = await harness(t, { failRename: true });
   const filename = path.join(h.directory, 'show.squid');

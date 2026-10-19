@@ -1,0 +1,20 @@
+import { createRequire } from 'node:module';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { createQa, root } from './testing/launcher.mjs';
+const require = createRequire(import.meta.url), qa = await createQa('selection', { timeoutMs: 240000 });
+const baseline = process.argv.includes('--baseline');
+const bundle = path.join(qa.output, 'fixture.cjs');
+const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
+await esbuild.build({ stdin: { contents: `
+  import {createDemoProject,serializeProject} from './src/domain';
+  const project=createDemoProject(); project.title='Selection and saved groups';
+  const coordinates=[{x:32,y:24},{x:42,y:24.2},{x:52,y:24.26},{x:32.2,y:34},{x:62,y:38}];
+  project.performers=project.performers.slice(0,5).map((p,i)=>({...p,label:['A1','A2','A3','B1','B2'][i],name:'',sectionId:project.sections[i<3?0:1].id}));
+  project.sets=project.sets.map(set=>({...set,positions:Object.fromEntries(project.performers.map((p,i)=>[p.id,coordinates[i]]))}));
+  project.moves=project.moves.map(move=>({...move,paths:{}}));
+  export const content=serializeProject(project);
+`, resolveDir: root, loader: 'ts' }, bundle: true, outfile: bundle, platform: 'node', format: 'cjs', logLevel: 'silent' });
+const fixture = path.join(qa.output, 'selection.squid'); await fs.writeFile(fixture, require(bundle).content);
+if (baseline) await qa.run('workspace-qa-runner.cjs', 'workspace-manifest', { baseline: true });
+else await qa.run('selection-qa-runner.cjs', 'selection-manifest', { fixture }, ['write', 'read']);

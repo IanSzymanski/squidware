@@ -107,6 +107,23 @@
       "paths": {}
     }
   ],
+  "selectionGroups": [
+    {
+      "id": "lead-pair",
+      "name": "Lead pair",
+      "performerIds": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "solo",
+      "name": "Solo",
+      "performerIds": [
+        "a"
+      ]
+    }
+  ],
   "openingTiming": {
     "tempo": 120,
     "transition": "linear"

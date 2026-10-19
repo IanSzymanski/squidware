@@ -5,6 +5,7 @@ import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } fr
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Point, Project } from '../types';
 import { selectionMembership } from '../selection';
+import type { SelectionReview } from '../selectionTools';
 import { coordinateDescription } from '../domain';
 import { FieldReadout } from './FieldReadout';
 import { FIELD_KEYS, nextFieldFocus } from './fieldKeyboard';
@@ -135,7 +136,11 @@ interface Field2DProps extends DrawingProps {
   selectedIds: string[];
   onSelect: (ids: string[]) => void;
   onMove: (updates: Record<string, Point>) => void;
-  tool: 'select' | 'pan';
+  tool: 'select' | 'pan' | 'lasso';
+  selectionPreview?: SelectionReview | null;
+  selectionToolsOpen?: boolean; onSelectionClose?: () => void;
+  onLasso?: (points: Point[], additive: boolean) => void;
+  onSelectionApply?: () => void; onSelectionCancel?: () => void;
   showLabels: boolean;
   showGrid: boolean;
   snap: boolean;
@@ -149,11 +154,12 @@ interface Field2DProps extends DrawingProps {
 type Gesture =
   | { kind: 'pan'; startClient: Point; startPan: Point; scale: number }
   | { kind: 'marquee'; start: Point; current: Point; initialIds: string[] }
+  | { kind: 'lasso'; points: Point[]; additive: boolean }
   | { kind: 'move'; start: Point; anchorId: string; originals: Record<string, Point>; updates: Record<string, Point>; moved: boolean };
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const readoutId = useId();
@@ -168,6 +174,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [preview, setPreview] = useState<Record<string, Point>>({});
   const [marquee, setMarquee] = useState<{ start: Point; current: Point } | null>(null);
+  const [lasso, setLasso] = useState<Point[] | null>(null);
   const [moving, setMoving] = useState(false);
   const width = project.field.width;
   const height = project.field.height;
@@ -277,8 +284,9 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     gesture.current = null;
     setPreview({});
     setMarquee(null);
+    setLasso(null);
     setMoving(false);
-  }, [positions, readOnly, project.id, orientation, snap, project.snapping]);
+  }, [positions, readOnly, project.id, orientation, snap, project.snapping, tool]);
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
@@ -295,7 +303,12 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       setMoving(true);
       return;
     }
-    if (transformPreview || formationPreview || spacingPreview || coordinatePreview) return;
+    if (transformPreview || formationPreview || spacingPreview || coordinatePreview || selectionPreview) return;
+    if (tool === 'lasso') {
+      if (readOnly) return;
+      gesture.current = { kind: 'lasso', points: [point], additive: event.shiftKey };
+      setLasso([point]); return;
+    }
     const idsAtPointer = hitsAt(event.clientX, event.clientY, event.pointerType);
     hitCycle.current = cycleFieldHit(idsAtPointer, { x: event.clientX, y: event.clientY }, hitCycle.current);
     const id = idsAtPointer[hitCycle.current.index];
@@ -324,6 +337,11 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       return;
     }
     const point = pointAt(event.clientX, event.clientY);
+    if (current.kind === 'lasso') {
+      const last = current.points.at(-1)!;
+      if (current.points.length < 513 && Math.hypot(point.x - last.x, point.y - last.y) * (screen?.scale ?? 1) >= 3) { current.points.push(point); setLasso([...current.points]); }
+      return;
+    }
     if (current.kind === 'marquee') {
       current.current = point;
       setMarquee({ start: current.start, current: point });
@@ -346,6 +364,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     gesture.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     if (current && !cancelled) {
+      if (current.kind === 'lasso') { const end = pointAt(event.clientX, event.clientY); if (current.points.length < 512) current.points.push(end); onLasso?.(current.points, current.additive); }
       if (current.kind === 'move' && current.moved && Object.keys(current.updates).length) onMove(current.updates);
       if (current.kind === 'marquee') {
         const left = Math.min(current.start.x, current.current.x);
@@ -358,11 +377,14 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     }
     setPreview({});
     setMarquee(null);
+    setLasso(null);
     setMoving(false);
   }
 
   function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
     if (event.nativeEvent.isComposing) return;
+    if (selectionPreview && ['Enter', 'Escape'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); if (event.key === 'Escape') onSelectionCancel?.(); else onSelectionApply?.(); return; }
+    if (event.key === 'Escape' && selectionToolsOpen && !gesture.current) { event.preventDefault(); event.stopPropagation(); onSelectionClose?.(); return; }
     if (event.key === 'Enter' && coordinatePreview) { event.preventDefault(); event.stopPropagation(); coordinatePreview.onApply(); return; }
     if (event.key === 'Escape' && coordinatePreview) { event.preventDefault(); event.stopPropagation(); coordinatePreview.onCancel(); return; }
     if (event.key === 'Enter' && spacingPreview) { event.preventDefault(); event.stopPropagation(); spacingPreview.onApply(); return; }
@@ -373,14 +395,17 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
+      const cancelledLasso = gesture.current?.kind === 'lasso';
       gesture.current = null;
       setPreview({});
       setMarquee(null);
+      setLasso(null);
       setMoving(false);
-      onSelect([]);
+      if (!cancelledLasso) onSelect([]);
       return;
     }
     const targetId = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id') ?? focusedId;
+    if (selectionPreview && (event.key === ' ' || (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a')) { event.preventDefault(); event.stopPropagation(); return; }
     if (targetId && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
       event.stopPropagation();
@@ -407,9 +432,11 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   }
 
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
-    <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
+    <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
       <g ref={geometryRef} data-field-geometry={orientation} transform={fieldViewTransform(project.field, orientation)}>
       <FieldDrawing project={project} positions={displayedPositions} neighbors={moving ? [] : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
+      {selectionPreview && <g aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
+      {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />}
       {transformPreview && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
       {coordinatePreview && <CoordinateGuides preview={coordinatePreview} scale={screen?.scale ?? 1} />}
@@ -422,7 +449,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     <div className="field-snap-status" role="status">{coordinatePreview ? 'Exact coordinate entry · snapping bypassed' : spacingPreview ? 'Exact spacing · snapping bypassed' : snapDescription(project.snapping ?? DEFAULT_SNAPPING, snap)}{moving && Object.keys(preview).length ? " · Release to apply · Escape to cancel" : ""}</div>
     <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
-    <div className="field-stage__hint">{coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
+    <div className="field-stage__hint">{coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : selectionPreview ? 'SELECTION PREVIEW · APPLY OR CANCEL' : tool === 'lasso' ? 'Draw lasso · Shift to add · Review before Apply' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
     <div className="field-stage__orientation" aria-label={orientation === 'audience-top' ? 'Flipped field: audience and front sideline at top' : 'Audience and front sideline at bottom'}><span>↑</span> {orientation === 'audience-top' ? 'FRONT · AUDIENCE TOP' : 'BACK · AUDIENCE BOTTOM'}</div>
   </div>;
 }

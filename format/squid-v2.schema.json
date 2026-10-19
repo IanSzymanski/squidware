@@ -75,6 +75,14 @@
       "minimum": -3600,
       "maximum": 3600
     },
+    "selectionGroups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/selectionGroup"
+      },
+      "minItems": 0,
+      "maxItems": 64
+    },
     "snapping": {
       "type": "object",
       "properties": {
@@ -380,6 +388,34 @@
         "tempo",
         "transition",
         "paths"
+      ]
+    },
+    "selectionGroup": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$"
+        },
+        "performerIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/id"
+          },
+          "minItems": 0,
+          "maxItems": 500,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "performerIds"
       ]
     }
   }

@@ -11,6 +11,7 @@ import { formationSessionCurrent } from './formationSession';
 import { spacingSessionCurrent } from './spacingSession';
 import { coordinateSessionCurrent } from './coordinateSession';
 import { historyName } from './historyNames';
+import { selectionReviewCurrent } from './selectionCommands';
 
 export const AUTOSAVE_KEY = 'squidware.autosave.v1';
 type Equality<T> = (a: T, b: T) => boolean;
@@ -46,10 +47,12 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
   let active: { name: string; history: ProjectHistory; selection: EditorState['selection']; playback: EditorState['playback']; error?: Error } | null = null;
   const publish = (next: EditorState) => {
     if (next === state) return;
+    if (next.ui.selectionPreview && !selectionReviewCurrent(next)) next = { ...next, ui: { ...next.ui, selectionPreview: null } };
     if (next.ui.transformPreview && !transformSessionCurrent(next)) next = { ...next, ui: { ...next.ui, transformPreview: null } };
     if (next.ui.formationPreview && !formationSessionCurrent(next)) next = { ...next, ui: { ...next.ui, formationPreview: null } };
     if (next.ui.spacingPreview && !spacingSessionCurrent(next)) next = { ...next, ui: { ...next.ui, spacingPreview: null } };
     if (next.ui.coordinatePreview && !coordinateSessionCurrent(next)) next = { ...next, ui: { ...next.ui, coordinatePreview: null } };
+    if (next.ui.dialog && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
     state = next; changed = true;
     if (!transactionDepth) { changed = false; listeners.forEach(listener => listener()); }
   };
@@ -109,7 +112,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       // Loading geometry alone is not evidence of a saved project file.
       patch('fileSession', { savedRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
       patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false });
-      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false, castQuery: '', sectionFilter: 'all' });
+      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
     },
     history: direction => {
       const history = state.project;
