@@ -23,7 +23,14 @@ export function EditorField({ controller, children }: { controller: EditorContro
     const field = fieldRef.current;
     if (view !== '3d' || !field) return;
     const observed = new WeakSet<Element>();
-    const resize = new ResizeObserver(placeCamera);
+    let frame: number | null = null;
+    // Measure/write outside observer delivery so a new minimum field height
+    // cannot cause a ResizeObserver notification loop on macOS.
+    function scheduleCamera() {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => { frame = null; placeCamera(); });
+    }
+    const resize = new ResizeObserver(scheduleCamera);
     function placeCamera() {
       const camera = field!.querySelector<HTMLElement>('.stage-three__controls');
       if (!camera) { field!.style.removeProperty('--camera-min-height'); return; }
@@ -36,10 +43,10 @@ export function EditorField({ controller, children }: { controller: EditorContro
       field!.style.setProperty('--camera-min-height', `${top + camera.offsetHeight + 80}px`);
     }
     // The lazy 3D renderer adds camera controls after the field has mounted.
-    const mounted = new MutationObserver(placeCamera);
+    const mounted = new MutationObserver(scheduleCamera);
     mounted.observe(field, { childList: true, subtree: true });
-    resize.observe(field); placeCamera();
-    return () => { resize.disconnect(); mounted.disconnect(); field.style.removeProperty('--camera-top'); field.style.removeProperty('--camera-min-height'); };
+    resize.observe(field); scheduleCamera();
+    return () => { resize.disconnect(); mounted.disconnect(); if (frame !== null) cancelAnimationFrame(frame); field.style.removeProperty('--camera-top'); field.style.removeProperty('--camera-min-height'); };
   }, [view, readOnly]);
   const sample = useMemo(() => sampleProject(project, count), [project, count]);
   const positions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? (atSet && !playing ? activeSet.positions : sample.positions);
