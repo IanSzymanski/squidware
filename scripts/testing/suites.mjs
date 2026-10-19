@@ -8,6 +8,7 @@ export const desktopSuites = [
   { name: 'spacing', title: 'Alignment, distribution, intervals and field guides', script: 'spacing-qa.mjs', timeoutMs: 210000 },
   { name: 'coordinate-entry', title: 'Drill phrases, exact group moves and acceptance', script: 'coordinate-entry-qa.mjs', timeoutMs: 270000 },
   { name: 'cast', title: 'Docked Cast, shared selection and roster edits', script: 'cast-qa.mjs', timeoutMs: 210000 },
+  { name: 'workspace', title: 'Resizable panels, presets, focus and restored layouts', script: 'workspace-qa.mjs', timeoutMs: 240000 },
   { name: 'tooltips', title: 'Pointer/focus help and disabled reasons', script: 'tooltip-qa.mjs', timeoutMs: 180000 },
   { name: 'tooltips-fallback', title: 'Help after unavailable WebGL', script: 'tooltip-qa.mjs', args: ['--force-3d-fallback'], timeoutMs: 180000 },
   { name: 'preferences', title: 'Preferences across process restarts', script: 'preferences-qa.mjs', timeoutMs: 390000 },

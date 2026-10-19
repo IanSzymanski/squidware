@@ -13,12 +13,14 @@ export interface ControlHelpProps {
   active?: boolean;
   state?: string;
   disabledReason?: string;
+  pointerPassThrough?: boolean;
 }
 
-export function HelpButton({ title, description, command, shortcutVariant, showShortcut = true, active, state, disabledReason, disabled, children, onClick, ...props }: ControlHelpProps & ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+export function HelpButton({ title, description, command, shortcutVariant, showShortcut = true, active, state, disabledReason, pointerPassThrough, disabled, children, onClick, ...props }: ControlHelpProps & ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
   const definition = command ? commandRegistry[command] : undefined;
   const pressed = active ?? props['aria-pressed'];
   return <Tooltip name={title} description={description || definition?.description || title}
+    pointerPassThrough={pointerPassThrough}
     keycaps={command && showShortcut ? commandKeycaps(command, shortcutVariant) : []}
     state={state ?? (pressed === undefined ? undefined : pressed ? 'On' : 'Off')}
     disabledReason={disabled ? disabledReason || 'This action is unavailable in the current state.' : undefined}>

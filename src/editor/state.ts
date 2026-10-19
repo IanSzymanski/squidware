@@ -19,7 +19,7 @@ export interface EditorState {
   selection: { activeIndex: number; selectedIds: string[] };
   playback: { count: number; playing: boolean; loop: boolean; speed: number; metronome: boolean; muted: boolean };
   ui: {
-    workspace: Workspace; view: '2d' | '3d'; tool: 'select' | 'pan'; zoom: number; fitVersion: number; projectEpoch: number;
+    workspace: Workspace; focusMode: boolean; view: '2d' | '3d'; tool: 'select' | 'pan'; zoom: number; fitVersion: number; projectEpoch: number;
     showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog;
     pendingDraft: boolean; menu: boolean; toast: string; formation: FormationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
@@ -44,7 +44,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     project: { present: project, past: [], future: [], revision: 0, estimatedBytes: 0, droppedEntries: 0, recoveryError },
     selection: { activeIndex: 0, selectedIds: [] },
     playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, muted: false },
-    ui: { workspace: 'design', view: '2d', tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0,
+    ui: { workspace: 'design', focusMode: false, view: '2d', tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0,
       showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
       pendingDraft: false, menu: false, toast: '', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castQuery: '',
