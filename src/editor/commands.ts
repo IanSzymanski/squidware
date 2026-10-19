@@ -14,8 +14,12 @@ import { defaultSpacing, type SpacingOptions } from '../spacing';
 import { currentSpacingResult, spacingSessionCurrent } from './spacingSession';
 import { validateCoordinateEntryOptions, type CoordinateEntryOptions } from '../drillEntry';
 import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateSession';
+import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
 
 export interface CommandArguments {
+  'layout.update': { update: Partial<WorkspaceLayout> };
+  'layout.preset': { preset: WorkspacePreset };
+  'layout.focus': undefined;
   'cast.show': { mode: 'panel' | 'table' | 'closed' };
   'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
   'project.load': { project: Project };
@@ -65,6 +69,7 @@ export interface CommandDefinition<I extends CommandId> {
 }
 const define = <I extends CommandId>(definition: CommandDefinition<I>) => definition;
 const always = () => true;
+export const canChangeLayout = (s: EditorState) => !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
   const state = context.getState();
   if (state.ui.dialog !== dialog && state.ui.pendingDraft) throw new Error('Finish or cancel the pending edit before changing dialogs.');
@@ -85,9 +90,15 @@ const selectSet = (context: CommandContext, index: number) => {
 };
 
 export const commandRegistry = {
+  'layout.update': define({ id: 'layout.update', name: 'Change panel layout', description: 'Resize or collapse panels on this device without changing the production.', arguments: { update: 'Partial<WorkspaceLayout>' }, enabled: (s, a) => canChangeLayout(s) || !s.ui.dialog && !!a && Object.entries(a.update).every(([key, value]) => key.endsWith('Collapsed') && value === false),
+    execute: (c, a) => { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: validateWorkspaceLayout({ ...p.workspaceLayout, ...a.update, preset: 'custom' }) } }); } }),
+  'layout.preset': define({ id: 'layout.preset', name: 'Apply workspace preset', description: 'Write shows editing tools, Review expands the field, and Rehearse hides both side panels. Saved on this device.', arguments: { preset: 'write | review | rehearse' }, enabled: (s, a) => canChangeLayout(s) && !!a && ['write', 'review', 'rehearse'].includes(a.preset),
+    execute: (c, a) => { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: workspacePreset(a.preset), castPanelOpen: false } }); c.patch('ui', { workspace: 'design', castPanelOpen: false, focusMode: false }); } }),
+  'layout.focus': define({ id: 'layout.focus', name: 'Focus field', description: 'Show only the field and timeline. Escape or Exit focus restores the workspace.', arguments: {}, shortcut: 'Ctrl / ⌘ + Shift + F', enabled: s => s.ui.focusMode || s.ui.workspace === 'design' && canChangeLayout(s),
+    execute: c => c.patch('ui', { focusMode: !c.getState().ui.focusMode, menu: false }) }),
   'cast.show': define({ id: 'cast.show', name: 'Show Cast', description: 'Dock the Cast beside the field, expand its table or return to the Inspector without changing selection.', arguments: { mode: 'panel | table | closed' },
     enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview,
-    execute: (c, a) => c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }) }),
+    execute: (c, a) => { if (a.mode === 'panel') { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: false } } }); } c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }); } }),
   'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow',
     enabled: (s, a) => canIncrement(s) && !!a && isNudgeKey(a.key) && (a.fast === undefined || typeof a.fast === 'boolean') && (a.fieldRelative === undefined || typeof a.fieldRelative === 'boolean'),
     execute: (c, a) => { const s = c.getState(); const delta = nudgeDelta(s.preferences.value, s.project.present, a); const index = s.selection.activeIndex;

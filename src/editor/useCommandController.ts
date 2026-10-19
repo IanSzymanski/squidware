@@ -31,6 +31,7 @@ export function useCommandController() {
       const input = /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable;
       if (state.ui.dialog) return;
       const cmd = event.ctrlKey || event.metaKey; const key = event.key.toLowerCase();
+      if (cmd && event.shiftKey && key === 'f' && !input) { event.preventDefault(); store.dispatch('layout.focus'); return; }
       if (cmd && ['s', 'o', 'n'].includes(key)) {
         if (window.squidware) return;
         event.preventDefault(); menuAction(key === 's' ? event.shiftKey ? 'save-as' : 'save' : key === 'o' ? 'open' : 'new'); return;

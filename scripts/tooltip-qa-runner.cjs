@@ -2,7 +2,11 @@
 const { key: sendKey, waitFor: waitUntil, capturePage, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
-const { root, output, profile, force3DFallback } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
+const { root, output, profile, force3DFallback, softwareWebgl } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
+if (softwareWebgl) {
+  app.commandLine.appendSwitch('use-angle', 'swiftshader');
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+}
 app.setPath('userData', profile);
 let window; const checks = [];
 const nativeSaveKeys = process.platform === 'darwin' ? /Cmd\s+S/ : /Ctrl\s+S/;
@@ -62,6 +66,7 @@ app.whenReady().then(async () => {
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})(${!!force3DFallback})` });
     window.webContents.reload(); await uiWait(`!!${editor} && !!document.querySelector('.set-card')`, 'renderer');
     await key('Tab');
+    await uiWait("document.activeElement.hasAttribute('data-tooltip-name')", 'initial native Tab focus');
 
     if (!force3DFallback) {
       await hover('Save'); await pause(230); assert.equal(await tooltip(), '');
@@ -122,6 +127,7 @@ app.whenReady().then(async () => {
     // canvas or error state so unavailable WebGL cannot remove a control
     // between choosing it and focusing its help.
     await uiWait("!!document.querySelector('.stage-three__canvas canvas, .stage-three__fallback[role=alert]')", 'initialized 3D renderer or fallback');
+    if (softwareWebgl) assert.equal(await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')"), false, 'Software WebGL must exercise the camera layout; fallback has a separate suite.');
     if (!await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {
       const layouts = [];
       await evaluate('document.activeElement?.blur()');
@@ -130,28 +136,36 @@ app.whenReady().then(async () => {
       for (const [width, scale] of [[1366, 1], [1120, 1.25]]) {
         window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
         await settleNativeViewport(window, '3D viewport scale');
-        for (const preview of [false, true]) {
-          await evaluate(`${editor}.dispatch(${JSON.stringify(preview ? 'playback.scrub' : 'set.select')}, ${JSON.stringify(preview ? {count:1} : {index:0})})`);
-          await uiWait(`!!document.querySelector('.field-preview-banner') === ${preview}`, '3D preview state');
-          const layout = await evaluate(`(() => {
-            const camera=document.querySelector('.stage-three__controls').getBoundingClientRect();
-            const legend=document.querySelector('.field-legend').getBoundingClientRect();
-            const banner=document.querySelector('.field-preview-banner')?.getBoundingClientRect();
-            const overlap=r=>!!r && camera.left<r.right && camera.right>r.left && camera.top<r.bottom && camera.bottom>r.top;
-            const obscured=[...document.querySelectorAll('.stage-three__controls button,.stage-three__controls select')].filter(n=>{const r=n.getBoundingClientRect(); return !n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(n=>n.getAttribute('aria-label'));
-            return { camera:camera.toJSON(), legend:legend.toJSON(), banner:banner?.toJSON(), overlapsLegend:overlap(legend), overlapsPreview:overlap(banner), obscured };
-          })()`);
-          assert.equal(layout.overlapsLegend, false); assert.equal(layout.overlapsPreview, false); assert.deepEqual(layout.obscured, []);
-          layouts.push({width,scale,preview,...layout});
-          await capturePage(window, output, `camera-${width}-${scale}-${preview ? 'preview' : 'set'}.png`);
+        for (const focusMode of [false, true]) {
+          await evaluate(`if (${editor}.getState().ui.focusMode !== ${focusMode}) ${editor}.dispatch('layout.focus')`);
+          await uiWait(`!!document.querySelector('.studio--focus') === ${focusMode}`, '3D focus mode');
+          for (const preview of [false, true]) {
+            await evaluate(`${editor}.dispatch(${JSON.stringify(preview ? 'playback.scrub' : 'set.select')}, ${JSON.stringify(preview ? {count:1} : {index:0})})`);
+            await uiWait(`!!document.querySelector('.field-preview-banner') === ${preview}`, '3D preview state');
+            await settleNativeViewport(window, '3D overlay geometry');
+            const layout = await evaluate(`(() => {
+              const camera=document.querySelector('.stage-three__controls').getBoundingClientRect();
+              const legend=document.querySelector('.field-legend').getBoundingClientRect();
+              const banner=document.querySelector('.field-preview-banner')?.getBoundingClientRect();
+              const restore=document.querySelector('.focus-restore')?.getBoundingClientRect();
+              const overlap=r=>!!r && camera.left<r.right && camera.right>r.left && camera.top<r.bottom && camera.bottom>r.top;
+              const obscured=[...document.querySelectorAll('.stage-three__controls button,.stage-three__controls select')].filter(n=>{const r=n.getBoundingClientRect(); return !n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(n=>n.getAttribute('aria-label'));
+              return { camera:camera.toJSON(), legend:legend.toJSON(), banner:banner?.toJSON(), restore:restore?.toJSON(), overlapsLegend:overlap(legend), overlapsPreview:overlap(banner), overlapsRestore:overlap(restore), obscured };
+            })()`);
+            assert.equal(layout.overlapsLegend, false, JSON.stringify(layout)); assert.equal(layout.overlapsPreview, false, JSON.stringify(layout)); assert.equal(layout.overlapsRestore, false, JSON.stringify(layout)); assert.deepEqual(layout.obscured, [], JSON.stringify(layout));
+            layouts.push({width,scale,focusMode,preview,...layout});
+            await capturePage(window, output, `camera-${width}-${scale}-${focusMode ? 'focus-' : ''}${preview ? 'preview' : 'set'}.png`);
+          }
         }
       }
+      await evaluate(`if (${editor}.getState().ui.focusMode) ${editor}.dispatch('layout.focus')`);
+      await uiWait("!document.querySelector('.studio--focus')", 'restore full workspace');
       await fs.writeFile(path.join(output, 'camera-layouts.json'), JSON.stringify(layouts,null,2));
       window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
       await settleNativeViewport(window, 'restored 3D viewport');
       await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled:true });
       await evaluate(`${editor}.dispatch('set.select', {index:0})`);
-      pass('3D camera buttons and quality remain unobstructed by the section legend and preview banner at default and narrow enlarged sizes');
+      pass('3D camera buttons and quality remain unobstructed by the section legend, preview banner and Exit focus at default and narrow enlarged sizes');
     }
     await focus('Zoom in'); assert.match(await tooltip(), /Unavailable:.*Switch to 2D/);
     if (await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {

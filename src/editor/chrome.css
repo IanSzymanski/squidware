@@ -115,6 +115,7 @@
 }
 @media (max-width: 1000px) {
   .app-header { padding: 5px 10px; }
+  .canvas-toolbar { margin-top: 4px; padding-top: 3px; padding-bottom: 3px; }
   .header-actions { flex-wrap: wrap; }
   .canvas-tools { gap: 4px; }
   .tool-divider { margin: 0 2px; }
@@ -123,6 +124,8 @@
   .count-display { flex: 0 0 auto; }
   .field-topline > span:last-child { display: none; }
 }
+.field-container.is-3d { min-height: var(--camera-min-height, 180px); }
+.field-container.is-3d .stage-three__controls { top: var(--camera-top, 72px); bottom: auto; }
 .field-display-preferences > .microcopy { margin-bottom: 12px; }
 .formation-panel .preview-formation { width: 100%; margin-top: 8px; }
 .formation-parameters { margin-top: 10px; }

@@ -22,7 +22,8 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
     {preferences.error && <p className="field-error" role="status">{preferences.error}</p>}
     {closeError && <p className="field-error" role="status">{closeError}</p>}
     <fieldset key={resetVersion} className="preferences-fields" disabled={preferences.status === 'loading'}>
-      <label className="form-label">Panel layout<select value={p.panelLayout} onChange={e => update({ panelLayout: e.target.value as typeof p.panelLayout })}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
+      <label className="form-label">Panel layout<select value={p.panelLayout} onChange={e => update({ panelLayout: e.target.value as typeof p.panelLayout, workspaceLayout: { ...p.workspaceLayout, preset: 'custom', setsWidth: e.target.value === 'compact' ? 176 : 216, inspectorWidth: e.target.value === 'compact' ? 235 : 258 } })}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
+      <p className="microcopy">Use Layout in the workspace header for individual widths, hidden panels and Write / Review / Rehearse presets.</p>
       <label className="form-label">Start view<select value={p.view} onChange={e => update({ view: e.target.value as typeof p.view })}><option value="2d">2D field</option><option value="3d">3D preview</option></select></label>
       <div className="preferences-toggles">{(['showPaths', 'showNextPaths', 'showGrid', 'snap'] as const).map((key, i) => <label key={key}><input type="checkbox" checked={p[key]} onChange={e => update({ [key]: e.target.checked })} />{['Previous paths', 'Next paths', 'Field grid', 'Snap to grid'][i]}</label>)}</div>
       <FieldDisplayPreferences preferences={preferences} />

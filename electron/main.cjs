@@ -320,7 +320,7 @@ function createWindow() {
   dirty = false;
   discardOnClose = false;
   window = new BrowserWindow({
-    width: 1520, height: 980, minWidth: 1120, minHeight: 720,
+    width: 1520, height: 980, minWidth: 800, minHeight: 600,
     title: 'Squidware', backgroundColor: '#151d1c', show: false,
     icon: path.join(__dirname, '..', 'dist', 'icon512.png'),
     webPreferences: {

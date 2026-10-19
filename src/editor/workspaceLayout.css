@@ -1,0 +1,43 @@
+.workspace-layout-controls { position: relative; display: flex; align-items: center; gap: 3px; }
+.layout-popover { position: fixed; width: min(390px, calc(100vw - 24px)); overflow: auto; z-index: 40; padding: 14px; border: 1px solid #a9b79d; border-radius: 8px; background: #fcfdf9; box-shadow: 0 10px 35px #14241330; font-size: 12px; }
+.app-header > .header-actions { max-width: 100%; flex-wrap: wrap; }
+.layout-popover-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.layout-popover-heading button { display: flex; padding: 5px; border-radius: 4px; background: transparent; }
+.layout-presets { display: flex; gap: 6px; }
+.layout-presets button { flex: 1; }
+.layout-presets [aria-pressed=true] { border: 2px solid #54713e; background: #e6efdc; }
+.layout-popover p { margin: 10px 0; line-height: 1.5; }
+.layout-pane-option { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding: 10px 0; }
+.layout-pane-option label { display: flex; align-items: center; gap: 8px; }
+.layout-pane-option input[type=range] { flex: 1; min-width: 50px; padding: 0; }
+.layout-pane-option output { width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+.studio-body { position: relative; }
+.workspace-pane { position: relative; display: flex; flex-direction: column; flex: 0 0 var(--pane-width); width: var(--pane-width); min-width: 0; min-height: 0; background: #fcfdf9; }
+.workspace-pane[hidden] { display: none; }
+.workspace-pane--left { margin-right: 6px; }
+.workspace-pane--right { margin-left: 6px; }
+.workspace-pane-heading { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; min-height: 34px; padding: 2px 8px 2px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.workspace-pane-heading .icon-button { height: 28px; }
+.workspace-pane-content { display: flex; flex: 1; min-height: 0; overflow: auto; }
+.studio .workspace-pane-content > .set-panel, .studio .workspace-pane-content > .inspector, .studio .workspace-pane-content > .cast-dock { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; }
+.studio .workspace-pane-content > .cast-dock { min-height: 440px; }
+.workspace-pane .panel-heading, .workspace-pane .inspector-header { display: none; }
+.workspace-pane .set-list { padding-top: 10px; }
+.workspace-pane .cast-panel-heading h2 { display: none; }
+.workspace-pane .cast-panel-heading { justify-content: flex-end; padding: 2px 8px; }
+.workspace-resizer { position: absolute; top: 0; bottom: 0; width: 6px; background: #e2e7db; cursor: col-resize; touch-action: none; z-index: 5; }
+.workspace-pane--left .workspace-resizer { right: -6px; }
+.workspace-pane--right .workspace-resizer { left: -6px; }
+.workspace-resizer:hover, .workspace-resizer:focus-visible { background: #718d59; outline: 2px solid #3b592b; outline-offset: -2px; }
+.workspace-resizer[aria-disabled=true] { cursor: default; }
+.workspace-pane-closed { display: flex; flex: 0 0 30px; width: 30px; background: #f0f3e9; border: 1px solid var(--border); }
+.workspace-pane-closed > button { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; padding: 10px 4px; background: transparent; font-size: 12px; }
+.workspace-pane-closed span { writing-mode: vertical-rl; }
+.workspace-pane--overlay { position: absolute; top: 0; bottom: 0; z-index: 15; margin: 0; box-shadow: 0 0 24px #14241350; max-width: calc(100% - 40px); }
+.workspace-pane--overlay.workspace-pane--left { left: 30px; }
+.workspace-pane--overlay.workspace-pane--right { right: 30px; }
+.workspace-overlay-dismiss { position: absolute; inset: 0; z-index: 14; background: #14241335; }
+.studio--focus .app-header, .studio--focus .statusbar, .studio--focus .workspace-pane, .studio--focus .workspace-pane-closed, .studio--focus .canvas-toolbar, .studio--focus .field-legend { display: none; }
+.focus-restore { position: absolute; right: 24px; top: 12px; z-index: 12; display: flex; align-items: center; gap: 7px; padding: 9px 12px; background: #fcfdf9; color: #354131; border: 2px solid #54713e; border-radius: 6px; font-size: 13px; }
+.studio--focus .field-container { margin-top: 8px; }
+.studio .main-workspace { min-width: min(360px, calc(100vw - 60px)); }

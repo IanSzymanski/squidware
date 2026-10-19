@@ -1,5 +1,5 @@
 import { nudgeLabel } from '../editIncrements';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowRight, LockKeyhole } from 'lucide-react';
 
@@ -18,6 +18,36 @@ export function EditorField({ controller, children }: { controller: EditorContro
   const atSet = useEditorSelector(isAtActiveSet);
   const count = useEditorSelector(state => state.playback.count);
   const [quality, setQuality] = useState<Stage3DQuality>('detailed');
+  const fieldRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const field = fieldRef.current;
+    if (view !== '3d' || !field) return;
+    const observed = new WeakSet<Element>();
+    let frame: number | null = null;
+    // Measure/write outside observer delivery so a new minimum field height
+    // cannot cause a ResizeObserver notification loop on macOS.
+    function scheduleCamera() {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => { frame = null; placeCamera(); });
+    }
+    const resize = new ResizeObserver(scheduleCamera);
+    function placeCamera() {
+      const camera = field!.querySelector<HTMLElement>('.stage-three__controls');
+      if (!camera) { field!.style.removeProperty('--camera-min-height'); return; }
+      const overlays = [...field!.querySelectorAll<HTMLElement>('.field-legend, .field-preview-banner')];
+      for (const node of [camera, ...overlays]) if (!observed.has(node)) { observed.add(node); resize.observe(node); }
+      const top = Math.max(56, ...overlays.map(node => node.offsetTop + node.offsetHeight)) + 8;
+      field!.style.setProperty('--camera-top', `${top}px`);
+      // The minimum top offset leaves the focus restore action reachable.
+      // Reserve room for wrapped controls, field status and orbit help.
+      field!.style.setProperty('--camera-min-height', `${top + camera.offsetHeight + 80}px`);
+    }
+    // The lazy 3D renderer adds camera controls after the field has mounted.
+    const mounted = new MutationObserver(scheduleCamera);
+    mounted.observe(field, { childList: true, subtree: true });
+    resize.observe(field); scheduleCamera();
+    return () => { resize.disconnect(); mounted.disconnect(); if (frame !== null) cancelAnimationFrame(frame); field.style.removeProperty('--camera-top'); field.style.removeProperty('--camera-min-height'); };
+  }, [view, readOnly]);
   const sample = useMemo(() => sampleProject(project, count), [project, count]);
   const positions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? (atSet && !playing ? activeSet.positions : sample.positions);
   const neighbors = useMemo(() => neighborOverlays(project, index, {
@@ -27,7 +57,7 @@ export function EditorField({ controller, children }: { controller: EditorContro
   const reviewing = !readOnly && (showPaths && index > 0 || controller.showNextPaths && index < project.sets.length - 1);
   const destination = project.sets[sample.setIndex];
   const displayCount = (value: number) => Number(value.toFixed(1));
-  return (<div className={`field-container ${view === '3d' ? 'is-3d' : ''}${readOnly ? ' field-container--preview' : ''}`}><div className="field-topline"><span><span className="live-dot" />{controller.coordinatePreview ? 'COORDINATE PREVIEW' : controller.spacingPreview ? 'SPACING PREVIEW' : controller.formationPreview ? 'FORMATION PREVIEW' : controller.transformPreview ? 'TRANSFORM PREVIEW' : playing ? 'REHEARSING' : readOnly ? 'READ-ONLY PREVIEW' : 'FIELD VIEW'}{view === '2d' && <> · AUDIENCE {controller.preferences.value.fieldOrientation === 'audience-top' ? 'TOP' : 'BOTTOM'}</>}</span><span>{project.field.preset === 'college' ? 'COLLEGE' : 'HIGH SCHOOL'} · 100 × 53⅓ YD</span></div>
+  return (<div ref={fieldRef} className={`field-container ${view === '3d' ? 'is-3d' : ''}${readOnly ? ' field-container--preview' : ''}`}><div className="field-topline"><span><span className="live-dot" />{controller.coordinatePreview ? 'COORDINATE PREVIEW' : controller.spacingPreview ? 'SPACING PREVIEW' : controller.formationPreview ? 'FORMATION PREVIEW' : controller.transformPreview ? 'TRANSFORM PREVIEW' : playing ? 'REHEARSING' : readOnly ? 'READ-ONLY PREVIEW' : 'FIELD VIEW'}{view === '2d' && <> · AUDIENCE {controller.preferences.value.fieldOrientation === 'audience-top' ? 'TOP' : 'BOTTOM'}</>}</span><span>{project.field.preset === 'college' ? 'COLLEGE' : 'HIGH SCHOOL'} · 100 × 53⅓ YD</span></div>
               {readOnly && !controller.transformPreview && !controller.formationPreview && !controller.spacingPreview && !controller.coordinatePreview && <div className="field-preview-banner"><LockKeyhole size={17} aria-hidden="true" /><div id="field-preview-message"><strong>{sample.setIndex > 0 && sample.progress < 1 ? `Move ${sample.setIndex} → ${sample.setIndex + 1} · ${destination.name}` : `Set ${sample.setIndex + 1} · ${destination.name}`} · Count {displayCount(count)}{sample.setIndex > 0 && sample.progress < 1 ? ` (${displayCount(sample.localCount)} / ${setTiming(project, sample.setIndex).counts})` : ''}</strong><span>{playing ? 'Playback is running. Stop at a set to edit positions.' : 'Between sets: positions are a preview. Go to a set to edit.'}</span></div><button onClick={() => selectSet(sample.setIndex)}>Go to set {sample.setIndex + 1}<ArrowRight size={14} aria-hidden="true" /></button></div>}
               {controller.transformPreview && <div className={`field-preview-banner transform-preview-banner${controller.transformResult?.error ? ' transform-preview-banner--error' : ''}`} id="field-preview-message" role="status"><strong>Transform preview · {selectedIds.length} selected{controller.transformResult?.error ? ' · outside field' : ''}</strong></div>}
               {controller.formationPreview && <div className={`field-preview-banner transform-preview-banner${controller.formationResult?.error ? ' transform-preview-banner--error' : ''}`} id="field-preview-message" role="status"><strong>Formation preview · {selectedIds.length} selected{controller.formationResult?.error ? ' · outside field' : ''}</strong></div>}
