@@ -13,12 +13,12 @@ export function useCommandController() {
   const store = useEditorStore();
   useEffect(() => {
     const platform = shortcutPlatform();
-    let lastMenuContext: boolean | undefined;
+    let lastMenuContext: 'editor' | 'text' | 'modal' | undefined;
     function updateMenuContext() {
       const state = store.getState();
       // A modal recorder or text input must receive its own keystrokes before native accelerators.
-      const enabled = !state.ui.dialog && !state.ui.paletteOpen && !isInput(document.activeElement);
-      if (enabled !== lastMenuContext) { lastMenuContext = enabled; window.squidware?.setMenuShortcutsEnabled?.(enabled); }
+      const context = isInput(document.activeElement) ? 'text' : state.ui.dialog || state.ui.paletteOpen ? 'modal' : 'editor';
+      if (context !== lastMenuContext) { lastMenuContext = context; window.squidware?.setKeyboardContext?.(context); }
     }
     function menuAction(action: string) {
       const state = store.getState();

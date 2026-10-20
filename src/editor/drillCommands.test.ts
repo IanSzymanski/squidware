@@ -3,7 +3,7 @@ import { createDemoProject } from '../domain';
 import { DEFAULT_SNAPPING } from '../snapping';
 import { drillPlan, parseDrillCommand } from './drillCommands';
 import { createEditorStore } from './store';
-import { paletteEntries, searchPalette } from './paletteCommands';
+import { paletteEntries, paletteQuery, searchPalette } from './paletteCommands';
 import { shortcutIds } from '../shortcuts';
 
 function fixture() {
@@ -82,5 +82,16 @@ describe('command search and enablement', () => {
     const preview = store.getState().ui.transformPreview;
     store.dispatch('palette.open'); store.setValue('ui', 'paletteOpen', false);
     expect(store.getState().ui.transformPreview).toBe(preview); expect(store.getState().project).toBe(before);
+  });
+  it('keeps action names beginning with drill verbs searchable and allows viewport panning during a preview', () => {
+    const { store, before } = fixture();
+    const action = paletteQuery(store.getState(), 'Move current set earlier');
+    expect(action.phrase).toBe(false); expect(action.entries[0].invocation.id).toBe('set.reorder');
+    expect(paletteQuery(store.getState(), 'move 4 forward').resolved?.plan?.command.kind).toBe('coordinates');
+    expect(paletteQuery(store.getState(), 'move 4 diagonally').resolved?.error).toBeTruthy();
+    store.dispatch('transform.preview', {}); const preview = store.getState().ui.transformPreview;
+    expect(store.dispatch('tool.pan')).toBe(true); expect(store.getState().ui.transformPreview).toBe(preview);
+    expect(store.dispatch('tool.box')).toBe(true); expect(store.getState().ui.transformPreview).toBe(preview);
+    expect(store.getState().project).toBe(before);
   });
 });

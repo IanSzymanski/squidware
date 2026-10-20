@@ -74,6 +74,11 @@ export function validateShortcutBindings(input: unknown): ShortcutBindings {
   return result;
 }
 export interface ShortcutEvent { key: string; code?: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }
+export type TextEditAction = 'cut' | 'copy' | 'paste' | 'undo' | 'redo' | 'select-all';
+export function textEditAction(event: ShortcutEvent, platform: ShortcutPlatform): TextEditAction | undefined {
+  const actions: Record<string, TextEditAction> = { 'Primary+X': 'cut', 'Primary+C': 'copy', 'Primary+V': 'paste', 'Primary+Z': 'undo', 'Primary+Shift+Z': 'redo', 'Primary+A': 'select-all' };
+  return actions[bindingFromEvent(event, platform) ?? ''];
+}
 export function bindingFromEvent(event: ShortcutEvent, platform: ShortcutPlatform): string | null {
   if (['Control', 'Meta', 'Alt', 'Shift'].includes(event.key)) return null;
   const primary = platform === 'mac' ? event.metaKey : event.ctrlKey;

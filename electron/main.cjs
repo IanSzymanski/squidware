@@ -9,7 +9,8 @@ const { pathToFileURL } = require('node:url');
 const { parseProjectV2 } = require('./project-codec.cjs');
 const { createRecoveryService } = require('./recovery-service.cjs');
 const { createPreferencesService } = require('./preferences-service.cjs');
-const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences } = require('./preferences-codec.cjs');
+const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences, textEditAction } = require('./preferences-codec.cjs');
+const textOperations = { cut: 'cut', copy: 'copy', paste: 'paste', undo: 'undo', redo: 'redo', 'select-all': 'selectAll' };
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
@@ -29,6 +30,7 @@ let fileOperationActive = false;
 let recoveryService;
 let preferencesService;
 let drainingPreferences = false;
+let keyboardContext = 'editor';
 
 function developmentUrl() {
   if (app.isPackaged || !process.env.ELECTRON_RENDERER_URL) return null;
@@ -140,9 +142,10 @@ function handleFileRequest(channel, handler) {
 }
 
 function registerIpc() {
-  ipcMain.on('squidware:menu-shortcuts', (event, enabled) => {
+  ipcMain.on('squidware:keyboard-context', (event, context) => {
     try { assertSender(event); } catch { return; }
-    if (typeof enabled === 'boolean') window.webContents.setIgnoreMenuShortcuts(!enabled);
+    if (!['editor', 'text', 'modal'].includes(context)) return;
+    keyboardContext = context; window.webContents.setIgnoreMenuShortcuts(context !== 'editor');
   });
   const recovery = () => recoveryService ||= createRecoveryService(path.join(app.getPath('userData'), 'recovery'));
   const preferences = () => preferencesService ||= createPreferencesService(app.getPath('userData'), atomicWrite);
@@ -322,6 +325,7 @@ function installSecurity() {
 }
 
 function createWindow() {
+  keyboardContext = 'editor';
   savedPath = null;
   dirty = false;
   discardOnClose = false;
@@ -337,6 +341,12 @@ function createWindow() {
     },
   });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  const contents = window.webContents;
+  contents.on('before-input-event', (event, input) => {
+    if (process.platform !== 'darwin' || keyboardContext !== 'text' || input.type !== 'keyDown' || input.isComposing) return;
+    const action = textEditAction({ key: input.key, code: input.code, ctrlKey: input.control, metaKey: input.meta, shiftKey: input.shift, altKey: input.alt }, 'mac');
+    if (action) { event.preventDefault(); contents[textOperations[action]](); }
+  });
   window.webContents.on('will-navigate', (event, url) => { if (!isAppUrl(url)) event.preventDefault(); });
   window.webContents.on('will-redirect', (event, url) => { if (!isAppUrl(url)) event.preventDefault(); });
   window.webContents.on('will-attach-webview', (event) => event.preventDefault());

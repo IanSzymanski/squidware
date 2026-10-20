@@ -84,17 +84,17 @@ app.whenReady().then(async () => {
       }
       const label = baseline.present.performers[0].label;
       await palette();await search(`place ${label} at Side 1: on the 40; on front hash`);await key('Return');await wait(`!!${state}.ui.coordinatePreview`,'label coordinate preview');
-      assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[ids[0]]);await click(button('Cancel coordinate entry'));
+      assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[ids[0]]);await click(button('Apply coordinates'));await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[0])}].x===40`,'applied labelled coordinate');await field();await key('z',[primary]);await wait(`${state}.project.past.length===0`,'labelled coordinate undo');assert.deepEqual(await evaluate(`${state}.project.present`),baseline.present);
       await palette();await search('interval 2 steps');await key('Return');assert.equal(await evaluate(`${state}.ui.paletteOpen`),true);assert.match(await evaluate("document.querySelector('.palette-phrase').textContent"),/axis/);await key('Escape');
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);await palette();await search('mirror');await key('Return');assert.equal(await evaluate(`${state}.ui.paletteOpen`),true);assert.match(await evaluate("document.querySelector('.palette-results').textContent"),/Select performers/);await capture('commands-disabled.png');await key('Escape');
       assert.deepEqual(await evaluate(`${state}.project.present`),baseline.present);
-      pass('mirror, interval and labelled coordinates reuse field previews; cancel, invalid syntax and empty selection preserve geometry');
+      pass('mirror/interval cancel preserves geometry; labelled coordinate Apply and undo restore the production; invalid syntax and empty selection cannot mutate');
       // Check keyboard navigation and ordinary text entry rather than dispatching edit commands.
       await field();await key('Right');const view=await evaluate(`${state}.ui.view`);await key('Tab');assert.equal(await evaluate(`${state}.ui.view`),view);
       await click('.workspace-tab[aria-label="Cast"]');await wait("!!document.querySelector('[aria-label=\"Find a performer\"]')",'Cast search');
       const typingBefore=await evaluate(`({project:${state}.project,tool:${state}.ui.tool,view:${state}.ui.view,paths:${state}.ui.showPaths})`);
       await type(button('Find a performer'),'vhlpadmtj');await key('a',[primary]);
-      await key('c',[primary]);assert.equal(await clipboard.readText(),'vhlpadmtj');await key('x',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value===''",'native cut in text entry');await key('v',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value==='vhlpadmtj'",'native paste in text entry');
+      await key('c',[primary]);await waitFor(async()=>await clipboard.readText()==='vhlpadmtj','native copy in text entry',{timeoutMs:15000});await key('x',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value===''",'native cut in text entry');await key('v',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value==='vhlpadmtj'",'native paste in text entry');await key('z',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value===''",'native text undo');await key('z',[primary,'shift']);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value==='vhlpadmtj'",'native text redo');
       assert.deepEqual(await evaluate(`({project:${state}.project,tool:${state}.ui.tool,view:${state}.ui.view,paths:${state}.ui.showPaths})`),typingBefore);
       assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[]);await type(button('Find a performer'),'');
       await click('.workspace-tab[aria-label="Design"]');

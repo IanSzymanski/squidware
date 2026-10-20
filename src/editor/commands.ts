@@ -122,8 +122,8 @@ export const commandRegistry = {
       c.patch('ui', { workspace: 'design', view: '2d', paletteOpen: false,
         ...(command.kind === 'coordinates' ? { coordinatePreview: { ...base, options: command.options } } : command.kind === 'mirror' ? { transformPreview: { ...base, options: command.options } } : { spacingPreview: { ...base, options: command.options } }) });
     } }),
-  'tool.box': simple('tool.box', 'Select performers', 'Choose box selection and move selected dots.', canNavigate, c => { void executeCommand(c, 'tool.select', { tool: 'select' }); }),
-  'tool.pan': simple('tool.pan', 'Pan field', 'Move the viewport without moving performers.', canNavigate, c => { void executeCommand(c, 'tool.select', { tool: 'pan' }); }),
+  'tool.box': simple('tool.box', 'Select performers', 'Choose box selection and move selected dots.', idle, c => { void executeCommand(c, 'tool.select', { tool: 'select' }); }),
+  'tool.pan': simple('tool.pan', 'Pan field', 'Move the viewport without moving performers, including during a field preview.', idle, c => { void executeCommand(c, 'tool.select', { tool: 'pan' }); }),
   'tool.lasso': simple('tool.lasso', 'Lasso selection', 'Draw a freehand boundary and review the selected performers.', s => canNavigate(s) && editable(s) && s.ui.view === '2d', c => { void executeCommand(c, 'tool.select', { tool: 'lasso' }); }),
   'performers.add-dialog': simple('performers.add-dialog', 'Add performers', 'Choose a section, label prefix and number of new performers.', s => canNavigate(s) && s.project.present.performers.length < PROJECT_LIMITS.performers, c => { void executeCommand(c, 'dialog.open', { dialog: 'add-cast' }); }),
   'set.duplicate': simple('set.duplicate', 'Duplicate current set', 'Copy this shape into a new 32-count set after it.', s => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets, c => { void executeCommand(c, 'set.add', { index: c.getState().selection.activeIndex }); }),

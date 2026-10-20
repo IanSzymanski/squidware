@@ -4,8 +4,8 @@ import { Modal } from '../components/Modal';
 import { Keycaps } from '../components/Tooltip';
 import { DRILL_ENTRY_LIMIT } from '../drillEntry';
 import { DEFAULT_SNAPPING } from '../snapping';
-import { drillPlan, isDrillPhrase } from './drillCommands';
-import { paletteEntries, searchPalette, commandUnavailable, type PaletteEntry } from './paletteCommands';
+import { drillPlan } from './drillCommands';
+import { paletteQuery, commandUnavailable, type PaletteEntry } from './paletteCommands';
 import { commandKeycaps } from './shortcutDisplay';
 import { useEditorSelector, useEditorStore } from './react';
 import './commands.css';
@@ -14,8 +14,7 @@ export function CommandPalette() {
   const store = useEditorStore(); const state = useEditorSelector(state => state);
   const [query, setQuery] = useState(''); const [active, setActive] = useState(0); const [error, setError] = useState('');
   const input = useRef<HTMLInputElement>(null); const list = useId(); const help = useId();
-  const phrase = isDrillPhrase(query); const resolved = phrase ? drillPlan(state, query) : null;
-  const entries = phrase ? [] : searchPalette(paletteEntries(state), query);
+  const { phrase, resolved, entries } = paletteQuery(state, query);
   const current = Math.min(active, Math.max(0, entries.length - 1));
   useEffect(() => { input.current?.focus(); }, []);
   useEffect(() => { document.getElementById(`${list}-${current}`)?.scrollIntoView({ block: 'nearest' }); }, [current, list]);
@@ -32,7 +31,7 @@ export function CommandPalette() {
     close(); void store.dispatch('drill.preview', { text: query });
   }
   return <Modal title="Command palette" onClose={close}>
-    <p className="modal-intro">Search an action or type a drill phrase. Geometry changes always open a preview.</p>
+    <p className="modal-intro">Search an action or type a drill phrase. Drill phrases open a field preview before Apply.</p>
     <label className="palette-search"><Search size={18} aria-hidden="true" /><input ref={input} role="combobox" aria-label="Search commands or drill phrases" placeholder="Search commands or type move 4 forward" aria-expanded={!phrase} aria-controls={phrase ? undefined : list} aria-activedescendant={entries.length ? `${list}-${current}` : undefined} aria-autocomplete="list" aria-describedby={help} autoComplete="off" spellCheck={false} maxLength={DRILL_ENTRY_LIMIT} value={query}
       onChange={event => { setQuery(event.target.value); setActive(0); setError(''); }} onKeyDown={event => {
         if (event.nativeEvent.isComposing) return;

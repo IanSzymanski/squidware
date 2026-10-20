@@ -5,6 +5,7 @@ import { currentFormationResult } from './formationSession';
 import { currentSpacingResult } from './spacingSession';
 import { currentTransformResult } from './transformSession';
 import type { EditorState } from './state';
+import { drillPlan, isDrillPhrase } from './drillCommands';
 
 export type CommandInvocation = { [I in CommandId]: { id: I; args: CommandArguments[I] } }[CommandId];
 export interface PaletteEntry { key: string; name: string; description: string; keywords: string; invocation: CommandInvocation; disabledReason: string | null }
@@ -15,7 +16,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'dialog.open' && args.dialog === 'remove-cast' && !state.selection.selectedIds.length) return 'Select performers to remove first.';
   if (id === 'dialog.open' && args.dialog === 'remove-set' && state.project.present.sets.length <= 1) return 'Keep at least one set in the production.';
   const previews = state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview;
-  if (previews && !/\.(apply|cancel)$/.test(id) && !['palette.open', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit'].includes(id)) return 'Apply or cancel the current preview first.';
+  if (previews && !/\.(apply|cancel)$/.test(id) && !['palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit'].includes(id)) return 'Apply or cancel the current preview first.';
   if (['transform.preview', 'transform.mirror', 'formation.preview', 'spacing.preview', 'coordinates.preview'].includes(id)) {
     if (!canEditPositions(state)) return state.playback.playing ? 'Pause playback at a set before editing positions.' : !isAtActiveSet(state) ? 'Return to a set before editing positions.' : 'Finish or cancel the current preview first.';
     if (state.selection.selectedIds.length < (id === 'spacing.preview' ? 2 : 1)) return id === 'spacing.preview' ? 'Select at least two performers on this set.' : 'Select performers on this set first.';
@@ -77,4 +78,11 @@ export function searchPalette(entries: PaletteEntry[], query: string): PaletteEn
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
   return entries.filter(entry => terms.every(term => `${entry.name} ${entry.description} ${entry.keywords} ${entry.invocation.id}`.toLowerCase().includes(term)))
     .sort((a, b) => Number(b.name.toLowerCase().startsWith(query.toLowerCase().trim())) - Number(a.name.toLowerCase().startsWith(query.toLowerCase().trim())) || (!terms.length ? Number(!!a.disabledReason) - Number(!!b.disabledReason) : 0) || a.name.localeCompare(b.name));
+}
+/** Valid drill phrases take precedence. Otherwise keep matching action names searchable. */
+export function paletteQuery(state: EditorState, query: string) {
+  const matches = searchPalette(paletteEntries(state), query);
+  const resolved = isDrillPhrase(query) ? drillPlan(state, query) : null;
+  const phrase = !!resolved && (!!resolved.plan || !matches.length);
+  return { phrase, resolved, entries: phrase ? [] : matches };
 }

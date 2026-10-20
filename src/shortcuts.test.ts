@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bindingFor, bindingFromEvent, bindingKeycaps, defaultShortcuts, nativeAccelerator, shortcutForEvent, validateShortcutBindings } from './shortcuts';
+import { bindingFor, bindingFromEvent, bindingKeycaps, defaultShortcuts, nativeAccelerator, shortcutForEvent, textEditAction, validateShortcutBindings } from './shortcuts';
 import { validatePreferences } from './preferences';
 
 const event = (key: string, extra = {}) => ({ key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...extra });
@@ -35,5 +35,13 @@ describe('portable shortcut bindings', () => {
     expect(shortcutForEvent(event('p', { ctrlKey: true }), {}, 'other', false)).toBeUndefined();
     expect(shortcutForEvent(event('p', { ctrlKey: true }), {}, 'other', true)).toBe('file.export');
     expect(validateShortcutBindings(Object.fromEntries(Object.entries(defaultShortcuts)))).toEqual({});
+  });
+  it('keeps native text editing on standard keys independently of rebindings', () => {
+    expect(textEditAction(event('c', { metaKey: true }), 'mac')).toBe('copy');
+    expect(textEditAction(event('A', { metaKey: true }), 'mac')).toBe('select-all');
+    expect(textEditAction(event('Z', { metaKey: true, shiftKey: true }), 'mac')).toBe('redo');
+    expect(textEditAction(event('c', { ctrlKey: true }), 'mac')).toBeUndefined();
+    expect(textEditAction(event('v'), 'mac')).toBeUndefined();
+    expect(textEditAction(event('v', { metaKey: true, shiftKey: true }), 'mac')).toBeUndefined();
   });
 });

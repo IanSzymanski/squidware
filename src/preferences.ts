@@ -2,7 +2,7 @@ import type { CoordinatePrecision } from './coordinates';
 import { DEFAULT_SNAPPING, validateSnapSettings, type SnapSettings } from './snapping';
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout } from './workspaceLayout';
 import { validateShortcutBindings, type ShortcutBindings } from './shortcuts';
-export { nativeAccelerator, nativeMenuCommands, nativeRedoAlias } from './shortcuts';
+export { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, textEditAction } from './shortcuts';
 export interface Preferences {
   version: 1;
   shortcutBindings: ShortcutBindings;

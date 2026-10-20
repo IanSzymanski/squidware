@@ -43,7 +43,7 @@ export function drillPlan(state: EditorState, text: string): { plan: DrillPlan |
       : previewSpacing(positions, ids, command.options, project.field, project);
     if (result.error) throw new Error(result.error);
     if (!result.changed) throw new Error('The preview matches the current positions. No edit is needed.');
-    const summary = command.kind === 'coordinates' ? `${command.label ? `Place ${command.label}` : `Move ${ids.length} selected performers`} · ${command.options.text}`
+    const summary = command.kind === 'coordinates' ? `${command.label ? `Place ${command.label}` : `Move ${ids.length} selected ${ids.length === 1 ? 'performer' : 'performers'}`} · ${command.options.text}`
       : command.kind === 'mirror' ? `Mirror ${ids.length} selected performers ${command.options.operation === 'across-50' ? 'across midfield' : 'front/back'}`
       : `Space ${ids.length} selected performers at ${command.options.interval} ${command.options.unit} · ${command.options.angle === 0 ? 'horizontal' : 'vertical'} · ${command.options.anchor} anchor`;
     return { plan: { command, ids, summary }, error: null };

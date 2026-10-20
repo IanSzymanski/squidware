@@ -2,7 +2,7 @@
   "phase": "write",
   "checks": [
     "Ctrl/Cmd+K opens focused command search; move 4 forward previews before Apply and records one undoable edit",
-    "mirror, interval and labelled coordinates reuse field previews; cancel, invalid syntax and empty selection preserve geometry",
+    "mirror/interval cancel preserves geometry; labelled coordinate Apply and undo restore the production; invalid syntax and empty selection cannot mutate",
     "Tab keeps focus navigation, field arrows remain available, and ordinary typing/select-all in Cast never invokes editor shortcuts",
     "recording validates collisions/reserved keys without invoking commands; old keys stop working and rebound native save executes once",
     "Help reflects bindings; dark/light/high-contrast palette controls pass text contrast and fit laptop/enlarged narrow windows"
@@ -15,7 +15,7 @@
     },
     {
       "label": "shortcut recorder",
-      "checked": 204,
+      "checked": 196,
       "failures": []
     },
     {
