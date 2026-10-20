@@ -43,7 +43,16 @@ async function control(selector, modifiers = 0) {
   await wait('!!window.__selectionClick', 'native click ' + selector);
   assert.ok(await evaluate('window.__selectionExpected.contains(window.__selectionClick)'), selector + ' receives native input');
 }
-async function text(selector, value) { await control(selector); await key('A', [process.platform === 'darwin' ? 'meta' : 'control']); await window.webContents.insertText(value); await wait(`document.querySelector(${JSON.stringify(selector)}).value === ${JSON.stringify(value)}`, 'native text entry'); }
+async function text(selector, value) {
+  await control(selector);
+  await wait(`document.activeElement === document.querySelector(${JSON.stringify(selector)})`, 'native text focus ' + selector);
+  await key('A', [process.platform === 'darwin' ? 'meta' : 'control']);
+  // Inserting an empty string does not delete the selected text on macOS.
+  await key('Backspace');
+  await wait(`document.querySelector(${JSON.stringify(selector)}).value === ''`, 'native text clear ' + selector);
+  if (value) await window.webContents.debugger.sendCommand('Input.insertText', { text: value });
+  await wait(`document.querySelector(${JSON.stringify(selector)}).value === ${JSON.stringify(value)}`, 'native text entry ' + selector);
+}
 const selected = () => evaluate(`${state}.selection.selectedIds`);
 const open = () => control('.canvas-toolbar [aria-label="Selection tools and groups"]');
 const close = () => control('[aria-label="Close selection tools"]');
