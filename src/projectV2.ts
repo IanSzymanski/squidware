@@ -96,6 +96,23 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
     ...set, counts: index === 0 ? 0 : 1, tempo: 120, transition: 'linear',
   })) }, geometry);
   const performerIds = new Set(base.performers.map(performer => performer.id));
+  const selectionGroups = data.selectionGroups === undefined ? undefined : (() => {
+    if (!Array.isArray(data.selectionGroups) || data.selectionGroups.length > PROJECT_LIMITS.selectionGroups) invalid('selectionGroups', `must contain 0 to ${PROJECT_LIMITS.selectionGroups} groups.`);
+    const seen = new Set<string>(), names = new Set<string>();
+    return data.selectionGroups.map((value, index) => {
+      const path = `selectionGroups[${index}]`, group = object(value, path), id = identifier(group.id, `${path}.id`);
+      if (seen.has(id)) invalid(`${path}.id`, 'duplicates a group ID.');
+      seen.add(id);
+      if (typeof group.name !== 'string' || !group.name.trim() || group.name.length > PROJECT_LIMITS.text.groupName || /[\u0000-\u001f]/.test(group.name)) invalid(`${path}.name`, `must be a nonempty name of at most ${PROJECT_LIMITS.text.groupName} characters without control characters.`);
+      const name = group.name.trim(), key = name.toLowerCase();
+      if (names.has(key)) invalid(`${path}.name`, 'duplicates a group name.');
+      names.add(key);
+      if (!Array.isArray(group.performerIds) || group.performerIds.length > PROJECT_LIMITS.performers) invalid(`${path}.performerIds`, 'must be a bounded list of performer IDs.');
+      const ids = group.performerIds.map((value, i) => identifier(value, `${path}.performerIds[${i}]`));
+      if (new Set(ids).size !== ids.length || ids.some(id => !performerIds.has(id))) invalid(`${path}.performerIds`, 'must contain unique, existing performer IDs.');
+      return { id, name, performerIds: ids };
+    });
+  })();
   const seenMoves = new Set<string>();
   const moves: Move[] = data.moves.map((value, index) => {
     const path = `moves[${index}]`;
@@ -135,7 +152,7 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
     return { id: moveId, fromSetId, toSetId, counts, ...moveTiming, paths };
   });
   const { schemaVersion: _version, sets: checkedSets, ...common } = base;
-  return { schemaVersion: 2, ...common, ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
+  return { schemaVersion: 2, ...common, ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
 }
 
 /** Reads either supported wire version and always returns a canonical v2 object. */
@@ -161,6 +178,6 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
-  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, ...common } = checked;
+  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, ...common } = checked;
   return { schemaVersion: 1, ...common, sets: legacySets(sets, moves, openingTiming) };
 }

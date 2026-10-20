@@ -16,6 +16,7 @@ describe('current shortcut presentation', () => {
     expect(commandKeycaps('formation.apply', undefined, 'other', true)).toEqual([]);
     expect(commandKeycaps('tool.select', 0, 'other', true)).toEqual([['V']]);
     expect(commandKeycaps('tool.select', 1, 'other', true)).toEqual([['H']]);
+    expect(commandKeycaps('tool.select', 2, 'other', true)).toEqual([['L']]);
     expect(commandKeycaps('set.select', 1, 'other', true)).toEqual([[']']]);
   });
   it('reads the registry rather than maintaining a second help/tooltip key map', () => {

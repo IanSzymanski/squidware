@@ -10,13 +10,15 @@ Coordinates are yards. X increases from the left edge (0) to the right edge (100
 
 `field` has `width: 100`, `height: 160/3` and `preset: "college" | "high-school"`. Input height may differ by at most 0.001 yard; canonicalization restores exactly 160/3. Coordinates must be finite and inside the canonical field, including its edges. No value is silently clamped.
 
-Every entity ID is a nonempty string of at most 128 ASCII letters, digits, underscores or hyphens. `__proto__`, `constructor` and `prototype` are forbidden. UUIDs are recommended, not required. Project, section, performer, picture and move collections have independent ID namespaces. IDs must be unique within each collection; segment IDs are scoped to their owning performer path. Names and roster order are not identities. Preserve IDs when editing the same entities.
+Every entity ID is a nonempty string of at most 128 ASCII letters, digits, underscores or hyphens. `__proto__`, `constructor` and `prototype` are forbidden. UUIDs are recommended, not required. Project, section, performer, selection-group, picture and move collections have independent ID namespaces. IDs must be unique within each collection; segment IDs are scoped to their owning performer path. Names and roster order are not identities. Preserve IDs when editing the same entities.
 
 ## v2 properties
 
 All listed properties are required; empty optional content uses the indicated empty value.
 
 V2 additionally accepts optional `snapping: {steps: 8|6|12, subdivision: 1|2|4, target: "grid"|"markings", group: "anchor"|"individual"}`. All four fields are required when the object is present. These saved editing rules do not alter geometry or sampling. Missing rules, including v1 migrations, mean 8-to-5 whole steps and rigid anchor snapping. Older v2 readers discard this newly recognized optional property on save. See [grid semantics](../docs/GRID_SNAPPING.md).
+
+V2 also accepts optional `selectionGroups: [{id, name, performerIds}]`: at most 64 named groups, each with an independent ID, a nonblank name of at most 80 UTF-16 code units, and 0–500 unique existing performer IDs. Group names reject all U+0000–U+001F controls, trim outer whitespace, and are unique after trimming and Unicode lowercase conversion. Groups may overlap and do not change section membership, geometry or sampling. Removing a performer prunes their ID from every group in the same undoable edit; empty groups remain named. Missing groups mean no saved groups. Readers predating this optional property discard it on save. Personal selection, geometric previews and filter state are not stored in groups. See [selection behavior](../docs/SELECTION_TOOLS.md).
 
 | Property | Meaning |
 | --- | --- |
@@ -53,9 +55,9 @@ In the basic example, performer A1 is at `(20,15)` on count 8 and `(40,25)` on c
 
 ## Limits and validation order
 
-Files are limited to **10 MiB of UTF-8 bytes**, before JSON parsing and after serialization. A single leading BOM is accepted by the parser. JSON must describe an object, with finite numeric values. Text lengths are measured in JavaScript UTF-16 code units: title/ensemble/picture name 160, section name 80, performer label 32, performer name 120, picture notes 10,000. IDs have the 128-character rule above. Tab, LF and CR are permitted; other U+0000–U+001F controls are rejected. Required names/title/labels must contain non-whitespace text. Other whitespace is preserved.
+Files are limited to **10 MiB of UTF-8 bytes**, before JSON parsing and after serialization. A single leading BOM is accepted by the parser. JSON must describe an object, with finite numeric values. Text lengths are measured in JavaScript UTF-16 code units: title/ensemble/picture name 160, section name 80, performer label 32, performer name 120, picture notes 10,000. IDs have the 128-character rule above. Except in group names (rules above), tab, LF and CR are permitted; other U+0000–U+001F controls are rejected. Required names/title/labels must contain non-whitespace text. Other whitespace is preserved except for group-name trimming.
 
-Use two validation passes: JSON Schema for structural/range constraints, then semantic validation for relationships and canonicalization. Standard JSON Schema cannot enforce unique IDs within object arrays, roster-key completeness, endpoint adjacency, matching path end counts or the encoded file byte budget. Its `maxLength` normally counts Unicode code points, so a text consisting of supplementary characters may pass it but exceed the application's stricter UTF-16 limit. A schema-only result is not full acceptance. Enforce all constraints above, or use the reference validator:
+Use two validation passes: JSON Schema for structural/range constraints, then semantic validation for relationships and canonicalization. Standard JSON Schema cannot enforce unique IDs within object arrays, roster-key completeness, endpoint adjacency, matching path end counts group-name uniqueness, valid group membership, or the encoded file byte budget. Its `maxLength` normally counts Unicode code points, so a text consisting of supplementary characters may pass it but exceed the application's stricter UTF-16 limit. A schema-only result is not full acceptance. Enforce all constraints above, or use the reference validator:
 
 ```sh
 pnpm install --frozen-lockfile

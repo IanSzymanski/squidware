@@ -38,6 +38,10 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
       const count=session?.ids.length??0;const target=count===1?project.performers.find(p=>p.id===session!.ids[0])?.label??'1 performer':`${count} performers`;
       name=`${action} ${target} · ${session?.options.text.slice(0,96)??''} — ${picture}`;break;
     }
+    case 'group.create': name = `Save selection group · ${a.name}`; break;
+    case 'group.rename': name = `Rename selection group · ${a.name}`; break;
+    case 'group.update': name = `Replace group members · ${project.selectionGroups?.find(g => g.id === a.id)?.name ?? 'group'}`; break;
+    case 'group.remove': name = `Delete selection group · ${project.selectionGroups?.find(g => g.id === a.id)?.name ?? 'group'}`; break;
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;

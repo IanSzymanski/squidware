@@ -4,6 +4,7 @@ The public [`.squid` format contract](format/FORMAT.md) includes v1/v2 JSON Sche
 
 **Find your flow. A desktop drill design studio for marching ensembles.**
 
+Selection tools support additive sections, reviewed lasso/rank/file selection, filtered invert and saved performer groups. See [selection tools](docs/SELECTION_TOOLS.md).
 Squidware brings cast management, an interactive 2D field, 3D rehearsal, count-based playback, and printable drill books into one local workspace. It is built with Electron, React, TypeScript, and Three.js, with native project dialogs and no account requirement.
 
 This is an independent early release of a Pyware-style alternative. It implements a complete basic design-to-rehearsal workflow; it does **not** claim feature parity with mature professional drill software or compatibility with proprietary Pyware files.

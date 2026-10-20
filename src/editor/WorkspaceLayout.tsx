@@ -32,7 +32,7 @@ export function useWorkspaceLayout(controller: EditorController) {
   }, [preview]);
   useEffect(() => {
     function escape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.dialog) return;
+      if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.dialog || controller.store.getState().ui.selectionToolsOpen) return;
       if (overlay && !menu && !canChangeLayout(controller.store.getState())) {
         const s = controller.store.getState();
         const input = event.target instanceof HTMLElement && (event.target.matches('input, textarea, select') || event.target.isContentEditable);
@@ -40,6 +40,7 @@ export function useWorkspaceLayout(controller: EditorController) {
         if (cancel && !input && !s.ui.pendingDraft) { event.preventDefault(); event.stopPropagation(); controller.dispatch(cancel); }
         return;
       }
+      if (event.target instanceof Element && event.target.closest('.field-stage__svg')?.querySelector('[data-selection-lasso]')) return;
       if (menu || overlay || controller.store.getState().ui.focusMode) {
         event.preventDefault(); event.stopPropagation();
         if (menu) { setMenu(false); requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-label="Workspace layout"]')?.focus()); }

@@ -15,8 +15,16 @@ import { currentSpacingResult, spacingSessionCurrent } from './spacingSession';
 import { validateCoordinateEntryOptions, type CoordinateEntryOptions } from '../drillEntry';
 import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateSession';
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
+import type { SelectionSpec } from '../selectionTools';
+import { selectionCommands } from './selectionCommands';
 
 export interface CommandArguments {
+  'selection.tools': undefined; 'selection.close': undefined;
+  'selection.section': { id: string; additive?: boolean }; 'selection.invert': undefined;
+  'selection.preview': { spec: SelectionSpec; additive?: boolean };
+  'selection.review': { ids: string[]; additive: boolean }; 'selection.apply': undefined; 'selection.cancel': undefined;
+  'group.create': { name: string }; 'group.rename': { id: string; name: string };
+  'group.update': { id: string }; 'group.remove': { id: string }; 'group.select': { id: string; additive?: boolean };
   'layout.update': { update: Partial<WorkspaceLayout> };
   'layout.preset': { preset: WorkspacePreset };
   'layout.focus': undefined;
@@ -47,7 +55,7 @@ export interface CommandArguments {
   'formation.update': { options: FormationOptions };
   'formation.apply': undefined; 'formation.cancel': undefined;
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
-  'playback.toggle': undefined; 'playback.scrub': { count: number }; 'tool.select': { tool: 'select' | 'pan' };
+  'playback.toggle': undefined; 'playback.scrub': { count: number }; 'tool.select': { tool: 'select' | 'pan' | 'lasso' };
   'dialog.open': { dialog: Dialog };
   'file.new': undefined; 'file.open': undefined; 'file.save': undefined; 'file.save-as': undefined;
   'file.export': undefined; 'help.open': undefined;
@@ -69,7 +77,7 @@ export interface CommandDefinition<I extends CommandId> {
 }
 const define = <I extends CommandId>(definition: CommandDefinition<I>) => definition;
 const always = () => true;
-export const canChangeLayout = (s: EditorState) => !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
+export const canChangeLayout = (s: EditorState) => !s.ui.selectionPreview && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
   const state = context.getState();
   if (state.ui.dialog !== dialog && state.ui.pendingDraft) throw new Error('Finish or cancel the pending edit before changing dialogs.');
@@ -90,6 +98,7 @@ const selectSet = (context: CommandContext, index: number) => {
 };
 
 export const commandRegistry = {
+  ...selectionCommands,
   'layout.update': define({ id: 'layout.update', name: 'Change panel layout', description: 'Resize or collapse panels on this device without changing the production.', arguments: { update: 'Partial<WorkspaceLayout>' }, enabled: (s, a) => canChangeLayout(s) || !s.ui.dialog && !!a && Object.entries(a.update).every(([key, value]) => key.endsWith('Collapsed') && value === false),
     execute: (c, a) => { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: validateWorkspaceLayout({ ...p.workspaceLayout, ...a.update, preset: 'custom' }) } }); } }),
   'layout.preset': define({ id: 'layout.preset', name: 'Apply workspace preset', description: 'Write shows editing tools, Review expands the field, and Rehearse hides both side panels. Saved on this device.', arguments: { preset: 'write | review | rehearse' }, enabled: (s, a) => canChangeLayout(s) && !!a && ['write', 'review', 'rehearse'].includes(a.preset),
@@ -191,7 +200,7 @@ export const commandRegistry = {
   'set.remove': define({ id: 'set.remove', name: 'Delete set', description: 'Remove a set and connect its neighbors.', arguments: { index: 'integer' }, enabled: (s, a) => setExists(s, a.index) && s.project.present.sets.length > 1, execute: (c, a) => { c.edit(p => reconnectSets(p, p.sets.filter((_, i) => i !== a.index))); selectSet(c, Math.max(0, a.index - 1)); c.patch('ui', { dialog: null }); } }),
   'set.reorder': define({ id: 'set.reorder', name: 'Move set', description: 'Move a set earlier or later in the show.', arguments: { index: 'integer', direction: '-1 | 1' }, enabled: (s, a) => setExists(s, a.index) && setExists(s, a.index + a.direction), execute: (c, a) => { c.edit(p => { const sets = [...p.sets]; const target = a.index + a.direction; [sets[a.index], sets[target]] = [sets[target], sets[a.index]]; return reconnectSets(p, sets); }); selectSet(c, a.index + a.direction); } }),
   'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' }, enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers, execute: (c, a) => { c.edit(p => { const start = p.performers.length; return { ...p, performers: [...p.performers, ...a.performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...Object.fromEntries(a.performers.map((performer, i) => [performer.id, { x: 5 + ((start + i) % 40) * 2.3, y: Math.max(1, p.field.height - 3 - Math.floor((start + i) / 40) * 2.3) }])) } })) }; }); c.patch('selection', { selectedIds: a.performers.map(p => p.id) }); c.patch('ui', { dialog: null }); } }),
-  'performers.remove': define({ id: 'performers.remove', name: 'Remove performers', description: 'Remove roster members and their positions in every set.', arguments: { ids: 'string[]' }, enabled: (s, a) => a.ids.some(id => s.project.present.performers.some(p => p.id === id)), execute: (c, a) => { c.edit(p => ({ ...p, performers: p.performers.filter(person => !a.ids.includes(person.id)), moves: p.moves.map(move => ({ ...move, paths: Object.fromEntries(Object.entries(move.paths).filter(([id]) => !a.ids.includes(id))) })), sets: p.sets.map(set => ({ ...set, positions: Object.fromEntries(Object.entries(set.positions).filter(([id]) => !a.ids.includes(id))) })) })); c.patch('selection', { selectedIds: [] }); c.patch('ui', { dialog: null }); } }),
+  'performers.remove': define({ id: 'performers.remove', name: 'Remove performers', description: 'Remove roster members and their positions in every set.', arguments: { ids: 'string[]' }, enabled: (s, a) => a.ids.some(id => s.project.present.performers.some(p => p.id === id)), execute: (c, a) => { c.edit(p => ({ ...p, performers: p.performers.filter(person => !a.ids.includes(person.id)), ...(p.selectionGroups ? { selectionGroups: p.selectionGroups.map(g => ({ ...g, performerIds: g.performerIds.filter(id => !a.ids.includes(id)) })) } : {}), moves: p.moves.map(move => ({ ...move, paths: Object.fromEntries(Object.entries(move.paths).filter(([id]) => !a.ids.includes(id))) })), sets: p.sets.map(set => ({ ...set, positions: Object.fromEntries(Object.entries(set.positions).filter(([id]) => !a.ids.includes(id))) })) })); c.patch('selection', { selectedIds: [] }); c.patch('ui', { dialog: null }); } }),
   'performer.update': define({ id: 'performer.update', name: 'Edit performer', description: 'Update a performer name or section across the show.', arguments: { id: 'string', update: 'name? | sectionId?' }, enabled: (s, a) => s.project.present.performers.some(p => p.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, performers: p.performers.map(person => person.id === a.id ? { ...person, ...a.update } : person) })) }),
   'section.add': define({ id: 'section.add', name: 'Add section', description: 'Add an ensemble section.', arguments: {}, enabled: s => s.project.present.sections.length < PROJECT_LIMITS.sections, execute: c => c.edit(p => ({ ...p, sections: [...p.sections, { id: uid(), name: `Section ${p.sections.length + 1}`, color: '#a6cce2' }] })) }),
   'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name or color.', arguments: { id: 'string', update: 'name? | color?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => section.id === a.id ? { ...section, ...a.update } : section) })) }),
@@ -202,7 +211,7 @@ export const commandRegistry = {
   'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, shortcut: '[ / ]', enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),
   'playback.toggle': define({ id: 'playback.toggle', name: 'Play / pause', description: 'Rehearse or pause the production.', arguments: {}, shortcut: 'Space', enabled: s => totalCounts(s.project.present) > 0, execute: c => { const s = c.getState(); c.patch('playback', { playing: !s.playback.playing, count: s.playback.count >= totalCounts(s.project.present) ? 0 : s.playback.count }); } }),
   'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); c.patch('playback', { playing: false, count }); c.patch('selection', { activeIndex: sampleTimeline(p, count).setIndex }); } }),
-  'tool.select': define({ id: 'tool.select', name: 'Select / pan', description: 'Choose the field interaction tool.', arguments: { tool: 'select | pan' }, shortcut: 'V / H', enabled: always, execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
+  'tool.select': define({ id: 'tool.select', name: 'Select / pan / lasso', description: 'Choose box selection, pan or a freehand lasso. Lasso results are reviewed before Apply.', arguments: { tool: 'select | pan | lasso' }, shortcut: 'V / H / L', enabled: (s, a) => !!a && ['select', 'pan', 'lasso'].includes(a.tool) && (a.tool !== 'lasso' || !s.ui.dialog && !s.ui.pendingDraft && editable(s)), execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
   'dialog.open': define({ id: 'dialog.open', name: 'Open dialog', description: 'Open an editor dialog and stop playback.', arguments: { dialog: 'Dialog' }, enabled: always, execute: (c, a) => {
     showDialog(c, a.dialog);
     if (a.dialog === 'add-cast') { const s = c.getState(); c.patch('ui', { castAmount: Math.max(1, Math.min(s.ui.castAmount, PROJECT_LIMITS.performers - s.project.present.performers.length)) }); }

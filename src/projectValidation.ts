@@ -4,11 +4,12 @@ export const PROJECT_LIMITS = {
   performers: 500,
   sets: 128,
   sections: 64,
+  selectionGroups: 64,
   projectBytes: 10 * 1024 * 1024,
   counts: { min: 1, max: 1024 },
   tempo: { min: 20, max: 400 },
   audioOffsetSeconds: { min: -3600, max: 3600 },
-  text: { id: 128, title: 160, ensemble: 160, sectionName: 80, performerLabel: 32, performerName: 120, setName: 160, notes: 10_000 },
+  text: { id: 128, title: 160, ensemble: 160, sectionName: 80, groupName: 80, performerLabel: 32, performerName: 120, setName: 160, notes: 10_000 },
 } as const;
 const FIELD_HEIGHT_TOLERANCE = 0.001;
 const defaultField: LegacyProject['field'] = { width: 100, height: 160 / 3, preset: 'college' };

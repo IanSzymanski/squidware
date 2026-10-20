@@ -7,6 +7,7 @@ import { Button, CommitInput } from './EditorControls';
 import { HelpButton } from './ControlHelp';
 import { nextCastRow, selectCastRow, selectVisible } from './castSelection';
 import './cast.css';
+import { SelectionToolsButton } from './SelectionTools';
 import type { EditorController } from './useEditorController';
 
 function PerformerFields({ person, controller }: { person: Performer; controller: EditorController }) {
@@ -19,8 +20,8 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
   const visibleIds = filteredCast.map(p => p.id);
   const visibleSelected = filteredCast.filter(p => selectedSet.has(p.id)).length;
   const hiddenSelected = selectedIds.length - visibleSelected;
-  const locked = !!controller.transformPreview || !!controller.formationPreview;
-  const lockReason = 'Apply or cancel the position preview before changing Cast selection or roster data.';
+  const locked = !!controller.selectionPreview || !!controller.transformPreview || !!controller.formationPreview;
+  const lockReason = controller.selectionPreview ? 'Apply or cancel the selection preview before changing Cast selection or roster data.' : 'Apply or cancel the position preview before changing Cast selection or roster data.';
   const scroll = useRef<HTMLDivElement>(null);
   const allCheckbox = useRef<HTMLInputElement>(null);
   const rows = useRef(new Map<string, HTMLElement>());
@@ -75,7 +76,7 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
     }
   }
   const content = <>
-    <div className="cast-panel-heading"><h2>Cast <span className="count-badge">{project.performers.length}</span></h2><div>
+    <div className="cast-panel-heading"><h2>Cast <span className="count-badge">{project.performers.length}</span></h2><div><SelectionToolsButton controller={controller} />
       <Button command="cast.show" title={docked ? 'Full Cast table' : 'Dock Cast beside field'} description={docked ? 'Expand Cast to the full table. Keep the selection and filters.' : 'Show Cast beside the field. Keep the selection and filters.'} disabled={locked} disabledReason={lockReason} onClick={() => controller.showCast(docked ? 'table' : 'panel')}>{docked ? <List size={16} /> : <PanelRight size={16} />}</Button>
       {docked && <Button command="cast.show" title="Show Inspector" description="Close the Cast panel and show selection tools beside the field." disabled={locked} disabledReason={lockReason} onClick={() => controller.showCast('closed')}><X size={16} /></Button>}
     </div></div>

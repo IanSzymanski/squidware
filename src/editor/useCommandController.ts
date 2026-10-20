@@ -30,6 +30,8 @@ export function useCommandController() {
       const target = event.target as HTMLElement;
       const input = /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable;
       if (state.ui.dialog) return;
+      if (state.ui.selectionToolsOpen && event.key === 'Escape') { event.preventDefault(); store.dispatch(state.ui.selectionPreview ? 'selection.cancel' : 'selection.close'); return; }
+      if (state.ui.selectionPreview && !input && event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('selection.apply'); return; }
       const cmd = event.ctrlKey || event.metaKey; const key = event.key.toLowerCase();
       if (cmd && event.shiftKey && key === 'f' && !input) { event.preventDefault(); store.dispatch('layout.focus'); return; }
       if (cmd && ['s', 'o', 'n'].includes(key)) {
@@ -55,7 +57,7 @@ export function useCommandController() {
         if (target.closest('button, a[href], [role="button"]')) return;
         event.preventDefault(); if (!store.dispatch('playback.toggle')) store.setValue('ui', 'toast', 'Add a second set to rehearse a transition.');
       } else if (event.key === 'Escape') store.dispatch(state.ui.transformPreview ? 'transform.cancel' : 'selection.clear');
-      else if (key === 'v' || key === 'h') store.dispatch('tool.select', { tool: key === 'v' ? 'select' : 'pan' });
+      else if (!cmd && !event.altKey && ['v', 'h', 'l'].includes(key)) store.dispatch('tool.select', { tool: key === 'v' ? 'select' : key === 'l' ? 'lasso' : 'pan' });
       else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && isNudgeKey(event.key)) {
         event.preventDefault(); store.dispatch('selection.nudge', { key: event.key, fast: event.shiftKey });
       } else if (event.key === '[' || event.key === ']') store.dispatch('set.select', { index: state.selection.activeIndex + (event.key === '[' ? -1 : 1) });
