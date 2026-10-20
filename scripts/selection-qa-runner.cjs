@@ -46,7 +46,9 @@ async function control(selector, modifiers = 0) {
 async function text(selector, value) {
   await control(selector);
   await wait(`document.activeElement === document.querySelector(${JSON.stringify(selector)})`, 'native text focus ' + selector);
-  await key('A', [process.platform === 'darwin' ? 'meta' : 'control']);
+  // Hidden macOS windows do not route simulated menu accelerators reliably.
+  // Select the input text explicitly, as the editor/preferences owners do.
+  await evaluate(`document.querySelector(${JSON.stringify(selector)}).select()`);
   // Inserting an empty string does not delete the selected text on macOS.
   await key('Backspace');
   await wait(`document.querySelector(${JSON.stringify(selector)}).value === ''`, 'native text clear ' + selector);
