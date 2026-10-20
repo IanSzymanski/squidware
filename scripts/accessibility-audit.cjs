@@ -1,7 +1,8 @@
 'use strict';
 
 /** Runs in Chromium. Checks rendered HTML text against composited solid backgrounds.
- * SVG artwork, disabled controls and system-drawn menu options are excluded.
+ * SVG artwork and system-drawn menu options are excluded. Disabled controls
+ * are excluded unless explicitly requested.
  * This is bounded computed-style evidence, not screen-reader certification. */
 function auditText({ includeDisabled = false } = {}) {
   const failures = [];

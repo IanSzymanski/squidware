@@ -1,0 +1,15 @@
+{
+  "phase": "restart",
+  "checks": [
+    "theme and UI scale survive a fresh sandboxed desktop process; native project save/reopen preserves every section color and coordinate"
+  ],
+  "audits": [
+    {
+      "label": "restored high contrast at 125%",
+      "checked": 127,
+      "failures": []
+    }
+  ],
+  "metrics": [],
+  "electron": "44.7.0"
+}

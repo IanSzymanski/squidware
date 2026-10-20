@@ -12,6 +12,8 @@ Persisted choices:
 
 | Choice | Default / limits |
 | --- | --- |
+| Interface theme | Dark; Light and High contrast available |
+| UI scale | 100%; 110%, 125% and 150% available |
 | Panel layout; field view | Comfortable; 2D |
 | Labels; previous paths; grid visibility; snap | On; off; on; on |
 | New production placement defaults | 8-to-5, whole steps, grid targets, keep spacing; 6/12-to-5, half/quarter steps, markings and individual mode also available |
@@ -29,6 +31,8 @@ Persisted choices:
 | Geometric review spacing / stride | 1 yd / 1.25 yd per count; each 0.1–5 |
 
 Toolbar changes to the persisted view, toggles, zoom and selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
+
+See [themes and UI scale](APPEARANCE.md) for appearance, selection/focus cues and enlarged layouts.
 
 See [editing increments](EDIT_INCREMENTS.md) for shared command routing, modifiers and exact preview behavior.
 

@@ -1,0 +1,22 @@
+{
+  "audits": [
+    {
+      "label": "dark transition warnings",
+      "checked": 154,
+      "failures": []
+    },
+    {
+      "label": "light transition warnings",
+      "checked": 148,
+      "failures": []
+    },
+    {
+      "label": "high-contrast transition warnings",
+      "checked": 146,
+      "failures": []
+    }
+  ],
+  "checks": [
+    "Native PDFs generated in all themes and UI scales; warning text passes contrast including disabled controls; project unchanged."
+  ]
+}
