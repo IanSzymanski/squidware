@@ -3,7 +3,7 @@
 /** Runs in Chromium. Checks rendered HTML text against composited solid backgrounds.
  * SVG artwork, disabled controls and system-drawn menu options are excluded.
  * This is bounded computed-style evidence, not screen-reader certification. */
-function auditText() {
+function auditText({ includeDisabled = false } = {}) {
   const failures = [];
   let checked = 0;
   const rgb = value => {
@@ -16,7 +16,7 @@ function auditText() {
     return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
   };
   const inspect = (element, text, pseudo) => {
-    if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) || element.closest('svg, :disabled, [aria-disabled="true"]') || element.tagName === 'OPTION') return;
+    if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) || element.closest('svg') || !includeDisabled && element.closest(':disabled, [aria-disabled="true"]') || element.tagName === 'OPTION') return;
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const style = getComputedStyle(element, pseudo);

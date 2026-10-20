@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useEditorSelector, useEditorStore } from './react';
 import { browserPreferences, startPreferencesController } from './preferencesController';
 import type { Preferences } from '../preferences';
@@ -8,6 +8,12 @@ export function usePreferencesController() {
   const hasSelection = useEditorSelector(state => state.selection.selectedIds.length > 0);
   const hadSelection = useRef(false);
   const controller = useRef<ReturnType<typeof startPreferencesController> | null>(null);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = state.value.theme;
+    root.style.setProperty('--ui-scale', String(state.value.uiScale));
+    return () => { delete root.dataset.theme; root.style.removeProperty('--ui-scale'); };
+  }, [state.value.theme, state.value.uiScale]);
   useEffect(() => {
     const unavailable = { getItem() { throw new Error('Browser preferences storage is unavailable.'); }, setItem() { throw new Error('Browser preferences storage is unavailable.'); } };
     let storage; try { storage = localStorage; } catch { storage = unavailable; }

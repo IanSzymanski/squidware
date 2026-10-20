@@ -304,7 +304,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.18, 8, 6), new THREE.MeshStandardMaterial({ color: '#e6d8b9', roughness: 1 }), count);
       const caps = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.19, 0.2, 0.26, 8), bodyMaterial, count);
       const legs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.078, 0.088, 0.55, 5), new THREE.MeshStandardMaterial({ color: '#202a29', roughness: 1 }), count * 2);
-      const rings = new THREE.InstancedMesh(new THREE.RingGeometry(0.57, 0.71, 28), new THREE.MeshBasicMaterial({ color: '#edffc2', side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthWrite: false }), count);
+      const rings = new THREE.InstancedMesh(new THREE.RingGeometry(0.57, 0.71, 28), new THREE.MeshBasicMaterial({ color: '#8dc8ff', side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthWrite: false }), count);
       for (const mesh of [bodies, heads, caps, legs, rings]) {
         mesh.count = mesh === legs ? performers.length * 2 : performers.length;
         mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

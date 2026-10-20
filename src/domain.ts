@@ -11,7 +11,7 @@ export { parseProjectV2 as parseProject, serializeProjectV2 as serializeProject 
 const EPSILON = 1e-8;
 const defaultField: Project['field'] = { width: 100, height: 160 / 3, preset: 'college' };
 const defaultSections: Section[] = [
-  { id: 'brass', name: 'Brass', color: '#c3e889' },
+  { id: 'brass', name: 'Brass', color: '#f0bf62' },
   { id: 'woodwinds', name: 'Woodwinds', color: '#b9a1e5' },
   { id: 'percussion', name: 'Percussion', color: '#85c9dd' },
   { id: 'guard', name: 'Guard', color: '#e3a08b' },

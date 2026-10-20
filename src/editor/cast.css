@@ -1,12 +1,12 @@
 .cast-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .cast-panel-heading h2 { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .cast-panel-heading > div { display: flex; gap: 4px; }
-.cast-filter-notice { flex-shrink: 0; padding: 8px 12px; background: #eef4e4; border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.5; }
+.cast-filter-notice { flex-shrink: 0; padding: 8px 12px; background: var(--surface-muted); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.5; }
 .cast-filter-notice button { display: block; color: inherit; background: transparent; text-decoration: underline; padding: 4px 0; font-weight: 600; text-align: left; }
 .cast-inline-edit { border: 0; padding: 0; margin: 0; min-width: 0; }
-.cast-workspace.cast-dock { flex: 0 0 300px; width: 300px; min-width: 0; margin: 0; border: 0; border-left: 1px solid var(--border); border-radius: 0; overflow: hidden; background: #fcfdf9; }
+.cast-workspace.cast-dock { flex: 0 0 300px; width: 300px; min-width: 0; margin: 0; border: 0; border-left: 1px solid var(--border); border-radius: 0; overflow: hidden; background: var(--surface); }
 .cast-dock .cast-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; padding: 10px; }
-.cast-dock .search-field { grid-column: 1 / -1; min-width: 0; background: white; }
+.cast-dock .search-field { grid-column: 1 / -1; min-width: 0; background: var(--surface); }
 .cast-dock .cast-controls > select { min-width: 0; width: 100%; }
 .cast-dock .cast-controls .button { min-width: 0; padding: 6px; }
 .cast-dock .table-scroll { min-height: 80px; overscroll-behavior: contain; }
@@ -14,9 +14,9 @@
 .cast-select-visible span { margin-left: auto; font-variant-numeric: tabular-nums; }
 .cast-list { list-style: none; margin: 0; padding: 0; }
 .cast-list li { border-bottom: 1px solid var(--border); }
-.cast-list li > button { display: flex; align-items: center; width: 100%; gap: 8px; padding: 9px 12px; background: transparent; text-align: left; color: #3c4e30; }
-.cast-list li > button:hover { background: #eef4e4; }
-.cast-list .selected > button { background: #e8f2dc; box-shadow: inset 3px 0 #647e45; }
+.cast-list li > button { display: flex; align-items: center; width: 100%; gap: 8px; padding: 9px 12px; background: transparent; text-align: left; color: var(--text); }
+.cast-list li > button:hover { background: var(--surface-muted); }
+.cast-list .selected > button { background: var(--selected-bg); box-shadow: inset 3px 0 var(--shadow); }
 .cast-list .performer-label { flex: 0 0 auto; font-size: 12px; }
 .cast-person { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
 .cast-person strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
@@ -29,7 +29,7 @@
 .cast-edit .form-label input, .cast-edit .form-label select { min-width: 0; width: 100%; padding: 6px; }
 .cast-edit .microcopy { font-size: 12px; margin-top: 6px; overflow-wrap: anywhere; }
 .cast-dock .table-footer { padding: 7px 12px; font-size: 12px; }
-.cast-keyboard-help { padding: 6px 12px; border-top: 1px solid var(--border); background: #f0f3e9; font-size: 11px; line-height: 1.5; flex-shrink: 0; }
+.cast-keyboard-help { padding: 6px 12px; border-top: 1px solid var(--border); background: var(--hover-bg); font-size: 12px; line-height: 1.5; flex-shrink: 0; }
 .cast-dock .empty-state { padding: 20px 12px; gap: 10px; text-align: center; }
 @media (max-width: 1250px) { .cast-workspace.cast-dock { flex-basis: 280px; width: 280px; } }
 .studio.studio--cast-panel { min-height: 0; }

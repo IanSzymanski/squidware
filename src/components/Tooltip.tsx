@@ -1,3 +1,4 @@
+import { uiScale } from '../uiScale';
 import { cloneElement, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { HTMLAttributes, ReactElement } from 'react';
@@ -50,7 +51,8 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     const left = Math.max(margin, Math.min(anchor.left + (anchor.width - box.width) / 2, window.innerWidth - box.width - margin));
     const below = anchor.bottom + 8;
     const top = below + box.height <= window.innerHeight - margin ? below : Math.max(margin, anchor.top - box.height - 8);
-    setPosition(previous => previous.left === left && previous.top === top ? previous : { left, top });
+    const scale = uiScale();
+    setPosition(previous => previous.left === left / scale && previous.top === top / scale ? previous : { left: left / scale, top: top / scale });
   };
   useLayoutEffect(() => { if (open) place(); }, [open, name, description, state, disabledReason]);
   useLayoutEffect(() => {

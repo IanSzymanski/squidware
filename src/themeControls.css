@@ -1,0 +1,45 @@
+@media screen {
+  html { zoom: var(--ui-scale); }
+  .studio { height: var(--viewport-height); }
+  .modal { width: min(460px, calc(var(--viewport-width) - 24px)); max-height: calc(var(--viewport-height) - 24px); }
+  .modal.wide { width: min(730px, calc(var(--viewport-width) - 24px)); }
+  .tooltip-panel { max-width: min(320px, calc(var(--viewport-width) - 16px)); max-height: calc(var(--viewport-height) - 16px); }
+  .selection-tools-panel { width: min(350px, calc(var(--viewport-width) - 24px)); top: min(70px, 10vh); max-height: calc(var(--viewport-height) - 92px); }
+  .layout-popover { width: min(390px, calc(var(--viewport-width) - 24px)); }
+}
+
+/* The field uses a constant dark surface; UI themes never recolor a show. */
+.field-container { background: #141d1a; }
+.field-selection-ring { fill: none; stroke: var(--field-accent); }
+.field-focus-ring { stroke: var(--field-accent); }
+.field-stage__svg:focus-visible, .stage-three__canvas > canvas:focus-visible { outline-color: var(--field-accent); }
+.button.primary, .play-button, .fatal-error button { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.button.primary:hover:not(:disabled), .play-button:hover { filter: brightness(1.1); }
+.button.danger { color: var(--error); background: var(--error-bg); border: 1px solid var(--error); }
+.field-error, .recovery-error, .selection-tools-error, .transform-result--error { color: var(--error); }
+.warning-box { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
+.tooltip-reason { color: var(--warning); }
+.transform-result { color: var(--muted); }
+.active-marker { color: var(--accent); }
+.set-card.selected, .field-legend button.selected, .icon-button.active, .formation-grid button.active, .view-switch > button.active, .set-track button.active { border-color: var(--accent); }
+.selection-actions > button[aria-disabled=true], button:disabled, button[aria-disabled=true], input:disabled, select:disabled { background: var(--disabled-bg); color: var(--disabled-text); border-color: var(--border); border-style: dashed; }
+input, textarea, select { caret-color: var(--accent); }
+input[type=range] { accent-color: var(--accent); }
+a { color: var(--accent); }
+summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media print {
+  html { zoom: 1; color-scheme: light; }
+}
+
+.check-count.has-issues { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
+.issue-dot.danger { background: var(--error); }
+/* On short fields, contextual keyboard help replaces secondary field metadata. */
+.field-container { container-type: size; }
+@container (max-height: 300px) {
+  .field-topline, .field-bottomline { display: none; }
+  .field-keyboard-help { display: none; }
+  .field-snap-status { bottom: 8px; }
+  .field-stage:focus-within .field-keyboard-help { display: block; }
+  .field-stage:focus-within .field-snap-status { display: none; }
+}
