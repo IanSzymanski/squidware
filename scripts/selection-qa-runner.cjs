@@ -103,9 +103,17 @@ app.whenReady().then(async () => {
       // The default anchor is A2, already selected. Choose A1 explicitly for the boundary fixture.
       await evaluate("document.querySelector('[aria-label=\"Selection anchor\"]').focus()");
       assert.equal(await evaluate("document.querySelector('[aria-label=\"Selection anchor\"]').value"), ids[1]);
-      // A closed macOS select does not use Home to choose its first option.
-      await key('Up');
-      await wait(`document.querySelector('[aria-label="Selection anchor"]').value===${JSON.stringify(ids[0])} && !${state}.ui.selectionPreview`, 'native anchor choice and stale review cancellation');
+      assert.ok(await evaluate("document.activeElement===document.querySelector('[aria-label=\"Selection anchor\"]')"));
+      // Native typeahead chooses the option without opening an OS popup in a hidden window.
+      for (const character of 'A1') {
+        for (const type of ['keyDown', 'char', 'keyUp']) window.webContents.sendInputEvent({ type, keyCode: character });
+      }
+      try {
+        await wait(`document.querySelector('[aria-label="Selection anchor"]').value===${JSON.stringify(ids[0])} && !${state}.ui.selectionPreview`, 'native anchor choice and stale review cancellation');
+      } catch (error) {
+        const observed = await evaluate(`({focused:document.activeElement?.outerHTML,value:document.querySelector('[aria-label="Selection anchor"]').value,preview:${state}.ui.selectionPreview?.spec})`);
+        throw new Error(`${error.message}; observed ${JSON.stringify(observed)}`, { cause: error });
+      }
       await control('[aria-label="Preview rank"]'); await wait(`${state}.ui.selectionPreview.spec.anchorId===${JSON.stringify(ids[0])}`, 'native anchor selection');
       const rankBefore = await evaluate(`${state}.project`), initialIds = await selected();
       assert.deepEqual(await evaluate(`${state}.ui.selectionPreview.ids`), ids.slice(0, 2));
