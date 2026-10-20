@@ -4,7 +4,7 @@ Squidware v0.5.0 is the published desktop foundation for cast-to-chart drill des
 
 ## Where work is tracked
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is active, with 14 of 19 issues completed and 5 open. The next independent feature is [#40 — resizable panels, workspace presets and focus mode](https://github.com/IanSzymanski/squidware/issues/40).
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is active, with 15 of 19 issues completed and 4 open. The next implementation work is [#33 — selection tools and saved groups](https://github.com/IanSzymanski/squidware/issues/33), proposed in [PR #139](https://github.com/IanSzymanski/squidware/pull/139) and awaiting successful macOS certification and acceptance review.
 
 **Remaining review check:** [#36](https://github.com/IanSzymanski/squidware/issues/36) still awaits its first-time reviewer discovery check. Selection actions (#18), formation previews (#25), exact transforms (#27), field display (#42) and spacing/alignment (#79) are closed as completed with linked acceptance evidence.
 
