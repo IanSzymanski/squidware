@@ -1,0 +1,204 @@
+{
+  "phase": "write",
+  "checks": [
+    "all three themes pass rendered text/placeholder contrast, visible focus, legacy Brass selection, disabled controls, errors, Cast, sheet, Export and small-window enlarged controls",
+    "appearance changes leave production geometry, colors, edit history and revision unchanged"
+  ],
+  "audits": [
+    {
+      "label": "dark preferences",
+      "checked": 209,
+      "failures": []
+    },
+    {
+      "label": "dark selected Brass",
+      "checked": 156,
+      "failures": []
+    },
+    {
+      "label": "dark Cast",
+      "checked": 328,
+      "failures": []
+    },
+    {
+      "label": "dark sheet",
+      "checked": 174,
+      "failures": []
+    },
+    {
+      "label": "dark Export",
+      "checked": 168,
+      "failures": []
+    },
+    {
+      "label": "dark validation error",
+      "checked": 212,
+      "failures": []
+    },
+    {
+      "label": "dark 125% preferences",
+      "checked": 193,
+      "failures": []
+    },
+    {
+      "label": "dark enlarged layout controls",
+      "checked": 159,
+      "failures": []
+    },
+    {
+      "label": "dark enlarged selection tools",
+      "checked": 142,
+      "failures": []
+    },
+    {
+      "label": "dark 125% design",
+      "checked": 142,
+      "failures": []
+    },
+    {
+      "label": "dark 150% preferences",
+      "checked": 113,
+      "failures": []
+    },
+    {
+      "label": "dark 150% Export",
+      "checked": 72,
+      "failures": []
+    },
+    {
+      "label": "light preferences",
+      "checked": 208,
+      "failures": []
+    },
+    {
+      "label": "light selected Brass",
+      "checked": 155,
+      "failures": []
+    },
+    {
+      "label": "light Cast",
+      "checked": 327,
+      "failures": []
+    },
+    {
+      "label": "light sheet",
+      "checked": 173,
+      "failures": []
+    },
+    {
+      "label": "light Export",
+      "checked": 167,
+      "failures": []
+    },
+    {
+      "label": "light validation error",
+      "checked": 211,
+      "failures": []
+    },
+    {
+      "label": "light 125% preferences",
+      "checked": 192,
+      "failures": []
+    },
+    {
+      "label": "light enlarged layout controls",
+      "checked": 158,
+      "failures": []
+    },
+    {
+      "label": "light enlarged selection tools",
+      "checked": 141,
+      "failures": []
+    },
+    {
+      "label": "light 125% design",
+      "checked": 142,
+      "failures": []
+    },
+    {
+      "label": "light 150% preferences",
+      "checked": 113,
+      "failures": []
+    },
+    {
+      "label": "light 150% Export",
+      "checked": 72,
+      "failures": []
+    },
+    {
+      "label": "high-contrast preferences",
+      "checked": 208,
+      "failures": []
+    },
+    {
+      "label": "high-contrast selected Brass",
+      "checked": 155,
+      "failures": []
+    },
+    {
+      "label": "high-contrast Cast",
+      "checked": 327,
+      "failures": []
+    },
+    {
+      "label": "high-contrast sheet",
+      "checked": 173,
+      "failures": []
+    },
+    {
+      "label": "high-contrast Export",
+      "checked": 167,
+      "failures": []
+    },
+    {
+      "label": "high-contrast validation error",
+      "checked": 211,
+      "failures": []
+    },
+    {
+      "label": "high-contrast 125% preferences",
+      "checked": 192,
+      "failures": []
+    },
+    {
+      "label": "high-contrast enlarged layout controls",
+      "checked": 158,
+      "failures": []
+    },
+    {
+      "label": "high-contrast enlarged selection tools",
+      "checked": 141,
+      "failures": []
+    },
+    {
+      "label": "high-contrast 125% design",
+      "checked": 142,
+      "failures": []
+    },
+    {
+      "label": "high-contrast 150% preferences",
+      "checked": 113,
+      "failures": []
+    },
+    {
+      "label": "high-contrast 150% Export",
+      "checked": 72,
+      "failures": []
+    }
+  ],
+  "metrics": [
+    {
+      "theme": "dark",
+      "fieldHeight": 485
+    },
+    {
+      "theme": "light",
+      "fieldHeight": 485
+    },
+    {
+      "theme": "high-contrast",
+      "fieldHeight": 485
+    }
+  ],
+  "electron": "44.7.0"
+}

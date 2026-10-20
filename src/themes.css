@@ -1,0 +1,74 @@
+/* Chrome tokens are independent of production section colors and field artwork. */
+:root, :root[data-theme=dark] {
+  color-scheme: dark;
+  --app-bg: #16191e;
+  --surface: #20252c;
+  --surface-muted: #282f38;
+  --hover-bg: #333e4c;
+  --text: #edf0f5;
+  --muted: #bdc7d4;
+  --border: #758293;
+  --accent: #91c1ff;
+  --on-accent: #10243e;
+  --selected-bg: #253f60;
+  --disabled-text: #aab4c1;
+  --disabled-bg: #2a3039;
+  --success: #78d9aa;
+  --warning: #ffd38b;
+  --warning-bg: #49391f;
+  --error: #ffb3ad;
+  --error-bg: #4a292c;
+  --shadow: #00000060;
+  --backdrop: #080b10b8;
+  --field-accent: #91c1ff;
+  --lime: var(--accent);
+  --dark: var(--text);
+  --paper: var(--surface);
+  --ui-scale: 1;
+  --viewport-height: calc(100dvh / var(--ui-scale));
+  --viewport-width: calc(100vw / var(--ui-scale));
+}
+:root[data-theme=light] {
+  color-scheme: light;
+  --app-bg: #edf0f4;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --hover-bg: #e3e8ef;
+  --text: #1f2936;
+  --muted: #48586c;
+  --border: #7b899b;
+  --accent: #205db0;
+  --on-accent: #ffffff;
+  --selected-bg: #e4edfc;
+  --disabled-text: #59687a;
+  --disabled-bg: #e8ecf1;
+  --success: #176a46;
+  --warning: #755019;
+  --warning-bg: #fff1d6;
+  --error: #a52e34;
+  --error-bg: #fff0ef;
+  --shadow: #17233428;
+  --backdrop: #101925a3;
+}
+:root[data-theme=high-contrast] {
+  color-scheme: dark;
+  --app-bg: #000000;
+  --surface: #000000;
+  --surface-muted: #111111;
+  --hover-bg: #252525;
+  --text: #ffffff;
+  --muted: #eeeeee;
+  --border: #dddddd;
+  --accent: #8fd1ff;
+  --on-accent: #000000;
+  --selected-bg: #16344a;
+  --disabled-text: #cccccc;
+  --disabled-bg: #222222;
+  --success: #8ff0b6;
+  --warning: #ffe28a;
+  --warning-bg: #392c00;
+  --error: #ffb4b4;
+  --error-bg: #3e1111;
+  --field-accent: #8fd1ff;
+}
+

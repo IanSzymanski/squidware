@@ -1,3 +1,4 @@
+import { uiScale } from '../uiScale';
 import type { CoordinateOptions } from '../coordinates';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import type { RefObject } from 'react';
@@ -90,11 +91,12 @@ export function FieldReadout({ id, svgRef, geometryRef, orientation, project, po
     const anchor = new DOMPoint(position.x, position.y).matrixTransform(matrix);
     if (anchor.x < bounds.left || anchor.x > bounds.right || anchor.y < bounds.top || anchor.y > bounds.bottom) { setReadout(null); return; }
     const section = project.sections.find(item => item.id === performer?.sectionId);
+    const scale = uiScale();
     setReadout({
       title: performer ? [performer.label, performer.name, section?.name].filter(Boolean).join(' · ') : 'Cursor',
       description: coordinateDescription(position, project.field, coordinateFormat),
-      left: Math.max(8, Math.min(bounds.width - 308, anchor.x - bounds.left + 14)),
-      top: Math.max(readOnly ? 150 : 60, Math.min(bounds.height - 100, anchor.y - bounds.top + 18)),
+      left: Math.max(8, Math.min(bounds.width / scale - 308, (anchor.x - bounds.left) / scale + 14)),
+      top: Math.max(readOnly ? 150 : 60, Math.min(bounds.height / scale - 100, (anchor.y - bounds.top) / scale + 18)),
     });
   }, [cursor, focusedId, keyboardFocusedId, project, positions, selectedIds, viewport, sizeVersion, svgRef, geometryRef, orientation, readOnly, coordinateFormat, pointerRadius, touchRadius]);
 

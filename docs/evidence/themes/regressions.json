@@ -1,0 +1,66 @@
+{
+  "state": "completed",
+  "source": {
+    "revision": "430444f472aede51b40b85593dfeeaad5ab00f98",
+    "tree": "48fbe7df37b144bbbd12fd8e0589ce7e3df732fd",
+    "dirty": true,
+    "contentHash": "79600730dd8c0808eed1fdd9704f7f5317cd2d34637c7c6098d69c9f8b5b1308",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "selected": [
+    "accessibility",
+    "field",
+    "preferences",
+    "tooltips",
+    "workspace",
+    "print"
+  ],
+  "checks": [
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "elapsedMs": 50117
+    },
+    {
+      "name": "field",
+      "status": "passed",
+      "elapsedMs": 82440
+    },
+    {
+      "name": "preferences",
+      "status": "passed",
+      "elapsedMs": 19462
+    },
+    {
+      "name": "tooltips",
+      "status": "passed",
+      "elapsedMs": 39207
+    },
+    {
+      "name": "workspace",
+      "status": "passed",
+      "elapsedMs": 58322
+    },
+    {
+      "name": "print",
+      "status": "passed",
+      "elapsedMs": 4616
+    }
+  ],
+  "sourceTests": 418,
+  "nativeTests": 52,
+  "contractSuites": 3,
+  "note": "Local targeted Linux checks; Windows/macOS CI and #64/#3 remain separate gates.",
+  "pdfInspection": "Six native PDF cases passed independent page-size, complete-text and clipping checks (153 pages total)."
+}

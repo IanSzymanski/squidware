@@ -12,6 +12,7 @@ export const desktopSuites = [
   { name: 'workspace', title: 'Resizable panels, presets, focus and restored layouts', script: 'workspace-qa.mjs', timeoutMs: 240000 },
   { name: 'tooltips', title: 'Pointer/focus help and disabled reasons', script: 'tooltip-qa.mjs', timeoutMs: 180000 },
   { name: 'tooltips-fallback', title: 'Help after unavailable WebGL', script: 'tooltip-qa.mjs', args: ['--force-3d-fallback'], timeoutMs: 180000 },
+  { name: 'themes', title: 'Themes, UI scaling, contrast and preserved project colors', script: 'themes-qa.mjs', timeoutMs: 450000 },
   { name: 'preferences', title: 'Preferences across process restarts', script: 'preferences-qa.mjs', timeoutMs: 390000 },
   { name: 'thumbnails', title: 'Thumbnail invalidation and shared selection', script: 'thumbnail-qa.mjs', timeoutMs: 210000 },
   { name: 'playback', title: 'Clock, subscriptions and drag preview isolation', script: 'playback-qa.mjs', timeoutMs: 210000 },
@@ -23,22 +24,40 @@ export const desktopSuites = [
 export function selectSuites(argv) {
   if (argv.some(arg => ['--list', '--print-output'].includes(arg)) && argv.length !== 1) throw new Error('Use --list or --print-output alone.');
   const names = argv.filter(arg => arg.startsWith('--suite=')).flatMap(arg => arg.slice(8).split(','));
-  const unknownFlags = argv.filter(arg => !arg.startsWith('--suite=') && !['--list', '--print-output'].includes(arg));
+  const unknownFlags = argv.filter(arg => !arg.startsWith('--suite=') && !arg.startsWith('--jobs=') && !['--list', '--print-output'].includes(arg));
   if (unknownFlags.length) throw new Error(`Unknown arguments: ${unknownFlags.join(', ')}`);
+  desktopConcurrency(argv);
   if (new Set(names).size !== names.length) throw new Error('Each suite may be selected only once.');
   for (const name of names) if (!desktopSuites.some(suite => suite.name === name)) throw new Error(`Unknown desktop suite: ${name}`);
   return names.length ? names.map(name => desktopSuites.find(suite => suite.name === name)) : desktopSuites.filter(suite => !suite.optional);
 }
 
+export function desktopConcurrency(argv) {
+  const options = argv.filter(arg => arg.startsWith('--jobs='));
+  if (options.length > 1 || options.some(arg => !/^--jobs=[1-4]$/.test(arg))) throw new Error('Use one --jobs=1, --jobs=2, --jobs=3 or --jobs=4 option.');
+  return options.length ? Number(options[0].slice(7)) : 1;
+}
+
 /** Independent suites continue after failure, so a report cannot imply unrun checks passed. */
-export async function runChecks(checks, execute, onResult = async () => {}) {
-  const results = [];
-  for (const check of checks) {
-    let result;
-    try { result = await execute(check); }
-    catch (error) { result = { status: 'error', error: error.message }; }
-    results.push({ name: check.name, ...result });
-    await onResult(results);
+export async function runChecks(checks, execute, onResult = async () => {}, { concurrency = 1 } = {}) {
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 4) throw new Error('Suite concurrency must be an integer from 1 to 4.');
+  const results = new Array(checks.length);
+  let next = 0;
+  let reporting = Promise.resolve();
+  async function worker() {
+    while (next < checks.length) {
+      const index = next++;
+      const check = checks[index];
+      let result;
+      try { result = await execute(check); }
+      catch (error) { result = { status: 'error', error: error.message }; }
+      results[index] = { name: check.name, ...result };
+      // Concurrent workers keep the selected order and serialize report writes.
+      const snapshot = results.filter(Boolean);
+      reporting = reporting.then(() => onResult(snapshot));
+      await reporting;
+    }
   }
+  await Promise.all(Array.from({ length: Math.min(concurrency, checks.length) }, worker));
   return results;
 }

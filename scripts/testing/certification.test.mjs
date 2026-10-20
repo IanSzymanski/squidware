@@ -8,6 +8,7 @@ test('local certification covers the combined hosted layers, including PDFs and 
   const local = certificationPlan('all');
   assert.deepEqual(local, [...source, ...desktop.slice(1)]);
   assert.ok(local.findIndex(step => step.name === 'build') < local.findIndex(step => step.name === 'workflows'));
+  assert.deepEqual(desktop.find(step => step.name === 'workflows').args, ['scripts/run-desktop-regressions.mjs', '--jobs=2']);
   for (const owner of ['source', 'contracts', 'native', 'workflows', 'pdf-inspection', 'package', 'packaged-startup']) assert.ok(local.some(step => step.name === owner));
   assert.equal(certificationLayer([]), 'all');
   assert.throws(() => certificationLayer(['--layer=desktop', '--layer=source']), /Use pnpm/);

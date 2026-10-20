@@ -27,7 +27,7 @@ export function certificationPlan(layer, { platform = process.platform, configur
   ];
   if (platform === 'linux' && configureSandbox) steps.push(...sandbox('node_modules/electron/dist/chrome-sandbox'));
   steps.push(
-    { name: 'workflows', tool: 'node', args: ['scripts/run-desktop-regressions.mjs'], display: true },
+    { name: 'workflows', tool: 'node', args: ['scripts/run-desktop-regressions.mjs', '--jobs=2'], display: true },
     { name: 'pdf-inspection', tool: 'python', args: ['scripts/verify-print.py'], printOutput: true },
     { name: 'package', tool: 'pnpm', args: ['exec', 'electron-builder', '--dir', '--publish', 'never'] },
   );

@@ -1,0 +1,13 @@
+{
+  "result": "passed",
+  "checks": "All six Letter pages have identical text, page geometry, character boxes and drawing streams across dark 100%, light 125%, high-contrast 150%.",
+  "pages": 6,
+  "drawingHashes": [
+    "9b3eaae245fb7d6c1ab4e622ff4066ae39cd20f68bf6c66a83c7e07a62c3f5f5",
+    "7e39c1430dd426aa5136743f854f324684a20fae7925ce62fabd8086b67e9b60",
+    "709af27e4d287e354489112a3e201d7f1078cd84fc940191d154b436134a2172",
+    "4464488006621a0f80b79c9f097fea9f6f633f1382fe439830bfd16b6315aa73",
+    "84dcda241cfa73e76a6ff05ef5c8e549b8ad0c04f14cccda729cf2fd1fe26b3a",
+    "36baa3d6faf89b9f68077924a11f3003277dccaf19b7702700635b28b49f90a0"
+  ]
+}

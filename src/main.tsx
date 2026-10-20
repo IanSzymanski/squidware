@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles.css';
 import './editor/chrome.css';
+import './themeControls.css';
 
 class ErrorBoundary extends React.Component<React.PropsWithChildren, { error: string }> {
   state = { error: '' };
