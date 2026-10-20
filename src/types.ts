@@ -66,6 +66,7 @@ export interface DesktopBridge extends RecoveryBridge, PreferencesBridge {
   exportFile: (content: string, suggestedName: string, kind: 'csv' | 'svg' | 'html') => Promise<string | null>;
   exportPdf: (paper?: 'letter' | 'a4') => Promise<string | null>;
   setDirty: (dirty: boolean) => void;
+  setMenuShortcutsEnabled: (enabled: boolean) => void;
   onMenuAction: (callback: (action: string) => void) => () => void;
 }
 declare global { interface Window { squidware?: DesktopBridge } }

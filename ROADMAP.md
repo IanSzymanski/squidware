@@ -4,9 +4,9 @@ Squidware v0.5.0 is the published desktop foundation for cast-to-chart drill des
 
 ## Where work is tracked
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is active, with 15 of 19 issues completed and 4 open. The next implementation work is [#33 — selection tools and saved groups](https://github.com/IanSzymanski/squidware/issues/33), proposed in [PR #139](https://github.com/IanSzymanski/squidware/pull/139) and awaiting successful macOS certification and acceptance review.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** has 17 of 19 issues completed and 2 open. Selection tools/saved groups (#33, PR #139) and themes/UI scale (#43, PR #140) are merged. The current implementation is [#65 — command palette and rebindable shortcuts](https://github.com/IanSzymanski/squidware/issues/65).
 
-**Remaining review check:** [#36](https://github.com/IanSzymanski/squidware/issues/36) still awaits its first-time reviewer discovery check. Selection actions (#18), formation previews (#25), exact transforms (#27), field display (#42) and spacing/alignment (#79) are closed as completed with linked acceptance evidence.
+**Remaining review check:** [#36](https://github.com/IanSzymanski/squidware/issues/36) still awaits its first-time reviewer discovery check. Its required human evidence remains open.
 
 The [release plan](docs/RELEASES.md) groups the backlog into v0.5, v0.6, v0.7, v0.8, v0.9, v1.0, v1.1 and v1.2 milestones. Releases publish in order only after their issues are fulfilled and the desktop packages pass verification. [release-plan.json](release-plan.json) records the membership and hard dependencies used by the release coordinator.
 

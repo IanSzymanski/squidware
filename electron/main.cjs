@@ -9,6 +9,7 @@ const { pathToFileURL } = require('node:url');
 const { parseProjectV2 } = require('./project-codec.cjs');
 const { createRecoveryService } = require('./recovery-service.cjs');
 const { createPreferencesService } = require('./preferences-service.cjs');
+const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences } = require('./preferences-codec.cjs');
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
@@ -139,12 +140,16 @@ function handleFileRequest(channel, handler) {
 }
 
 function registerIpc() {
+  ipcMain.on('squidware:menu-shortcuts', (event, enabled) => {
+    try { assertSender(event); } catch { return; }
+    if (typeof enabled === 'boolean') window.webContents.setIgnoreMenuShortcuts(!enabled);
+  });
   const recovery = () => recoveryService ||= createRecoveryService(path.join(app.getPath('userData'), 'recovery'));
   const preferences = () => preferencesService ||= createPreferencesService(app.getPath('userData'), atomicWrite);
   for (const [channel, action] of [
-    ['read-preferences', () => preferences().read()],
-    ['save-preferences', value => preferences().save(value)],
-    ['reset-preferences', () => preferences().reset()],
+    ['read-preferences', async () => { const result = await preferences().read(); installMenu(result.preferences); return result; }],
+    ['save-preferences', value => { const canonical = validatePreferences(value); const request = preferences().save(canonical); installMenu(canonical); return request; }],
+    ['reset-preferences', async () => { const result = await preferences().reset(); installMenu(result); return result; }],
   ]) ipcMain.handle(`squidware:${channel}`, async (event, ...args) => { assertSender(event); return action(...args); });
   for (const [channel, action] of [
     ['begin-recovery', () => recovery().begin()],
@@ -264,35 +269,36 @@ function sendAction(action) {
   if (window && !window.isDestroyed()) window.webContents.send('squidware:menu-action', action);
 }
 
-function installMenu() {
+function installMenu(preferences) {
   const isMac = process.platform === 'darwin';
-  const action = (label, command, accelerator) => ({ label, accelerator, click: () => sendAction(command) });
+  const action = (label, command) => ({ label, accelerator: command === 'about' ? undefined : nativeAccelerator(nativeMenuCommands[command], preferences?.shortcutBindings), click: () => sendAction(command) });
   const template = [
     ...(isMac ? [{ label: app.name, submenu: [action('About Squidware', 'about'), { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] }] : []),
     { label: '&File', submenu: [
-      action('New production', 'new', 'CmdOrCtrl+N'),
-      action('Open project…', 'open', 'CmdOrCtrl+O'),
+      action('New production', 'new'),
+      action('Open project…', 'open'),
       { type: 'separator' },
-      action('Save', 'save', 'CmdOrCtrl+S'),
-      action('Save As…', 'save-as', 'CmdOrCtrl+Shift+S'),
+      action('Save', 'save'),
+      action('Save As…', 'save-as'),
       { type: 'separator' },
-      action('Export drill book PDF…', 'export-pdf', 'CmdOrCtrl+P'),
+      action('Export drill book PDF…', 'export-pdf'),
       { type: 'separator' },
       isMac ? { role: 'close' } : { role: 'quit' },
     ] },
     { label: '&Edit', submenu: [
-      action('Undo drill edit', 'undo', 'CmdOrCtrl+Z'),
-      action('Redo drill edit', 'redo', 'CmdOrCtrl+Shift+Z'),
-      ...(!isMac ? [{ ...action('Redo', 'redo', 'Ctrl+Y'), visible: false }] : []),
+      action('Undo drill edit', 'undo'),
+      action('Redo drill edit', 'redo'),
+      ...(!isMac && nativeRedoAlias(preferences?.shortcutBindings) ? [{ label: 'Redo', accelerator: nativeRedoAlias(preferences?.shortcutBindings), visible: false, click: () => sendAction('redo') }] : []),
       { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' },
-      action('Select all', 'select-all', 'CmdOrCtrl+A'),
+      action('Select all', 'select-all'),
+      { type: 'separator' }, action('Command palette…', 'commands'), action('Preferences…', 'preferences'),
     ] },
     { label: '&View', submenu: [
       { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
       { type: 'separator' }, { role: 'togglefullscreen' },
       ...(!app.isPackaged ? [{ type: 'separator' }, { role: 'toggleDevTools' }] : []),
     ] },
-    { label: '&Help', submenu: [action('Squidware Help', 'shortcuts', 'F1')] },
+    { label: '&Help', submenu: [action('Squidware Help', 'shortcuts')] },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }

@@ -6,7 +6,7 @@ import { nudgeDistance, nudgeLabel } from '../editIncrements';
 import type { NudgeRequest } from '../editIncrements';
 import type { Preferences } from '../preferences';
 import { createEditorStore } from './store';
-import { commandMetadata } from './commands';
+import { commandKeycaps } from './shortcutDisplay';
 
 function fixture(prefs: Partial<Preferences> = {}, steps: 8 | 6 | 12 = 8) {
   const project = createDemoProject(); const ids = project.performers.slice(0, 2).map(p => p.id);
@@ -103,6 +103,7 @@ describe('shared edit increments', () => {
     const p = { ...defaultPreferences(), nudgeUnit: 'steps' as const, nudgeStep: 1, fastNudgeStep: 4 };
     expect(nudgeLabel(p, { snapping: { ...DEFAULT_SNAPPING, steps: 6 } })).toBe('1 step (0.8333 yd)');
     expect(nudgeLabel(p, {}, true)).toBe('4 steps (2.5 yd)');
-    expect(commandMetadata.filter(c => c.shortcut?.includes('Alt + Arrow')).map(c => c.id)).toEqual(['selection.nudge']);
+    expect(commandKeycaps('selection.nudge', undefined, 'other', true)).toEqual([['Alt', 'Arrow'], ['Shift', 'Alt', 'Arrow']]);
+    expect(commandKeycaps('positions.move', undefined, 'other', true)).toEqual([]);
   });
 });

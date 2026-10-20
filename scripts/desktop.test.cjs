@@ -41,6 +41,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
         mainFrame: { url: development ? 'http://127.0.0.1:5173/' : pathToFileURL(path.join(root, 'dist', 'index.html')).href },
         on: () => {}, setWindowOpenHandler: handler => { this.openWindowHandler = handler; },
         send: (...args) => messages.push(args),
+        setIgnoreMenuShortcuts: value => { this.ignoreMenuShortcuts = value; },
         printToPDF: async options => { messages.push(['printToPDF', options]); return Buffer.from('%PDF-test'); },
       };
     }
@@ -90,6 +91,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
     dialog: value => { nextDialog = value; },
     saveDialogCount: () => saveDialogs,
     menu: () => { context.installMenu(); return menu; },
+    currentMenu: () => menu,
     invoke: (name, ...args) => handlers.get(`squidware:${name}`)(sender, ...args),
     invokeAs: (name, source, ...args) => handlers.get(`squidware:${name}`)(source, ...args),
     send: (name, value) => listeners.get(`squidware:${name}`)(sender, value),
@@ -382,4 +384,30 @@ test('native project save/open retains show snapping rules and rejects invalid r
   show.snapping.steps = 7;
   await assert.rejects(h.invoke('save-project', JSON.stringify(show), 'Grid show'), /snapping/);
   assert.equal(await fs.readFile(filename, 'utf8'), content);
+});
+
+test('native menu shortcuts follow durable preferences, reset, and trusted modal/text-entry context', async t => {
+  const h = await harness(t);
+  const preferences = (await h.invoke('read-preferences')).preferences;
+  await h.invoke('save-preferences', { ...preferences, shortcutBindings: { 'file.save': 'Primary+Shift+U', 'history.redo': 'Primary+Shift+Y' } });
+  const file = h.currentMenu().find(item => item.label === '&File').submenu;
+  assert.equal(file.find(item => item.label === 'Save').accelerator, 'CmdOrCtrl+Shift+U');
+  const edit = h.currentMenu().find(item => item.label === '&Edit').submenu;
+  assert.equal(edit.find(item => item.label === 'Redo drill edit').accelerator, 'CmdOrCtrl+Shift+Y');
+  assert.equal(edit.some(item => item.accelerator === 'Ctrl+Y'), false);
+  h.send('menu-shortcuts', false); assert.equal(h.window.ignoreMenuShortcuts, true);
+  h.send('menu-shortcuts', true); assert.equal(h.window.ignoreMenuShortcuts, false);
+  h.send('menu-shortcuts', 'invalid'); assert.equal(h.window.ignoreMenuShortcuts, false);
+  await h.invoke('reset-preferences');
+  assert.equal(h.currentMenu().find(item => item.label === '&File').submenu.find(item => item.label === 'Save').accelerator, 'CmdOrCtrl+S');
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(h.directory, 'preferences.json'), 'utf8')).shortcutBindings, {});
+});
+
+test('failed preference persistence keeps the current in-memory shortcut and does not retain its old native accelerator', async t => {
+  const h = await harness(t, { failRename: true });
+  const defaults = (await h.invoke('read-preferences')).preferences;
+  await assert.rejects(h.invoke('save-preferences', { ...defaults, shortcutBindings: { 'file.save': 'Primary+Shift+U' } }), /disk failure/);
+  const file = h.currentMenu().find(item => item.label === '&File').submenu;
+  assert.equal(file.find(item => item.label === 'Save').accelerator, 'CmdOrCtrl+Shift+U');
+  assert.equal(file.some(item => item.accelerator === 'CmdOrCtrl+S'), false);
 });

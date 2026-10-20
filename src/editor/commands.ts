@@ -1,6 +1,6 @@
 import { PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
-import type { Dialog, EditorState, SessionSlice } from './state';
+import type { Dialog, EditorState, SessionSlice, Workspace } from './state';
 import { addPicture, reconnectSets, updateSetProperties } from './projectEdits';
 import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
@@ -17,8 +17,17 @@ import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateS
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
 import type { SelectionSpec } from '../selectionTools';
 import { selectionCommands } from './selectionCommands';
+import { drillPlan } from './drillCommands';
+import { shortcutIds } from '../shortcuts';
 
 export interface CommandArguments {
+  'palette.open': undefined; 'preferences.open': undefined; 'drill.preview': { text: string };
+  'tool.box': undefined; 'tool.pan': undefined; 'tool.lasso': undefined;
+  'performers.add-dialog': undefined; 'set.duplicate': undefined; 'set.previous': undefined; 'set.next': undefined;
+  'transform.mirror': undefined; 'view.toggle': undefined; 'display.paths': undefined; 'display.labels': undefined;
+  'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
+  'view.select': { view: '2d' | '3d' }; 'workspace.show': { workspace: Workspace };
+  'playback.count-previous': undefined; 'playback.count-next': undefined;
   'selection.tools': undefined; 'selection.close': undefined;
   'selection.section': { id: string; additive?: boolean }; 'selection.invert': undefined;
   'selection.preview': { spec: SelectionSpec; additive?: boolean };
@@ -71,12 +80,16 @@ export interface CommandContext {
   external: (id: ExternalCommandId) => void | Promise<void>;
 }
 export interface CommandDefinition<I extends CommandId> {
-  id: I; name: string; description: string; arguments: Readonly<Record<string, string>>; shortcut?: string; shortcutScope?: 'desktop';
+  id: I; name: string; description: string; arguments: Readonly<Record<string, string>>;
   enabled: (state: EditorState, args: CommandArguments[I]) => boolean;
   execute: (context: CommandContext, args: CommandArguments[I]) => void | Promise<void>;
 }
 const define = <I extends CommandId>(definition: CommandDefinition<I>) => definition;
+const simple = <I extends CommandId>(id: I, name: string, description: string, enabled: (s: EditorState) => boolean, execute: (c: CommandContext) => void) => define({ id, name, description, arguments: {}, enabled, execute });
 const always = () => true;
+const idle = (s: EditorState) => !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName;
+const canNavigate = (s: EditorState) => idle(s) && !s.ui.selectionPreview && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
+const fieldView = (s: EditorState) => idle(s) && s.ui.workspace === 'design' && s.ui.view === '2d';
 export const canChangeLayout = (s: EditorState) => !s.ui.selectionPreview && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
   const state = context.getState();
@@ -99,16 +112,44 @@ const selectSet = (context: CommandContext, index: number) => {
 
 export const commandRegistry = {
   ...selectionCommands,
+  'palette.open': simple('palette.open', 'Command palette', 'Search commands and preview drill phrases. Escape returns to the editor.', idle, c => { c.patch('ui', { paletteOpen: true, menu: false }); c.patch('playback', { playing: false }); }),
+  'preferences.open': simple('preferences.open', 'Preferences', 'Change personal display, editing and keyboard shortcuts on this device.', idle, c => showDialog(c, 'preferences')),
+  'drill.preview': define({ id: 'drill.preview', name: 'Preview drill phrase', description: 'Preview a relative move, mirror, interval or labelled performer coordinate before Apply.', arguments: { text: 'complete drill phrase' },
+    enabled: (s, a) => !!a && !!drillPlan(s, a.text).plan,
+    execute: (c, a) => { const s = c.getState(); const plan = drillPlan(s, a.text).plan!; const base = { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: plan.ids };
+      c.patch('selection', { selectedIds: plan.ids });
+      const command = plan.command;
+      c.patch('ui', { workspace: 'design', view: '2d', paletteOpen: false,
+        ...(command.kind === 'coordinates' ? { coordinatePreview: { ...base, options: command.options } } : command.kind === 'mirror' ? { transformPreview: { ...base, options: command.options } } : { spacingPreview: { ...base, options: command.options } }) });
+    } }),
+  'tool.box': simple('tool.box', 'Select performers', 'Choose box selection and move selected dots.', canNavigate, c => { void executeCommand(c, 'tool.select', { tool: 'select' }); }),
+  'tool.pan': simple('tool.pan', 'Pan field', 'Move the viewport without moving performers.', canNavigate, c => { void executeCommand(c, 'tool.select', { tool: 'pan' }); }),
+  'tool.lasso': simple('tool.lasso', 'Lasso selection', 'Draw a freehand boundary and review the selected performers.', s => canNavigate(s) && editable(s) && s.ui.view === '2d', c => { void executeCommand(c, 'tool.select', { tool: 'lasso' }); }),
+  'performers.add-dialog': simple('performers.add-dialog', 'Add performers', 'Choose a section, label prefix and number of new performers.', s => canNavigate(s) && s.project.present.performers.length < PROJECT_LIMITS.performers, c => { void executeCommand(c, 'dialog.open', { dialog: 'add-cast' }); }),
+  'set.duplicate': simple('set.duplicate', 'Duplicate current set', 'Copy this shape into a new 32-count set after it.', s => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets, c => { void executeCommand(c, 'set.add', { index: c.getState().selection.activeIndex }); }),
+  'set.previous': simple('set.previous', 'Previous set', 'Stop playback and arrive at the previous set.', s => canNavigate(s) && s.selection.activeIndex > 0, c => selectSet(c, c.getState().selection.activeIndex - 1)),
+  'set.next': simple('set.next', 'Next set', 'Stop playback and arrive at the next set.', s => canNavigate(s) && s.selection.activeIndex < s.project.present.sets.length - 1, c => selectSet(c, c.getState().selection.activeIndex + 1)),
+  'transform.mirror': simple('transform.mirror', 'Mirror across 50', 'Preview a physical midfield mirror on the selected performers.', canIncrement, c => beginTransform(c, { operation: 'across-50' })),
+  'view.toggle': simple('view.toggle', 'Toggle 2D / 3D', 'Switch between field editing and the 3D rehearsal preview.', canNavigate, c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: s.ui.view === '2d' ? '3d' : '2d' }); }),
+  'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Open the 2D field or 3D rehearsal view.', arguments: { view: '2d | 3d' }, enabled: (s, a) => canNavigate(s) && !!a && ['2d', '3d'].includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
+  'workspace.show': define({ id: 'workspace.show', name: 'Show workspace', description: 'Open Design, Cast or the Production sheet.', arguments: { workspace: 'design | cast | production' }, enabled: (s, a) => canNavigate(s) && !!a && ['design', 'cast', 'production'].includes(a.workspace), execute: (c, a) => c.patch('ui', { workspace: a.workspace, castPanelOpen: false }) }),
+  'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', idle, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
+  'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle all labels, selected/focused labels and hidden labels.', idle, c => { const u = c.getState().ui; c.patch('ui', !u.showLabels ? { showLabels: true, selectionLabelsOnly: false } : !u.selectionLabelsOnly ? { selectionLabelsOnly: true } : { showLabels: false }); }),
+  'field.zoom-in': simple('field.zoom-in', 'Zoom field in', 'Increase the 2D field magnification.', s => fieldView(s) && s.ui.zoom < 3, c => c.patch('ui', { zoom: Math.min(3, c.getState().ui.zoom + .2) })),
+  'field.zoom-out': simple('field.zoom-out', 'Zoom field out', 'Reduce the 2D field magnification.', s => fieldView(s) && s.ui.zoom > .6, c => c.patch('ui', { zoom: Math.max(.6, c.getState().ui.zoom - .2) })),
+  'field.fit': simple('field.fit', 'Fit field', 'Reset 2D zoom and pan to show the entire field.', fieldView, c => c.patch('ui', { zoom: 1, fitVersion: c.getState().ui.fitVersion + 1 })),
+  'playback.count-previous': simple('playback.count-previous', 'Previous count', 'Pause and inspect the preceding count.', s => canNavigate(s) && s.playback.count > 0, c => { void executeCommand(c, 'playback.scrub', { count: c.getState().playback.count - 1 }); }),
+  'playback.count-next': simple('playback.count-next', 'Next count', 'Pause and inspect the following count.', s => canNavigate(s) && s.playback.count < totalCounts(s.project.present), c => { void executeCommand(c, 'playback.scrub', { count: c.getState().playback.count + 1 }); }),
   'layout.update': define({ id: 'layout.update', name: 'Change panel layout', description: 'Resize or collapse panels on this device without changing the production.', arguments: { update: 'Partial<WorkspaceLayout>' }, enabled: (s, a) => canChangeLayout(s) || !s.ui.dialog && !!a && Object.entries(a.update).every(([key, value]) => key.endsWith('Collapsed') && value === false),
     execute: (c, a) => { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: validateWorkspaceLayout({ ...p.workspaceLayout, ...a.update, preset: 'custom' }) } }); } }),
   'layout.preset': define({ id: 'layout.preset', name: 'Apply workspace preset', description: 'Write shows editing tools, Review expands the field, and Rehearse hides both side panels. Saved on this device.', arguments: { preset: 'write | review | rehearse' }, enabled: (s, a) => canChangeLayout(s) && !!a && ['write', 'review', 'rehearse'].includes(a.preset),
     execute: (c, a) => { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: workspacePreset(a.preset), castPanelOpen: false } }); c.patch('ui', { workspace: 'design', castPanelOpen: false, focusMode: false }); } }),
-  'layout.focus': define({ id: 'layout.focus', name: 'Focus field', description: 'Show only the field and timeline. Escape or Exit focus restores the workspace.', arguments: {}, shortcut: 'Ctrl / ⌘ + Shift + F', enabled: s => s.ui.focusMode || s.ui.workspace === 'design' && canChangeLayout(s),
+  'layout.focus': define({ id: 'layout.focus', name: 'Focus field', description: 'Show only the field and timeline. Escape or Exit focus restores the workspace.', arguments: {}, enabled: s => s.ui.focusMode || s.ui.workspace === 'design' && canChangeLayout(s),
     execute: c => c.patch('ui', { focusMode: !c.getState().ui.focusMode, menu: false }) }),
   'cast.show': define({ id: 'cast.show', name: 'Show Cast', description: 'Dock the Cast beside the field, expand its table or return to the Inspector without changing selection.', arguments: { mode: 'panel | table | closed' },
     enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview,
     execute: (c, a) => { if (a.mode === 'panel') { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: false } } }); } c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }); } }),
-  'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' }, shortcut: 'Alt + Arrow / Shift + Alt + Arrow',
+  'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' },
     enabled: (s, a) => canIncrement(s) && !!a && isNudgeKey(a.key) && (a.fast === undefined || typeof a.fast === 'boolean') && (a.fieldRelative === undefined || typeof a.fieldRelative === 'boolean'),
     execute: (c, a) => { const s = c.getState(); const delta = nudgeDelta(s.preferences.value, s.project.present, a); const index = s.selection.activeIndex;
       const updates = moveSelection(s.project.present.sets[index].positions, s.selection.selectedIds, { x: delta.dx, y: delta.dy }, s.project.present.field, s.project.present.snapping ?? DEFAULT_SNAPPING, s.ui.snap, undefined, { x: !!delta.dx, y: !!delta.dy, advance: true });
@@ -185,8 +226,8 @@ export const commandRegistry = {
   'project.update': define({ id: 'project.update', name: 'Update production', description: 'Edit production metadata, field markings or audio synchronization.', arguments: { title: 'string?', ensemble: 'string?', audioOffsetSeconds: 'number?', preset: 'college | high-school?' }, enabled: always,
     execute: (c, { preset, ...update }) => c.edit(p => ({ ...p, ...update, field: preset ? { ...p.field, preset } : p.field })) }),
   'project.load': define({ id: 'project.load', name: 'Load production', description: 'Replace the production and reset edit history.', arguments: { project: 'Project v2' }, enabled: always, execute: (c, a) => c.load(a.project) }),
-  'history.undo': define({ id: 'history.undo', name: 'Undo', description: 'Restore the previous project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Z', enabled: s => !s.project.transactionName && s.project.past.length > 0, execute: c => c.history('undo') }),
-  'history.redo': define({ id: 'history.redo', name: 'Redo', description: 'Restore an undone project edit.', arguments: {}, shortcut: 'Ctrl / ⌘ Shift Z', enabled: s => !s.project.transactionName && s.project.future.length > 0, execute: c => c.history('redo') }),
+  'history.undo': define({ id: 'history.undo', name: 'Undo', description: 'Restore the previous project edit.', arguments: {}, enabled: s => !s.project.transactionName && s.project.past.length > 0, execute: c => c.history('undo') }),
+  'history.redo': define({ id: 'history.redo', name: 'Redo', description: 'Restore an undone project edit.', arguments: {}, enabled: s => !s.project.transactionName && s.project.future.length > 0, execute: c => c.history('redo') }),
   'history.open': define({ id: 'history.open', name: 'History', description: 'Review named actions and the session history limit.', arguments: {}, enabled: always, execute: c => showDialog(c, 'history') }),
   'set.update': define({ id: 'set.update', name: 'Edit set properties', description: 'Update set name, counts, tempo, transition or rehearsal notes.', arguments: { index: 'integer', update: 'set properties' }, enabled: (s, a) => setExists(s, a.index), execute: (c, a) => {
     validateSetUpdate(a.update, a.index);
@@ -206,26 +247,26 @@ export const commandRegistry = {
   'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name or color.', arguments: { id: 'string', update: 'name? | color?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => section.id === a.id ? { ...section, ...a.update } : section) })) }),
   'positions.move': define({ id: 'positions.move', name: 'Move performers', description: 'Set performer coordinates on the active editable set.', arguments: { index: 'integer', updates: 'Record<performerId, Point>' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...a.updates } } : set) })) }),
   'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: a.options.rotation !== undefined || a.options.scale !== undefined ? transformPositions(set.positions, a.ids, a.options, p.field) : { ...set.positions, ...moveSelection(set.positions, a.ids, { x: a.options.dx ?? 0, y: a.options.dy ?? 0 }, p.field, p.snapping ?? DEFAULT_SNAPPING, c.getState().ui.snap, undefined, { x: !!a.options.dx, y: !!a.options.dy, advance: true }) } } : set) })) }),
-  'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, shortcut: 'Ctrl / ⌘ A', enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
-  'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, shortcut: 'Esc', enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
-  'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, shortcut: '[ / ]', enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),
-  'playback.toggle': define({ id: 'playback.toggle', name: 'Play / pause', description: 'Rehearse or pause the production.', arguments: {}, shortcut: 'Space', enabled: s => totalCounts(s.project.present) > 0, execute: c => { const s = c.getState(); c.patch('playback', { playing: !s.playback.playing, count: s.playback.count >= totalCounts(s.project.present) ? 0 : s.playback.count }); } }),
+  'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
+  'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
+  'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),
+  'playback.toggle': define({ id: 'playback.toggle', name: 'Play / pause', description: 'Rehearse or pause the production.', arguments: {}, enabled: s => totalCounts(s.project.present) > 0, execute: c => { const s = c.getState(); c.patch('playback', { playing: !s.playback.playing, count: s.playback.count >= totalCounts(s.project.present) ? 0 : s.playback.count }); } }),
   'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); c.patch('playback', { playing: false, count }); c.patch('selection', { activeIndex: sampleTimeline(p, count).setIndex }); } }),
-  'tool.select': define({ id: 'tool.select', name: 'Select / pan / lasso', description: 'Choose box selection, pan or a freehand lasso. Lasso results are reviewed before Apply.', arguments: { tool: 'select | pan | lasso' }, shortcut: 'V / H / L', enabled: (s, a) => !!a && ['select', 'pan', 'lasso'].includes(a.tool) && (a.tool !== 'lasso' || !s.ui.dialog && !s.ui.pendingDraft && editable(s)), execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
+  'tool.select': define({ id: 'tool.select', name: 'Select / pan / lasso', description: 'Choose box selection, pan or a freehand lasso. Lasso results are reviewed before Apply.', arguments: { tool: 'select | pan | lasso' }, enabled: (s, a) => !!a && ['select', 'pan', 'lasso'].includes(a.tool) && (a.tool !== 'lasso' || !s.ui.dialog && !s.ui.pendingDraft && editable(s)), execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
   'dialog.open': define({ id: 'dialog.open', name: 'Open dialog', description: 'Open an editor dialog and stop playback.', arguments: { dialog: 'Dialog' }, enabled: always, execute: (c, a) => {
     showDialog(c, a.dialog);
     if (a.dialog === 'add-cast') { const s = c.getState(); c.patch('ui', { castAmount: Math.max(1, Math.min(s.ui.castAmount, PROJECT_LIMITS.performers - s.project.present.performers.length)) }); }
   } }),
-  'file.new': define({ id: 'file.new', name: 'New production', description: 'Choose a blank production or demo.', arguments: {}, shortcut: 'Ctrl / ⌘ N', enabled: always, execute: c => { assertCanReplace(c.getState()); showDialog(c, 'new'); c.patch('ui', { menu: false }); } }),
-  'file.open': define({ id: 'file.open', name: 'Open production', description: 'Open a saved .squid project.', arguments: {}, shortcut: 'Ctrl / ⌘ O', enabled: always, execute: c => c.external('file.open') }),
-  'file.save': define({ id: 'file.save', name: 'Save production', description: 'Save an editable .squid file.', arguments: {}, shortcut: 'Ctrl / ⌘ S', enabled: always, execute: c => c.external('file.save') }),
-  'file.save-as': define({ id: 'file.save-as', name: 'Save production as', description: 'Choose a new destination for the project.', arguments: {}, shortcut: 'Ctrl / ⌘ Shift S', enabled: always, execute: c => c.external('file.save-as') }),
-  'file.export': define({ id: 'file.export', name: 'Export rehearsal packet', description: 'Choose field charts, coordinates, CSV or SVG.', arguments: {}, shortcut: 'Ctrl / ⌘ P', shortcutScope: 'desktop', enabled: always, execute: c => showDialog(c, 'export') }),
+  'file.new': define({ id: 'file.new', name: 'New production', description: 'Choose a blank production or demo.', arguments: {}, enabled: always, execute: c => { assertCanReplace(c.getState()); showDialog(c, 'new'); c.patch('ui', { menu: false }); } }),
+  'file.open': define({ id: 'file.open', name: 'Open production', description: 'Open a saved .squid project.', arguments: {}, enabled: always, execute: c => c.external('file.open') }),
+  'file.save': define({ id: 'file.save', name: 'Save production', description: 'Save an editable .squid file.', arguments: {}, enabled: always, execute: c => c.external('file.save') }),
+  'file.save-as': define({ id: 'file.save-as', name: 'Save production as', description: 'Choose a new destination for the project.', arguments: {}, enabled: always, execute: c => c.external('file.save-as') }),
+  'file.export': define({ id: 'file.export', name: 'Export rehearsal packet', description: 'Choose field charts, coordinates, CSV or SVG.', arguments: {}, enabled: always, execute: c => showDialog(c, 'export') }),
   'help.open': define({ id: 'help.open', name: 'Help', description: 'Open workflow help and command shortcuts.', arguments: {}, enabled: always, execute: c => { showDialog(c, 'help'); c.patch('ui', { menu: false }); } }),
 } satisfies { [I in CommandId]: CommandDefinition<I> };
 
-export const commandMetadata = Object.values(commandRegistry).map(({ id, name, description, arguments: args, shortcut }) => ({ id, name, description, arguments: args, shortcut }));
-export const shortcutCommands = commandMetadata.filter(command => command.shortcut);
+export const commandMetadata = Object.values(commandRegistry).map(({ id, name, description, arguments: args }) => ({ id, name, description, arguments: args }));
+export const shortcutCommands = [...shortcutIds.map(id => commandRegistry[id]), commandRegistry['selection.clear'], commandRegistry['selection.nudge']];
 export function executeCommand<I extends CommandId>(context: CommandContext, id: I, args: CommandArguments[I]): boolean | Promise<boolean> {
   const definition = commandRegistry[id] as unknown as CommandDefinition<I>;
   if (!definition.enabled(context.getState(), args)) return false;

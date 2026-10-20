@@ -4,7 +4,7 @@ import type { EditorState } from './state';
 import type { EditorStore } from './store';
 const UI_KEYS = ['castPanelOpen', 'selectionLabelsOnly', 'view', 'showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
 const KEYS = Object.keys(defaultPreferences()) as (keyof Preferences)[];
-const sameValue = (a: Preferences, b: Preferences, key: keyof Preferences) => key === 'snapDefaults' || key === 'workspaceLayout' ? JSON.stringify(a[key]) === JSON.stringify(b[key]) : a[key] === b[key];
+const sameValue = (a: Preferences, b: Preferences, key: keyof Preferences) => key === 'snapDefaults' || key === 'workspaceLayout' || key === 'shortcutBindings' ? JSON.stringify(a[key]) === JSON.stringify(b[key]) : a[key] === b[key];
 const equal = (a: Preferences, b: Preferences) => KEYS.every(key => sameValue(a, b, key));
 export const preferencesSnapshot = (state: EditorState) => validatePreferences({ ...state.preferences.value, ...Object.fromEntries(UI_KEYS.map(key => [key, state.ui[key]])) });
 function apply(store: EditorStore, value: Preferences) {

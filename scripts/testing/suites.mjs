@@ -13,6 +13,7 @@ export const desktopSuites = [
   { name: 'tooltips', title: 'Pointer/focus help and disabled reasons', script: 'tooltip-qa.mjs', timeoutMs: 180000 },
   { name: 'tooltips-fallback', title: 'Help after unavailable WebGL', script: 'tooltip-qa.mjs', args: ['--force-3d-fallback'], timeoutMs: 180000 },
   { name: 'themes', title: 'Themes, UI scaling, contrast and preserved project colors', script: 'themes-qa.mjs', timeoutMs: 450000 },
+  { name: 'commands', title: 'Command search, drill phrases and persistent shortcut bindings', script: 'commands-qa.mjs', timeoutMs: 240000 },
   { name: 'preferences', title: 'Preferences across process restarts', script: 'preferences-qa.mjs', timeoutMs: 390000 },
   { name: 'thumbnails', title: 'Thumbnail invalidation and shared selection', script: 'thumbnail-qa.mjs', timeoutMs: 210000 },
   { name: 'playback', title: 'Clock, subscriptions and drag preview isolation', script: 'playback-qa.mjs', timeoutMs: 210000 },

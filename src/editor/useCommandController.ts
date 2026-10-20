@@ -1,69 +1,75 @@
 import { isNudgeKey } from '../editIncrements';
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
-import type { CommandId } from './commands';
+import { bindingFromEvent, defaultShortcuts, nativeMenuCommands, shortcutForEvent } from '../shortcuts';
+import { shortcutPlatform } from './shortcutDisplay';
 import { useEditorStore } from './react';
 
-export const menuCommands = {
-  new: 'file.new', open: 'file.open', save: 'file.save', 'save-as': 'file.save-as',
-  undo: 'history.undo', redo: 'history.redo', 'select-all': 'selection.all',
-  'export-pdf': 'file.export', about: 'help.open', shortcuts: 'help.open',
-} as const satisfies Record<string, CommandId>;
+export const menuCommands = nativeMenuCommands;
+const isInput = (target: Element | null) => target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable);
 
-/** Native menus and browser shortcuts share the same typed editor command entry point. */
+/** Native menus, browser keys and rebinding use the same concrete command IDs. */
 export function useCommandController() {
   const store = useEditorStore();
   useEffect(() => {
+    const platform = shortcutPlatform();
+    let lastMenuContext: boolean | undefined;
+    function updateMenuContext() {
+      const state = store.getState();
+      // A modal recorder or text input must receive its own keystrokes before native accelerators.
+      const enabled = !state.ui.dialog && !state.ui.paletteOpen && !isInput(document.activeElement);
+      if (enabled !== lastMenuContext) { lastMenuContext = enabled; window.squidware?.setMenuShortcutsEnabled?.(enabled); }
+    }
     function menuAction(action: string) {
-      const focused = document.activeElement as HTMLElement | null;
-      const editing = focused && (/^(INPUT|TEXTAREA)$/.test(focused.tagName) || focused.isContentEditable);
+      const state = store.getState();
+      if (state.ui.paletteOpen) { if (action === 'commands') store.setValue('ui', 'paletteOpen', false); return; }
+      const editing = isInput(document.activeElement);
       if (editing && ['undo', 'redo', 'select-all'].includes(action)) {
         document.execCommand(action === 'select-all' ? 'selectAll' : action); return;
       }
-      if (['new', 'export-pdf', 'about', 'shortcuts'].includes(action)) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
+      if (state.ui.dialog) return;
       const command = menuCommands[action as keyof typeof menuCommands];
-      if (command) void store.dispatch(command);
+      if (!command) return;
+      if (command.startsWith('file.')) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
+      if (!store.dispatch(command) && command === 'palette.open') store.setValue('ui', 'toast', 'Finish or cancel the pending edit before opening commands.');
     }
     function keyboard(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.isComposing || !(event.target instanceof Element)) return;
-      const state = store.getState();
-      const target = event.target as HTMLElement;
-      const input = /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable;
+      if (event.defaultPrevented || event.isComposing || event.getModifierState('AltGraph') || !(event.target instanceof Element)) return;
+      const state = store.getState(); const target = event.target;
+      const input = isInput(target);
+      const id = shortcutForEvent(event, state.preferences.value.shortcutBindings, platform, !!window.squidware);
       if (state.ui.dialog) return;
-      if (state.ui.selectionToolsOpen && event.key === 'Escape') { event.preventDefault(); store.dispatch(state.ui.selectionPreview ? 'selection.cancel' : 'selection.close'); return; }
-      if (state.ui.selectionPreview && !input && event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('selection.apply'); return; }
-      const cmd = event.ctrlKey || event.metaKey; const key = event.key.toLowerCase();
-      if (cmd && event.shiftKey && key === 'f' && !input) { event.preventDefault(); store.dispatch('layout.focus'); return; }
-      if (cmd && ['s', 'o', 'n'].includes(key)) {
-        if (window.squidware) return;
-        event.preventDefault(); menuAction(key === 's' ? event.shiftKey ? 'save-as' : 'save' : key === 'o' ? 'open' : 'new'); return;
-      }
-      if (state.ui.formationPreview && !input && !cmd && !event.altKey) {
-        if (event.key === 'Escape') { event.preventDefault(); store.dispatch('formation.cancel'); return; }
-        if (event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('formation.apply'); return; }
-      }
-      if (state.ui.spacingPreview && !input && !cmd && !event.altKey) {
-        if (event.key === 'Escape') { event.preventDefault(); store.dispatch('spacing.cancel'); return; }
-        if (event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('spacing.apply'); return; }
-      }
-      if (state.ui.coordinatePreview && !input && !cmd && !event.altKey) {
-        if (event.key === 'Escape') { event.preventDefault(); store.dispatch('coordinates.cancel'); return; }
-        if (event.key === 'Enter' && !target.closest('button, a[href], [role="button"]')) { event.preventDefault(); store.dispatch('coordinates.apply'); return; }
+      if (state.ui.paletteOpen) { if (id === 'palette.open') { event.preventDefault(); store.setValue('ui', 'paletteOpen', false); } return; }
+      if (id) {
+        const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];
+        if (input && id !== 'palette.open' && !standardFile) return;
+        if (event.repeat && !['playback.count-previous', 'playback.count-next'].includes(id)) return;
+        if ((event.code === 'Space' || event.key === ' ') && target.closest('button, a[href], [role="button"], .field-stage__svg')) return;
+        event.preventDefault();
+        if (standardFile) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
+        if (!store.dispatch(id) && id === 'palette.open') store.setValue('ui', 'toast', 'Finish or cancel the pending edit before opening commands.');
+        return;
       }
       if (input) return;
-      if (cmd && key === 'z') { event.preventDefault(); if (!window.squidware) menuAction(event.shiftKey ? 'redo' : 'undo'); return; }
-      if (cmd && key === 'a') { event.preventDefault(); store.dispatch('selection.all'); }
-      else if (event.code === 'Space') {
-        if (target.closest('button, a[href], [role="button"]')) return;
-        event.preventDefault(); if (!store.dispatch('playback.toggle')) store.setValue('ui', 'toast', 'Add a second set to rehearse a transition.');
-      } else if (event.key === 'Escape') store.dispatch(state.ui.transformPreview ? 'transform.cancel' : 'selection.clear');
-      else if (!cmd && !event.altKey && ['v', 'h', 'l'].includes(key)) store.dispatch('tool.select', { tool: key === 'v' ? 'select' : key === 'l' ? 'lasso' : 'pan' });
-      else if (!cmd && event.altKey && !target.closest('.field-stage__svg') && isNudgeKey(event.key)) {
+      if (event.key === 'Escape') {
+        if (state.ui.selectionToolsOpen) { event.preventDefault(); store.dispatch(state.ui.selectionPreview ? 'selection.cancel' : 'selection.close'); return; }
+        const cancel = state.ui.formationPreview ? 'formation.cancel' : state.ui.spacingPreview ? 'spacing.cancel' : state.ui.coordinatePreview ? 'coordinates.cancel' : state.ui.transformPreview ? 'transform.cancel' : 'selection.clear';
+        event.preventDefault(); store.dispatch(cancel); return;
+      }
+      if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey && !target.closest('button, a[href], [role="button"]')) {
+        const apply = state.ui.selectionPreview ? 'selection.apply' : state.ui.formationPreview ? 'formation.apply' : state.ui.spacingPreview ? 'spacing.apply' : state.ui.coordinatePreview ? 'coordinates.apply' : state.ui.transformPreview ? 'transform.apply' : null;
+        if (apply) { event.preventDefault(); store.dispatch(apply); return; }
+      }
+      if (!event.ctrlKey && !event.metaKey && event.altKey && !target.closest('.field-stage__svg') && isNudgeKey(event.key)) {
         event.preventDefault(); store.dispatch('selection.nudge', { key: event.key, fast: event.shiftKey });
-      } else if (event.key === '[' || event.key === ']') store.dispatch('set.select', { index: state.selection.activeIndex + (event.key === '[' ? -1 : 1) });
+      }
     }
     const unsubscribe = window.squidware?.onMenuAction(menuAction);
+    const unsubscribeContext = store.subscribeSelector(state => !!state.ui.dialog || state.ui.paletteOpen, updateMenuContext);
+    updateMenuContext();
+    document.addEventListener('focusin', updateMenuContext);
+    document.addEventListener('focusout', updateMenuContext);
     window.addEventListener('keydown', keyboard);
-    return () => { unsubscribe?.(); window.removeEventListener('keydown', keyboard); };
+    return () => { unsubscribe?.(); unsubscribeContext(); document.removeEventListener('focusin', updateMenuContext); document.removeEventListener('focusout', updateMenuContext); window.removeEventListener('keydown', keyboard); };
   }, [store]);
 }

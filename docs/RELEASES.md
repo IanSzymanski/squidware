@@ -1,7 +1,5 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** is active, with 15 of 19 issues completed and 4 open. The next implementation work is [#33 — selection tools and saved groups](https://github.com/IanSzymanski/squidware/issues/33), proposed in [PR #139](https://github.com/IanSzymanski/squidware/pull/139) and awaiting successful macOS certification and acceptance review.
-
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
 ## v0.5 — Reliable foundation
@@ -32,7 +30,7 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 
 Dense-field selection, formations, exact transforms, coordinate entry, spacing and snapping, shared Cast selection, workspace controls and accessible display choices.
 
-15/19 implementation issues completed at reconciliation.
+17/19 implementation issues completed at reconciliation.
 
 - [x] [#16 · Audit A15 Reclaim field space with compact editor chrome](https://github.com/IanSzymanski/squidware/issues/16)
 - [x] [#18 · Audit A17 Expose context-sensitive selection actions and Inspector sections](https://github.com/IanSzymanski/squidware/issues/18)
@@ -44,12 +42,12 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 - [x] [#27 · Audit A26 Add exact rotate, scale, mirror and pivot transforms](https://github.com/IanSzymanski/squidware/issues/27)
 - [x] [#30 · Audit A30 Show previous and next set ghosts with neighboring paths](https://github.com/IanSzymanski/squidware/issues/30)
 - [x] [#32 · Audit A34 Make Cast a panel with shared field selection](https://github.com/IanSzymanski/squidware/issues/32)
-- [ ] [#33 · Audit A27 Add additive section selection, lasso, rank/file selection and saved groups](https://github.com/IanSzymanski/squidware/issues/33)
+- [x] [#33 · Audit A27 Add additive section selection, lasso, rank/file selection and saved groups](https://github.com/IanSzymanski/squidware/issues/33)
 - [x] [#34 · Audit A36 Make coordinate output precision and move descriptions configurable](https://github.com/IanSzymanski/squidware/issues/34)
 - [ ] [#36 · Audit A37 Standardize action labels, icons and redundant entry points](https://github.com/IanSzymanski/squidware/issues/36)
 - [x] [#40 · Audit A42 Add resizable panels, workspace presets and focus mode](https://github.com/IanSzymanski/squidware/issues/40)
 - [x] [#42 · Audit A43 Add field display preferences and reversible orientation](https://github.com/IanSzymanski/squidware/issues/42)
-- [ ] [#43 · Audit A44 Introduce neutral dark/light themes, UI scaling and high contrast](https://github.com/IanSzymanski/squidware/issues/43)
+- [x] [#43 · Audit A44 Introduce neutral dark/light themes, UI scaling and high contrast](https://github.com/IanSzymanski/squidware/issues/43)
 - [ ] [#65 · Audit A65 Add a drill-aware command palette and rebindable shortcuts](https://github.com/IanSzymanski/squidware/issues/65)
 - [x] [#67 · Audit A66 Unify nudge behavior and make edit increments configurable](https://github.com/IanSzymanski/squidware/issues/67)
 - [x] [#79 · Roadmap Add spacing guides, exact interval controls, alignment and distribution](https://github.com/IanSzymanski/squidware/issues/79)
