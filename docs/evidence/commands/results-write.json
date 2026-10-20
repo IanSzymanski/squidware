@@ -1,0 +1,60 @@
+{
+  "phase": "write",
+  "checks": [
+    "Ctrl/Cmd+K opens focused command search; move 4 forward previews before Apply and records one undoable edit",
+    "mirror/interval cancel preserves geometry; labelled coordinate Apply and undo restore the production; invalid syntax and empty selection cannot mutate",
+    "Tab keeps focus navigation, field arrows remain available, and ordinary typing/select-all in Cast never invokes editor shortcuts",
+    "recording validates collisions/reserved keys without invoking commands; old keys stop working and rebound native save executes once",
+    "Help reflects bindings; dark/light/high-contrast palette controls pass text contrast and fit laptop/enlarged narrow windows"
+  ],
+  "audits": [
+    {
+      "label": "dark palette",
+      "checked": 401,
+      "failures": []
+    },
+    {
+      "label": "shortcut recorder",
+      "checked": 196,
+      "failures": []
+    },
+    {
+      "label": "light enlarged phrase",
+      "checked": 166,
+      "failures": []
+    },
+    {
+      "label": "high-contrast enlarged phrase",
+      "checked": 149,
+      "failures": []
+    },
+    {
+      "label": "dark enlarged phrase",
+      "checked": 70,
+      "failures": []
+    }
+  ],
+  "layouts": [
+    {
+      "width": 1366,
+      "scale": 1,
+      "height": 485
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "scale": 1
+    },
+    {
+      "theme": "high-contrast",
+      "width": 1000,
+      "scale": 1.25
+    },
+    {
+      "theme": "dark",
+      "width": 850,
+      "scale": 1.5
+    }
+  ],
+  "electron": "44.7.0"
+}

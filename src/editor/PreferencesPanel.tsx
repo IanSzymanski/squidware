@@ -4,6 +4,7 @@ import { Modal } from '../components/Modal';
 import { FieldDisplayPreferences } from './FieldDisplayPreferences';
 import { SnapSettingsFields } from './SnapSettingsFields';
 import { NumberField } from '../components/NumberField';
+import { ShortcutPreferences } from './ShortcutPreferences';
 import type { EditorController } from './useEditorController';
 export function PreferencesPanel({ controller }: { controller: EditorController }) {
   const { preferences, setDialog } = controller;
@@ -22,6 +23,7 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
     {preferences.error && <p className="field-error" role="status">{preferences.error}</p>}
     {closeError && <p className="field-error" role="status">{closeError}</p>}
     <fieldset key={resetVersion} className="preferences-fields" disabled={preferences.status === 'loading'}>
+      <ShortcutPreferences preferences={preferences} />
       <div className="form-row"><label className="form-label">Interface theme<select value={p.theme} onChange={e => update({ theme: e.target.value as typeof p.theme })}><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select></label><label className="form-label">UI scale<select value={p.uiScale} onChange={e => update({ uiScale: Number(e.target.value) as typeof p.uiScale })}>{[1, 1.1, 1.25, 1.5].map(scale => <option key={scale} value={scale}>{Math.round(scale * 100)}%</option>)}</select></label></div>
       <p className="microcopy">Theme and scale apply immediately on this device. Field coordinates and saved section colors stay the same.</p>
       <label className="form-label">Panel layout<select value={p.panelLayout} onChange={e => update({ panelLayout: e.target.value as typeof p.panelLayout, workspaceLayout: { ...p.workspaceLayout, preset: 'custom', setsWidth: e.target.value === 'compact' ? 176 : 216, inspectorWidth: e.target.value === 'compact' ? 235 : 258 } })}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>

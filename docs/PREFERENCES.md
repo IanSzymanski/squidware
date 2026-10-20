@@ -12,6 +12,7 @@ Persisted choices:
 
 | Choice | Default / limits |
 | --- | --- |
+| Keyboard shortcut overrides | Standard bindings; conflict/reserved-key checks, clear and reset. [Details](COMMAND_PALETTE.md). |
 | Interface theme | Dark; Light and High contrast available |
 | UI scale | 100%; 110%, 125% and 150% available |
 | Panel layout; field view | Comfortable; 2D |

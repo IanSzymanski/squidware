@@ -1,8 +1,11 @@
 import type { CoordinatePrecision } from './coordinates';
 import { DEFAULT_SNAPPING, validateSnapSettings, type SnapSettings } from './snapping';
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout } from './workspaceLayout';
+import { validateShortcutBindings, type ShortcutBindings } from './shortcuts';
+export { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, textEditAction } from './shortcuts';
 export interface Preferences {
   version: 1;
+  shortcutBindings: ShortcutBindings;
   theme: 'dark' | 'light' | 'high-contrast'; uiScale: 1 | 1.1 | 1.25 | 1.5;
   panelLayout: 'comfortable' | 'compact'; view: '2d' | '3d';
   workspaceLayout: WorkspaceLayout; castPanelOpen: boolean;
@@ -28,7 +31,7 @@ export interface PreferencesBridge {
   resetPreferences: () => Promise<Preferences>;
 }
 export function defaultPreferences(): Preferences {
-  return { version: 1, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false,
+  return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false,
     selectionLabelsOnly: false, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
@@ -49,6 +52,7 @@ export function validatePreferences(input: unknown): Preferences {
   for (const key of Object.keys(result).filter(key => key !== 'version')) {
     if (source[key] === undefined) continue;
     const value = source[key];
+    if (key === 'shortcutBindings') { result[key] = validateShortcutBindings(value); continue; }
     if (key === 'workspaceLayout') { result[key] = validateWorkspaceLayout(value); continue; }
     if (key === 'snapDefaults') { result[key] = validateSnapSettings(value); continue; }
     if (key === 'fieldCustomColor') {

@@ -33,7 +33,7 @@ export function useWorkspaceLayout(controller: EditorController) {
   }, [preview]);
   useEffect(() => {
     function escape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.dialog || controller.store.getState().ui.selectionToolsOpen) return;
+      if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.paletteOpen || controller.store.getState().ui.dialog || controller.store.getState().ui.selectionToolsOpen) return;
       if (overlay && !menu && !canChangeLayout(controller.store.getState())) {
         const s = controller.store.getState();
         const input = event.target instanceof HTMLElement && (event.target.matches('input, textarea, select') || event.target.isContentEditable);

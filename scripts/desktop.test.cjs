@@ -17,7 +17,7 @@ const legacyProject = syncFs.readFileSync(path.join(root, 'src/fixtures/schema-v
 
 // Run the actual main-process handlers with controlled dialogs and real files.
 // No Electron binary, GUI, remote server, or production user profile is needed.
-async function harness(t, { failRename = false, development = false } = {}) {
+async function harness(t, { failRename = false, development = false, platform = 'win32' } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'squidware-desktop-test-'));
   t.after(async () => {
     const relative = path.relative(os.tmpdir(), directory);
@@ -36,11 +36,13 @@ async function harness(t, { failRename = false, development = false } = {}) {
     constructor(options) {
       window = this;
       this.options = options;
-      this.events = new Map();
+      this.events = new Map(); this.contentsEvents = new Map();
       this.webContents = {
         mainFrame: { url: development ? 'http://127.0.0.1:5173/' : pathToFileURL(path.join(root, 'dist', 'index.html')).href },
-        on: () => {}, setWindowOpenHandler: handler => { this.openWindowHandler = handler; },
+        on: (name, handler) => this.contentsEvents.set(name, handler), setWindowOpenHandler: handler => { this.openWindowHandler = handler; },
         send: (...args) => messages.push(args),
+        setIgnoreMenuShortcuts: value => { this.ignoreMenuShortcuts = value; },
+        ...Object.fromEntries(['cut','copy','paste','undo','redo','selectAll'].map(action => [action, () => messages.push(['text-edit', action])])),
         printToPDF: async options => { messages.push(['printToPDF', options]); return Buffer.from('%PDF-test'); },
       };
     }
@@ -76,7 +78,7 @@ async function harness(t, { failRename = false, development = false } = {}) {
       : name === 'node:fs/promises' && failRename ? { ...fs, rename: async () => { throw new Error('Simulated disk failure'); } }
       : name.startsWith('./') ? require(path.join(root, 'electron', name)) : require(name),
     __dirname: path.join(root, 'electron'),
-    process: { argv: [], env: development ? { ELECTRON_RENDERER_URL: 'http://127.0.0.1:5173/' } : {}, platform: 'win32' },
+    process: { argv: [], env: development ? { ELECTRON_RENDERER_URL: 'http://127.0.0.1:5173/' } : {}, platform },
     Buffer, URL, console, setTimeout, clearTimeout,
   };
   vm.createContext(context);
@@ -90,9 +92,11 @@ async function harness(t, { failRename = false, development = false } = {}) {
     dialog: value => { nextDialog = value; },
     saveDialogCount: () => saveDialogs,
     menu: () => { context.installMenu(); return menu; },
+    currentMenu: () => menu,
     invoke: (name, ...args) => handlers.get(`squidware:${name}`)(sender, ...args),
     invokeAs: (name, source, ...args) => handlers.get(`squidware:${name}`)(source, ...args),
     send: (name, value) => listeners.get(`squidware:${name}`)(sender, value),
+    sendAs: (name, identity, value) => listeners.get(`squidware:${name}`)(identity, value),
   };
 }
 
@@ -382,4 +386,47 @@ test('native project save/open retains show snapping rules and rejects invalid r
   show.snapping.steps = 7;
   await assert.rejects(h.invoke('save-project', JSON.stringify(show), 'Grid show'), /snapping/);
   assert.equal(await fs.readFile(filename, 'utf8'), content);
+});
+
+test('native menu shortcuts follow durable preferences, reset, and trusted modal/text-entry context', async t => {
+  const h = await harness(t);
+  const preferences = (await h.invoke('read-preferences')).preferences;
+  await h.invoke('save-preferences', { ...preferences, shortcutBindings: { 'file.save': 'Primary+Shift+U', 'history.redo': 'Primary+Shift+Y' } });
+  const file = h.currentMenu().find(item => item.label === '&File').submenu;
+  assert.equal(file.find(item => item.label === 'Save').accelerator, 'CmdOrCtrl+Shift+U');
+  const edit = h.currentMenu().find(item => item.label === '&Edit').submenu;
+  assert.equal(edit.find(item => item.label === 'Redo drill edit').accelerator, 'CmdOrCtrl+Shift+Y');
+  assert.equal(edit.some(item => item.accelerator === 'Ctrl+Y'), false);
+  h.send('keyboard-context', 'modal'); assert.equal(h.window.ignoreMenuShortcuts, true);
+  h.send('keyboard-context', 'editor'); assert.equal(h.window.ignoreMenuShortcuts, false);
+  h.send('keyboard-context', 'invalid'); assert.equal(h.window.ignoreMenuShortcuts, false);
+  await h.invoke('reset-preferences');
+  assert.equal(h.currentMenu().find(item => item.label === '&File').submenu.find(item => item.label === 'Save').accelerator, 'CmdOrCtrl+S');
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(h.directory, 'preferences.json'), 'utf8')).shortcutBindings, {});
+});
+
+test('failed preference persistence keeps the current in-memory shortcut and does not retain its old native accelerator', async t => {
+  const h = await harness(t, { failRename: true });
+  const defaults = (await h.invoke('read-preferences')).preferences;
+  await assert.rejects(h.invoke('save-preferences', { ...defaults, shortcutBindings: { 'file.save': 'Primary+Shift+U' } }), /disk failure/);
+  const file = h.currentMenu().find(item => item.label === '&File').submenu;
+  assert.equal(file.find(item => item.label === 'Save').accelerator, 'CmdOrCtrl+Shift+U');
+  assert.equal(file.some(item => item.accelerator === 'CmdOrCtrl+S'), false);
+});
+
+test('macOS text editing requires a native key event in trusted text context and leaves recorder/editor keys alone', async t => {
+  const h = await harness(t, { platform: 'darwin' });
+  const nativeKey = h.window.contentsEvents.get('before-input-event'); let prevented = 0;
+  const event = { preventDefault() { prevented++; } };
+  const input = { type: 'keyDown', key: 'c', code: 'KeyC', meta: true, control: false, shift: false, alt: false };
+  h.send('keyboard-context', 'text'); nativeKey(event, input);
+  nativeKey(event, { ...input, key: 'a', code: 'KeyA' });
+  h.sendAs('keyboard-context', { sender: {}, senderFrame: h.sender.senderFrame }, 'editor');
+  nativeKey(event, { ...input, key: 'z', code: 'KeyZ', shift: true });
+  h.send('keyboard-context', 'modal'); nativeKey(event, input);
+  h.send('keyboard-context', 'editor'); nativeKey(event, input);
+  h.send('keyboard-context', 'text'); nativeKey(event, { ...input, meta: false });
+  nativeKey(event, { ...input, isComposing: true });
+  assert.equal(prevented, 3);
+  assert.deepEqual(h.messages.map(message => [...message]), [['text-edit', 'copy'], ['text-edit', 'selectAll'], ['text-edit', 'redo']]);
 });

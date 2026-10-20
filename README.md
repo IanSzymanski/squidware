@@ -95,10 +95,16 @@ Read the [full user guide](docs/USER_GUIDE.md) for cast import, coordinate conve
 
 ## Keyboard shortcuts
 
-Use `Ctrl` on Windows/Linux and `⌘` on macOS.
+Use `Ctrl` on Windows/Linux and `⌘` on macOS. These are defaults; change or clear bindings in **Preferences → Keyboard shortcuts**. [Command palette and drill phrases](docs/COMMAND_PALETTE.md) documents search, preview and rebinding.
 
 | Action | Shortcut |
 | --- | --- |
+| Command palette / Preferences | `Ctrl/⌘ K` / `Ctrl/⌘ ,` |
+| Add performers / duplicate current set | `A` / `D` |
+| Preview midfield mirror / toggle 2D–3D | `M` / `T` |
+| Previous paths / label modes | `P` / `J` |
+| Field zoom in / out / fit | `=` / `-` / `0` |
+| Previous / next count | `,` / `.` |
 | Play / pause | `Space` |
 | Select / pan tool | `V` / `H` |
 | Select all / clear selection | `Ctrl/⌘ A` / `Esc` |

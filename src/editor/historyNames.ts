@@ -18,7 +18,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'positions.place': name = `Place ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'} — ${picture}`; break;
     case 'project.update': name = Object.hasOwn(update, 'title') ? 'Rename production' : Object.hasOwn(update, 'ensemble') ? 'Edit ensemble' : Object.hasOwn(update, 'preset') ? 'Change field markings' : 'Edit production settings'; break;
     case 'set.update': name = `${Object.hasOwn(update, 'notes') ? 'Edit notes' : Object.hasOwn(update, 'name') ? 'Rename picture' : 'Edit move timing'} — ${picture}`; break;
-    case 'set.add': name = `Add picture after ${picture}`; break;
+    case 'set.duplicate': case 'set.add': name = `Add picture after ${picture}`; break;
     case 'set.remove': name = `Remove ${picture}`; break;
     case 'set.reorder': name = `Reorder ${picture}`; break;
     case 'positions.move': name = `Move ${selection} — ${picture}`; break;

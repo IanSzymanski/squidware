@@ -53,6 +53,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     if (next.ui.spacingPreview && !spacingSessionCurrent(next)) next = { ...next, ui: { ...next.ui, spacingPreview: null } };
     if (next.ui.coordinatePreview && !coordinateSessionCurrent(next)) next = { ...next, ui: { ...next.ui, coordinatePreview: null } };
     if (next.ui.dialog && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
+    if (next.ui.dialog && next.ui.paletteOpen) next = { ...next, ui: { ...next.ui, paletteOpen: false } };
     state = next; changed = true;
     if (!transactionDepth) { changed = false; listeners.forEach(listener => listener()); }
   };
@@ -112,7 +113,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       // Loading geometry alone is not evidence of a saved project file.
       patch('fileSession', { savedRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
       patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false });
-      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
+      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false, paletteOpen: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
     },
     history: direction => {
       const history = state.project;

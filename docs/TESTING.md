@@ -51,6 +51,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `workspace` | Panel resizing/collapse, Write/Review/Rehearse, focus escape, narrow/enlarged layouts and layout persistence across native process restarts | Detailed Cast/field selection and file-dialog behavior. |
 | `tooltips` | Hover delay, keyboard help, disabled activation, modal layers, keycaps and touch behavior | Basic file/state tests. |
 | `tooltips-fallback` | Unavailable WebGL, usable return to 2D, post-fallback help and compositor capture | Repeating the full normal tooltip suite. |
+| `commands` | Command palette search/disabled states, drill preview routing, typing/clipboard protection, shortcut recording/conflicts, menus/Help, native save and binding restart/reset | Full coordinate/transform/spacing matrices and every file-dialog race. |
 | `themes` | Native theme/scale choices, rendered contrast/focus, legacy colors, enlarged layouts and appearance persistence across process restarts | Repeating every preference-codec invalid value or field geometry algorithm. |
 | `preferences` | Choices across desktop restarts, reset/quit and native paper size | Every preference-codec invalid value. |
 | `thumbnails` | Committed invalidation, roster/color/selection synchronization | Duplicating history's patch/transaction matrix. |

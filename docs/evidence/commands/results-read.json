@@ -1,0 +1,9 @@
+{
+  "phase": "read",
+  "checks": [
+    "bindings survive a fresh Electron process and native reopen; Reset all restores key dispatch and native menu accelerators"
+  ],
+  "audits": [],
+  "layouts": [],
+  "electron": "44.7.0"
+}
