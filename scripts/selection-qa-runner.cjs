@@ -101,7 +101,11 @@ app.whenReady().then(async () => {
       // Rank/file review is a selection session, not an edit preview.
       await open(); await control('[aria-label="Preview rank"]'); await wait(`!!${state}.ui.selectionPreview`, 'rank preview');
       // The default anchor is A2, already selected. Choose A1 explicitly for the boundary fixture.
-      await evaluate("document.querySelector('[aria-label=\"Selection anchor\"]').focus()"); await key('Home'); await key('Return');
+      await evaluate("document.querySelector('[aria-label=\"Selection anchor\"]').focus()");
+      assert.equal(await evaluate("document.querySelector('[aria-label=\"Selection anchor\"]').value"), ids[1]);
+      // A closed macOS select does not use Home to choose its first option.
+      await key('Up');
+      await wait(`document.querySelector('[aria-label="Selection anchor"]').value===${JSON.stringify(ids[0])} && !${state}.ui.selectionPreview`, 'native anchor choice and stale review cancellation');
       await control('[aria-label="Preview rank"]'); await wait(`${state}.ui.selectionPreview.spec.anchorId===${JSON.stringify(ids[0])}`, 'native anchor selection');
       const rankBefore = await evaluate(`${state}.project`), initialIds = await selected();
       assert.deepEqual(await evaluate(`${state}.ui.selectionPreview.ids`), ids.slice(0, 2));
