@@ -26,6 +26,37 @@ async function key(window, keyCode, modifiers = [], settleMs = 5) {
   await pause(settleMs);
 }
 
+/** Native typeahead avoids OS select popups and platform-specific Home/End keys. */
+async function selectNativeOption(window, selector, value, { timeoutMs = 15000 } = {}) {
+  const query = JSON.stringify(selector);
+  const choice = await window.webContents.executeJavaScript(`(() => {
+    const control = document.querySelector(${query});
+    if (!control || control.tagName !== 'SELECT' || control.disabled) throw new Error('Unavailable native select: ' + ${query});
+    const options = [...control.options].filter(option => !option.disabled);
+    const target = options.find(option => option.value === ${JSON.stringify(String(value))});
+    if (!target) throw new Error('Missing native option: ' + ${JSON.stringify(String(value))});
+    const label = target.label.trim();
+    let prefix = '';
+    for (const character of label) {
+      prefix += character;
+      if (options.filter(option => option.label.trim().toLowerCase().startsWith(prefix.toLowerCase())).length === 1) {
+        control.focus();
+        return { prefix, label };
+      }
+    }
+    throw new Error('Ambiguous native option label: ' + label);
+  })()`);
+  for (const character of choice.prefix) {
+    for (const type of ['keyDown', 'char', 'keyUp']) window.webContents.sendInputEvent({ type, keyCode: character });
+  }
+  try {
+    await waitFor(() => window.webContents.executeJavaScript(`document.querySelector(${query})?.value === ${JSON.stringify(String(value))}`), `native option ${choice.label} in ${selector}`, { timeoutMs });
+  } catch (error) {
+    const observed = await window.webContents.executeJavaScript(`({ value: document.querySelector(${query})?.value, focused: document.activeElement?.outerHTML })`).catch(() => null);
+    throw new Error(`${error.message}; observed ${JSON.stringify(observed)}`, { cause: error });
+  }
+}
+
 const viewportExpression = '({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})';
 async function waitViewport(window, expected, label = 'restored viewport', { timeoutMs = 20000 } = {}) {
   let observed;
@@ -76,4 +107,4 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
     await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }
-module.exports = { pause, waitFor, key, capturePage, waitViewport, settleNativeViewport };
+module.exports = { pause, waitFor, key, selectNativeOption, capturePage, waitViewport, settleNativeViewport };

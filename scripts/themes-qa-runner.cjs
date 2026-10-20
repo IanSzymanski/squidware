@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const { auditText } = require('./accessibility-audit.cjs');
 const { root, output, profile } = require(process.argv.find(a => a.startsWith('--themes-manifest=')).slice('--themes-manifest='.length));
 const phase = process.argv.find(a => a.startsWith('--phase='))?.slice(8);
@@ -35,12 +35,8 @@ async function click(selector) {
 }
 async function select(label, value) {
   const selector = 'select[aria-label=' + JSON.stringify(label) + ']';
-  const actual = await evaluate(`(() => { const n=[...document.querySelectorAll('label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)})?.querySelector('select');n.setAttribute('aria-label',${JSON.stringify(label)});return [...n.options].findIndex(o=>o.value===${JSON.stringify(String(value))}); })()`);
-  assert.ok(actual >= 0);
-  await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
-  // Keyboard selection works in intentionally hidden windows on all three platforms.
-  await key('Home'); for (let i = 0; i < actual; i++) await key('Down'); await key('Return');
-  await wait(`document.querySelector(${JSON.stringify(selector)}).value===${JSON.stringify(String(value))}`, 'theme preference ' + label);
+  await evaluate(`(() => { const n=[...document.querySelectorAll('label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)})?.querySelector('select');n.setAttribute('aria-label',${JSON.stringify(label)}); })()`);
+  await selectNativeOption(window, selector, value);
   await key('Tab');
 }
 async function preferences() {

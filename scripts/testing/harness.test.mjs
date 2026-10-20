@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { runProcess } from './process.mjs';
-import { runChecks, selectSuites } from './suites.mjs';
+import { runChecks, selectSuites, desktopConcurrency } from './suites.mjs';
 import { outputDirectory } from './launcher.mjs';
 import renderer from './renderer.cjs';
 import vm from 'node:vm';
@@ -59,6 +59,57 @@ test('targeted runs reject typos and duplicates; options never become output dir
   assert.equal(outputDirectory(['--force-3d-fallback'], '/tmp/results'), path.resolve('/tmp/results'));
   assert.equal(outputDirectory(['--output=chosen', '--baseline'], 'fallback'), path.resolve('chosen'));
   assert.throws(() => outputDirectory(['one', '--output=two'], 'fallback'), /one output directory/);
+  assert.equal(desktopConcurrency([]), 1);
+  assert.equal(desktopConcurrency(['--jobs=2']), 2);
+  assert.equal(selectSuites(['--suite=themes', '--jobs=2'])[0].name, 'themes');
+  for (const value of ['0', '5', '1.5', 'two', '']) assert.throws(() => selectSuites([`--jobs=${value}`]), /jobs/);
+  assert.throws(() => selectSuites(['--jobs=2', '--jobs=3']), /one --jobs/);
+  assert.throws(() => selectSuites(['--jobs=2', '--list']), /alone/);
+});
+
+test('parallel suites respect the worker limit, retain order and failures, and serialize reports', async () => {
+  const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
+  const gates = Array.from({ length: 4 }, deferred), starts = Array.from({ length: 4 }, deferred);
+  let active = 0, peak = 0, reporting = 0;
+  const snapshots = [];
+  const complete = runChecks(gates.map((_, i) => ({ name: String(i) })), async check => {
+    const i = Number(check.name); active++; peak = Math.max(peak, active); starts[i].resolve();
+    try { await gates[i].promise; return { status: 'passed' }; } finally { active--; }
+  }, async results => {
+    assert.equal(++reporting, 1); snapshots.push(results.map(result => result.name));
+    await Promise.resolve(); reporting--;
+  }, { concurrency: 2 });
+  await Promise.all(starts.slice(0, 2).map(start => start.promise)); assert.equal(active, 2);
+  gates[1].resolve(); await starts[2].promise;
+  gates[0].reject(new Error('first suite failed')); await starts[3].promise;
+  gates[3].resolve(); gates[2].resolve();
+  const results = await complete;
+  assert.equal(peak, 2); assert.equal(active, 0);
+  assert.deepEqual(results.map(result => result.name), ['0', '1', '2', '3']);
+  assert.deepEqual(results.map(result => result.status), ['error', 'passed', 'passed', 'passed']);
+  assert.match(results[0].error, /first suite failed/);
+  assert.equal(snapshots.length, 4); assert.deepEqual(snapshots[0], ['1']);
+  assert.deepEqual(snapshots.at(-1), ['0', '1', '2', '3']);
+  await assert.rejects(runChecks([], () => {}, undefined, { concurrency: 0 }), /concurrency/);
+});
+
+test('native dropdown selection uses real typeahead for numeric labels without Home or an OS popup', async () => {
+  let selected = '1.5', buffer = '';
+  const events = [], options = [{ value: '1', label: '100%' }, { value: '1.1', label: '110%' }, { value: '1.25', label: '125%' }, { value: '1.5', label: '150%' }];
+  const control = { tagName: 'SELECT', disabled: false, options, get value() { return selected; }, set value(_) { throw new Error('Do not replace native selection with a DOM setter.'); }, focus() { context.document.activeElement = this; buffer = ''; } };
+  const context = { document: { querySelector: () => control, activeElement: null } };
+  const window = { webContents: {
+    executeJavaScript: async source => vm.runInNewContext(source, context),
+    sendInputEvent(event) { events.push(event); if (event.type === 'char') { buffer += event.keyCode; const target = options.find(option => option.label.startsWith(buffer)); if (target) selected = target.value; } },
+  } };
+  for (const value of ['1', '1.25', '1.5']) { await renderer.selectNativeOption(window, '[aria-label="UI scale"]', value); assert.equal(selected, value); }
+  assert.ok(events.some(event => event.type === 'char'));
+  assert.ok(events.every(event => !['Home', 'Down', 'Return'].includes(event.keyCode)));
+  await assert.rejects(renderer.selectNativeOption(window, 'select', 'unknown'), /Missing native option/);
+  options.push({ value: 'duplicate', label: '125%' });
+  await assert.rejects(renderer.selectNativeOption(window, 'select', '1.25'), /Ambiguous native option/);
+  options.pop(); window.webContents.sendInputEvent = () => {}; selected = '1.5';
+  await assert.rejects(renderer.selectNativeOption(window, 'select', '1', { timeoutMs: 30 }), /Timed out: native option.*observed.*1.5/);
 });
 test('renderer waits use observed state and time out even when a probe never resolves', async () => {
   let probes = 0;

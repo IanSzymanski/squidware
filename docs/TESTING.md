@@ -8,11 +8,15 @@ Run `pnpm certify` to perform the complete certification for the current OS: fro
 
 CI uses the same plan split into `pnpm certify --layer=source` and `pnpm certify --layer=desktop`: source/contracts run once, then the desktop phase runs on Windows, macOS and Linux. A local pass certifies only its recorded OS. The `CI required` job succeeds only when both hosted layers succeed; failed, skipped and cancelled dependencies fail that gate. Configure main's required status checks to require **CI required**; adding the job to YAML alone does not enable repository branch protection.
 
+Desktop certification runs two independent suites at a time (`--jobs=2`) within each OS job. Each suite keeps its own Electron processes, profile, outputs, watchdog and logs; restart phases within a suite remain sequential. All registered suites still run on every OS. Independent failures do not stop the other suites, and PDF inspection/packaging still wait for the entire desktop run to pass. Reports record concurrency, preserve selected-suite order and serialize progress writes. Parallel console output shows suite summaries and failed-suite logs; complete successful logs remain in the artifacts.
+
 Certification reports and per-step logs live in `.qa/certification/<run-id>/`. Every planned step has a status, including `not_run` after an earlier failure. Reports identify source revision/tree, dirty state, working-content and lockfile hashes, runtime/OS/image, workflow run and built output. Dirty development builds are supported: the working-content hash must still match. Committing those identical contents does not require a redundant rebuild. Git revision and tree record provenance; raw working-content hashes can differ across OS line-ending conventions.
 
 `pnpm build` stamps the renderer and both generated native codecs. Ordinary standalone desktop suites and the full workflow runner reject missing/stale stamps, changed outputs, and source edits during execution. Rebuild after source changes, including test or workflow changes. The workflow summary labels targeted runs separately from full desktop coverage. `--print-output` accepts only successful print output for the current source and build. Historical `--baseline` performance captures remain explicitly labeled comparisons; they do not certify the current application and may use an alternate build snapshot.
 
 Screenshot capture first settles the renderer against native content size and zoom, then records its viewport/DPI. It restores that viewport through two animation frames before returning. Failures include expected/observed geometry. Behavior assertions still run once; compositor capture retains its existing bounded retry. Native OS dropdown/accelerator coverage remains subject to the hidden-window limitations documented by the runners; change-event setup is not proof of native keyboard navigation.
+
+Use the shared `selectNativeOption` helper for native dropdown checks. It focuses the select and sends real key/character events for an unambiguous option-label prefix, then checks the actual value. This avoids opening a native popup or relying on Home/arrow behavior in hidden macOS windows. It never assigns the select value or dispatches a synthetic change event; failures report the observed value and focused element.
 
 ## Layers
 
@@ -47,6 +51,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `workspace` | Panel resizing/collapse, Write/Review/Rehearse, focus escape, narrow/enlarged layouts and layout persistence across native process restarts | Detailed Cast/field selection and file-dialog behavior. |
 | `tooltips` | Hover delay, keyboard help, disabled activation, modal layers, keycaps and touch behavior | Basic file/state tests. |
 | `tooltips-fallback` | Unavailable WebGL, usable return to 2D, post-fallback help and compositor capture | Repeating the full normal tooltip suite. |
+| `themes` | Native theme/scale choices, rendered contrast/focus, legacy colors, enlarged layouts and appearance persistence across process restarts | Repeating every preference-codec invalid value or field geometry algorithm. |
 | `preferences` | Choices across desktop restarts, reset/quit and native paper size | Every preference-codec invalid value. |
 | `thumbnails` | Committed invalidation, roster/color/selection synchronization | Duplicating history's patch/transaction matrix. |
 | `playback` | Real clock, component subscription isolation, static drawing and uncommitted drag previews | Complete interpolation math and unrelated editor forms. |
@@ -58,6 +63,8 @@ Layered overlap is intentional when the failure modes differ: a codec unit test 
 ## Targeted runs and reports
 
 Run a selected owner with `pnpm test:workflows --suite=editor,field`. Unknown or duplicate suite names fail before execution. Each invocation gets a new output directory under `.qa/desktop-matrix/<run-id>`. Its summary records every selected suite's status, duration, exit code and log path. An independent failure does not prevent later suites from running. The latest report pointer is `.qa/desktop-matrix/results.json`; the immutable report remains in that run's directory.
+
+Standalone runs default to one worker for focused diagnosis. Use `pnpm test:workflows --jobs=2` for the same bounded parallel execution as certification, or `--suite=themes,selection --jobs=2` for selected owners. The accepted range is 1–4 workers; malformed or duplicate options fail before execution. `--jobs=1` provides the sequential comparison. Running fewer suites remains explicitly targeted coverage.
 
 Each launcher uses the same isolated-profile, watchdog, process-tree cleanup and log implementation. Preferences/recovery phases share only their own isolated profile because restart persistence is their contract. A new standalone attempt clears old success reports and writes a fresh `run.json` state. Do not interpret a screenshot or a previous run's report as current success.
 
