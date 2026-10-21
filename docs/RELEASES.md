@@ -1,5 +1,11 @@
 # Squidware release plan
 
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 0 of 15 issues completed. Start with [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9), then [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13), respecting the maintained queue and hard prerequisites.
+
+**Validation follow-up:** The maintainer accepted [#36](https://github.com/IanSzymanski/squidware/issues/36) for v0.6.0 on 2026-10-21 and carried its unperformed first-time discovery check into [#64](https://github.com/IanSzymanski/squidware/issues/64) for v1.0. No first-time human review is claimed. Writer/platform and representative school-hardware qualification remain #64/#3; signed distribution remains #72.
+
+**Publication tooling follow-up:** v0.6.0's published checksum manifest was corrected by the [guarded repair workflow](https://github.com/IanSzymanski/squidware/actions/runs/39623987177), retaining package assets and the certified tag. The permanent filename normalization fix is [PR #142](https://github.com/IanSzymanski/squidware/pull/142), still unmerged. Its [required CI](https://github.com/IanSzymanski/squidware/actions/runs/39624188118) passes source and Windows/Linux certification but fails macOS preferences restart with `Timed out: opened fixture`. Diagnose that failure and complete required certification and integration before the next publication; the current main publisher can still generate a manifest using the local Windows filename instead of GitHub's normalized asset name.
+
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
 ## v0.5 — Reliable foundation
@@ -30,7 +36,7 @@ Versioned project schema and migration; named undo; asynchronous recovery; accur
 
 Dense-field selection, formations, exact transforms, coordinate entry, spacing and snapping, shared Cast selection, workspace controls and accessible display choices.
 
-17/19 implementation issues completed at reconciliation.
+19/19 implementation issues completed at reconciliation.
 
 - [x] [#16 · Audit A15 Reclaim field space with compact editor chrome](https://github.com/IanSzymanski/squidware/issues/16)
 - [x] [#18 · Audit A17 Expose context-sensitive selection actions and Inspector sections](https://github.com/IanSzymanski/squidware/issues/18)
@@ -44,11 +50,11 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 - [x] [#32 · Audit A34 Make Cast a panel with shared field selection](https://github.com/IanSzymanski/squidware/issues/32)
 - [x] [#33 · Audit A27 Add additive section selection, lasso, rank/file selection and saved groups](https://github.com/IanSzymanski/squidware/issues/33)
 - [x] [#34 · Audit A36 Make coordinate output precision and move descriptions configurable](https://github.com/IanSzymanski/squidware/issues/34)
-- [ ] [#36 · Audit A37 Standardize action labels, icons and redundant entry points](https://github.com/IanSzymanski/squidware/issues/36)
+- [x] [#36 · Audit A37 Standardize action labels, icons and redundant entry points](https://github.com/IanSzymanski/squidware/issues/36)
 - [x] [#40 · Audit A42 Add resizable panels, workspace presets and focus mode](https://github.com/IanSzymanski/squidware/issues/40)
 - [x] [#42 · Audit A43 Add field display preferences and reversible orientation](https://github.com/IanSzymanski/squidware/issues/42)
 - [x] [#43 · Audit A44 Introduce neutral dark/light themes, UI scaling and high contrast](https://github.com/IanSzymanski/squidware/issues/43)
-- [ ] [#65 · Audit A65 Add a drill-aware command palette and rebindable shortcuts](https://github.com/IanSzymanski/squidware/issues/65)
+- [x] [#65 · Audit A65 Add a drill-aware command palette and rebindable shortcuts](https://github.com/IanSzymanski/squidware/issues/65)
 - [x] [#67 · Audit A66 Unify nudge behavior and make edit increments configurable](https://github.com/IanSzymanski/squidware/issues/67)
 - [x] [#79 · Roadmap Add spacing guides, exact interval controls, alignment and distribution](https://github.com/IanSzymanski/squidware/issues/79)
 

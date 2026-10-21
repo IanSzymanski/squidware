@@ -1,12 +1,12 @@
 # Squidware roadmap
 
-Squidware v0.5.0 is the published desktop foundation for cast-to-chart drill design. It covers 2D placement, basic formations, 3D rehearsal markers, count-based playback, local project files, and rehearsal exports. It is not a complete substitute for every mature Pyware workflow.
+Squidware v0.6.0 is the latest published desktop release for cast-to-chart drill design, adding precise field authoring to the v0.5.0 foundation. It covers 2D placement, basic formations, 3D rehearsal markers, count-based playback, local project files, and rehearsal exports. It is not a complete substitute for every mature Pyware workflow.
 
 ## Where work is tracked
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) is published; all 17 planned issues are completed. **v0.6 — Precise field authoring** has 17 of 19 issues completed and 2 open. Selection tools/saved groups (#33, PR #139) and themes/UI scale (#43, PR #140) are merged. The current implementation is [#65 — command palette and rebindable shortcuts](https://github.com/IanSzymanski/squidware/issues/65).
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 0 of 15 issues completed. Start with [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9), then [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13), respecting the maintained queue and hard prerequisites.
 
-**Remaining review check:** [#36](https://github.com/IanSzymanski/squidware/issues/36) still awaits its first-time reviewer discovery check. Its required human evidence remains open.
+**Validation follow-up:** The maintainer accepted [#36](https://github.com/IanSzymanski/squidware/issues/36) for v0.6.0 on 2026-10-21 and carried its unperformed first-time discovery check into [#64](https://github.com/IanSzymanski/squidware/issues/64) for v1.0. No first-time human review is claimed. Writer/platform and representative school-hardware qualification remain #64/#3; signed distribution remains #72.
 
 The [release plan](docs/RELEASES.md) groups the backlog into v0.5, v0.6, v0.7, v0.8, v0.9, v1.0, v1.1 and v1.2 milestones. Releases publish in order only after their issues are fulfilled and the desktop packages pass verification. [release-plan.json](release-plan.json) records the membership and hard dependencies used by the release coordinator.
 
