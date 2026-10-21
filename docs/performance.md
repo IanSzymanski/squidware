@@ -149,3 +149,21 @@ The local Ryzen 7 3700X / Windows 10 host recorded command dispatch median/p95 *
 The runner hooks the actual production React renderer and editor commands in a fresh profile. Render-work counters identify newly committed thumbnail component fibers, excluding retained bailout subtrees with stale PerformedWork flags. Counter sampling and edit timing are separate; timing disables Fiber-tree traversal. The fixture checks actual coordinates/colors/counts plus Cast/legend selection, empty sections, reassignment, removal, undo/redo and playback. CI gates exact invalidation/cache counts and correctness, while retaining timing samples without a flaky wall-time threshold.
 
 Reproduce from an unchanged baseline build with `node scripts/thumbnail-qa.mjs --baseline`, then build the change and run `pnpm test:thumbnails`. Raw results and isolated profiles go to `.qa/thumbnails/before` and `.qa/thumbnails/after`. This targeted runner avoids relying on minified component names. App tests cover additional same-color, roster-order, empty-roster and immutable-cache cases. The editor, keyboard-accessibility and 3D lifecycle checks cover the existing user workflows independently.
+
+
+## Background collision analysis (A08)
+
+Measured October 21, 2026 on Linux 6.18.55, AMD EPYC 9V74 (3 visible logical CPUs, 10,452,471,808 bytes RAM), Node 24.19.0. The same A02 demo (64 performers × 6 sets) and maximum (500 × 128) fixtures are used. [Raw samples, source/fixture hashes and hardware](performance/analysis-comparison.json) contain 50 repetitions after 10 warmups. Reproduce with `pnpm perf:analysis`. These are same-host isolated compute comparisons; worker scheduling and UI rendering are measured separately.
+
+| Node compute · median / p95 ms | Demo | Maximum |
+| --- | ---: | ---: |
+| Brute-force reference | 0.29 / 1.21 | 15.66 / 22.39 |
+| Swept bounds, cold move | 0.22 / 1.08 | 2.64 / 3.76 |
+| Cached move | 0.04 / 0.08 | 0.73 / 1.08 |
+| One-performer edit | 0.05 / 0.29 | 0.80 / 0.90 |
+
+For the maximum incoming move, broad-phase filtering reduces exact checks from 124,750 pairs to 3,839. A localized edit checks 7 pairs and reuses unrelated results. Five full-show passes measured median 1899.64 ms for the reference and 284.59 ms for cold optimized moves. Compute-only runs suppress cooperative yields so the work itself can be compared; production enables them and runs entirely in a Web Worker. Dense coincident forms still check all pairs and are covered by exact oracle tests.
+
+The original A02 Windows maximum analysis baseline was 22.52 / 24.04 ms before extraction and 24.07 / 25.20 ms afterward. Those historical results use a different machine/platform and are context, not a same-host speedup denominator. The current comparison retains the current schema-v2 brute-force implementation as its reference.
+
+Production Electron 44.7.0 on Linux/Xvfb loads the bundled worker under the desktop CSP and accepts a native keyboard nudge while analysis delivery is held. The `analysis` suite records worker elapsed time and 30 rapid store dispatches; those exclude total paint latency and do not establish a 60 fps editor. The `playback` suite separately passes native maximum-size dragging and preview isolation. See [background-check behavior](BACKGROUND_ANALYSIS.md) and [desktop evidence](evidence/analysis/README.md). Representative school-device and whole-application budgets remain #3; no WebAssembly change is justified by these results.

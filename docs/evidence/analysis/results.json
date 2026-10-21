@@ -1,0 +1,65 @@
+{
+  "checks": [
+    "production file:// worker loads under desktop CSP and maximum-size flags match the brute-force oracle",
+    "pending checks clear old flags, reject stale replies and allow native keyboard gestures",
+    "rapid edits, undo, set changes and same-ID replacement retain correct flags and reset project caches",
+    "worker decode/startup failures show an actionable state and keyboard retry creates a fresh worker",
+    "ready, pending and failure states use shared controls; supported themes and enlarged narrow layout remain readable"
+  ],
+  "metrics": {
+    "initial": {
+      "mode": "full",
+      "changedPerformers": 500,
+      "possiblePairs": 124750,
+      "exactPairs": 3839,
+      "elapsedMs": 35.699999999953434
+    },
+    "fieldHeight": 485,
+    "localized": {
+      "mode": "incremental",
+      "changedPerformers": 1,
+      "possiblePairs": 124750,
+      "exactPairs": 7,
+      "elapsedMs": 7.600000000093132
+    },
+    "rapidEditDispatchMs": [
+      0.39999999990686774,
+      2.3999999999068677,
+      1.6999999999534339,
+      6.600000000093132,
+      1.8999999999068677,
+      1.6999999999534339,
+      1.8000000000465661,
+      1.5999999998603016,
+      1.8000000000465661,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6000000000931323,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6999999999534339,
+      1.6000000000931323,
+      1.6999999999534339,
+      1.5999999998603016,
+      1.8000000000465661,
+      2.199999999953434,
+      1.6000000000931323,
+      1.6999999999534339,
+      5.400000000139698,
+      2,
+      1.6000000000931323
+    ]
+  },
+  "source": {
+    "revision": "fa06ce2a0d653e5d74030638b081ea7acba93ac0",
+    "tree": "b92daf22f015e996212e05dc601ec8b6f0e5017d",
+    "dirty": true,
+    "contentHash": "4803d0aace0b20a9284f146e2f169940f6ae911f933b6111f84ada9ed31e44f7",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  }
+}

@@ -1,7 +1,7 @@
 import { nudgeLabel } from '../editIncrements';
 import { DEFAULT_SNAPPING, gridInterval, snapDescription } from '../snapping';
 import { type ReactNode, useMemo } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, CheckCheck, ChevronRight, Copy, FlipHorizontal2, AlignHorizontalJustifyCenter, Move, RotateCcw, RotateCw, SlidersHorizontal, MapPin, Sparkles, Minus, Plus, ShieldCheck, Trash2, TriangleAlert, Users, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronRight, Copy, FlipHorizontal2, AlignHorizontalJustifyCenter, Move, RotateCcw, RotateCw, SlidersHorizontal, MapPin, Sparkles, Minus, Plus, Trash2, Users, X } from 'lucide-react';
 import { coordinateDescription, performerMoveOutput, PROJECT_LIMITS, setCountLimits, setTiming } from '../domain';
 import { NumberField } from '../components/NumberField';
 import type { Preferences } from '../preferences';
@@ -12,6 +12,7 @@ import { FormationPanel } from './FormationPanel';
 import { TransformPanel } from './TransformPanel';
 import { SpacingPanel } from './SpacingPanel';
 import { CoordinatePanel } from './CoordinatePanel';
+import { TransitionCheck } from './TransitionCheck';
 import type { EditorController } from './useEditorController';
 
 type SectionPreference = Extract<keyof Preferences, `inspector${string}Open`>;
@@ -31,10 +32,10 @@ function InspectorSection({ title, preference, controller, children, className =
 }
 
 export function EditorInspector({ controller }: { controller: EditorController }) {
-  const { project, projectEpoch, activeSet, selectedIds, selectedPerformers, index, readOnly, issues,
+  const { project, projectEpoch, activeSet, selectedIds, selectedPerformers, index, readOnly,
     setPendingDraft,
     updateSet, setPlaying, duplicateSet, setDialog, reorderSet, applyFormation, selectSet, setSelectedIds,
-    setShowPaths, setWorkspace } = controller;
+  } = controller;
   const displayPositions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? activeSet.positions;
   const points = useMemo(() => selectedPerformers.map(performer => displayPositions[performer.id]), [selectedPerformers, displayPositions]);
   const bounds = useMemo(() => points.length ? {
@@ -123,7 +124,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
       </InspectorSection>}
 <InspectorSection title="Formation tools" preference="inspectorFormationOpen" className="formation-section" controller={controller}><FormationPanel controller={controller} /></InspectorSection>
 <InspectorSection title="Set properties" preference="inspectorSetOpen" controller={controller}><div key={`${projectEpoch}-${activeSet.id}`}><div className="section-title"><span>Current set</span><div><Button command="set.add" title="Duplicate current set" description="Append a copy of the current set to the show." disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} onClick={duplicateSet}><Copy size={14} /></Button><Button command="set.remove" title="Delete current set" disabledReason="Keep at least one set in the production." disabled={project.sets.length <= 1} onClick={() => setDialog('remove-set')}><Trash2 size={14} /></Button></div></div><label className="form-label">Set name<CommitInput label="Set name" description="Rename this set. Enter applies; Escape cancels." onDraftChange={setPendingDraft} value={activeSet.name} maxLength={PROJECT_LIMITS.text.setName} onCommit={name => updateSet({ name })} /></label><div className="form-row"><NumberField onDraftChange={setPendingDraft} label="Counts" description="Set the number of counts in the move into this set." disabledReason="The opening set has no incoming move and always has zero counts." value={setTiming(project, index).counts} min={setCountLimits(index).min} max={setCountLimits(index).max} integer disabled={index === 0} onChange={value => { setPlaying(false); updateSet({ counts: Math.round(value) }); }} /><NumberField onDraftChange={setPendingDraft} label="Tempo · BPM" description="Set the playback tempo for the move into this set." disabledReason="The opening set has no incoming move; select a later set to edit tempo." value={setTiming(project, index).tempo} min={PROJECT_LIMITS.tempo.min} max={PROJECT_LIMITS.tempo.max} step={0.1} disabled={index === 0} onChange={value => updateSet({ tempo: value })} /></div><p className="microcopy">{index === 0 ? 'The opening set has zero move counts; its stored tempo does not affect playback.' : 'Counts and tempo describe the move into this set.'}</p><label className="form-label">Transition<Tooltip name="Transition" description="Choose constant speed or an eased start and finish for the move into this set." disabledReason={index === 0 ? 'The opening set has no incoming move. Select a later set.' : undefined}><select disabled={index === 0} value={setTiming(project, index).transition} onChange={e => updateSet({ transition: e.target.value as 'linear' | 'ease' })}><option value="linear">Constant speed</option><option value="ease">Ease in / out</option></select></Tooltip></label><label className="form-label">Rehearsal notes<CommitInput label="Rehearsal notes" description="Add instructions for this set. Enter applies; Shift+Enter adds a line; Escape cancels." multiline allowEmpty onDraftChange={setPendingDraft} placeholder="What should the ensemble know?" value={activeSet.notes} maxLength={PROJECT_LIMITS.text.notes} onCommit={notes => updateSet({ notes })} /></label><div className="reorder-controls"><span>Set order</span><Button command="set.reorder" title="Move set earlier" disabledReason="This is already the first set." disabled={index === 0} onClick={() => reorderSet(-1)}><ArrowUp size={14} /></Button><Button command="set.reorder" title="Move set later" disabledReason="This is already the last set." disabled={index === project.sets.length - 1} onClick={() => reorderSet(1)}><ArrowDown size={14} /></Button></div></div></InspectorSection>
-<InspectorSection title="Transition check" preference="inspectorChecksOpen" className="transition-check" controller={controller}><div className="section-title"><span>{issues.length ? <TriangleAlert size={15} /> : <ShieldCheck size={15} />} {issues.length ? "Flags to review" : "Current move"}</span><span className={`check-count ${issues.length ? 'has-issues' : ''}`}>{issues.length || <Check size={12} />}</span></div>{index === 0 ? <p className="section-description">Select the next set to check the transition into it.</p> : issues.length ? <><p className="section-description">Review spacing and step size before rehearsal.</p><div className="issue-list">{issues.slice(0, 12).map((issue, i) => <HelpButton title="Review transition flag" description="Select the affected performers and show their travel paths on this set." key={i} onClick={() => { setSelectedIds(issue.performerIds); setShowPaths(true); setWorkspace('design'); selectSet(index); }}><span className={`issue-dot ${issue.severity}`} /><span>{issue.message}</span><ChevronRight size={12} /></HelpButton>)}</div>{issues.length > 12 && <p className="microcopy">+ {issues.length - 12} more issues. Adjust the formation and recheck.</p>}</> : <p className="check-passed"><CheckCheck size={16} />No spacing or stride flags.</p>}</InspectorSection>
+<InspectorSection title="Transition check" preference="inspectorChecksOpen" className="transition-check" controller={controller}><TransitionCheck controller={controller} /></InspectorSection>
     </div>
   </aside>;
 }
