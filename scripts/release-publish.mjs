@@ -43,26 +43,32 @@ const byId = new Map(issues.map(issue => [issue.number, issue]));
 const notes = `# Squidware ${tag} — ${release.name}\n\n${release.description}\n\n## Fulfilled issues\n\n` + release.issues.map(id => `- [#${id}](https://github.com/${plan.repository}/issues/${id}) — ${byId.get(id).title}`).join('\n') + `\n\n## Verification and downloads\n\nWindows portable executable, macOS disk image and Linux AppImage were built and verified from source commit ${source}. The release tag records that exact source with package version ${version}. SHA256SUMS.txt contains package hashes. Unit tests, desktop file/security checks, build/license checks and sandboxed desktop smoke/editor checks passed before publication. ${Number(version.split('.')[0]) === 0 ? 'This pre-1.0 release uses the currently configured unsigned packaging; signed distribution is tracked by #72 for v1.0.' : ''}\n`;
 const record = existing || await github('releases', 'POST', { tag_name: tag, target_commitish: releaseSha, name: `Squidware ${tag} — ${release.name}`, body: notes, draft: true, prerelease: Number(version.split('.')[0]) === 0 });
 const uploaded = new Map((await github(`releases/${record.id}/assets`)).map(asset => [asset.name, asset]));
-const verifiedDigests = new Map();
+const verifiedAssets = new Map();
 async function upload(name, reuseVerifiedBuild = false) {
   const data = await readFile(`release/${name}`), digest = 'sha256:' + createHash('sha256').update(data).digest('hex');
-  if (uploaded.has(name)) {
-    const asset = uploaded.get(name);
+  const uploadName = name.replaceAll(' ', '.');
+  const previous = uploaded.get(name) || uploaded.get(uploadName);
+  if (previous) {
+    const asset = previous;
     if (asset.digest !== digest && !(reuseVerifiedBuild && asset.state === 'uploaded' && asset.uploader?.login === 'github-actions[bot]' && /^sha256:[a-f0-9]{64}$/.test(asset.digest))) throw new Error(`Draft asset ${name} differs from the verified package; it will not be overwritten.`);
-    return asset.digest;
+    return asset;
   }
-  const url = record.upload_url.replace(/\{.*$/, '') + `?name=${encodeURIComponent(name)}`;
+  const url = record.upload_url.replace(/\{.*$/, '') + `?name=${encodeURIComponent(uploadName)}`;
   if (!url.startsWith(`https://uploads.github.com/repos/${plan.repository}/`)) throw new Error('Unexpected upload destination.');
   const response = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, 'Content-Type': name.endsWith('.txt') ? 'text/plain' : 'application/octet-stream' }, body: data });
   if (!response.ok) throw new Error(`Upload ${name} failed (${response.status}); draft remains unpublished.`);
   const asset = await response.json();
-  if (asset.digest !== digest) throw new Error(`Uploaded asset ${name} checksum does not match.`);
-  return digest;
+  if (asset.digest !== digest || asset.state !== 'uploaded' || typeof asset.name !== 'string' || !asset.name || /[\\/\r\n]/.test(asset.name)) throw new Error(`Uploaded asset ${name} identity or checksum does not match.`);
+  return asset;
 }
 // A partial run may have uploaded an earlier verified build of the same immutable tag.
 // Native packages need not reproduce byte-for-byte; use their actual server digests.
-for (const name of files) verifiedDigests.set(name, await upload(name, true));
-await writeFile('release/SHA256SUMS.txt', files.sort().map(name => `${verifiedDigests.get(name).slice(7)}  ${name}`).join('\n') + '\n');
+for (const name of files) {
+  const asset = await upload(name, true);
+  if (verifiedAssets.has(asset.name)) throw new Error(`Duplicate published asset name ${asset.name}.`);
+  verifiedAssets.set(asset.name, asset.digest);
+}
+await writeFile('release/SHA256SUMS.txt', [...verifiedAssets.keys()].sort().map(name => `${verifiedAssets.get(name).slice(7)}  ${name}`).join('\n') + '\n');
 await upload('SHA256SUMS.txt');
 await requireReady(plan, release, milestone);
 const result = await github(`releases/${record.id}`, 'PATCH', { draft: false, body: notes });
