@@ -92,3 +92,5 @@ button[aria-disabled=true]{color:var(--disabled-text);background-color:var(--dis
   .performer-page th, .performer-page td { padding: 9px; }
   .print-coordinate-key { font-size: 10px; line-height: 1.5; margin-top: 12px; }
 }
+
+.audio-track{position:relative}.audio-track .audio-clock-status{position:absolute;left:6px;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 5px;border-radius:3px;background:var(--surface);color:var(--text);font-size:11px;line-height:16px;pointer-events:none}

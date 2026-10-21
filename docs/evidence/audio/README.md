@@ -1,0 +1,18 @@
+# Audio-clock playback review
+
+Review for #13, 2026-10-21. The production Electron `audio-clock` suite passed all nine workflow checks on Linux. [Machine-readable results](results.json) retain the tested source content hash, timing samples and viewport measurements. [Baseline dimensions](before-results.json) come from the merged main snapshot `ab12f07b62ce079e4bb1191fad71571ae41dcbf2`, built separately with the same dependencies. The baseline is a visual comparison, not a pass of the new timing checks.
+
+The generated ten-minute PCM recording rehearses near 500 seconds at 0.5×, 0.75×, 1×, 1.25× and 1.5×. Each case includes a forced 900 ms renderer stall. None causes a correction seek. Post-stall show/media sample differences are approximately 2.1–4.7 ms; these paired software samples are not measurements of speaker latency or physical device performance.
+
+The suite also verifies exact paused navigation at fractional tempo boundaries, returning to the same count immediately after Play, count edits and undo/redo, native Space pause/resume, native playback-speed selection, keyboard timeline scrubbing, a written tempo boundary, positive and negative offsets, short-recording completion, track replacement, one seek at a show loop, an exact final count with fractional tempo durations, failed-play fallback and explicit retry. The original playback suite separately checks static field/shell/Inspector render isolation. Unit tests cover decoder divergence, metadata waits, buffering and timeout, seeking, delayed `ended`, persistent resource-error retry, and stale rejected play requests.
+
+## Rendered review
+
+- [Before](before-audio-attached.png) and [after](audio-attached.png), 1366 × 768, default scale: the existing audio lane gains an explicit clock status. Field height remains **454 px** and timeline height **148 px** in both builds. The optional audio lane already uses 28 px beyond the normal 120 px transport/timeline; the new status adds zero height. The field is 16 px below the guide's approximate 470 px target in this attached-audio configuration, preserving the baseline geometry.
+- [Failed playback](audio-failed.png): readable text explains silent fallback and the pause/play retry path. The transport remains accessible, and the failed recording is paused rather than retried each frame.
+- [Light](audio-light.png) and [high contrast](audio-high-contrast.png): status text reuses the established text/surface colors, with no color-only state. The normal attached screenshot covers dark mode.
+- [Enlarged narrow view](audio-enlarged.png): 1024 × 720 native window at 125% zoom (819 × 576 CSS pixels). Status and transport remain visible; transport options wrap and side panels scroll. The field uses the existing 180 px minimum height.
+
+Shared design guidance sections 1–4 apply. Playback keeps the existing commands, names, shortcuts, tooltips and compact transport. The status is a polite live region and changes only when clock state changes. Scrubbing and set navigation keep their established pause behavior. Clock/status state belongs to the session; project schema, saved coordinates and undo semantics are unchanged. Portable audio files, metronome scheduling, musical meter/count-in and detailed tempo maps remain their existing separate issues.
+
+This is automated timing/interaction evidence plus inspection of rendered captures, with Chromium's sandbox enabled. The test uses a visible native window because a hidden Chromium window throttles animation frames after audio ends. There is no subjective listening, human writer review or representative school-device qualification claim. Those broader checks remain #64/#3.

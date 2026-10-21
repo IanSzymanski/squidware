@@ -1,10 +1,10 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 0 of 15 issues completed. Start with [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9), then [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 1 of 15 issues completed. [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9) landed in [#143](https://github.com/IanSzymanski/squidware/pull/143). Continue with [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13), respecting the maintained queue and hard prerequisites.
 
 **Validation follow-up:** The maintainer accepted [#36](https://github.com/IanSzymanski/squidware/issues/36) for v0.6.0 on 2026-10-21 and carried its unperformed first-time discovery check into [#64](https://github.com/IanSzymanski/squidware/issues/64) for v1.0. No first-time human review is claimed. Writer/platform and representative school-hardware qualification remain #64/#3; signed distribution remains #72.
 
-**Publication tooling follow-up:** v0.6.0's published checksum manifest was corrected by the [guarded repair workflow](https://github.com/IanSzymanski/squidware/actions/runs/39623987177), retaining package assets and the certified tag. The permanent filename normalization fix is [PR #142](https://github.com/IanSzymanski/squidware/pull/142), still unmerged. Its [required CI](https://github.com/IanSzymanski/squidware/actions/runs/39624188118) passes source and Windows/Linux certification but fails macOS preferences restart with `Timed out: opened fixture`. Diagnose that failure and complete required certification and integration before the next publication; the current main publisher can still generate a manifest using the local Windows filename instead of GitHub's normalized asset name.
+**Publication tooling follow-up:** The checksum filename fix and preferences startup/native-input fixes landed in [#142](https://github.com/IanSzymanski/squidware/pull/142), after [Windows/macOS/Linux certification](https://github.com/IanSzymanski/squidware/actions/runs/39668585257) passed. The earlier v0.6.0 checksum manifest repair retained the certified tag and package assets.
 
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
 
@@ -62,9 +62,9 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-0/15 implementation issues completed at reconciliation.
+1/15 implementation issues completed at reconciliation.
 
-- [ ] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
+- [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
 - [ ] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
 - [ ] [#14 · Audit A13 Schedule a meter-aware metronome on the audio clock](https://github.com/IanSzymanski/squidware/issues/14)
 - [ ] [#17 · Audit A16 Add a compact set list with drag reorder and jump-to-set](https://github.com/IanSzymanski/squidware/issues/17)
