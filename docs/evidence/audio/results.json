@@ -1,0 +1,176 @@
+{
+  "checks": [
+    "a real ten-minute WAV attaches and decodes through the production file input",
+    "all five rehearsal speeds follow media after renderer stalls without correction seeks; native Space pauses both clocks",
+    "resume preserves audio position and the field/count mapping crosses a written tempo boundary",
+    "keyboard scrubbing seeks intentionally; positive offsets skip into audio and negative offsets delay it without losing show time",
+    "replacing a track pauses playback and a short recording hands over to the silent clock at its end",
+    "loop boundaries seek audio and field together once; non-looping playback stops at the exact final count",
+    "failed play falls back continuously with a useful status, avoids retry loops, and retries on the next explicit play action",
+    "supported themes, enlarged layout and audio-free fallback retain transport access and hide the unused audio lane"
+  ],
+  "measurements": [
+    {
+      "speed": 0.5,
+      "before": {
+        "count": 1000.123158,
+        "media": 500.063754,
+        "seeks": 2,
+        "plays": 1,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "after": {
+        "count": 1001.045414,
+        "media": 500.524531,
+        "seeks": 2,
+        "plays": 1,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "errorSeconds": -0.0018239999999991596
+    },
+    {
+      "speed": 0.75,
+      "before": {
+        "count": 1000.204314,
+        "media": 500.106315,
+        "seeks": 3,
+        "plays": 2,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "after": {
+        "count": 1001.6070779999999,
+        "media": 500.806714,
+        "seeks": 3,
+        "plays": 2,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "errorSeconds": -0.003175000000055661
+    },
+    {
+      "speed": 1,
+      "before": {
+        "count": 1000.358412,
+        "media": 500.183888,
+        "seeks": 4,
+        "plays": 3,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "after": {
+        "count": 1002.19226,
+        "media": 501.099716,
+        "seeks": 4,
+        "plays": 3,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "errorSeconds": -0.003585999999984324
+    },
+    {
+      "speed": 1.25,
+      "before": {
+        "count": 1000.377976,
+        "media": 500.194165,
+        "seeks": 5,
+        "plays": 4,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "after": {
+        "count": 1002.673592,
+        "media": 501.340928,
+        "seeks": 5,
+        "plays": 4,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "errorSeconds": -0.004132000000026892
+    },
+    {
+      "speed": 1.5,
+      "before": {
+        "count": 1000.4371479999999,
+        "media": 500.224132,
+        "seeks": 6,
+        "plays": 5,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "after": {
+        "count": 1003.198606,
+        "media": 501.604205,
+        "seeks": 6,
+        "plays": 5,
+        "playing": true,
+        "status": "Audio clock",
+        "paused": false
+      },
+      "errorSeconds": -0.004901999999958662
+    }
+  ],
+  "viewports": [
+    {
+      "name": "audio-attached.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "timelineHeight": 148
+    },
+    {
+      "name": "audio-failed.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "timelineHeight": 148
+    },
+    {
+      "name": "audio-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "timelineHeight": 148
+    },
+    {
+      "name": "audio-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "timelineHeight": 148
+    },
+    {
+      "name": "audio-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "timelineHeight": 148
+    },
+    {
+      "name": "audio-enlarged.png",
+      "width": 819,
+      "height": 576,
+      "fieldHeight": 180,
+      "timelineHeight": 174.60000610351562
+    }
+  ],
+  "source": {
+    "revision": "ab12f07b62ce079e4bb1191fad71571ae41dcbf2",
+    "tree": "2127577169399a3c03dc99929c62a1329301228c",
+    "dirty": true,
+    "contentHash": "7bfedcf546ee4e87a2675d80013eae831fe25855e265edae31a95d58bf5a4e6f",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "note": "Generated local recording in production Electron. Automated timing evidence does not claim listening or physical-device qualification."
+}

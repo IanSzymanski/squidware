@@ -18,7 +18,7 @@ export interface EditorState {
   preferences: { value: Preferences; status: 'loading' | 'pending' | 'saving' | 'saved' | 'unavailable'; error: string };
   project: ProjectHistory;
   selection: { activeIndex: number; selectedIds: string[] };
-  playback: { count: number; playing: boolean; loop: boolean; speed: number; metronome: boolean; muted: boolean };
+  playback: { count: number; playing: boolean; loop: boolean; speed: number; metronome: boolean; muted: boolean; clockStatus: string };
   ui: {
     workspace: Workspace; focusMode: boolean; view: '2d' | '3d'; tool: 'select' | 'pan' | 'lasso'; zoom: number; fitVersion: number; projectEpoch: number;
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
@@ -45,7 +45,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     preferences: { value: defaultPreferences(), status: 'loading', error: '' },
     project: { present: project, past: [], future: [], revision: 0, estimatedBytes: 0, droppedEntries: 0, recoveryError },
     selection: { activeIndex: 0, selectedIds: [] },
-    playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, muted: false },
+    playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, muted: false, clockStatus: '' },
     ui: { workspace: 'design', focusMode: false, view: '2d', tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
       showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
       pendingDraft: false, menu: false, paletteOpen: false, toast: '', formation: 'arc', formationWidth: 45,
