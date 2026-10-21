@@ -56,6 +56,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `preferences` | Choices across desktop restarts, reset/quit and native paper size | Every preference-codec invalid value. |
 | `thumbnails` | Committed invalidation, roster/color/selection synchronization | Duplicating history's patch/transaction matrix. |
 | `playback` | Real clock, component subscription isolation, static drawing and uncommitted drag previews | Complete interpolation math and unrelated editor forms. |
+| `analysis` | Production worker loading, maximum-size oracle comparisons, localized edits, stale results, replacement and keyboard failure recovery | Full geometry permutations and cancellation/cache invariants owned by `src/analysis` source tests; pointer dragging owned by `playback`. |
 | `recovery` | Maximum-size project durability and reopening in a fresh desktop process | Filesystem corruption/retention permutations owned by native tests. |
 | `print` | Real native PDF handler, long content, all-set coverage and a dense chart | Static HTML-only demo printing. |
 

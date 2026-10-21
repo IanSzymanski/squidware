@@ -17,6 +17,7 @@ export const desktopSuites = [
   { name: 'preferences', title: 'Preferences across process restarts', script: 'preferences-qa.mjs', timeoutMs: 390000 },
   { name: 'thumbnails', title: 'Thumbnail invalidation and shared selection', script: 'thumbnail-qa.mjs', timeoutMs: 210000 },
   { name: 'playback', title: 'Clock, subscriptions and drag preview isolation', script: 'playback-qa.mjs', timeoutMs: 210000 },
+  { name: 'analysis', title: 'Background checks, incremental edits and worker recovery', script: 'analysis-qa.mjs', timeoutMs: 210000 },
   { name: 'recovery', title: 'Durable production recovery after restart', script: 'recovery-qa.mjs', timeoutMs: 330000 },
   { name: 'print', title: 'Native PDF output and pagination', script: 'print-regression-qa.mjs', timeoutMs: 270000 },
   { name: 'stage3d', title: 'WebGL lifecycle component harness (opt-in)', script: 'stage3d-qa.mjs', timeoutMs: 280000, optional: true },
