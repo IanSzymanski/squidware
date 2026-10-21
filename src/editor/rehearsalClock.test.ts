@@ -164,6 +164,15 @@ describe('audio-authoritative rehearsal clock', () => {
     expect(media.loads).toBe(1); expect(media.currentTime).toBe(17);
   });
 
+  it('parks a reloaded resource at its end when the show is already beyond the recording', () => {
+    const { clock, media, controls } = fixture({ offset: 30 }); media.duration = 10;
+    clock.update(controls, 0); expect(media.currentTime).toBe(10);
+    media.error = { code: 2 }; media.advance(0); clock.sample();
+    controls.playing = false; clock.update(controls); controls.playing = true;
+    expect(clock.update(controls).status).toBe('after');
+    expect(media.loads).toBe(1); expect(media.currentTime).toBe(10); expect(media.paused).toBe(true);
+  });
+
   it('disposes a replaced track and starts its replacement at the current show position', () => {
     const { clock, media, controls } = fixture(); clock.update(controls, 10); media.advance(12);
     const seconds = clock.sample().seconds; clock.dispose(); expect(media.paused).toBe(true);

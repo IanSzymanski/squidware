@@ -12,7 +12,7 @@ await esbuild.build({ stdin: { contents: `
   export function fixture(counts=1024) {
     const p=createLegacyPerformanceFixture('demo');
     p.title='Audio-clock rehearsal';
-    p.sets.forEach((s,i)=>{s.counts=i ? counts : 0; s.tempo=i===2 ? 96 : 120;});
+    p.sets.forEach((s,i)=>{s.counts=i ? counts : 0; s.tempo=i===2 ? 137 : 120;});
     return migrateProjectV1(p);
   }
 `, resolveDir: root, loader: 'ts' }, bundle: true, platform: 'node', format: 'cjs', outfile: bundle, logLevel: 'silent' });

@@ -75,6 +75,26 @@ app.whenReady().then(async () => {
     await attach(recording); assert.equal(await evaluate(audio + '.duration'), 600);
     await capture('audio-attached.png');
     pass('a real ten-minute WAV attaches and decodes through the production file input');
+    await evaluate(`${editor}.dispatch('set.select',{index:2})`); await settleFrames();
+    assert.equal((await snapshot()).count, 2048);
+    assert.equal(await evaluate(state + '.selection.activeIndex'), 2);
+    assert.equal(await evaluate("!!document.querySelector('.field-preview-banner')"), false);
+    // Return to the same count before another frame. A seek is an explicit
+    // command even when its numeric count has not changed since Play.
+    await evaluate(`${editor}.setValue('playback','playing',true); ${editor}.dispatch('set.select',{index:2})`);
+    await settleFrames(); assert.equal((await snapshot()).count, 2048);
+    assert.equal((await snapshot()).playing, false);
+    assert.equal(await evaluate("!!document.querySelector('.field-preview-banner')"), false);
+    await evaluate(`${editor}.dispatch('set.select',{index:1})`); await settleFrames();
+    await evaluate(`${editor}.dispatch('set.update',{index:1,update:{counts:1}})`); await settleFrames();
+    assert.equal((await snapshot()).count, 1);
+    for (const [command, count] of [['history.undo',1024],['history.redo',1],['history.undo',1024]]) {
+      await evaluate(`${editor}.dispatch(${JSON.stringify(command)})`); await settleFrames();
+      const s = await snapshot(); assert.equal(s.count, count); assert.equal(s.playing, false);
+      assert.equal(await evaluate(state + '.selection.activeIndex'), 1);
+      assert.equal(await evaluate("!!document.querySelector('.field-preview-banner')"), false);
+    }
+    pass('paused count edits, undo and redo retain the arrived set while the clock adopts the new timing');
     for (const speed of [.5, .75, 1, 1.25, 1.5]) {
       await evaluate(`${editor}.dispatch('playback.scrub',{count:1000})`);
       await selectNativeOption(window, '[aria-label="Playback speed"]', String(speed));

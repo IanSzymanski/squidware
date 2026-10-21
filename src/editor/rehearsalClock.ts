@@ -59,7 +59,7 @@ export class RehearsalClock {
       this.cancelPlay();
     }
     if (starting && this.failed) {
-      this.failed = false; this.needsSeek = true;
+      this.failed = false; this.needsSeek = true; this.parkedAt = null;
       // A media-element error persists until its resource is reloaded. A
       // rejected play promise alone does not require reloading the recording.
       if (this.options.media?.error) {
