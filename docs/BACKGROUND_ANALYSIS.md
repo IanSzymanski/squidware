@@ -12,7 +12,7 @@ Correctness comparisons retain the reference's `1e-8` geometric boundary epsilon
 
 ## Worker and editor lifecycle
 
-Only the selected move's endpoint tracks, timing, model signature and rules cross the worker boundary. The show is never serialized for analysis. The client coalesces requests within an event-loop turn and assigns monotonic revisions. Changed input immediately hides old flags, including the render before the request effect runs. Only a response matching the current revision and worker instance can become current.
+Only the selected move's endpoint tracks, timing, model signature and rules cross the worker boundary. The show is never serialized for analysis. The transition-check panel owns the worker hook, so asynchronous results cannot invalidate the editor shell or sibling Inspector controls during playback. The client coalesces requests within an event-loop turn and assigns monotonic revisions. Changed input immediately hides old flags, including the render before the request effect runs. Only a response matching the current revision and worker instance can become current.
 
 Worker tasks yield after each 2,048 candidate visits, allowing superseding requests to cancel them cooperatively. Canceled tasks cannot commit their caches. Startup, execution, message-decoding and fifteen-second timeout failures clear flags and display a keyboard-accessible **Retry check** action. Retry creates a fresh worker; there is no synchronous analysis fallback. Unmount terminates the worker and clears both timers. Production uses the existing self-only script/worker policy, with no new Node bridge or network permission.
 

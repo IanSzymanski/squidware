@@ -16,6 +16,25 @@ const editor = 'window.__playbackQA.editor'; const state = editor + '.getState()
 const wait = (source, label) => waitUntil(() => evaluate(source), label, { timeoutMs: 20000 });
 function instrument() {
   const qa = window.__playbackQA = { editor: null, renders: {}, errors: [] }; const previous = new Map();
+  // Deliver the first real worker result during the scrub measurement. Fixed
+  // settling delays otherwise make analysis-induced shell renders intermittent.
+  const NativeWorker = window.Worker, pending = [];
+  qa.holdAnalysis = true; qa.analysisReplies = 0; qa.pendingAnalysis = 0;
+  window.Worker = class extends NativeWorker {
+    constructor(...args) {
+      super(...args);
+      this.addEventListener('message', () => { qa.analysisReplies++; });
+    }
+    postMessage(message) {
+      if (qa.holdAnalysis) { pending.push([this, message]); qa.pendingAnalysis = pending.length; }
+      else super.postMessage(message);
+    }
+  };
+  qa.releaseAnalysis = () => {
+    qa.holdAnalysis = false;
+    for (const [worker, message] of pending.splice(0)) NativeWorker.prototype.postMessage.call(worker, message);
+    qa.pendingAnalysis = 0;
+  };
   window.addEventListener('error', e => qa.errors.push(e.message));
   window.addEventListener('unhandledrejection', e => qa.errors.push(String(e.reason)));
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
@@ -54,13 +73,16 @@ app.whenReady().then(async () => {
     await wait("document.querySelectorAll('.field-performer').length===500", 'maximum fixture');
     await wait("document.querySelector('.recovery-indicator')?.textContent==='Recovery copy saved'", 'fixture recovery finished');
     await evaluate(`${editor}.dispatch('playback.scrub',{count:1})`); await pause(250);
+    await wait('window.__playbackQA.pendingAnalysis > 0', 'held initial analysis request');
     let diff = await measureRenders('fractional-scrub', async () => {
       for (let i = 0; i < 12; i++) { await evaluate(`${editor}.dispatch('playback.scrub',{count:${2 + i / 4}})`); await pause(20); }
+      await evaluate('window.__playbackQA.releaseAnalysis()');
+      await wait("window.__playbackQA.analysisReplies > 0 && document.querySelector('[data-analysis-status]')?.dataset.analysisStatus === 'ready'", 'worker reply during measured scrub');
     });
     assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.EditorShell, 0); assert.equal(diff.InspectorCounts, 0); assert.ok(diff.EditorTimeline >= 12);
     const transforms = await evaluate("Array.from(document.querySelectorAll('.field-performer')).map(n=>n.getAttribute('transform'))");
     assert.equal(transforms.length, 500);
-    pass('500-performer fractional scrub updates the timeline while shell, Inspector and static markings remain idle');
+    pass('500-performer fractional scrub and delayed worker results update the timeline/check panel while shell, sibling Inspector controls and static markings remain idle');
     await evaluate(`${editor}.dispatch('playback.toggle')`); await wait(`${state}.playback.playing`, 'playback started'); await pause(250);
     const beforeCount = await evaluate(state + '.playback.count');
     diff = await measureRenders('real-playback', async () => { await pause(600); await wait(`${state}.playback.count > ${beforeCount}`, 'clock advanced'); });

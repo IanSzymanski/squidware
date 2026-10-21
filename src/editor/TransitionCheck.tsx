@@ -1,10 +1,15 @@
 import { Check, CheckCheck, ChevronRight, LoaderCircle, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { Button } from './EditorControls';
 import { HelpButton } from './ControlHelp';
+import { useTransitionAnalysis } from './useTransitionAnalysis';
 import type { EditorController } from './useEditorController';
 
 export function TransitionCheck({ controller }: { controller: EditorController }) {
-  const { analysis, issues, index } = controller;
+  const { project, index, projectEpoch, preferences } = controller;
+  // Worker replies update this panel without invalidating the editor shell,
+  // field, timeline or sibling Inspector controls during playback.
+  const analysis = useTransitionAnalysis(project, index, projectEpoch, preferences.value);
+  const { issues } = analysis;
   const pending = analysis.status === 'pending', failed = analysis.status === 'error';
   const Icon = pending ? LoaderCircle : failed || issues.length ? TriangleAlert : ShieldCheck;
   return <div aria-busy={pending} data-analysis-status={analysis.status}>
