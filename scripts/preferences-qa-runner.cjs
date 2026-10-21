@@ -40,10 +40,12 @@ async function select(label, value) {
   await evaluate(`(() => { const node = [...document.querySelectorAll('.preferences-fields label')].find(node => node.textContent.startsWith(${JSON.stringify(label)})).querySelector('select'); node.value = ${JSON.stringify(String(value))}; node.dispatchEvent(new Event('change', { bubbles: true })); })()`); await pause(35);
 }
 async function number(label, value, commit = true) {
-  await evaluate(`(() => { const node = [...document.querySelectorAll('.preferences-fields label')].find(node => node.textContent.startsWith(${JSON.stringify(label)})).querySelector('input'); node.focus(); node.select(); })()`);
-  window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A', modifiers: [process.platform === 'darwin' ? 'meta' : 'control'] });
-  window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'A', modifiers: [process.platform === 'darwin' ? 'meta' : 'control'] });
+  await evaluate(`(() => { const node = [...document.querySelectorAll('.preferences-fields label')].find(node => node.textContent.startsWith(${JSON.stringify(label)})).querySelector('input'); node.focus(); node.select(); window.__preferencesQA.numberInput = node; })()`);
+  await uiWait('document.activeElement === window.__preferencesQA.numberInput', 'number input focus: ' + label);
+  // The text is already selected. A redundant Ctrl/Cmd+A can be handled by the
+  // native menu after focus changes and select the ensemble instead on Windows.
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Backspace' }); window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Backspace' });
+  await uiWait("window.__preferencesQA.numberInput.value === ''", 'number input cleared: ' + label);
   if (String(value)) await window.webContents.debugger.sendCommand('Input.insertText', { text: String(value) }); await pause(35);
   if (commit) { await evaluate('document.activeElement.blur()'); await pause(35); }
 }
@@ -67,7 +69,11 @@ async function checkCoordinateOutput(project) {
   for (const precision of ['whole', 'half', 'quarter']) {
     await select('Coordinate precision', precision); await saved(); await done();
     const expected = coordinateDescription(project.sets[0].positions[id], project.field, { coordinatePrecision: precision });
-    await evaluate(`document.querySelector('[data-performer-id="${id}"]').focus()`); await sendKey(window, 'Return');
+    const dot = `.field-stage__svg [data-performer-id="${id}"]`;
+    await evaluate(`document.querySelector(${JSON.stringify(dot)}).focus()`);
+    await uiWait(`document.activeElement === document.querySelector(${JSON.stringify(dot)})`, 'coordinate performer focus');
+    await sendKey(window, 'Return');
+    await uiWait(`window.__preferencesQA.editor.getState().selection.selectedIds.length === 1 && window.__preferencesQA.editor.getState().selection.selectedIds[0] === ${JSON.stringify(id)}`, 'native coordinate performer selection');
     await uiWait(`document.querySelector('.selection-coordinate')?.textContent === ${JSON.stringify(expected)} && document.querySelector('.field-readout span')?.textContent === ${JSON.stringify(expected)}`, 'Inspector and field precision');
     assert.ok(await evaluate(`document.querySelector('[data-performer-id="${id}"]').getAttribute('aria-label').includes(${JSON.stringify(expected)})`));
     if (precision === 'quarter') {
@@ -114,7 +120,15 @@ app.whenReady().then(async () => {
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); window.webContents.reload();
     await uiWait("!!window.__preferencesQA?.editor && window.__preferencesQA.editor.getState().preferences.status !== 'loading'", 'preferences startup');
-    if (await evaluate("!!document.querySelector('dialog[open]')")) await evaluate("window.__preferencesQA.editor.setValue('ui', 'dialog', null)");
+    await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
+    // Preferences and recovery initialize independently. On restart, recovery
+    // can offer its dialog after preferences load and block the native open.
+    // Wait for that startup decision, then dismiss the actual recovery dialog.
+    await uiWait("['Recovery ready', 'Recovery copies available'].includes(document.querySelector('.recovery-indicator')?.textContent)", 'recovery startup');
+    if (await evaluate("window.__preferencesQA.editor.getState().ui.dialog === 'recovery'")) {
+      await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Continue editing').click()");
+    }
+    await uiWait("!document.querySelector('dialog[open]')", 'startup dialogs closed');
     native('Open project…'); await uiWait("window.__preferencesQA.editor.getState().fileSession.savedRevision !== null", 'opened fixture');
     const before = await state(); const original = before.project.present; const revision = before.project.revision;
     if (phase === 'write') {
