@@ -114,7 +114,14 @@ app.whenReady().then(async () => {
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); window.webContents.reload();
     await uiWait("!!window.__preferencesQA?.editor && window.__preferencesQA.editor.getState().preferences.status !== 'loading'", 'preferences startup');
-    if (await evaluate("!!document.querySelector('dialog[open]')")) await evaluate("window.__preferencesQA.editor.setValue('ui', 'dialog', null)");
+    // Preferences and recovery initialize independently. On restart, recovery
+    // can offer its dialog after preferences load and block the native open.
+    // Wait for that startup decision, then dismiss the actual recovery dialog.
+    await uiWait("['Recovery ready', 'Recovery copies available'].includes(document.querySelector('.recovery-indicator')?.textContent)", 'recovery startup');
+    if (await evaluate("window.__preferencesQA.editor.getState().ui.dialog === 'recovery'")) {
+      await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Continue editing').click()");
+    }
+    await uiWait("!document.querySelector('dialog[open]')", 'startup dialogs closed');
     native('Open project…'); await uiWait("window.__preferencesQA.editor.getState().fileSession.savedRevision !== null", 'opened fixture');
     const before = await state(); const original = before.project.present; const revision = before.project.revision;
     if (phase === 'write') {
