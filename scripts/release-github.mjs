@@ -47,7 +47,9 @@ if (process.argv[2] === 'coordinate') {
       milestone.description = description; changes++;
     }
     for (const id of release.issues) {
-      const issue = byId.get(id); if (!issue) throw new Error(`Planned issue #${id} does not exist.`);
+      const snapshot = byId.get(id); if (!snapshot) throw new Error(`Planned issue #${id} does not exist.`);
+      const issue = await github(`issues/${id}`);
+      if (issue.state !== snapshot.state || issue.state_reason !== snapshot.state_reason) throw new Error(`Issue #${id} changed state during coordination; retry with a fresh inventory.`);
       let body = issue.body || '';
       if (ranks.has(id)) body = body.replace(/(\*\*Implementation order:\*\* )#[^\n]+/, `$1#${String(ranks.get(id)).padStart(2, '0')} of ${order.length} open implementation items`).replace(/(\*\*Open direct dependents:\*\* )\d+/, `$1${order.find(item => item.number === id).dependents}`);
       else if (issue.state === 'closed' && issue.state_reason === 'completed') body = body.replace(/(\*\*Implementation order:\*\* )[^\n]+/, '$1Completed; no active rank.').replace(/(\*\*Estimated token effort:\*\* )[^\n]+/, '$10 remaining (completed).');
@@ -59,7 +61,7 @@ if (process.argv[2] === 'coordinate') {
     }
     console.log(`${release.milestone}: ${release.issues.length} implementation issues assigned.`);
   }
-  const last = milestones.find(item => item.title === plan.releases.at(-1).milestone), tracker = byId.get(plan.trackerIssue);
+  const last = milestones.find(item => item.title === plan.releases.at(-1).milestone), tracker = await github(`issues/${plan.trackerIssue}`);
   const complete = plan.releases.flatMap(release => release.issues).every(id => byId.get(id)?.state === 'closed' && byId.get(id)?.state_reason === 'completed');
   let trackerBody = tracker.body.split('## Completed foundations')[0].replace(/\*\*Ranked queue baseline[^\n]+\n/, '').trim();
   trackerBody = releaseBlock(trackerBody, '## Release progress\n\n' + plan.releases.map(release => `- **${release.milestone} — ${release.name}:** ${release.issues.filter(id => byId.get(id)?.state === 'closed' && byId.get(id)?.state_reason === 'completed').length}/${release.issues.length} complete. ` + release.issues.map(id => `[#${id}](https://github.com/${plan.repository}/issues/${id})`).join(', ')).join('\n') + `\n\n${order.length} open implementation tasks. The current ranks and prerequisites are in [the maintained queue](https://github.com/${plan.repository}/blob/main/docs/IMPLEMENTATION_QUEUE.md). This tracker closes only after every child is fulfilled; release publication also requires successful builds.`);
