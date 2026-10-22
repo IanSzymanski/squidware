@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { app, dialog } = require('electron');
+const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--set-creation-manifest=')).slice('--set-creation-manifest='.length));
@@ -8,6 +8,10 @@ const { root, output, profile, bundle } = manifest;
 const { fixture, parseProject, totalCounts } = require(bundle);
 const savedFile = path.join(output, 'created.squid');
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
+// Match the editor suite's fixed-size layout capture. A visible macOS window
+// can be constrained by the runner's Dock/menu bar before the 768px assertion.
+const showWindow = BrowserWindow.prototype.show;
+BrowserWindow.prototype.show = function () {};
 dialog.showSaveDialog = async () => ({ canceled: false, filePath: savedFile });
 dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [savedFile] });
 dialog.showMessageBox = async () => ({ response: 1 });
@@ -47,7 +51,7 @@ const present = () => evaluate(state + '.project.present');
 app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'window'); await wait("!!document.querySelector('.set-card')", 'renderer');
-    window.show(); window.focus(); window.setContentSize(1366, 768);
+    window.setContentSize(1366, 768);
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'store and preferences');
@@ -58,7 +62,13 @@ app.whenReady().then(async () => {
     await chooseSet(1);
     if (manifest.baseline) { await capture('set-creation-before.png'); app.exit(0); return; }
     await capture('set-creation-after.png');
-    assert.ok(viewports.at(-1).fieldHeight >= 470);
+    const layout = viewports.at(-1);
+    assert.deepEqual([layout.width,layout.height],[1366,768], 'fixed-size layout viewport');
+    assert.ok(layout.fieldHeight >= 470, `Field height at 1366×768: ${JSON.stringify(layout)}`);
+    // Keep the behavior checks in a visible native window. Its actual content
+    // area may be smaller on a constrained desktop; settle that layout first.
+    BrowserWindow.prototype.show = showWindow;
+    window.show(); window.focus(); await frames(); await settleNativeViewport(window, 'visible set-creation window');
     await evaluate("document.querySelector('input[aria-label=\"Set name\"]').focus()");
     for (const [code, modifiers] of [['n',[]],['d',[]],['n',['shift']],['d',['shift']]]) await key(window,code,modifiers);
     assert.equal(await evaluate(state+'.ui.dialog'),null);
@@ -124,5 +134,5 @@ app.whenReady().then(async () => {
     assert.deepEqual(await evaluate('window.__setCreationQA.errors'),[]);
     pass('Inspector duplicate, personal count defaults, supported themes and a narrow enlarged dialog retain keyboard access');
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,viewports,source:manifest.source,scope:manifest.scope},null,2)); app.exit(0);
-  } catch(error) { console.error(error); await fs.writeFile(path.join(output,'failure.txt'),error.stack); app.exit(1); }
+  } catch(error) { console.error(error); console.error('Captured viewports:', JSON.stringify(viewports)); await fs.writeFile(path.join(output,'failure.txt'),error.stack); app.exit(1); }
 });
