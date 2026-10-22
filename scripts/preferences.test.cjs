@@ -12,9 +12,9 @@ async function setup(t, initial) {
 }
 test('missing preferences get defaults; canonical settings survive a fresh service', async t => {
   const h = await setup(t); assert.deepEqual((await h.service.read()).preferences, defaultPreferences());
-  const preferences = { ...defaultPreferences(), panelLayout: 'compact', paperSize: 'a4', zoom: 2, transient: { x: 10 } };
+  const preferences = { ...defaultPreferences(), panelLayout: 'compact', paperSize: 'a4', zoom: 2, newSetCounts: 24, transient: { x: 10 } };
   await h.service.save(preferences);
-  assert.deepEqual((await createPreferencesService(h.directory, h.atomic).read()).preferences, { ...defaultPreferences(), panelLayout: 'compact', paperSize: 'a4', zoom: 2 });
+  assert.deepEqual((await createPreferencesService(h.directory, h.atomic).read()).preferences, { ...defaultPreferences(), panelLayout: 'compact', paperSize: 'a4', zoom: 2, newSetCounts: 24 });
   assert.deepEqual(await fs.readdir(h.directory), ['preferences.json']);
 });
 test('editing increments persist across native services and invalid increments cannot replace them', async t => {

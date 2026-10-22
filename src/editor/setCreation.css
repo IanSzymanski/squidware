@@ -1,0 +1,7 @@
+.set-creation-kinds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.set-creation-kinds .button{justify-content:flex-start;min-height:36px;font-size:12px}
+.set-creation-kinds .button[aria-pressed=true]{background:var(--selected-bg);border-color:var(--accent);color:var(--text)}
+.set-creation-summary{margin:14px 0;padding:12px;background:var(--surface-muted);border:1px solid var(--border);border-radius:6px;font-size:12px;line-height:1.7}
+@media(max-width:420px){.set-creation-kinds{grid-template-columns:1fr}}
+
+.set-creation-kinds .button>span{flex:1;text-align:left}

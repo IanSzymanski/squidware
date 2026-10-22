@@ -87,7 +87,7 @@ The [initial verification record](docs/VERIFICATION.md) records the checks compl
 
 1. Open the demo, select a set from the left panel, and select a section from the field legend.
 2. Drag the group or apply a formation from the Inspector. Use **Undo** to compare changes.
-3. Add a set and edit its **counts into the set**, tempo, and notes.
+3. Use **Add set** to review New, Duplicate, Insert before or Hold positions, then Apply. Edit **counts into the set**, tempo, and notes. See [set creation](docs/SET_CREATION.md) for copy and timing rules.
 4. Switch to **3D preview**, then play or scrub the show. Check flagged transitions in the Inspector.
 5. Save the production as a `.squid` file and export a rehearsal packet.
 
@@ -101,6 +101,7 @@ Use `Ctrl` on Windows/Linux and `⌘` on macOS. These are defaults; change or cl
 | --- | --- |
 | Command palette / Preferences | `Ctrl/⌘ K` / `Ctrl/⌘ ,` |
 | Add performers / duplicate current set | `A` / `D` |
+| New set / insert before / hold positions | `N` / `Shift+N` / `Shift+D` |
 | Preview midfield mirror / toggle 2D–3D | `M` / `T` |
 | Previous paths / label modes | `P` / `J` |
 | Field zoom in / out / fit | `=` / `-` / `0` |

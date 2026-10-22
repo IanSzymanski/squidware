@@ -4,6 +4,12 @@ import { validatePreferences } from './preferences';
 
 const event = (key: string, extra = {}) => ({ key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...extra });
 describe('portable shortcut bindings', () => {
+  it('preserves older custom keys when set-creation defaults are introduced', () => {
+    const bindings = validateShortcutBindings({ 'tool.box': 'N', 'tool.pan': 'Shift+N', 'tool.lasso': 'Shift+D' });
+    expect(bindings).toMatchObject({ 'tool.box': 'N', 'set.new': null, 'set.insert-before': null, 'set.hold': null });
+    expect(validateShortcutBindings(bindings)).toEqual(bindings);
+    expect(() => validateShortcutBindings({ 'set.new': 'N', 'tool.box': 'N' })).toThrow(/conflict/);
+  });
   it('migrates old preferences and rejects collisions against defaults or other overrides', () => {
     expect(validatePreferences({ version: 1 }).shortcutBindings).toEqual({});
     expect(validateShortcutBindings({ 'tool.box': 'V' })).toEqual({});

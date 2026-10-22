@@ -1,7 +1,7 @@
 import { PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
 import type { Dialog, EditorState, SessionSlice, Workspace } from './state';
-import { addPicture, reconnectSets, updateSetProperties } from './projectEdits';
+import { createPicture, reconnectSets, updateSetProperties, type SetCreationKind, type SetCreationOptions } from './projectEdits';
 import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
@@ -23,7 +23,7 @@ import { shortcutIds } from '../shortcuts';
 export interface CommandArguments {
   'palette.open': undefined; 'preferences.open': undefined; 'drill.preview': { text: string };
   'tool.box': undefined; 'tool.pan': undefined; 'tool.lasso': undefined;
-  'performers.add-dialog': undefined; 'set.duplicate': undefined; 'set.previous': undefined; 'set.next': undefined;
+  'performers.add-dialog': undefined; 'set.new': undefined; 'set.duplicate': undefined; 'set.insert-before': undefined; 'set.hold': undefined; 'set.previous': undefined; 'set.next': undefined;
   'transform.mirror': undefined; 'view.toggle': undefined; 'display.paths': undefined; 'display.labels': undefined;
   'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
   'view.select': { view: '2d' | '3d' }; 'workspace.show': { workspace: Workspace };
@@ -42,6 +42,7 @@ export interface CommandArguments {
   'project.load': { project: Project };
   'history.undo': undefined; 'history.redo': undefined; 'history.open': undefined;
   'set.update': { index: number; update: SetPropertyUpdate };
+  'set.create': { index: number; kind: SetCreationKind } & SetCreationOptions;
   'set.add': { index: number }; 'set.remove': { index: number }; 'set.reorder': { index: number; direction: -1 | 1 };
   'performers.add': { performers: Performer[] }; 'performers.remove': { ids: string[] };
   'performer.update': { id: string; update: Partial<Pick<Performer, 'name' | 'sectionId'>> };
@@ -110,6 +111,16 @@ const selectSet = (context: CommandContext, index: number) => {
   context.patch('selection', { activeIndex: next }); context.patch('playback', { playing: false, count: setStartCount(project, next), seekVersion: context.getState().playback.seekVersion + 1 });
 };
 
+const canOpenSetCreation = (s: EditorState) => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets;
+function openSetCreation(c: CommandContext, kind: SetCreationKind) {
+  c.patch('ui', { setCreationKind: kind }); showDialog(c, 'set-create');
+}
+function applySetCreation(c: CommandContext, index: number, kind: SetCreationKind, options: SetCreationOptions = {}) {
+  c.edit(p => createPicture(p, index, kind, c.getState().preferences.value.newSetCounts, options));
+  selectSet(c, kind === 'insert-before' ? index : index + 1);
+  c.patch('ui', { dialog: null });
+}
+
 export const commandRegistry = {
   ...selectionCommands,
   'palette.open': simple('palette.open', 'Command palette', 'Search commands and preview drill phrases. Escape returns to the editor.', idle, c => { c.patch('ui', { paletteOpen: true, menu: false }); c.patch('playback', { playing: false }); }),
@@ -126,7 +137,10 @@ export const commandRegistry = {
   'tool.pan': simple('tool.pan', 'Pan field', 'Move the viewport without moving performers, including during a field preview.', idle, c => { void executeCommand(c, 'tool.select', { tool: 'pan' }); }),
   'tool.lasso': simple('tool.lasso', 'Lasso selection', 'Draw a freehand boundary and review the selected performers.', s => canNavigate(s) && editable(s) && s.ui.view === '2d', c => { void executeCommand(c, 'tool.select', { tool: 'lasso' }); }),
   'performers.add-dialog': simple('performers.add-dialog', 'Add performers', 'Choose a section, label prefix and number of new performers.', s => canNavigate(s) && s.project.present.performers.length < PROJECT_LIMITS.performers, c => { void executeCommand(c, 'dialog.open', { dialog: 'add-cast' }); }),
-  'set.duplicate': simple('set.duplicate', 'Duplicate current set', 'Copy this shape into a new 32-count set after it.', s => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets, c => { void executeCommand(c, 'set.add', { index: c.getState().selection.activeIndex }); }),
+  'set.new': simple('set.new', 'New set', 'Review a new set after the current set: fresh staging grid, blank notes, default counts and constant speed.', canOpenSetCreation, c => openSetCreation(c, 'new')),
+  'set.duplicate': simple('set.duplicate', 'Duplicate current set', 'Review a copy after this set: positions, notes and incoming timing. The new picture starts with a hold; incoming travel is not replayed.', canOpenSetCreation, c => openSetCreation(c, 'duplicate')),
+  'set.insert-before': simple('set.insert-before', 'Insert before current set', 'Review a set before this one, carrying the preceding positions and keeping this set’s arrival timing. Before opening, add a zero-count opening picture.', canOpenSetCreation, c => openSetCreation(c, 'insert-before')),
+  'set.hold': simple('set.hold', 'Hold positions', 'Review a hold after this set: keep all positions for the chosen counts, blank notes and constant speed. The new picture remains editable.', canOpenSetCreation, c => openSetCreation(c, 'hold')),
   'set.previous': simple('set.previous', 'Previous set', 'Stop playback and arrive at the previous set.', s => canNavigate(s) && s.selection.activeIndex > 0, c => selectSet(c, c.getState().selection.activeIndex - 1)),
   'set.next': simple('set.next', 'Next set', 'Stop playback and arrive at the next set.', s => canNavigate(s) && s.selection.activeIndex < s.project.present.sets.length - 1, c => selectSet(c, c.getState().selection.activeIndex + 1)),
   'transform.mirror': simple('transform.mirror', 'Mirror across 50', 'Preview a physical midfield mirror on the selected performers.', canIncrement, c => beginTransform(c, { operation: 'across-50' })),
@@ -235,9 +249,11 @@ export const commandRegistry = {
     c.edit(p => updateSetProperties(p, a.index, a.update));
     if (a.update.counts !== undefined && wasAtSet) c.patch('playback', { count: setStartCount(c.getState().project.present, a.index) });
   } }),
-  'set.add': define({ id: 'set.add', name: 'Add set', description: 'Copy the current shape into a new 32-count set.', arguments: { index: 'integer' }, enabled: (s, a) => setExists(s, a.index) && s.project.present.sets.length < PROJECT_LIMITS.sets, execute: (c, a) => {
-    c.edit(p => addPicture(p, a.index)); selectSet(c, a.index + 1);
-  } }),
+  'set.create': define({ id: 'set.create', name: 'Create set', description: 'Apply the reviewed set operation as one undoable edit.', arguments: { index: 'integer', kind: 'new | duplicate | insert-before | hold', counts: 'integer?', tempo: 'BPM?' },
+    enabled: (s, a) => !!a && ['new', 'duplicate', 'insert-before', 'hold'].includes(a.kind) && setExists(s, a.index) && s.project.present.sets.length < PROJECT_LIMITS.sets && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'set-create' ? null : s.ui.dialog } }),
+    execute: (c, a) => applySetCreation(c, a.index, a.kind, { ...(a.counts === undefined ? {} : { counts: a.counts }), ...(a.tempo === undefined ? {} : { tempo: a.tempo }) }) }),
+  'set.add': define({ id: 'set.add', name: 'New set after index', description: 'Create a fresh staging grid with blank notes and the default move counts.', arguments: { index: 'integer' }, enabled: (s, a) => !!a && setExists(s, a.index) && canOpenSetCreation(s),
+    execute: (c, a) => applySetCreation(c, a.index, 'new') }),
   'set.remove': define({ id: 'set.remove', name: 'Delete set', description: 'Remove a set and connect its neighbors.', arguments: { index: 'integer' }, enabled: (s, a) => setExists(s, a.index) && s.project.present.sets.length > 1, execute: (c, a) => { c.edit(p => reconnectSets(p, p.sets.filter((_, i) => i !== a.index))); selectSet(c, Math.max(0, a.index - 1)); c.patch('ui', { dialog: null }); } }),
   'set.reorder': define({ id: 'set.reorder', name: 'Move set', description: 'Move a set earlier or later in the show.', arguments: { index: 'integer', direction: '-1 | 1' }, enabled: (s, a) => setExists(s, a.index) && setExists(s, a.index + a.direction), execute: (c, a) => { c.edit(p => { const sets = [...p.sets]; const target = a.index + a.direction; [sets[a.index], sets[target]] = [sets[target], sets[a.index]]; return reconnectSets(p, sets); }); selectSet(c, a.index + a.direction); } }),
   'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' }, enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers, execute: (c, a) => { c.edit(p => { const start = p.performers.length; return { ...p, performers: [...p.performers, ...a.performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...Object.fromEntries(a.performers.map((performer, i) => [performer.id, { x: 5 + ((start + i) % 40) * 2.3, y: Math.max(1, p.field.height - 3 - Math.floor((start + i) / 40) * 2.3) }])) } })) }; }); c.patch('selection', { selectedIds: a.performers.map(p => p.id) }); c.patch('ui', { dialog: null }); } }),

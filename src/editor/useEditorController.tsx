@@ -141,11 +141,8 @@ export function useEditorController() {
   function updateSet(update: SetPropertyUpdate) { dispatch('set.update', { index, update }); }
   function movePerformers(updates: Record<string, Point>) { dispatch('positions.move', { index, updates }); }
   function transform(options: { dx?: number; dy?: number; rotation?: number; scale?: number }) { dispatch('selection.transform', { index, ids: selectedIds, options }); }
-  function addSet() {
-    if (project.sets.length >= PROJECT_LIMITS.sets) { notify(`This release supports up to ${PROJECT_LIMITS.sets} sets per production.`); return; }
-    dispatch('set.add', { index }); notify('New set added. Shape the next moment.');
-  }
-  function duplicateSet() { addSet(); }
+  function addSet() { dispatch('set.new'); }
+  function duplicateSet() { dispatch('set.duplicate'); }
   function removeSet() { dispatch('set.remove', { index }); }
   function reorderSet(direction: -1 | 1) { dispatch('set.reorder', { index, direction }); }
   function applyFormation() { if (dispatch('formation.apply')) notify('Formation applied to the selection.'); }

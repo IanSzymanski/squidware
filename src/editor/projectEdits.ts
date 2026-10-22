@@ -1,4 +1,4 @@
-import { setTiming, uid, validateSetUpdate } from '../domain';
+import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, Move, Project, SetPropertyUpdate } from '../types';
 
 /** Incoming timing follows the destination picture, preserving v1 edit behavior.
@@ -35,9 +35,45 @@ export function updateSetProperties(project: Project, index: number, update: Set
   return { ...project, sets, moves };
 }
 
-export function addPicture(project: Project, index: number): Project {
-  const picture = { ...project.sets[index], id: uid(), name: `Set ${project.sets.length + 1}`,
-    positions: structuredClone(project.sets[index].positions), notes: '' };
-  return reconnectSets(project, [...project.sets.slice(0, index + 1), picture, ...project.sets.slice(index + 1)],
-    new Map([[picture.id, { ...setTiming(project, index), counts: 32 }]]));
+export type SetCreationKind = 'new' | 'duplicate' | 'insert-before' | 'hold';
+export interface SetCreationOptions { counts?: number; tempo?: number }
+export const setCreationNames: Record<SetCreationKind, string> = {
+  new: 'New set', duplicate: 'Duplicate set', 'insert-before': 'Insert before', hold: 'Hold positions',
+};
+
+export function creationTiming(project: Project, index: number, kind: SetCreationKind, defaultCounts: number) {
+  const source = setTiming(project, index);
+  return { counts: kind === 'duplicate' && index > 0 ? source.counts : defaultCounts,
+    tempo: source.tempo, transition: kind === 'duplicate' ? source.transition : 'linear' as const };
+}
+
+/** A blank picture has the whole cast in a fresh staging grid, never missing dots. */
+function stagingPositions(project: Project): DrillSet['positions'] {
+  const columns = Math.min(40, Math.max(1, project.performers.length));
+  const rows = Math.ceil(project.performers.length / columns);
+  return Object.fromEntries(project.performers.map((p, i) => [p.id, {
+    x: project.field.width * (columns === 1 ? .5 : .05 + .9 * (i % columns) / (columns - 1)),
+    y: project.field.height * .95 - Math.floor(i / columns) * Math.min(2.3, project.field.height * .9 / Math.max(1, rows - 1)),
+  }]));
+}
+
+/** Existing arrival timing/paths follow their destination; only predecessors are rewired.
+ * Duplicating a picture does not duplicate its incoming travel from a different picture.
+ */
+export function createPicture(project: Project, index: number, kind: SetCreationKind, defaultCounts: number, options: SetCreationOptions = {}): Project {
+  if (!Number.isInteger(index) || !project.sets[index]) throw new Error('Choose an existing set.');
+  if (project.sets.length >= PROJECT_LIMITS.sets) throw new Error(`A production can contain at most ${PROJECT_LIMITS.sets} sets.`);
+  const timing = { ...creationTiming(project, index, kind, defaultCounts), ...options };
+  validateSetUpdate(timing, 1);
+  const source = project.sets[index];
+  const at = kind === 'insert-before' ? index : index + 1;
+  const positionSource = kind === 'insert-before' ? project.sets[Math.max(0, index - 1)] : source;
+  const suffix = kind === 'duplicate' ? ' copy' : kind === 'hold' ? ' hold' : '';
+  const picture: DrillSet = { id: uid(), name: suffix ? source.name.slice(0, PROJECT_LIMITS.text.setName - suffix.length) + suffix : `Set ${project.sets.length + 1}`,
+    notes: kind === 'duplicate' ? source.notes : '',
+    positions: kind === 'new' ? stagingPositions(project) : structuredClone(positionSource.positions) };
+  const newTiming = new Map([[picture.id, timing]]);
+  // Inserting a new opening picture gives the old opening its first incoming move.
+  if (at === 0) newTiming.set(source.id, timing);
+  return reconnectSets(project, [...project.sets.slice(0, at), picture, ...project.sets.slice(at)], newTiming);
 }
