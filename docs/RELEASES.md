@@ -1,6 +1,8 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 1 of 15 issues completed. [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9) landed in [#143](https://github.com/IanSzymanski/squidware/pull/143). Continue with [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 2 of 15 issues completed: [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9) in [#143](https://github.com/IanSzymanski/squidware/pull/143), and [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13) in [#144](https://github.com/IanSzymanski/squidware/pull/144). Continue with [#31 — timeline zoom and one-count stepping](https://github.com/IanSzymanski/squidware/issues/31), respecting the maintained queue and hard prerequisites.
+
+**Main certification follow-up:** After #144 merged, [CI on main 78dbdb3](https://github.com/IanSzymanski/squidware/actions/runs/39683894290) passed source, Windows and Linux checks but failed [macOS audio-clock certification](https://github.com/IanSzymanski/squidware/actions/runs/39683894290/job/119513166004): viewport restoration after `audio-failed.png` expected 1366×647 and observed 1366×645 (DPR 1). The cause remains unresolved; repair and rerun full certification before publication. The earlier [three-platform PR certification](https://github.com/IanSzymanski/squidware/actions/runs/39675595588) remains valid evidence for #13's completed implementation, but does not certify the merged main source. The release train must still require successful exact-source main CI and fulfillment of the remaining v0.7 scope.
 
 **Validation follow-up:** The maintainer accepted [#36](https://github.com/IanSzymanski/squidware/issues/36) for v0.6.0 on 2026-10-21 and carried its unperformed first-time discovery check into [#64](https://github.com/IanSzymanski/squidware/issues/64) for v1.0. No first-time human review is claimed. Writer/platform and representative school-hardware qualification remain #64/#3; signed distribution remains #72.
 
@@ -62,10 +64,10 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-1/15 implementation issues completed at reconciliation.
+2/15 implementation issues completed at reconciliation.
 
 - [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
-- [ ] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
+- [x] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
 - [ ] [#14 · Audit A13 Schedule a meter-aware metronome on the audio clock](https://github.com/IanSzymanski/squidware/issues/14)
 - [ ] [#17 · Audit A16 Add a compact set list with drag reorder and jump-to-set](https://github.com/IanSzymanski/squidware/issues/17)
 - [ ] [#24 · Audit A23 Split a transition at a selected count into a new set](https://github.com/IanSzymanski/squidware/issues/24)
