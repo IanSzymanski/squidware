@@ -38,12 +38,22 @@ if (process.argv[2] === 'coordinate') {
   for (const release of plan.releases) {
     let milestone = milestones.find(item => item.title === release.milestone);
     if (!milestone) { milestone = await github('milestones', 'POST', { title: release.milestone, description: `${release.name}. ${release.description}\nManaged by release-plan.json. Publish only after every issue is fulfilled and package checks pass.` }); milestones.push(milestone); }
+    // Retire the superseded human/hardware gate wording in the managed v1.0 description.
+    const retiredValidation = 'representative hardware acceptance and actual writer/platform validation';
+    if (milestone.description?.includes('Managed by release-plan.json.') && milestone.description.includes(retiredValidation)) {
+      const description = milestone.description.replace(retiredValidation, 'measured software-host performance and automated platform validation');
+      const updated = await github(`milestones/${milestone.number}`, 'PATCH', { description });
+      if (updated.description !== description) throw new Error(`Milestone description read-back mismatch for ${release.milestone}.`);
+      milestone.description = description; changes++;
+    }
     for (const id of release.issues) {
-      const issue = byId.get(id); if (!issue) throw new Error(`Planned issue #${id} does not exist.`);
+      const snapshot = byId.get(id); if (!snapshot) throw new Error(`Planned issue #${id} does not exist.`);
+      const issue = await github(`issues/${id}`);
+      if (issue.state !== snapshot.state || issue.state_reason !== snapshot.state_reason) throw new Error(`Issue #${id} changed state during coordination; retry with a fresh inventory.`);
       let body = issue.body || '';
       if (ranks.has(id)) body = body.replace(/(\*\*Implementation order:\*\* )#[^\n]+/, `$1#${String(ranks.get(id)).padStart(2, '0')} of ${order.length} open implementation items`).replace(/(\*\*Open direct dependents:\*\* )\d+/, `$1${order.find(item => item.number === id).dependents}`);
       else if (issue.state === 'closed' && issue.state_reason === 'completed') body = body.replace(/(\*\*Implementation order:\*\* )[^\n]+/, '$1Completed; no active rank.').replace(/(\*\*Estimated token effort:\*\* )[^\n]+/, '$10 remaining (completed).');
-      body = releaseBlock(body, `**Planned release:** ${release.milestone} — ${release.name}\n${ranks.has(id) ? `**Active implementation rank:** ${ranks.get(id)} of ${order.length}.` : '**Implementation:** completed; no remaining active rank.'}\nRelease membership does not waive the acceptance criteria or required human/device validation. See [release plan](https://github.com/${plan.repository}/blob/main/docs/RELEASES.md).`);
+      body = releaseBlock(body, `**Planned release:** ${release.milestone} — ${release.name}\n${ranks.has(id) ? `**Active implementation rank:** ${ranks.get(id)} of ${order.length}.` : '**Implementation:** completed; no remaining active rank.'}\nRelease membership retains automated acceptance criteria. Human review and physical-hardware qualification are not required under the [2026-10-22 validation policy](https://github.com/${plan.repository}/blob/main/docs/VALIDATION_POLICY.md). See [release plan](https://github.com/${plan.repository}/blob/main/docs/RELEASES.md).`);
       if (issue.milestone?.number !== milestone.number || issue.body !== body) {
         const updated = await github(`issues/${id}`, 'PATCH', { milestone: milestone.number, body });
         if (updated.milestone?.number !== milestone.number || updated.body !== body) throw new Error(`Read-back mismatch for #${id}.`); changes++;
@@ -51,7 +61,7 @@ if (process.argv[2] === 'coordinate') {
     }
     console.log(`${release.milestone}: ${release.issues.length} implementation issues assigned.`);
   }
-  const last = milestones.find(item => item.title === plan.releases.at(-1).milestone), tracker = byId.get(plan.trackerIssue);
+  const last = milestones.find(item => item.title === plan.releases.at(-1).milestone), tracker = await github(`issues/${plan.trackerIssue}`);
   const complete = plan.releases.flatMap(release => release.issues).every(id => byId.get(id)?.state === 'closed' && byId.get(id)?.state_reason === 'completed');
   let trackerBody = tracker.body.split('## Completed foundations')[0].replace(/\*\*Ranked queue baseline[^\n]+\n/, '').trim();
   trackerBody = releaseBlock(trackerBody, '## Release progress\n\n' + plan.releases.map(release => `- **${release.milestone} — ${release.name}:** ${release.issues.filter(id => byId.get(id)?.state === 'closed' && byId.get(id)?.state_reason === 'completed').length}/${release.issues.length} complete. ` + release.issues.map(id => `[#${id}](https://github.com/${plan.repository}/issues/${id})`).join(', ')).join('\n') + `\n\n${order.length} open implementation tasks. The current ranks and prerequisites are in [the maintained queue](https://github.com/${plan.repository}/blob/main/docs/IMPLEMENTATION_QUEUE.md). This tracker closes only after every child is fulfilled; release publication also requires successful builds.`);
