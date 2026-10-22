@@ -1,6 +1,6 @@
 # Performance baselines
 
-Issue [#3](https://github.com/IanSzymanski/squidware/issues/3) establishes evidence before the collision, thumbnail, playback, recovery, and 3D changes. It remains open until the same production Electron protocol has run on a representative school laptop. The checked-in local results describe the actual development desktop; they do not qualify school hardware.
+Issue [#3](https://github.com/IanSzymanski/squidware/issues/3) establishes evidence before the collision, thumbnail, playback, recovery, and 3D changes. The maintainer removed the remaining representative school-laptop gate on 2026-10-22; the issue is complete on the delivered local measurement scope under the [validation policy](VALIDATION_POLICY.md). The checked-in local results describe the actual development desktop; they do not qualify school hardware.
 
 ## Fixtures and budgets
 
@@ -84,7 +84,7 @@ The raw files are `before-compute.json`, `after-compute.json`, and `before-elect
 
 ## Demand-driven 3D — issue #15
 
-The October 13 local comparison uses the production build at `60c1b477d6316ebdd3c036c078fe3d17c709b077` as the before behavior. The detailed machine, fixture and build fingerprints and lifecycle checks are saved in [stage3d-comparison.json](performance/stage3d-comparison.json). The test ran sequentially in isolated, hidden offscreen 1440×1000 Electron windows with the actual preload, renderer sandbox and context isolation enabled, on an Intel i7-10510U / Intel UHD Graphics development laptop. It does not complete the representative school-laptop acceptance in #3.
+The October 13 local comparison uses the production build at `60c1b477d6316ebdd3c036c078fe3d17c709b077` as the before behavior. The detailed machine, fixture and build fingerprints and lifecycle checks are saved in [stage3d-comparison.json](performance/stage3d-comparison.json). The test ran sequentially in isolated, hidden offscreen 1440×1000 Electron windows with the actual preload, renderer sandbox and context isolation enabled, on an Intel i7-10510U / Intel UHD Graphics development laptop. It does not claim representative school-laptop qualification; that requirement was removed on 2026-10-22.
 
 | Metric | Before | After |
 | --- | ---: | ---: |
@@ -110,9 +110,9 @@ pnpm test:3d
 
 The runner uses the shared deterministic demo and maximum fixtures and a fresh local profile for each run. Raw manifests, reports and screenshots are kept under `.qa/stage3d/before` and `.qa/stage3d/after`. A failed run removes the previous report rather than leaving stale success evidence. The targeted checks cover cold module requests, idle activity, camera motion, roster growth/removal/undo, color and field texture changes, selection/positions, quality, playback/pause, resource disposal and both failure paths.
 
-## School-laptop acceptance still required
+## Physical-hardware qualification removed
 
-Run this protocol on a school laptop that represents the intended audience, with its hardware and power mode documented. Inspect traces for maximum-project edits, drag, playback, and idle 3D; record median/p95, long tasks, recovery writes, memory, and frame cadence. Use these results to set hardware-qualified budgets for the dependent issues. Keep issue #3 open until those measurements and the resulting budgets are reviewed.
+The maintainer removed all human and physical-hardware gates on 2026-10-22. The delivered production Electron protocol, baseline report and investigation budgets fulfill #3's remaining measurement scope. Running this protocol on other hardware is optional and does not block implementation or release. Existing results do not qualify untested machines or establish an end-to-end 16.7 ms maximum-project pass. Preserve host metadata and distinguish measured results from untested environments.
 
 ## Named history (issue #6)
 
@@ -144,7 +144,7 @@ A production Electron comparison on October 13, 2026 uses the same 500-performer
 
 Thumbnails receive each picture's immutable positions and a shared array of performer IDs/colors. Metadata and timing changes do not affect these props. Changes to visible roster membership/order/colors invalidate the array; names, labels, unused colors and assignments between equal colors retain it. Cast, legend, Inspector derivations and field selection reuse a WeakMap-cached ReadonlySet for each immutable selected-ID array. Section groups, filtered Cast, selected performers and selection center remain stable when their inputs are unchanged. Empty sections no longer show selected merely because another section is selected.
 
-The local Ryzen 7 3700X / Windows 10 host recorded command dispatch median/p95 **2.00/2.20 → 1.90/2.10 ms** and command-to-React-commit latency **43.40/47.90 → 12.65/13.00 ms** in one sequential before/after pair (20 edits after five warmups). These are host observations, not CI timing gates, hardware-qualified budgets or physical presentation measurements. The broader field/playback subscription work remains #11; representative school-laptop acceptance remains #3.
+The local Ryzen 7 3700X / Windows 10 host recorded command dispatch median/p95 **2.00/2.20 → 1.90/2.10 ms** and command-to-React-commit latency **43.40/47.90 → 12.65/13.00 ms** in one sequential before/after pair (20 edits after five warmups). These are host observations, not CI timing gates, hardware-qualified budgets or physical presentation measurements. The broader field/playback subscription work remains #11; representative school-laptop qualification is not a release gate.
 
 The runner hooks the actual production React renderer and editor commands in a fresh profile. Render-work counters identify newly committed thumbnail component fibers, excluding retained bailout subtrees with stale PerformedWork flags. Counter sampling and edit timing are separate; timing disables Fiber-tree traversal. The fixture checks actual coordinates/colors/counts plus Cast/legend selection, empty sections, reassignment, removal, undo/redo and playback. CI gates exact invalidation/cache counts and correctness, while retaining timing samples without a flaky wall-time threshold.
 
@@ -166,4 +166,4 @@ For the maximum incoming move, broad-phase filtering reduces exact checks from 1
 
 The original A02 Windows maximum analysis baseline was 22.52 / 24.04 ms before extraction and 24.07 / 25.20 ms afterward. Those historical results use a different machine/platform and are context, not a same-host speedup denominator. The current comparison retains the current schema-v2 brute-force implementation as its reference.
 
-Production Electron 44.7.0 on Linux/Xvfb loads the bundled worker under the desktop CSP and accepts a native keyboard nudge while analysis delivery is held. The `analysis` suite records worker elapsed time and 30 rapid store dispatches; those exclude total paint latency and do not establish a 60 fps editor. The `playback` suite separately passes native maximum-size dragging and preview isolation. See [background-check behavior](BACKGROUND_ANALYSIS.md) and [desktop evidence](evidence/analysis/README.md). Representative school-device and whole-application budgets remain #3; no WebAssembly change is justified by these results.
+Production Electron 44.7.0 on Linux/Xvfb loads the bundled worker under the desktop CSP and accepts a native keyboard nudge while analysis delivery is held. The `analysis` suite records worker elapsed time and 30 rapid store dispatches; those exclude total paint latency and do not establish a 60 fps editor. The `playback` suite separately passes native maximum-size dragging and preview isolation. See [background-check behavior](BACKGROUND_ANALYSIS.md) and [desktop evidence](evidence/analysis/README.md). Physical school-device qualification is not required. The documented whole-application budgets remain investigation targets; these results alone do not justify a WebAssembly change.

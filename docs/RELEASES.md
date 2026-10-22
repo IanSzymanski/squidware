@@ -4,11 +4,11 @@
 
 **Main certification follow-up:** After #144 merged, [CI on main 78dbdb3](https://github.com/IanSzymanski/squidware/actions/runs/39683894290) passed source, Windows and Linux checks but failed [macOS audio-clock certification](https://github.com/IanSzymanski/squidware/actions/runs/39683894290/job/119513166004): viewport restoration after `audio-failed.png` expected 1366×647 and observed 1366×645 (DPR 1). The cause remains unresolved; repair and rerun full certification before publication. The earlier [three-platform PR certification](https://github.com/IanSzymanski/squidware/actions/runs/39675595588) remains valid evidence for #13's completed implementation, but does not certify the merged main source. The release train must still require successful exact-source main CI and fulfillment of the remaining v0.7 scope.
 
-**Validation follow-up:** The maintainer accepted [#36](https://github.com/IanSzymanski/squidware/issues/36) for v0.6.0 on 2026-10-21 and carried its unperformed first-time discovery check into [#64](https://github.com/IanSzymanski/squidware/issues/64) for v1.0. No first-time human review is claimed. Writer/platform and representative school-hardware qualification remain #64/#3; signed distribution remains #72.
+**Validation policy:** Maintainer decision (2026-10-22): human review, participant sessions, first-time discovery checks, subjective listening and physical/representative school-hardware qualification are not completion or release gates. Automated software tests, rendered-output review, cross-platform CI, package verification and signing requirements remain applicable. Historical references to human/hardware gates are superseded; no waived check is claimed to have passed. See [the validation policy](VALIDATION_POLICY.md). #3 is complete on its delivered local measurement scope; #64 retains software-based platform/coverage review.
 
 **Publication tooling follow-up:** The checksum filename fix and preferences startup/native-input fixes landed in [#142](https://github.com/IanSzymanski/squidware/pull/142), after [Windows/macOS/Linux certification](https://github.com/IanSzymanski/squidware/actions/runs/39668585257) passed. The earlier v0.6.0 checksum manifest repair retained the certified tag and package assets.
 
-Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria and required human/device evidence remain in force.
+Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria use automated/software-host evidence under the 2026-10-22 maintainer validation policy; human review and physical-hardware qualification are not gates.
 
 ## v0.5 — Reliable foundation
 
@@ -124,17 +124,17 @@ Props, custom fields, facing and costumes, instrument and guard assets, front en
 
 ## v1.0 — Validated rehearsal release
 
-Rehearsal print and performer delivery, offline viewing, recent-project recovery, signed distribution/update workflow, representative hardware acceptance and actual writer/platform validation.
+Rehearsal print and performer delivery, offline viewing, recent-project recovery, signed distribution/update workflow, measured software-host performance and automated platform validation.
 
-0/9 implementation issues completed at reconciliation.
+1/9 implementation issues completed at reconciliation.
 
-- [ ] [#3 · Audit A02 Establish maximum-size performance baselines and budgets](https://github.com/IanSzymanski/squidware/issues/3)
+- [x] [#3 · Audit A02 Establish maximum-size performance baselines and budgets](https://github.com/IanSzymanski/squidware/issues/3)
 - [ ] [#35 · Audit A35 Improve rehearsal print layouts, paths and performer highlighting](https://github.com/IanSzymanski/squidware/issues/35)
 - [ ] [#57 · Audit A57 Build a read-only performer viewer using the shared engine](https://github.com/IanSzymanski/squidware/issues/57)
 - [ ] [#58 · Audit A58 Export a self-contained offline performer viewer from desktop](https://github.com/IanSzymanski/squidware/issues/58)
 - [ ] [#59 · Audit A59 Generate a geometry-backed 'my next move' card](https://github.com/IanSzymanski/squidware/issues/59)
 - [ ] [#60 · Audit A60 Add sunlight mode, large rehearsal controls and offline PWA behavior](https://github.com/IanSzymanski/squidware/issues/60)
-- [ ] [#64 · Audit A64 Validate audit priorities with drill writers and supported-platform walkthroughs](https://github.com/IanSzymanski/squidware/issues/64)
+- [ ] [#64 · Audit A64 Review automated workflow evidence and supported-platform coverage](https://github.com/IanSzymanski/squidware/issues/64)
 - [ ] [#70 · Roadmap Add a recent-project list with missing-file and recovery reconciliation](https://github.com/IanSzymanski/squidware/issues/70)
 - [ ] [#72 · Roadmap Add signed release builds and a verified desktop update workflow](https://github.com/IanSzymanski/squidware/issues/72)
 
@@ -169,4 +169,4 @@ Tracker #1 spans all releases and belongs to the last milestone; it closes only 
 
 The release coordinator creates/synchronizes milestones and reconciles issue ranks. It considers only the first unpublished release, requires every planned issue to be closed as completed and no open milestone items, and requires successful CI on the exact source commit. It then builds and verifies Windows, macOS and Linux packages. Only successful builds can create a version commit/tag and publish a GitHub release with packages, checksums and issue-based notes. Existing published releases and tags are never overwritten. Pre-1.0 releases are marked prerelease. Release commits record the packaged version; normal development remains on main.
 
-Publication is rechecked against live issue state immediately before it becomes public. A failure keeps the release unpublished. Scheduled reconciliation retries interrupted work without treating cancelled/not-planned issues as fulfilled. Hardware and writer checks in #3/#64 and signing requirements in #72 must actually be fulfilled before v1.0; automation cannot substitute for them.
+Publication is rechecked against live issue state immediately before it becomes public. A failure keeps the release unpublished. Scheduled reconciliation retries interrupted work without treating cancelled/not-planned issues as fulfilled. Human review and physical-hardware qualification are not release gates under the [2026-10-22 validation policy](VALIDATION_POLICY.md). Automated acceptance, exact-source cross-platform CI, package verification and signing requirements in #72 remain in force; waived checks are not recorded as passed.

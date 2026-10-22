@@ -2,6 +2,8 @@
 
 ## Authority and scope
 
+The [2026-10-22 validation policy](VALIDATION_POLICY.md) removes human signoff and physical-hardware qualification gates. Agent/software review of applicable rendered output and interactions remains required; historical human/device requirements are superseded.
+
 This is the shared implementation reference for the **Squidware Audit, Oct 12, 2026 (Ian)** design direction, consolidated from the audit-derived issues linked below. It records the guidance preserved in those issues; it is not a replacement audit or a new visual-design proposal. Explicit maintainer decisions and each issue's acceptance criteria remain authoritative. Update this guide and the owning issue together when an accepted decision changes the direction.
 
 Apply the relevant sections whenever an issue changes a screen, control, interaction, message, preference or user-facing output. For internal-only work, record that the visual review is not applicable and explain why. A link is a review obligation, not proof of compliance. Existing completed issues retain their completion evidence; adding this reference does not reopen them or certify them against later work.
@@ -59,10 +61,10 @@ For each user-facing change, record in the issue or linked PR:
 - Before/after screenshots for visible changes, at 1366 × 768 and default scale; also inspect enlarged text/UI scale and affected narrow-window states. For nonvisual behavior, record the relevant interaction evidence instead.
 - Applicable pointer and keyboard paths, selection/focus, disabled/error/empty states, and supported themes. Test additional themes when their owning implementation is available.
 - Applicable preview/cancel/undo, save/reopen, preference persistence and unchanged physical-coordinate behavior.
-- Any deviation from the audit target, its measured reason and the maintainer decision resolving it. Unresolved deviations remain visible in the owning issue.
+- Any deviation from the audit target, its measured reason and documented resolution. Agent/software review is sufficient; human signoff is not required. Unresolved deviations remain visible in the owning issue.
 - A concise result, or a reasoned “not applicable” for internal-only work.
 
-Use the existing automated checks where relevant, plus inspection of the rendered result. A linked guide, source inspection, screenshots alone or passing partial tests do not establish all acceptance criteria. Actual writer/platform validation remains [#64](https://github.com/IanSzymanski/squidware/issues/64); representative school-hardware acceptance remains [#3](https://github.com/IanSzymanski/squidware/issues/3).
+Use the existing automated checks where relevant, plus inspection of the rendered result. A linked guide, source inspection, screenshots alone or passing partial tests do not establish all acceptance criteria. [#64](https://github.com/IanSzymanski/squidware/issues/64) reviews automated platform/coverage evidence; [#3](https://github.com/IanSzymanski/squidware/issues/3) records delivered local baselines. Human review and physical-hardware qualification are not acceptance gates.
 
 ## Maintenance
 

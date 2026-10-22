@@ -135,7 +135,7 @@
         70,
         72
       ],
-      "description": "Rehearsal print and performer delivery, offline viewing, recent-project recovery, signed distribution/update workflow, representative hardware acceptance and actual writer/platform validation."
+      "description": "Rehearsal print and performer delivery, offline viewing, recent-project recovery, signed distribution/update workflow, measured software-host performance and automated platform validation."
     },
     {
       "version": "1.1.0",
