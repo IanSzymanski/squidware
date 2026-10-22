@@ -88,11 +88,15 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
   // A caller may have just resized or zoomed. The old renderer viewport is not
   // a restoration target: derive CSS dimensions from the native content size.
   await settleNativeViewport(window, `viewport settled before ${name}`, { timeoutMs });
-  const [width, height] = window.getSize();
+  const [width, height] = window.getContentSize();
   const viewport = await window.webContents.executeJavaScript(viewportExpression);
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
-      window.setSize(width + 1 + attempt % 2, height); await pause(150);
+      if (attempt) {
+        window.setContentSize(width + 1, height); await pause(150);
+        window.setContentSize(width, height);
+        await waitViewport(window, viewport, `viewport settled for retry of ${name}`, { timeoutMs });
+      }
       try {
         const screenshot = await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
         if (screenshot.isEmpty()) throw new Error('Empty compositor surface');
@@ -103,7 +107,11 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
       }
     }
   } finally {
-    window.setSize(width, height);
+    // A successful capture normally leaves the client size untouched. Avoid
+    // reapplying identical bounds: macOS can constrain even a no-op resize by
+    // another two pixels on a window at the display's visible-frame limit.
+    const current = window.getContentSize();
+    if (current[0] !== width || current[1] !== height) window.setContentSize(width, height);
     await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }

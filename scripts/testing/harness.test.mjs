@@ -134,28 +134,31 @@ test('viewport settlement waits for delayed native resize and reports mismatched
   await assert.rejects(renderer.waitViewport(hung, { width: 999, height: 768 }, 'hung viewport', { timeoutMs: 30 }), /hung viewport; expected.*999.*observed null/);
 });
 
-test('capture settles pending native size and zoom before recording the restoration viewport', async t => {
+test('capture settles size/zoom and restores client pixels even when native frame insets change', async t => {
   const output = await temporary(t);
   const context = { innerWidth: 1366, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => {
     assert.ok(context.innerWidth < 1000, 'Layout frames must follow the observed native viewport');
     return setTimeout(callback, 1);
   } };
   let bounds = [1136, 807];
+  let insetHeight = 39;
   const timers = [];
   const apply = () => {
     context.innerWidth = Math.round((bounds[0] - 16) / 1.25);
-    context.innerHeight = Math.round((bounds[1] - 39) / 1.25);
+    context.innerHeight = Math.round((bounds[1] - insetHeight) / 1.25);
     context.devicePixelRatio = 1.25;
   };
   const window = {
-    getSize: () => [...bounds], getContentSize: () => [bounds[0] - 16, bounds[1] - 39],
+    getSize: () => [...bounds], getContentSize: () => [bounds[0] - 16, bounds[1] - insetHeight],
     setSize(width, height) { bounds = [width, height]; timers.push(setTimeout(apply, 30)); },
+    setContentSize(width, height) { bounds = [width + 16, height + insetHeight]; timers.push(setTimeout(apply, 30)); },
     webContents: {
       getZoomFactor: () => 1.25,
       executeJavaScript: source => Promise.resolve(vm.runInNewContext(source, context)),
       async capturePage() {
         assert.equal(context.devicePixelRatio, 1.25, 'Pending zoom must settle before capture');
         assert.ok(context.innerWidth < 1000, 'Pending resize must settle before capture');
+        insetHeight += 2; apply();
         return { isEmpty: () => false, toPNG: () => Buffer.from('fixture pixels') };
       },
     },
@@ -167,4 +170,32 @@ test('capture settles pending native size and zoom before recording the restorat
   assert.equal(context.innerHeight, 614);
   assert.equal(context.devicePixelRatio, 1.25);
   assert.equal(await readFile(path.join(output, 'settled.png'), 'utf8'), 'fixture pixels');
+});
+
+test('a compositor retry captures the requested viewport after a content-size nudge', async t => {
+  const output = await temporary(t);
+  const context = { innerWidth: 1366, innerHeight: 768, devicePixelRatio: 1, requestAnimationFrame: callback => setTimeout(callback, 1) };
+  let attempts = 0;
+  const sizes = [];
+  const window = {
+    getContentSize: () => [context.innerWidth, context.innerHeight],
+    setContentSize(width, height) {
+      assert.ok(width !== context.innerWidth || height !== context.innerHeight, 'Do not reapply unchanged native bounds after capture');
+      sizes.push([width, height]); context.innerWidth = width; context.innerHeight = height;
+    },
+    webContents: {
+      getZoomFactor: () => 1,
+      executeJavaScript: source => Promise.resolve(vm.runInNewContext(source, context)),
+      async capturePage() {
+        assert.equal(context.innerWidth, 1366); assert.equal(context.innerHeight, 768);
+        const empty = ++attempts === 1;
+        return { isEmpty: () => empty, toPNG: () => Buffer.from('retry pixels') };
+      },
+    },
+  };
+  await renderer.capturePage(window, output, 'retry.png', { timeoutMs: 1000 });
+  assert.equal(attempts, 2);
+  assert.ok(sizes.some(([width]) => width === 1367));
+  assert.equal(context.innerWidth, 1366);
+  assert.equal(await readFile(path.join(output, 'retry.png'), 'utf8'), 'retry pixels');
 });

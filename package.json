@@ -41,6 +41,7 @@
     "format:validate": "node scripts/validate-squid.mjs",
     "test:print": "node scripts/print-regression-qa.mjs",
     "test:audio": "node scripts/audio-clock-qa.mjs",
+    "test:timeline": "node scripts/timeline-qa.mjs",
     "test:playback": "node scripts/playback-qa.mjs"
   },
   "dependencies": {
