@@ -7,8 +7,9 @@ import type { TransformSession } from '../transforms';
 import type { SpacingSession } from '../spacing';
 import type { CoordinateEntrySession } from '../drillEntry';
 import type { SelectionReview } from '../selectionTools';
+import type { SetCreationKind } from './projectEdits';
 
-export type Dialog = 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
@@ -24,6 +25,7 @@ export interface EditorState {
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
     showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog;
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
+    setCreationKind: SetCreationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
     castPanelOpen: boolean; castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
     printMode: 'charts' | 'coordinates'; printing: boolean;
@@ -48,7 +50,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, muted: false, clockStatus: '', seekVersion: 0 },
     ui: { workspace: 'design', focusMode: false, view: '2d', tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
       showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
-      pendingDraft: false, menu: false, paletteOpen: false, toast: '', formation: 'arc', formationWidth: 45,
+      pendingDraft: false, menu: false, paletteOpen: false, toast: '', setCreationKind: 'new', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {} },

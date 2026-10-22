@@ -1,0 +1,85 @@
+{
+  "checks": [
+    "all four native shortcuts open review; invalid timing and Cancel preserve the show; Apply, Undo and Redo preserve the documented properties and identities",
+    "pointer action selection and real native save/reopen retain committed geometry, notes, timing and IDs",
+    "inserting before opening creates a zero-count picture and a separate hold into the former opening",
+    "Inspector duplicate, personal count defaults, supported themes and a narrow enlarged dialog retain keyboard access"
+  ],
+  "viewports": [
+    {
+      "name": "set-creation-after.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "set-creation-new.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 559.578125
+    },
+    {
+      "name": "set-creation-duplicate.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 534.96875
+    },
+    {
+      "name": "set-creation-insert-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 534.96875
+    },
+    {
+      "name": "set-creation-hold.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 534.96875
+    },
+    {
+      "name": "set-creation-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 559.578125
+    },
+    {
+      "name": "set-creation-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 559.578125
+    },
+    {
+      "name": "set-creation-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 559.578125
+    },
+    {
+      "name": "set-creation-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "dialogHeight": 456
+    }
+  ],
+  "source": {
+    "revision": "7c014ffc0c809a3f83b83384a2eaeae57eccb18c",
+    "tree": "c9a21c4b672645972315b540755482a81ea0d087",
+    "dirty": true,
+    "contentHash": "4a87ac466860c681ca625770b33fde1898e0cf895d38938d8103edccdc6840c4",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "localLaunch": {
+    "sandboxDisabled": true,
+    "sharedMemory": "temporary storage",
+    "registeredLauncher": true
+  }
+}

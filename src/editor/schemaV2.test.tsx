@@ -46,12 +46,12 @@ describe('canonical v2 command and recovery integration', () => {
   it('inserts a picture and rewires its successor while preserving existing moves', () => {
     const initial = withPath();
     const store = createEditorStore(initial);
-    store.dispatch('set.add', { index: 0 });
+    store.dispatch('set.create', { index: 0, kind: 'hold' });
     const next = store.getState().project.present;
     expect(next.sets).toHaveLength(4);
     expect(next.moves).toHaveLength(3);
     expect(next.sets[1].positions).toEqual(initial.sets[0].positions);
-    expect(next.moves[0]).toMatchObject({ fromSetId: 'opening', toSetId: next.sets[1].id, counts: 32, tempo: 91.25, transition: 'ease' });
+    expect(next.moves[0]).toMatchObject({ fromSetId: 'opening', toSetId: next.sets[1].id, counts: 32, tempo: 91.25, transition: 'linear' });
     expect(next.moves[1]).toEqual({ ...initial.moves[0], fromSetId: next.sets[1].id });
     expect(next.moves[2]).toEqual(initial.moves[1]);
     expect(new Set(next.moves.map(move => move.id)).size).toBe(3);

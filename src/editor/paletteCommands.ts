@@ -32,7 +32,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'history.redo') return 'There are no undone edits to restore.';
   if (id === 'set.previous') return 'This is the first set.';
   if (id === 'set.next') return 'This is the last set.';
-  if (id === 'set.duplicate') return 'The production has reached its set limit.';
+  if (['set.new', 'set.duplicate', 'set.insert-before', 'set.hold'].includes(id)) return 'The production has reached its set limit.';
   if (id === 'set.reorder') return 'The current set is already at this end of the set list.';
   if (id === 'set.add') return 'The production has reached its set limit.';
   if (id === 'performers.add-dialog') return 'The production has reached its performer limit.';
@@ -56,7 +56,6 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   }
   for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && definition.id !== 'palette.open' && definition.id !== 'section.add' && definition.id !== 'selection.close') add(definition.id, undefined);
   add('coordinates.preview', {});
-  add('set.add', { index: state.selection.activeIndex }, 'Add set after current');
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
   add('transform.preview', {});
   add('view.select', { view: '2d' }, 'Open 2D field', 'view-2d');

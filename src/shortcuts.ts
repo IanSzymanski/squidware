@@ -7,7 +7,7 @@ export const defaultShortcuts = {
   'selection.all': 'Primary+A', 'layout.focus': 'Primary+Shift+F', 'help.open': 'F1',
   'preferences.open': 'Primary+,',
   'tool.box': 'V', 'tool.pan': 'H', 'tool.lasso': 'L',
-  'performers.add-dialog': 'A', 'set.duplicate': 'D', 'transform.mirror': 'M',
+  'performers.add-dialog': 'A', 'set.new': 'N', 'set.duplicate': 'D', 'set.insert-before': 'Shift+N', 'set.hold': 'Shift+D', 'transform.mirror': 'M',
   'view.toggle': 'T', 'display.paths': 'P', 'display.labels': 'J',
   'field.zoom-in': '=', 'field.zoom-out': '-', 'field.fit': '0',
   'set.previous': '[', 'set.next': ']',
@@ -69,6 +69,11 @@ export function validateShortcutBindings(input: unknown): ShortcutBindings {
     const error = bindingError(id, value as string | null);
     if (error) throw new Error(error);
     if (value !== defaultShortcuts[id]) result[id] = value as string | null;
+  }
+  // These defaults were added after shortcut customization shipped. Keep an
+  // older user's explicit binding rather than rejecting their preferences.
+  for (const id of ['set.new', 'set.insert-before', 'set.hold'] as const) {
+    if (!Object.hasOwn(input, id) && Object.entries(result).some(([other, value]) => other !== id && value === defaultShortcuts[id])) result[id] = null;
   }
   for (const id of shortcutIds) if (shortcutConflict(id, bindingFor(id, result), result)) throw new Error(`Shortcut conflict: ${id}. Clear the other binding first.`);
   return result;

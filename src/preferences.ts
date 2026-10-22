@@ -1,4 +1,5 @@
 import type { CoordinatePrecision } from './coordinates';
+import { PROJECT_LIMITS } from './projectValidation';
 import { DEFAULT_SNAPPING, validateSnapSettings, type SnapSettings } from './snapping';
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout } from './workspaceLayout';
 import { validateShortcutBindings, type ShortcutBindings } from './shortcuts';
@@ -21,7 +22,7 @@ export interface Preferences {
   nudgeUnit: 'yards' | 'steps'; rotationStep: number; scaleStep: number;
   coordinatePrecision: CoordinatePrecision;
   paperSize: 'letter' | 'a4'; printMode: 'charts' | 'coordinates';
-  minimumSpacing: number; maximumStride: number;
+  minimumSpacing: number; maximumStride: number; newSetCounts: number;
   snapDefaults: SnapSettings;
 }
 export interface PreferencesResult { preferences: Preferences; warning?: string; readOnly?: boolean }
@@ -35,10 +36,10 @@ export function defaultPreferences(): Preferences {
     selectionLabelsOnly: false, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
-    nudgeStep: .625, fastNudgeStep: 2.5, nudgeUnit: 'yards', rotationStep: 15, scaleStep: 10, coordinateDecimals: 2, coordinatePrecision: 'quarter', paperSize: 'letter', printMode: 'charts', minimumSpacing: 1, maximumStride: 1.25 };
+    nudgeStep: .625, fastNudgeStep: 2.5, nudgeUnit: 'yards', rotationStep: 15, scaleStep: 10, coordinateDecimals: 2, coordinatePrecision: 'quarter', paperSize: 'letter', printMode: 'charts', minimumSpacing: 1, maximumStride: 1.25, newSetCounts: 32 };
 }
 const choices = { theme: ['dark', 'light', 'high-contrast'], uiScale: [1, 1.1, 1.25, 1.5], nudgeUnit: ['yards', 'steps'], fieldOrientation: ['audience-bottom', 'audience-top'], fieldColorMode: ['section', 'selection', 'custom'], panelLayout: ['comfortable', 'compact'], view: ['2d', '3d'], formation: ['line', 'arc', 'circle', 'block', 'curve'], paperSize: ['letter', 'a4'], printMode: ['charts', 'coordinates'], coordinateDecimals: [0, 1, 2], coordinatePrecision: ['whole', 'half', 'quarter', 'decimal'] };
-const bounds = { rotationStep: [.1, 180], scaleStep: [.1, 99], fieldDotRadiusPx: [2, 8], fieldLabelSizePx: [11, 24], zoom: [.6, 3], formationWidth: [1, 95], formationHeight: [1, 48], formationRotation: [-180, 180], formationColumns: [1, 500], nudgeStep: [.125, 5], fastNudgeStep: [.125, 10], minimumSpacing: [.1, 5], maximumStride: [.1, 5] };
+const bounds = { newSetCounts: [PROJECT_LIMITS.counts.min, PROJECT_LIMITS.counts.max], rotationStep: [.1, 180], scaleStep: [.1, 99], fieldDotRadiusPx: [2, 8], fieldLabelSizePx: [11, 24], zoom: [.6, 3], formationWidth: [1, 95], formationHeight: [1, 48], formationRotation: [-180, 180], formationColumns: [1, 500], nudgeStep: [.125, 5], fastNudgeStep: [.125, 10], minimumSpacing: [.1, 5], maximumStride: [.1, 5] };
 /** v0/unversioned partial preferences migrate by adding defaults. Unknown fields never enter the canonical file. */
 export function validatePreferences(input: unknown): Preferences {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Preferences must be an object.');
@@ -61,7 +62,7 @@ export function validatePreferences(input: unknown): Preferences {
     }
     const allowed = choices[key as keyof typeof choices] as readonly unknown[] | undefined;
     const range = bounds[key as keyof typeof bounds];
-    if (allowed ? !allowed.includes(value) : range ? typeof value !== 'number' || !Number.isFinite(value) || value < range[0] || value > range[1] || key === 'formationColumns' && !Number.isInteger(value) : typeof value !== 'boolean') throw new Error(`Invalid preference: ${key}.`);
+    if (allowed ? !allowed.includes(value) : range ? typeof value !== 'number' || !Number.isFinite(value) || value < range[0] || value > range[1] || ['formationColumns', 'newSetCounts'].includes(key) && !Number.isInteger(value) : typeof value !== 'boolean') throw new Error(`Invalid preference: ${key}.`);
     result[key] = value;
   }
   return result as unknown as Preferences;

@@ -1,3 +1,4 @@
+import { PROJECT_LIMITS } from '../domain';
 import { useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Modal } from '../components/Modal';
@@ -35,6 +36,7 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
       <SnapSettingsFields value={p.snapDefaults} onChange={snapDefaults => update({ snapDefaults })} />
       <p className="microcopy">These defaults apply when creating a production. Use Grid and snapping in the field toolbar to change the current production.</p>
       <NumberField label="Field zoom" value={p.zoom} min={.6} max={3} step={.1} onChange={zoom => update({ zoom })} />
+      <h3 className="modal-subtitle">Set creation</h3><NumberField label="New move counts" value={p.newSetCounts} min={PROJECT_LIMITS.counts.min} max={PROJECT_LIMITS.counts.max} integer onChange={newSetCounts => update({ newSetCounts })} /><p className="microcopy">New sets, holds, insertions and copies of the opening set start with these counts. Other duplicates copy their incoming timing. Review timing in Add set before applying.</p>
       <h3 className="modal-subtitle">Editing increments</h3><label className="form-label">Nudge units<select value={p.nudgeUnit} onChange={e => update({ nudgeUnit: e.target.value as typeof p.nudgeUnit })}><option value="yards">Yards</option><option value="steps">Production step size</option></select></label>
       <div className="form-row"><NumberField label={`Nudge · ${p.nudgeUnit}`} value={p.nudgeStep} min={.125} max={5} step={.125} onChange={nudgeStep => update({ nudgeStep })} /><NumberField label={`Fast nudge · ${p.nudgeUnit}`} value={p.fastNudgeStep} min={.125} max={10} step={.125} onChange={fastNudgeStep => update({ fastNudgeStep })} /></div>
       <p className="microcopy">Steps use the current production’s 8/6/12-to-5 step size, independently of grid subdivision. Alt+arrows and move buttons share these requests; Shift+Alt or Shift-click uses the fast amount. Snap targets and field edges can change the accepted distance.</p>

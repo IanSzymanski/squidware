@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { defaultPreferences, validatePreferences } from './preferences';
 import { analyzeTransition, coordinateDescription, createDemoProject, parseProject, serializeProject } from './domain';
 describe('personal preferences codec', () => {
+  it('migrates and bounds the integer default for new move counts', () => {
+    expect(validatePreferences({ version: 1 }).newSetCounts).toBe(32);
+    for (const counts of [1, 1024]) expect(validatePreferences({ newSetCounts: counts }).newSetCounts).toBe(counts);
+    for (const counts of [0, 1025, 1.5, '32', null, Infinity]) expect(() => validatePreferences({ newSetCounts: counts })).toThrow();
+  });
   it('migrates appearance defaults and rejects unsafe or unsupported scales', () => {
     expect(validatePreferences({ version: 1 })).toMatchObject({ theme: 'dark', uiScale: 1 });
     for (const theme of ['dark', 'light', 'high-contrast']) for (const uiScale of [1, 1.1, 1.25, 1.5]) {
