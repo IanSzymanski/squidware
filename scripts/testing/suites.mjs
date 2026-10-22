@@ -18,6 +18,7 @@ export const desktopSuites = [
   { name: 'thumbnails', title: 'Thumbnail invalidation and shared selection', script: 'thumbnail-qa.mjs', timeoutMs: 210000 },
   { name: 'playback', title: 'Clock, subscriptions and drag preview isolation', script: 'playback-qa.mjs', timeoutMs: 210000 },
   { name: 'audio-clock', title: 'Media clock, offset, loops and silent fallback', script: 'audio-clock-qa.mjs', timeoutMs: 210000 },
+  { name: 'timeline', title: 'Count viewport, 128-set navigation and stepping', script: 'timeline-qa.mjs', timeoutMs: 210000 },
   { name: 'analysis', title: 'Background checks, incremental edits and worker recovery', script: 'analysis-qa.mjs', timeoutMs: 210000 },
   { name: 'recovery', title: 'Durable production recovery after restart', script: 'recovery-qa.mjs', timeoutMs: 330000 },
   { name: 'print', title: 'Native PDF output and pagination', script: 'print-regression-qa.mjs', timeoutMs: 270000 },

@@ -1,0 +1,26 @@
+.timeline-navigation { display: flex; align-items: center; gap: 4px; padding: 0 12px 4px; min-width: 0; flex-wrap: wrap; }
+.timeline-navigation .icon-button { width: 26px; min-width: 26px; height: 24px; padding: 3px; }
+.timeline-navigation select { min-width: 80px; max-width: 180px; flex: 1; font-size: 12px; height: 26px; padding: 2px 5px; }
+.timeline-navigation input { width: 60px; min-width: 40px; flex: 1; height: 20px; padding: 0; margin: 0; accent-color: var(--accent); }
+.timeline-window { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.timeline-view-toggle { display: flex; align-items: center; gap: 3px; padding: 1px; background: var(--surface); color: var(--text); font-size: 11px; border-radius: 3px; }
+.timeline-viewport { flex: 1; min-width: 0; padding: 0 14px; overflow: hidden; }
+.timeline-viewport .tracks { width: 100%; }
+.timeline-viewport .count-ruler { position: relative; display: block; }
+.timeline-viewport .count-ruler > span { position: absolute; transform: translateX(-50%); font-size: 11px; }
+.timeline-viewport .set-track { position: relative; display: block; }
+.timeline .timeline-viewport .set-track > button { position: absolute; height: 29px; border-radius: 2px; justify-content: center; gap: 5px; padding: 3px; }
+.timeline-set-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.timeline .timeline-viewport .set-track > .timeline-opening { left: -14px; top: -3px; width: 28px; height: 20px; z-index: 4; border-width: 2px; }
+.timeline-viewport .playhead { pointer-events: none; z-index: 5; }
+.timeline-viewport .timeline-scrubber { top: 0; height: 22px; z-index: 6; cursor: crosshair; }
+.timeline-viewport .audio-track { display: block; overflow: hidden; }
+.timeline-viewport .audio-track > i { position: absolute; width: 2px; bottom: 0; }
+.timeline-viewport .audio-clock-status { z-index: 1; }
+.timeline .play-controls { gap: 2px; }
+.timeline .play-controls .icon-button { min-width: 24px; width: 24px; }
+.timeline .count-display { flex: 1 0 auto; gap: 8px; }
+.timeline .count-display .move-count { display: flex; flex-direction: column; align-items: flex-start; font-size: 12px; }
+.timeline .count-display .move-count small { font-size: 11px; }
+.timeline .count-display .show-count { display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.timeline .count-display .show-count strong { font-size: 16px; }
