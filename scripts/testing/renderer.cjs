@@ -107,9 +107,11 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
       }
     }
   } finally {
-    // Frame insets can change while macOS finishes installing native chrome.
-    // Restoring outer bounds would then lose client pixels on every capture.
-    window.setContentSize(width, height);
+    // A successful capture normally leaves the client size untouched. Avoid
+    // reapplying identical bounds: macOS can constrain even a no-op resize by
+    // another two pixels on a window at the display's visible-frame limit.
+    const current = window.getContentSize();
+    if (current[0] !== width || current[1] !== height) window.setContentSize(width, height);
     await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }

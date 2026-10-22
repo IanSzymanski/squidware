@@ -179,7 +179,10 @@ test('a compositor retry captures the requested viewport after a content-size nu
   const sizes = [];
   const window = {
     getContentSize: () => [context.innerWidth, context.innerHeight],
-    setContentSize(width, height) { sizes.push([width, height]); context.innerWidth = width; context.innerHeight = height; },
+    setContentSize(width, height) {
+      assert.ok(width !== context.innerWidth || height !== context.innerHeight, 'Do not reapply unchanged native bounds after capture');
+      sizes.push([width, height]); context.innerWidth = width; context.innerHeight = height;
+    },
     webContents: {
       getZoomFactor: () => 1,
       executeJavaScript: source => Promise.resolve(vm.runInNewContext(source, context)),
