@@ -46,7 +46,7 @@ export function TimelineTracks({ controller }: { controller: EditorController })
       <Button title="Fit show timeline" description="Show the opening set and every arrival." onClick={() => { setZoom(1); setStart(0); }}><Maximize2 size={14} /></Button>
       <Button title="Follow playhead" description="Keep the playhead visible during playback, stepping and set navigation. Panning turns follow off." active={follow} onClick={() => setFollow(!follow)}><LocateFixed size={14} /></Button>
       <Tooltip name="Go to timeline set" description="Choose any set by number, name and show arrival count. Stop playback and bring its arrival into view."><select aria-label="Go to timeline set" value={index} onChange={e => { const i = Number(e.target.value); selectSet(i); setStart(timelineWindow(duration, width, view.zoom, arrivals[i].count - span * .15).start); }}>
-        {arrivals.map(a => <option key={a.set.id} value={a.index}>{String(a.index + 1).padStart(2, '0')} · {a.set.name} · {fmt(a.count)}</option>)}
+        {arrivals.map(a => <option key={a.set.id} value={a.index}>Set{String(a.index + 1).padStart(3, '0')} · {a.set.name} · {fmt(a.count)}</option>)}
       </select></Tooltip>
       <Tooltip name="Pan timeline" description="Move the visible count window without moving the playhead. Use arrow keys while focused. Panning turns follow off." disabledReason="Zoom in to pan the timeline."><input aria-label="Pan timeline" type="range" min={0} max={Math.max(0, duration - span)} step="any" value={view.start} disabled={view.zoom <= 1} onChange={e => { setFollow(false); setStart(Number(e.target.value)); }} /></Tooltip>
       <span className="timeline-window">{fmt(view.start)}–{fmt(Math.min(duration, view.start + span))}</span>

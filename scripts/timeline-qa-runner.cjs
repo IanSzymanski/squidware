@@ -16,6 +16,10 @@ const editor = 'window.__timelineQA.editor', state = editor + '.getState()';
 const wait = (expression, label) => waitFor(() => evaluate(expression), label, { timeoutMs: 20000, failure: () => failure });
 const frames = () => evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
+async function selectTimelineSet(index) {
+  await evaluate('document.activeElement?.blur()');
+  await selectNativeOption(window, '[aria-label="Go to timeline set"]', String(index));
+}
 function instrument() {
   const qa = window.__timelineQA = { editor: null, errors: [] };
   window.addEventListener('error', e => qa.errors.push(e.message)); window.addEventListener('unhandledrejection', e => qa.errors.push(String(e.reason)));
@@ -52,15 +56,14 @@ app.whenReady().then(async () => {
     await click('Zoom timeline in'); await click('Zoom timeline in');
     assert.ok(await evaluate("Number(document.querySelector('[aria-label=\"Pan timeline\"]').max)>0"));
     for (let i = 0; i < 128; i++) {
-      await evaluate('document.querySelector(\'[aria-label="Go to timeline set"]\').focus()');
-      if (i) await key(window, 'Down');
+      await selectTimelineSet(i);
       await frames();
       assert.equal(await evaluate(state + '.playback.count'), setStartCount(project, i));
       assert.equal(await evaluate(state + '.selection.activeIndex'), i);
       assert.equal(await evaluate("!!document.querySelector('.playhead')"), true);
     }
     pass('native picker intentionally visits all 128 set arrivals at useful zoom, including opening and final sets');
-    await selectNativeOption(window, '[aria-label="Go to timeline set"]', '2');
+    await selectTimelineSet(2);
     for (let i = 0; i < 11; i++) await click('Zoom timeline in');
     await capture('timeline-zoom-dark.png');
     const point = await evaluate("(()=>{const r=document.querySelector('.timeline-scrubber').getBoundingClientRect();return {x:r.x+r.width*.371,y:r.y+r.height/2};})()");
@@ -69,7 +72,7 @@ app.whenReady().then(async () => {
     const scrubbed = await evaluate(state + '.playback.count');
     assert.ok(scrubbed>9 && scrubbed<41 && Math.abs(scrubbed-Math.round(scrubbed))>.001);
     assert.equal(await evaluate("document.querySelector('.show-count strong').textContent"),String(Math.round(scrubbed*1000)/1000));
-    await evaluate('document.querySelector(\'[aria-label="Go to timeline set"]\').focus()'); await key(window, 'Up'); await frames();
+    await selectTimelineSet(2); await frames();
     const pan = '[aria-label="Pan timeline"]';
     await evaluate(`document.querySelector(${JSON.stringify(pan)}).focus()`); await key(window, 'End'); await frames();
     assert.equal(await evaluate("document.querySelector('[aria-label=\"Follow playhead\"]').getAttribute('aria-pressed')"), 'false');
