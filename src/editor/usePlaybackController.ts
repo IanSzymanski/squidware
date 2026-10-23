@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { countToSeconds, sampleTimeline, secondsToCount, totalCounts } from '../domain';
+import { rehearsalBounds } from '../rehearsal';
 import { clockStatusText, RehearsalClock } from './rehearsalClock';
 import { useEditorSelector, useEditorStore } from './react';
 
@@ -8,18 +9,21 @@ import { useEditorSelector, useEditorStore } from './react';
 export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | null>, audioUrl: string) {
   const store = useEditorStore();
   const project = useEditorSelector(state => state.project.present);
+  const rehearsalId = useEditorSelector(state => state.playback.rehearsalId);
   const audioContext = useRef<AudioContext | null>(null);
   useEffect(() => {
-    if (store.getState().project.present !== project) return;
+    if ((store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) return;
     const media = audioUrl ? audioRef.current ?? undefined : undefined;
     const duration = totalCounts(project), totalSeconds = countToSeconds(project, duration);
+    const bounds = rehearsalBounds(project, rehearsalId);
     const clock = new RehearsalClock({ totalSeconds,
+      rangeStart: countToSeconds(project, bounds.start), rangeEnd: countToSeconds(project, bounds.end),
       offset: project.audioOffsetSeconds, media, now: () => performance.now() / 1000 });
     let raf = 0, writing = false, lastBeat = -1;
     function publish(updatePosition = store.getState().playback.playing) {
       // Commands publish new timing before React replaces this effect. Never
       // map a newly edited/undone count through the previous project's tempos.
-      if (store.getState().project.present !== project) return;
+      if ((store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) return;
       const sample = clock.sample();
       const rawCount = sample.seconds >= totalSeconds ? duration : secondsToCount(project, sample.seconds);
       const count = Math.abs(rawCount - Math.round(rawCount)) < 1e-9 ? Math.round(rawCount) : rawCount;
@@ -48,7 +52,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     }
     function frame() { raf = 0; publish(); schedule(); }
     function schedule() {
-      if (store.getState().project.present !== project) { cancelAnimationFrame(raf); raf = 0; return; }
+      if ((store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) { cancelAnimationFrame(raf); raf = 0; return; }
       if (store.getState().playback.playing && !raf) raf = requestAnimationFrame(frame);
       else if (!store.getState().playback.playing && raf) { cancelAnimationFrame(raf); raf = 0; }
     }
@@ -57,7 +61,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     previous = store.getState().playback;
     const unsubscribe = store.subscribe(() => {
       const next = store.getState().playback, before = previous; previous = next;
-      if (writing || store.getState().project.present !== project) return;
+      if (writing || (store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) return;
       const seek = next.seekVersion !== before.seekVersion || next.count !== before.count;
       if (seek || next.playing !== before.playing || next.speed !== before.speed || next.loop !== before.loop) {
         clock.update(next, seek ? countToSeconds(project, next.count) : undefined);
@@ -73,6 +77,6 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       unsubscribe(); cancelAnimationFrame(raf);
       events.forEach(event => media?.removeEventListener(event, onMedia)); clock.dispose();
     };
-  }, [store, project, audioUrl, audioRef]);
+  }, [store, project, audioUrl, audioRef, rehearsalId]);
   useEffect(() => () => { void audioContext.current?.close(); }, []);
 }

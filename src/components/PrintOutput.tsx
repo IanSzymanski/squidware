@@ -1,6 +1,7 @@
 import type { Project } from '../types';
 import type { CoordinateOptions } from '../coordinates';
 import { COORDINATE_CONVENTIONS, coordinatePrecisionLabel, performerMoveOutput, setTiming, setStartCount } from '../domain';
+import { resolvePassage } from '../rehearsal';
 import { FieldDrawing } from './Field2D';
 
 export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat }: { project: Project; mode: 'charts' | 'coordinates'; paper?: 'letter' | 'a4'; coordinateFormat?: CoordinateOptions }) {
@@ -23,5 +24,11 @@ export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat 
       </table>
       <footer>Step size is steps per 5 yd: larger numbers mean smaller steps. Eased moves show average and peak sizes. Counts describe the incoming move. • Squidware</footer>
     </section>)}
+    {project.rehearsal?.map(passage => { const r = resolvePassage(project, passage); return <section className="print-page rehearsal-print-page" key={`rehearsal-${passage.id}`}>
+      <header><div><span>SQUIDWARE / REHEARSAL PASSAGE</span><h1>{passage.name}</h1><p>{project.title}</p></div></header>
+      <p>{r.error ? `Needs repair: ${r.error}` : `${passage.end ? 'Range' : 'Bookmark'} · show count ${r.start.count}${r.end ? `–${r.end.count}` : ''}`}</p>
+      <p>Start: {r.start.label}{r.end ? ` / End: ${r.end.label}` : ''}</p><p>Focus: {r.focus.label} · {r.focus.ids.length} performer{r.focus.ids.length === 1 ? '' : 's'}</p>
+      <p className="print-notes">{passage.notes}</p><footer>Saved rehearsal references. Field charts and coordinate sheets retain full-show geometry. • Squidware</footer>
+    </section>; })}
   </div>;
 }

@@ -5,6 +5,7 @@ export const PROJECT_LIMITS = {
   sets: 128,
   sections: 64,
   selectionGroups: 64,
+  rehearsalPassages: 128,
   projectBytes: 10 * 1024 * 1024,
   counts: { min: 1, max: 1024 },
   tempo: { min: 20, max: 400 },

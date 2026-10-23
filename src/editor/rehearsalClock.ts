@@ -42,7 +42,7 @@ export class RehearsalClock {
   private parkedAt: number | null = null;
 
   constructor(private readonly options: {
-    totalSeconds: number; offset: number; media?: RehearsalMedia; now: () => number;
+    totalSeconds: number; rangeStart?: number; rangeEnd?: number; offset: number; media?: RehearsalMedia; now: () => number;
   }) {
     this.anchorTime = this.progressTime = options.now();
   }
@@ -65,6 +65,9 @@ export class RehearsalClock {
       if (this.options.media?.error) {
         try { this.options.media.load(); } catch { this.fail(); }
       }
+    }
+    if (starting && (this.seconds < this.start || this.seconds >= this.end)) {
+      this.seconds = this.start; this.needsSeek = true; this.parkedAt = null; this.cancelPlay();
     }
     if (starting) this.progressTime = this.options.now();
     this.playing = transport.playing && this.options.totalSeconds > 0;
@@ -156,11 +159,13 @@ export class RehearsalClock {
       });
     } catch { this.fail(); }
   }
+  private get start() { return this.options.rangeStart ?? 0; }
+  private get end() { return this.options.rangeEnd ?? this.options.totalSeconds; }
   private boundary() {
-    const total = this.options.totalSeconds;
-    if (this.seconds < total || total <= 0) return;
+    const total = this.end, length = total - this.start;
+    if (this.seconds < total || length <= 0) return;
     if (this.playing && this.loop) {
-      this.seconds %= total; this.anchor(); this.cancelPlay(); this.needsSeek = true; this.parkedAt = null;
+      this.seconds = this.start + (this.seconds - this.start) % length; this.anchor(); this.cancelPlay(); this.needsSeek = true; this.parkedAt = null;
     } else {
       this.seconds = total; this.playing = false; this.cancelPlay();
     }

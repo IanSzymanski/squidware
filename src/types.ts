@@ -4,6 +4,12 @@ export interface Point { x: number; y: number }
 export interface Section { id: string; name: string; color: string }
 export interface Performer { id: string; label: string; name: string; sectionId: string }
 export interface SelectionGroup { id: string; name: string; performerIds: string[] }
+export type RehearsalAnchor = { kind: 'set'; setId: string } | { kind: 'move'; moveId: string; fromSetId: string; toSetId: string; count: number };
+export type RehearsalFocus = { kind: 'all' } | { kind: 'section'; sectionId: string } | { kind: 'performers'; performerIds: string[] };
+export interface RehearsalPassage {
+  id: string; name: string; notes: string; start: RehearsalAnchor;
+  end?: RehearsalAnchor; focus: RehearsalFocus;
+}
 export interface LegacyDrillSet {
   id: string;
   name: string;
@@ -36,6 +42,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   schemaVersion: 2;
   snapping?: SnapSettings;
   selectionGroups?: SelectionGroup[];
+  rehearsal?: RehearsalPassage[];
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;

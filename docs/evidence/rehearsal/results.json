@@ -1,0 +1,96 @@
+{
+  "checks": [
+    "native form entry, Tab navigation, fractional cross-move range and section focus preserve full production geometry",
+    "real playback controller stops exactly at range end and loops to range start without editing geometry",
+    "real media-backed range loops and stops on the shared clock with audio offset preserved",
+    "native save/reopen retains annotations and ranges; deletion is one reversible metadata edit",
+    "native PDF export includes saved rehearsal references",
+    "deleted targets are flagged, activation is blocked, themes and enlarged scrolling keep actions reachable, Escape cancels"
+  ],
+  "viewports": [
+    {
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "rehearsal-default-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "rehearsal-range-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "rehearsal-focus-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 450,
+      "timelineHeight": 152
+    },
+    {
+      "name": "rehearsal-missing-target.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "rehearsal-range-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "rehearsal-range-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "rehearsal-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "timelineHeight": 143.33334350585938
+    }
+  ],
+  "scope": "targeted",
+  "source": {
+    "revision": "3d2e04c30f7ae8d5115165c068f926f967c371c7",
+    "tree": "a638fd5168a95127c030eb728105796d0a7a88ec",
+    "dirty": true,
+    "contentHash": "b0b144c00cb2b1dfed16e93b55631c58ef7a0687a16c1b5f1ff3d5873fe077c4",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "local_flags": [
+    "--no-sandbox",
+    "--disable-dev-shm-usage"
+  ],
+  "display": "Xorg dummy display",
+  "native_pdf_text_verified": [
+    "Arrival practice",
+    "Start: Move to set 2",
+    "Focus: Brass \u00b7 1 performer",
+    "Keep the interval."
+  ]
+}

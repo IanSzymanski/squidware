@@ -17,6 +17,17 @@ test('optional selection groups preserve IDs and reject malformed structure or s
   const stale = { ...project, selectionGroups: [{ id: 'g', name: 'G', performerIds: ['missing'] }] };
   assert.ok(check(stale), 'roster references are a semantic constraint'); assert.throws(() => tools.parseProject(JSON.stringify(stale)), /existing performer/);
 });
+test('optional rehearsal references preserve repairable targets and reject malformed structures in both validators', () => {
+  const passage = { id: 'rehearsal', name: 'Arrival', notes: 'Keep interval.', start: { kind: 'move', moveId: 'move-a', fromSetId: 'opening', toSetId: 'arrival', count: 2.5 }, end: { kind: 'set', setId: 'finish' }, focus: { kind: 'performers', performerIds: ['a'] } };
+  const project = { ...smallExample(), rehearsal: [passage] };
+  assert.ok(check(project));
+  assert.deepEqual(tools.parseProject(tools.serializeProject(project)).rehearsal, project.rehearsal);
+  for (const rehearsal of [null, Array(tools.PROJECT_LIMITS.rehearsalPassages + 1).fill(passage), [{ ...passage, name: ' ' }], [{ ...passage, focus: { kind: 'performers', performerIds: [] } }], [{ ...passage, focus: { kind: 'performers', performerIds: ['a', 'a'] } }], [{ ...passage, start: { ...passage.start, count: -1 } }], [{ ...passage, start: { kind: 'other' } }]]) {
+    const invalid = { ...project, rehearsal }; assert.equal(check(invalid), false); assert.throws(() => tools.parseProject(JSON.stringify(invalid)), /rehearsal/);
+  }
+  const repairable = { ...project, rehearsal: [{ ...passage, start: { kind: 'set', setId: 'deleted' }, focus: { kind: 'section', sectionId: 'deleted' } }] };
+  assert.ok(check(repairable)); assert.deepEqual(tools.parseProject(tools.serializeProject(repairable)).rehearsal, repairable.rehearsal);
+});
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
   for(const name of ['basic-v1','basic-v2','maximum-v2']) {

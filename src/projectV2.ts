@@ -1,5 +1,6 @@
 import { PROJECT_LIMITS, validateLegacyProject } from './projectValidation';
 import { validateSnapSettings } from './snapping';
+import { validateRehearsal } from './rehearsal';
 import type { GeometryValidation } from './projectValidation';
 import type { DrillSet, LegacyDrillSet, LegacyProject, Move, OpeningTiming, Project, LinePathSegment } from './types';
 export type { Move, OpeningTiming, LinePathSegment, PerformerPath } from './types';
@@ -152,7 +153,7 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
     return { id: moveId, fromSetId, toSetId, counts, ...moveTiming, paths };
   });
   const { schemaVersion: _version, sets: checkedSets, ...common } = base;
-  return { schemaVersion: 2, ...common, ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
+  return { schemaVersion: 2, ...common, ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
 }
 
 /** Reads either supported wire version and always returns a canonical v2 object. */
@@ -178,6 +179,6 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
-  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, ...common } = checked;
+  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, rehearsal: _rehearsal, ...common } = checked;
   return { schemaVersion: 1, ...common, sets: legacySets(sets, moves, openingTiming) };
 }

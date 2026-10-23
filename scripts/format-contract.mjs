@@ -39,6 +39,10 @@ export function formatSchema(version, limits) {
     definitions.path = object({segments:array(ref('segment'),1,1)});
     definitions.move = object({id:ref('id'),fromSetId:ref('id'),toSetId:ref('id'),counts:number(limits.counts.min,limits.counts.max,true),...timing,paths:{type:'object',maxProperties:limits.performers,propertyNames:ref('id'),additionalProperties:ref('path')}});
     definitions.selectionGroup = object({ id: ref('id'), name: { ...text(limits.text.groupName), pattern: '^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$' }, performerIds: { ...array(ref('id'), 0, limits.performers), uniqueItems: true } });
+    definitions.rehearsalAnchor = { oneOf: [object({ kind: { const: 'set' }, setId: ref('id') }), object({ kind: { const: 'move' }, moveId: ref('id'), fromSetId: ref('id'), toSetId: ref('id'), count: number(0, limits.counts.max) })] };
+    definitions.rehearsalFocus = { oneOf: [object({ kind: { const: 'all' } }), object({ kind: { const: 'section' }, sectionId: ref('id') }), object({ kind: { const: 'performers' }, performerIds: { ...array(ref('id'), 1, limits.performers), uniqueItems: true } })] };
+    definitions.rehearsalPassage = object({ id: ref('id'), name: text(limits.text.setName), notes: text(limits.text.notes, true), start: ref('rehearsalAnchor'), end: ref('rehearsalAnchor'), focus: ref('rehearsalFocus') }, ['id', 'name', 'notes', 'start', 'focus']);
+    properties.rehearsal = array(ref('rehearsalPassage'), 0, limits.rehearsalPassages);
     properties.selectionGroups = array(ref('selectionGroup'), 0, limits.selectionGroups);
     properties.snapping = object({ steps: { enum: [8,6,12] }, subdivision: { enum: [1,2,4] }, target: { enum: ['grid','markings'] }, group: { enum: ['anchor','individual'] } });
     properties.moves = array(ref('move'),0,limits.sets-1); properties.openingTiming = object(timing);
@@ -48,7 +52,7 @@ export function formatSchema(version, limits) {
   }
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups')),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal')),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});

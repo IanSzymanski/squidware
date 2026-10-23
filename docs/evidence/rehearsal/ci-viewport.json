@@ -1,0 +1,85 @@
+{
+  "scope": "local fault-injected rehearsal workflow, not macOS certification",
+  "constraint": "Visible BrowserWindow content height limited to 647 px; hidden windows retain requested size.",
+  "original_ci": "https://github.com/IanSzymanski/squidware/actions/runs/39975872178/job/120490405755",
+  "before": {
+    "checks": [],
+    "viewports": [
+      {
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 364
+      },
+      {
+        "name": "failure.png",
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 364,
+        "timelineHeight": 117
+      }
+    ],
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    1366,\n+   647\n-   768\n  ]\n\n    at /workspace/squidware/scripts/rehearsal-qa-runner.cjs:34:189"
+  },
+  "after": {
+    "checks": [
+      "native form entry, Tab navigation, fractional cross-move range and section focus preserve full production geometry",
+      "real playback controller stops exactly at range end and loops to range start without editing geometry",
+      "real media-backed range loops and stops on the shared clock with audio offset preserved",
+      "native save/reopen retains annotations and ranges; deletion is one reversible metadata edit",
+      "native PDF export includes saved rehearsal references",
+      "deleted targets are flagged, activation is blocked, themes and enlarged scrolling keep actions reachable, Escape cancels"
+    ],
+    "viewports": [
+      {
+        "name": "rehearsal-default-dark.png",
+        "width": 1366,
+        "height": 768,
+        "fieldHeight": 485,
+        "timelineHeight": 117
+      },
+      {
+        "name": "rehearsal-range-dark.png",
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 364,
+        "timelineHeight": 117
+      },
+      {
+        "name": "rehearsal-focus-dark.png",
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 329,
+        "timelineHeight": 152
+      },
+      {
+        "name": "rehearsal-missing-target.png",
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 364,
+        "timelineHeight": 117
+      },
+      {
+        "name": "rehearsal-range-light.png",
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 364,
+        "timelineHeight": 117
+      },
+      {
+        "name": "rehearsal-range-high-contrast.png",
+        "width": 1366,
+        "height": 647,
+        "fieldHeight": 364,
+        "timelineHeight": 117
+      },
+      {
+        "name": "rehearsal-enlarged.png",
+        "width": 683,
+        "height": 431,
+        "fieldHeight": 181.6666717529297,
+        "timelineHeight": 143.33334350585938
+      }
+    ],
+    "scope": "targeted"
+  }
+}

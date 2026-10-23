@@ -1,4 +1,4 @@
-import { createDemoProject, parseProject, setStartCount, totalCounts, validateProject, validateProjectEdit } from '../domain';
+import { createDemoProject, parseProject, sampleTimeline, setStartCount, totalCounts, validateProject, validateProjectEdit } from '../domain';
 import type { Project } from '../types';
 import { executeCommand } from './commands';
 import type { CommandArguments, CommandContext, CommandId, ExternalCommandId } from './commands';
@@ -10,6 +10,7 @@ import { transformSessionCurrent } from './transformSession';
 import { formationSessionCurrent } from './formationSession';
 import { spacingSessionCurrent } from './spacingSession';
 import { coordinateSessionCurrent } from './coordinateSession';
+import { activePassage, rehearsalBounds, resolvePassage } from '../rehearsal';
 import { historyName } from './historyNames';
 import { selectionReviewCurrent } from './selectionCommands';
 
@@ -54,6 +55,13 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     if (next.ui.coordinatePreview && !coordinateSessionCurrent(next)) next = { ...next, ui: { ...next.ui, coordinatePreview: null } };
     if (next.ui.dialog && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
     if (next.ui.dialog && next.ui.paletteOpen) next = { ...next, ui: { ...next.ui, paletteOpen: false } };
+    if (next.project.present !== state.project.present && next.playback.rehearsalId) {
+      const passage = activePassage(next.project.present, next.playback.rehearsalId);
+      const error = passage ? resolvePassage(next.project.present, passage).error : 'Active rehearsal passage was removed.';
+      const bounds = rehearsalBounds(next.project.present, next.playback.rehearsalId);
+      next = { ...next, playback: { ...next.playback, playing: false, ...(error ? { rehearsalId: null } : { count: Math.max(bounds.start, Math.min(bounds.end, next.playback.count)) }) },
+        ...(error ? { ui: { ...next.ui, toast: `${error} Rehearsal focus cleared.` } } : {}) };
+    }
     state = next; changed = true;
     if (!transactionDepth) { changed = false; listeners.forEach(listener => listener()); }
   };
@@ -66,7 +74,8 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     const activeIndex = Math.min(state.selection.activeIndex, nextProject.sets.length - 1);
     const selectedIds = state.selection.selectedIds.filter(id => nextProject.performers.some(p => p.id === id));
     if (activeIndex !== state.selection.activeIndex || selectedIds.length !== state.selection.selectedIds.length) patch('selection', { activeIndex, selectedIds });
-    const count = arrive ? setStartCount(nextProject, activeIndex) : Math.min(state.playback.count, totalCounts(nextProject));
+    let count = arrive ? setStartCount(nextProject, activeIndex) : Math.min(state.playback.count, totalCounts(nextProject));
+    if (state.playback.rehearsalId) { const bounds = rehearsalBounds(nextProject, state.playback.rehearsalId); count = Math.max(bounds.start, Math.min(bounds.end, count)); patch('selection', { activeIndex: sampleTimeline(nextProject, count).setIndex }); }
     patch('playback', arrive ? { count, playing: false } : { count });
   };
   const commit = (before: ProjectHistory, next: Project, name: string, revision: number, changes?: HistoryPatch[]) => {
@@ -112,7 +121,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       publish({ ...state, project: { present: next, past: [], future: [], revision, estimatedBytes: 0, droppedEntries: 0 } });
       // Loading geometry alone is not evidence of a saved project file.
       patch('fileSession', { savedRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
-      patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false });
+      patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false, rehearsalId: null });
       patch('ui', { projectEpoch: state.ui.projectEpoch + 1, dialog: null, pendingDraft: false, paletteOpen: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
     },
     history: direction => {
