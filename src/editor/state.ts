@@ -9,7 +9,7 @@ import type { CoordinateEntrySession } from '../drillEntry';
 import type { SelectionReview } from '../selectionTools';
 import type { SetCreationKind } from './projectEdits';
 
-export type Dialog = 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;

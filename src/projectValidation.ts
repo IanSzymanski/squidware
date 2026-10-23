@@ -9,6 +9,7 @@ export const PROJECT_LIMITS = {
   projectBytes: 10 * 1024 * 1024,
   counts: { min: 1, max: 1024 },
   tempo: { min: 20, max: 400 },
+  analysisThreshold: { min: .1, max: 5 },
   audioOffsetSeconds: { min: -3600, max: 3600 },
   text: { id: 128, title: 160, ensemble: 160, sectionName: 80, groupName: 80, performerLabel: 32, performerName: 120, setName: 160, notes: 10_000 },
 } as const;

@@ -13,6 +13,8 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
   const selection = ids.length === 1 ? project.performers.find(p => p.id === ids[0])?.label ?? '1 performer' : `${ids.length} performers`;
   let name: string;
   switch (id) {
+    case 'analysis.rules-save': name = 'Edit production analysis rules'; break;
+    case 'analysis.direction-set': name = `${a.direction ? `Declare ${a.direction} travel` : 'Clear travel direction'} · ${ids.length} performers — ${picture}`; break;
     case 'rehearsal.save': name = `Save rehearsal passage · ${(a.passage as { name: string }).name}`; break;
     case 'rehearsal.remove': name = `Delete rehearsal passage · ${project.rehearsal?.find(p => p.id === a.id)?.name ?? 'passage'}`; break;
     case 'selection.nudge': name = `Nudge ${state.selection.selectedIds.length} ${state.selection.selectedIds.length === 1 ? 'performer' : 'performers'} · ${nudgeLabel(state.preferences.value, project, a.fast === true)} — ${picture}`; break;

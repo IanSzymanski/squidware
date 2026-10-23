@@ -44,7 +44,8 @@
     "test:timeline": "node scripts/timeline-qa.mjs",
     "test:sets": "node scripts/set-creation-qa.mjs",
     "test:playback": "node scripts/playback-qa.mjs",
-    "test:rehearsal": "node scripts/rehearsal-qa.mjs"
+    "test:rehearsal": "node scripts/rehearsal-qa.mjs",
+    "test:analysis-rules": "node scripts/analysis-rules-qa.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

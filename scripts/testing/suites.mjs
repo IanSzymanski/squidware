@@ -21,6 +21,7 @@ export const desktopSuites = [
   { name: 'timeline', title: 'Count viewport, 128-set navigation and stepping', script: 'timeline-qa.mjs', timeoutMs: 210000 },
   { name: 'rehearsal', title: 'Annotated bookmarks, saved ranges, focus and shared-clock loops', script: 'rehearsal-qa.mjs', timeoutMs: 240000 },
   { name: 'set-creation', title: 'Distinct new, duplicate, insert-before and hold actions', script: 'set-creation-qa.mjs', timeoutMs: 210000 },
+  { name: 'analysis-rules', title: 'Portable section/direction rules, declarations and worker invalidation', script: 'analysis-rules-qa.mjs', timeoutMs: 240000 },
   { name: 'analysis', title: 'Background checks, incremental edits and worker recovery', script: 'analysis-qa.mjs', timeoutMs: 210000 },
   { name: 'recovery', title: 'Durable production recovery after restart', script: 'recovery-qa.mjs', timeoutMs: 330000 },
   { name: 'print', title: 'Native PDF output and pagination', script: 'print-regression-qa.mjs', timeoutMs: 270000 },

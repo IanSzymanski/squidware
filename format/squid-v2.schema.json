@@ -75,6 +75,9 @@
       "minimum": -3600,
       "maximum": 3600
     },
+    "analysisRules": {
+      "$ref": "#/definitions/projectAnalysisRules"
+    },
     "rehearsal": {
       "type": "array",
       "items": {
@@ -386,6 +389,20 @@
           "additionalProperties": {
             "$ref": "#/definitions/path"
           }
+        },
+        "marchingDirections": {
+          "type": "object",
+          "maxProperties": 500,
+          "propertyNames": {
+            "$ref": "#/definitions/id"
+          },
+          "additionalProperties": {
+            "enum": [
+              "forward",
+              "backward",
+              "sideways"
+            ]
+          }
         }
       },
       "required": [
@@ -424,6 +441,100 @@
         "id",
         "name",
         "performerIds"
+      ]
+    },
+    "analysisOverrides": {
+      "type": "object",
+      "properties": {
+        "minimumSpacing": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        },
+        "maximumStride": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        }
+      },
+      "required": []
+    },
+    "directionRules": {
+      "type": "object",
+      "properties": {
+        "forward": {
+          "$ref": "#/definitions/analysisOverrides"
+        },
+        "backward": {
+          "$ref": "#/definitions/analysisOverrides"
+        },
+        "sideways": {
+          "$ref": "#/definitions/analysisOverrides"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "sectionAnalysisRules": {
+      "type": "object",
+      "properties": {
+        "sectionId": {
+          "$ref": "#/definitions/id"
+        },
+        "minimumSpacing": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        },
+        "maximumStride": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 5
+        },
+        "directions": {
+          "$ref": "#/definitions/directionRules"
+        }
+      },
+      "required": [
+        "sectionId"
+      ]
+    },
+    "projectAnalysisRules": {
+      "type": "object",
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "properties": {
+            "minimumSpacing": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 5
+            },
+            "maximumStride": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 5
+            }
+          },
+          "required": [
+            "minimumSpacing",
+            "maximumStride"
+          ]
+        },
+        "directions": {
+          "$ref": "#/definitions/directionRules"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/sectionAnalysisRules"
+          },
+          "minItems": 0,
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "defaults"
       ]
     },
     "rehearsalAnchor": {

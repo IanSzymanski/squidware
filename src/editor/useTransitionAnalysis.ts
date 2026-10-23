@@ -2,11 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnalysisClient } from '../analysis/client';
 import type { AnalysisState } from '../analysis/client';
 import { transitionInput } from '../analysis/input';
-import type { AnalysisRules } from '../analysis/input';
 import type { Project } from '../types';
 
-export function useTransitionAnalysis(project: Project, index: number, epoch: number, rules: AnalysisRules) {
-  const input = useMemo(() => transitionInput(project, index, epoch, rules), [project, index, epoch, rules.minimumSpacing, rules.maximumStride]);
+export function useTransitionAnalysis(project: Project, index: number, epoch: number) {
+  const input = useMemo(() => transitionInput(project, index, epoch), [project, index, epoch]);
   const [state, setState] = useState<AnalysisState>({ input: null, status: 'ready' });
   const client = useRef<AnalysisClient | null>(null);
   useEffect(() => {

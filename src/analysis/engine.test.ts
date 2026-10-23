@@ -61,7 +61,9 @@ describe('swept bounds and incremental move analysis', () => {
     const dense = { ...p, sets: p.sets.map(s => ({ ...s, positions: Object.fromEntries(p.performers.map(person => [person.id, { x: 50, y: 25 }])) })) };
     expect((await compare(engine, dense)).exactPairs).toBe(124750);
     await compare(engine, edit(dense, 0, 20));
-  });
+  // This oracle comparison materializes and deeply compares 124,750 explained
+  // flags repeatedly; it is a correctness check, not a single-worker budget.
+  }, 15000);
   it('invalidates timing, rules, paths, roster, ordering and replacement, retaining other move caches', async () => {
     const p = createDemoProject(), engine = new TransitionAnalyzer();
     await compare(engine, p); await compare(engine, p, 2);
