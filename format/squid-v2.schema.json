@@ -75,6 +75,14 @@
       "minimum": -3600,
       "maximum": 3600
     },
+    "rehearsal": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/rehearsalPassage"
+      },
+      "minItems": 0,
+      "maxItems": 128
+    },
     "selectionGroups": {
       "type": "array",
       "items": {
@@ -416,6 +424,140 @@
         "id",
         "name",
         "performerIds"
+      ]
+    },
+    "rehearsalAnchor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "set"
+            },
+            "setId": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "required": [
+            "kind",
+            "setId"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "move"
+            },
+            "moveId": {
+              "$ref": "#/definitions/id"
+            },
+            "fromSetId": {
+              "$ref": "#/definitions/id"
+            },
+            "toSetId": {
+              "$ref": "#/definitions/id"
+            },
+            "count": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1024
+            }
+          },
+          "required": [
+            "kind",
+            "moveId",
+            "fromSetId",
+            "toSetId",
+            "count"
+          ]
+        }
+      ]
+    },
+    "rehearsalFocus": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "all"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "section"
+            },
+            "sectionId": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "required": [
+            "kind",
+            "sectionId"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "performers"
+            },
+            "performerIds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/id"
+              },
+              "minItems": 1,
+              "maxItems": 500,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "kind",
+            "performerIds"
+          ]
+        }
+      ]
+    },
+    "rehearsalPassage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]*$"
+        },
+        "start": {
+          "$ref": "#/definitions/rehearsalAnchor"
+        },
+        "end": {
+          "$ref": "#/definitions/rehearsalAnchor"
+        },
+        "focus": {
+          "$ref": "#/definitions/rehearsalFocus"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "notes",
+        "start",
+        "focus"
       ]
     }
   }

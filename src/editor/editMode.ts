@@ -7,5 +7,5 @@ export function isAtActiveSet(state: EditorState): boolean {
 }
 
 export function canEditPositions(state: EditorState): boolean {
-  return !state.ui.selectionPreview && !state.playback.playing && isAtActiveSet(state) && !state.ui.transformPreview && !state.ui.formationPreview && !state.ui.spacingPreview && !state.ui.coordinatePreview;
+  return !state.playback.rehearsalId && !state.ui.selectionPreview && !state.playback.playing && isAtActiveSet(state) && !state.ui.transformPreview && !state.ui.formationPreview && !state.ui.spacingPreview && !state.ui.coordinatePreview;
 }

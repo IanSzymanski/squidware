@@ -195,3 +195,26 @@ describe('monotonic silent rehearsal clock', () => {
     expect(clock.sample()).toEqual({ seconds: 100, playing: false, status: 'silent' });
   });
 });
+
+describe('absolute-time count-range playback', () => {
+  it.each([false, true])('stops or repeats a range on the media clock (loop=%s), preserving offset and overflow after a stalled frame', loop => {
+    const media = new Media(); let now = 0;
+    const clock = new RehearsalClock({ totalSeconds: 100, rangeStart: 5, rangeEnd: 12, offset: 2, media, now: () => now });
+    clock.update({ playing: true, speed: .75, loop }, 5);
+    expect(media.seeks).toEqual([7]);
+    now = 30; media.advance(16.25);
+    expect(clock.sample()).toMatchObject({ seconds: loop ? 7.25 : 12, playing: loop });
+    expect(media.currentTime).toBe(loop ? 9.25 : 16.25);
+    expect(media.playbackRate).toBe(.75);
+    if (!loop) expect(media.paused).toBe(true);
+  });
+  it('loops a silent range across many skipped frames and restarts at range start', () => {
+    let now = 0;
+    const clock = new RehearsalClock({ totalSeconds: 100, rangeStart: 10, rangeEnd: 15, offset: 0, now: () => now });
+    clock.update({ playing: true, speed: 1.5, loop: true }, 0); expect(clock.sample().seconds).toBe(10);
+    now = 22; expect(clock.sample().seconds).toBe(13);
+    clock.update({ playing: false, speed: 1.5, loop: true }); now = 60;
+    expect(clock.sample()).toMatchObject({ seconds: 13, playing: false });
+    clock.update({ playing: true, speed: 1, loop: false }, 15); expect(clock.sample().seconds).toBe(10);
+  });
+});

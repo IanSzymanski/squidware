@@ -16,11 +16,16 @@ import { validateCoordinateEntryOptions, type CoordinateEntryOptions } from '../
 import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateSession';
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
 import type { SelectionSpec } from '../selectionTools';
+import { rehearsalCommands } from './rehearsalCommands';
+import { rehearsalBounds } from '../rehearsal';
+import type { RehearsalPassage } from '../types';
 import { selectionCommands } from './selectionCommands';
 import { drillPlan } from './drillCommands';
 import { shortcutIds } from '../shortcuts';
 
 export interface CommandArguments {
+  'rehearsal.open': undefined; 'rehearsal.save': { passage: RehearsalPassage };
+  'rehearsal.remove': { id: string }; 'rehearsal.activate': { id: string }; 'rehearsal.clear': undefined;
   'palette.open': undefined; 'preferences.open': undefined; 'drill.preview': { text: string };
   'tool.box': undefined; 'tool.pan': undefined; 'tool.lasso': undefined;
   'performers.add-dialog': undefined; 'set.new': undefined; 'set.duplicate': undefined; 'set.insert-before': undefined; 'set.hold': undefined; 'set.previous': undefined; 'set.next': undefined;
@@ -108,6 +113,7 @@ const setExists = (state: EditorState, index: number) => Number.isInteger(index)
 const selectSet = (context: CommandContext, index: number) => {
   const project = context.getState().project.present;
   const next = Math.max(0, Math.min(project.sets.length - 1, index));
+  context.patch('playback', { rehearsalId: null });
   context.patch('selection', { activeIndex: next }); context.patch('playback', { playing: false, count: setStartCount(project, next), seekVersion: context.getState().playback.seekVersion + 1 });
 };
 
@@ -123,6 +129,7 @@ function applySetCreation(c: CommandContext, index: number, kind: SetCreationKin
 
 export const commandRegistry = {
   ...selectionCommands,
+  ...rehearsalCommands,
   'palette.open': simple('palette.open', 'Command palette', 'Search commands and preview drill phrases. Escape returns to the editor.', idle, c => { c.patch('ui', { paletteOpen: true, menu: false }); c.patch('playback', { playing: false }); }),
   'preferences.open': simple('preferences.open', 'Preferences', 'Change personal display, editing and keyboard shortcuts on this device.', idle, c => showDialog(c, 'preferences')),
   'drill.preview': define({ id: 'drill.preview', name: 'Preview drill phrase', description: 'Preview a relative move, mirror, interval or labelled performer coordinate before Apply.', arguments: { text: 'complete drill phrase' },
@@ -266,8 +273,8 @@ export const commandRegistry = {
   'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
   'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
   'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),
-  'playback.toggle': define({ id: 'playback.toggle', name: 'Play / pause', description: 'Rehearse or pause the production.', arguments: {}, enabled: s => totalCounts(s.project.present) > 0, execute: c => { const s = c.getState(); c.patch('playback', { playing: !s.playback.playing, count: s.playback.count >= totalCounts(s.project.present) ? 0 : s.playback.count }); } }),
-  'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); c.patch('playback', { playing: false, count, seekVersion: c.getState().playback.seekVersion + 1 }); c.patch('selection', { activeIndex: sampleTimeline(p, count).setIndex }); } }),
+  'playback.toggle': define({ id: 'playback.toggle', name: 'Play / pause', description: 'Rehearse or pause the production.', arguments: {}, enabled: s => totalCounts(s.project.present) > 0, execute: c => { const s = c.getState(), bounds = rehearsalBounds(s.project.present, s.playback.rehearsalId); c.patch('playback', { playing: !s.playback.playing, count: s.playback.count >= bounds.end || s.playback.count < bounds.start ? bounds.start : s.playback.count }); } }),
+  'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); const bounds = rehearsalBounds(p, c.getState().playback.rehearsalId); if (count < bounds.start || count > bounds.end) c.patch('playback', { rehearsalId: null }); c.patch('playback', { playing: false, count, seekVersion: c.getState().playback.seekVersion + 1 }); c.patch('selection', { activeIndex: sampleTimeline(p, count).setIndex }); } }),
   'tool.select': define({ id: 'tool.select', name: 'Select / pan / lasso', description: 'Choose box selection, pan or a freehand lasso. Lasso results are reviewed before Apply.', arguments: { tool: 'select | pan | lasso' }, enabled: (s, a) => !!a && ['select', 'pan', 'lasso'].includes(a.tool) && (a.tool !== 'lasso' || !s.ui.dialog && !s.ui.pendingDraft && editable(s)), execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
   'dialog.open': define({ id: 'dialog.open', name: 'Open dialog', description: 'Open an editor dialog and stop playback.', arguments: { dialog: 'Dialog' }, enabled: always, execute: (c, a) => {
     showDialog(c, a.dialog);

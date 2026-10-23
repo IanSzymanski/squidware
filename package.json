@@ -43,7 +43,8 @@
     "test:audio": "node scripts/audio-clock-qa.mjs",
     "test:timeline": "node scripts/timeline-qa.mjs",
     "test:sets": "node scripts/set-creation-qa.mjs",
-    "test:playback": "node scripts/playback-qa.mjs"
+    "test:playback": "node scripts/playback-qa.mjs",
+    "test:rehearsal": "node scripts/rehearsal-qa.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
