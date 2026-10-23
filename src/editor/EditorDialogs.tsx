@@ -16,12 +16,14 @@ import { RecoveryPanel } from './RecoveryPanel';
 import { CommitInput, CommitColor } from './EditorControls';
 
 import type { EditorController } from './useEditorController';
+import { AnalysisRulesPanel } from './AnalysisRulesPanel';
 import { RehearsalPanel } from './RehearsalPanel';
 import { SetCreationPanel } from './SetCreationPanel';
 
 export function EditorDialogs({ controller }: { controller: EditorController }) {
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, dirty, removeSet, replaceProduction, saveProject, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
+    {dialog === 'analysis-rules' && <AnalysisRulesPanel controller={controller} />}
     {dialog === 'rehearsal' && <RehearsalPanel controller={controller} />}
     {dialog === 'set-create' && <SetCreationPanel controller={controller} />}
     {dialog === 'recovery' && <RecoveryPanel recovery={controller.recovery} onClose={() => setDialog(null)} />}

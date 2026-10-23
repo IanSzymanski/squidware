@@ -22,6 +22,7 @@ This is an independent early release of a Pyware-style alternative. It implement
 - **Rehearse in 3D:** orbit an actual WebGL field with section-colored performer markers, shadows, and perspective, front, and overhead cameras.
 - **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo named actions, review session History, and cancel text/color drafts.
 - **Manage the ensemble:** add performers, import a CSV roster, edit names and sections, and select sections from the field legend.
+- **Set portable analysis rules:** save production, section and declared-direction spacing/stride limits with undo, explicit unknown-direction handling and applied thresholds in flags. [Analysis rules](docs/analysis-rules.md).
 - **Rehearse a passage:** save annotated bookmarks and cross-move count ranges, loop on the shared clock, and focus on a section or saved performers. [Passage behavior and references](docs/rehearsal-passages.md).
 - **Play the show:** scrub the timeline, change playback speed, loop, use a metronome, and attach an audio track with a sync offset. Attached audio drives the show clock; silent playback continues before/after the recording or if audio fails.
 - **Review transitions:** inspect continuous minimum spacing and excessive stride flags, then select the affected performers on the field.

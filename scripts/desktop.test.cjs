@@ -125,6 +125,16 @@ test('native save/open preserves overlapping selection groups and rejects stale 
   assert.equal(await fs.readFile(filename, 'utf8'), before);
 });
 
+test('native save/open retains production analysis rules and directions and rejects invalid rules atomically', async t => {
+  const h = await harness(t), data = JSON.parse(project), id = data.performers[0].id;
+  data.analysisRules = { defaults: { minimumSpacing: 1.5, maximumStride: 1 }, sections: [{ sectionId: data.sections[0].id, minimumSpacing: 2 }], directions: { backward: { maximumStride: .5 } } }; data.moves[0].marchingDirections = { [id]: 'backward' };
+  const filename = path.join(h.directory, 'rules.squid'); h.dialog({ canceled: false, filePath: filename }); await h.invoke('save-project', JSON.stringify(data), 'Rules');
+  h.dialog({ canceled: false, filePaths: [filename] }); const reopened = JSON.parse((await h.invoke('open-project')).content);
+  assert.deepEqual(reopened.analysisRules, data.analysisRules); assert.deepEqual(reopened.moves[0].marchingDirections, data.moves[0].marchingDirections); assert.deepEqual(reopened.sets, data.sets);
+  const before = await fs.readFile(filename, 'utf8'); data.analysisRules.defaults.maximumStride = 6;
+  await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Rules'), /maximumStride/); assert.equal(await fs.readFile(filename, 'utf8'), before);
+});
+
 test('failed atomic replacement preserves the previous file and removes its temporary file', async t => {
   const h = await harness(t, { failRename: true });
   const filename = path.join(h.directory, 'show.squid');

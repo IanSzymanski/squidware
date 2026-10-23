@@ -10,7 +10,12 @@ export function reconnectSets(project: Project, sets: DrillSet[], newTiming = ne
   const openingTiming = firstMove ? { tempo: firstMove.tempo, transition: firstMove.transition } : project.openingTiming;
   const moves = sets.slice(1).map((set, index): Move => {
     const old = incoming.get(set.id);
-    if (old) return old.fromSetId === sets[index].id ? old : { ...old, fromSetId: sets[index].id };
+    if (old) {
+      if (old.fromSetId === sets[index].id) return old;
+      // Declarations describe this exact move, not a new predecessor's travel.
+      const { marchingDirections: _directions, ...rewired } = old;
+      return { ...rewired, fromSetId: sets[index].id };
+    }
     const timing = newTiming.get(set.id) ?? { counts: 32, ...project.openingTiming };
     return { id: uid(), fromSetId: sets[index].id, toSetId: set.id, ...timing, paths: {} };
   });

@@ -5,14 +5,16 @@ import { useTransitionAnalysis } from './useTransitionAnalysis';
 import type { EditorController } from './useEditorController';
 
 export function TransitionCheck({ controller }: { controller: EditorController }) {
-  const { project, index, projectEpoch, preferences } = controller;
+  const { project, index, projectEpoch } = controller;
   // Worker replies update this panel without invalidating the editor shell,
   // field, timeline or sibling Inspector controls during playback.
-  const analysis = useTransitionAnalysis(project, index, projectEpoch, preferences.value);
+  const analysis = useTransitionAnalysis(project, index, projectEpoch);
   const { issues } = analysis;
   const pending = analysis.status === 'pending', failed = analysis.status === 'error';
   const Icon = pending ? LoaderCircle : failed || issues.length ? TriangleAlert : ShieldCheck;
   return <div aria-busy={pending} data-analysis-status={analysis.status}>
+    <HelpButton command="analysis.rules-open" title="Analysis rules" className="button subtle" disabled={controller.pendingDraft || !!controller.selectionPreview || !!controller.transformPreview || !!controller.formationPreview || !!controller.spacingPreview || !!controller.coordinatePreview} disabledReason="Finish or cancel the current input or preview before editing analysis rules." onClick={() => controller.dispatch('analysis.rules-open')}>Analysis rules</HelpButton>
+    {index > 0 && <p className="microcopy">{Object.keys(project.moves[index - 1].marchingDirections ?? {}).length} declared · {project.performers.length - Object.keys(project.moves[index - 1].marchingDirections ?? {}).length} unknown. Facing is not authored; travel vectors do not establish marching direction.</p>}
     <div className="section-title">
       <span><Icon size={15} /> {issues.length ? 'Flags to review' : 'Current move'}</span>
       <span className={`check-count ${issues.length || failed ? 'has-issues' : ''}`}>{pending ? '…' : failed ? '!' : issues.length || <Check size={12} />}</span>
