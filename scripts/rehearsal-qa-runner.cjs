@@ -1,10 +1,15 @@
 'use strict';
-const assert = require('node:assert/strict'), { app, dialog } = require('electron');
+const assert = require('node:assert/strict'), { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--rehearsal-manifest=')).slice('--rehearsal-manifest='.length));
 const { root, output, profile, bundle } = manifest, { fixture, parseProject } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
+// The production ready-to-show handler must not expose the fixed-size layout
+// capture to macOS desktop work-area constraints. Show the native window only
+// after measuring the requested viewport, as in the set-creation suite.
+const showWindow = BrowserWindow.prototype.show;
+BrowserWindow.prototype.show = function () {};
 let window, failure, savePath = path.join(output, 'saved.squid'); const checks = [], viewports = [];
 dialog.showMessageBox = async () => ({ response: 1 });
 dialog.showSaveDialog = async () => ({ canceled: false, filePath: savePath });
@@ -31,8 +36,10 @@ app.whenReady().then(async()=>{try{
  window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});window.webContents.reload();
  await wait(`!!${editor} && ${state}.preferences.status==='saved'`,'store');await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');
  const p=fixture();await evaluate(`${editor}.setValue('ui','dialog',null);${editor}.dispatch('project.load',{project:${JSON.stringify(p)}})`);await frames();
- const layout=await evaluate("({width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height})");viewports.push(layout);assert.deepEqual([layout.width,layout.height],[1366,768]);assert.ok(layout.fieldHeight>=470,JSON.stringify(layout));await capture(manifest.baseline ? 'rehearsal-before.png' : 'rehearsal-default-dark.png');if(manifest.baseline){app.exit(0);return;}
- window.show();window.focus();await settleNativeViewport(window,'rehearsal window');await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
+ await capture(manifest.baseline ? 'rehearsal-before.png' : 'rehearsal-default-dark.png');
+ const layout=viewports.at(-1);assert.deepEqual([layout.width,layout.height],[1366,768],JSON.stringify(layout));assert.ok(layout.fieldHeight>=470,JSON.stringify(layout));if(manifest.baseline){app.exit(0);return;}
+ BrowserWindow.prototype.show = showWindow;
+ window.show();window.focus();await frames();await settleNativeViewport(window,'rehearsal window');await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
  await click('[aria-label="Rehearsal passages"]');await wait("!!document.querySelector('[aria-label=\"Passage name\"]')",'passage dialog');
  await text('[aria-label="Passage name"]','Arrival practice');await key(window,'Tab');assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'),'Passage type');
  await selectNativeOption(window,'[aria-label="Passage type"]','range');await selectNativeOption(window,'[aria-label="Start target"]','move:m0');await text('[aria-label="Start local count"]','99');assert.equal(await evaluate("document.querySelector('[aria-label=\"Save passage\"]').disabled"),true);await text('[aria-label="Start local count"]','2.5');await selectNativeOption(window,'[aria-label="Rehearsal focus"]','section:'+p.sections[0].id);await text('[aria-label="Annotation"]','Keep the interval.');
