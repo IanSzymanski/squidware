@@ -1,8 +1,8 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 2 of 15 issues completed: [#9 — background collision analysis](https://github.com/IanSzymanski/squidware/issues/9) in [#143](https://github.com/IanSzymanski/squidware/pull/143), and [#13 — audio-clock playback](https://github.com/IanSzymanski/squidware/issues/13) in [#144](https://github.com/IanSzymanski/squidware/pull/144). Continue with [#31 — timeline zoom and one-count stepping](https://github.com/IanSzymanski/squidware/issues/31), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 5 of 15 issues completed. Timeline navigation [#31](https://github.com/IanSzymanski/squidware/issues/31), distinct set creation [#29](https://github.com/IanSzymanski/squidware/issues/29) and rehearsal passages [#86](https://github.com/IanSzymanski/squidware/issues/86) joined the completed background-analysis and audio-clock work through [#145](https://github.com/IanSzymanski/squidware/pull/145), [#146](https://github.com/IanSzymanski/squidware/pull/146) and [#147](https://github.com/IanSzymanski/squidware/pull/147). Continue with [#44 — project analysis rules](https://github.com/IanSzymanski/squidware/issues/44), respecting the maintained queue and hard prerequisites.
 
-**Main certification follow-up:** After #144 merged, [CI on main 78dbdb3](https://github.com/IanSzymanski/squidware/actions/runs/39683894290) passed source, Windows and Linux checks but failed [macOS audio-clock certification](https://github.com/IanSzymanski/squidware/actions/runs/39683894290/job/119513166004): viewport restoration after `audio-failed.png` expected 1366×647 and observed 1366×645 (DPR 1). The cause remains unresolved; repair and rerun full certification before publication. The earlier [three-platform PR certification](https://github.com/IanSzymanski/squidware/actions/runs/39675595588) remains valid evidence for #13's completed implementation, but does not certify the merged main source. The release train must still require successful exact-source main CI and fulfillment of the remaining v0.7 scope.
+**Main certification follow-up — resolved:** The screenshot viewport-restoration work in [#145](https://github.com/IanSzymanski/squidware/pull/145), followed by fixed-layout capture before visible-window interaction in [#146](https://github.com/IanSzymanski/squidware/pull/146) and [#147](https://github.com/IanSzymanski/squidware/pull/147), preserves the viewport/field-height assertions. [Source checks and Windows/macOS/Linux certification](https://github.com/IanSzymanski/squidware/actions/runs/39978590555) passed on merged main `b4a7bcd`, superseding the earlier macOS failure as an active blocker. The [Release train](https://github.com/IanSzymanski/squidware/actions/runs/39979996969) completed reconciliation and skipped publication because v0.7 still has 10 unfinished issues. Every future publication still requires successful exact-source main CI.
 
 **Validation policy:** Maintainer decision (2026-10-22): human review, participant sessions, first-time discovery checks, subjective listening and physical/representative school-hardware qualification are not completion or release gates. Automated software tests, rendered-output review, cross-platform CI, package verification and signing requirements remain applicable. Historical references to human/hardware gates are superseded; no waived check is claimed to have passed. See [the validation policy](VALIDATION_POLICY.md). #3 is complete on its delivered local measurement scope; #64 retains software-based platform/coverage review.
 
@@ -64,7 +64,7 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-2/15 implementation issues completed at reconciliation.
+5/15 implementation issues completed at reconciliation.
 
 - [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
 - [x] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
@@ -72,15 +72,15 @@ Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, por
 - [ ] [#17 · Audit A16 Add a compact set list with drag reorder and jump-to-set](https://github.com/IanSzymanski/squidware/issues/17)
 - [ ] [#24 · Audit A23 Split a transition at a selected count into a new set](https://github.com/IanSzymanski/squidware/issues/24)
 - [ ] [#28 · Audit A28 Make the production sheet editable with spreadsheet paste](https://github.com/IanSzymanski/squidware/issues/28)
-- [ ] [#29 · Audit A29 Give add, duplicate, hold and insert-before sets distinct behavior](https://github.com/IanSzymanski/squidware/issues/29)
-- [ ] [#31 · Audit A33 Add timeline zoom, set-aware labels and one-count stepping](https://github.com/IanSzymanski/squidware/issues/31)
+- [x] [#29 · Audit A29 Give add, duplicate, hold and insert-before sets distinct behavior](https://github.com/IanSzymanski/squidware/issues/29)
+- [x] [#31 · Audit A33 Add timeline zoom, set-aware labels and one-count stepping](https://github.com/IanSzymanski/squidware/issues/31)
 - [ ] [#44 · Audit A45 Store per-section and per-direction analysis rules in the project](https://github.com/IanSzymanski/squidware/issues/44)
 - [ ] [#45 · Audit A32 Add show-wide problems with count navigation and live field overlays](https://github.com/IanSzymanski/squidware/issues/45)
 - [ ] [#51 · Audit A51 Add measures, meter, rehearsal marks and pickup counts](https://github.com/IanSzymanski/squidware/issues/51)
 - [ ] [#52 · Audit A52 Support tempo changes, ramps and fermatas within a move](https://github.com/IanSzymanski/squidware/issues/52)
 - [ ] [#53 · Audit A53 Align the tempo map to audio using per-set/count anchors](https://github.com/IanSzymanski/squidware/issues/53)
 - [ ] [#71 · Roadmap Package or reference audio portably when saving and reopening productions](https://github.com/IanSzymanski/squidware/issues/71)
-- [ ] [#86 · Roadmap Add rehearsal annotations, bookmarks, count ranges and sectional playback](https://github.com/IanSzymanski/squidware/issues/86)
+- [x] [#86 · Roadmap Add rehearsal annotations, bookmarks, count ranges and sectional playback](https://github.com/IanSzymanski/squidware/issues/86)
 
 ## v0.8 — Reusable forms and detailed motion
 
