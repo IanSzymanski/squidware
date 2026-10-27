@@ -38,7 +38,15 @@ async function click(selector) {
 }
 async function capture(name) { await evaluate("document.activeElement?.blur()");await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height})`)); }
 async function openProblems() { await click('[aria-label="Timeline problems"]');await wait("!!document.querySelector('.problems-panel')",'problems dialog'); }
-async function close() { await key(window,'Escape');await wait("!document.querySelector('dialog')",'dialog closes'); }
+async function close() {
+  // Screenshots blur the focused control while the native pointer can still
+  // hover Close. Clear that help and restore dialog focus before testing Escape;
+  // an open tooltip deliberately consumes Escape without closing its dialog.
+  const point=await evaluate("(()=>{const d=document.querySelector('dialog');d.focus();const r=d.querySelector('h2').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()");
+  await mouse('mouseMoved',point);
+  await wait("!document.querySelector('dialog .tooltip-panel')",'dialog hover help dismissed');
+  await key(window,'Escape');await wait("!document.querySelector('dialog')",'dialog closes');
+}
 async function mouse(type,point,extra={}) { await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,...extra}); }
 async function startDrag() {
   await evaluate(`${editor}.dispatch('set.select',{index:1});${editor}.setValue('selection','selectedIds',['p0']);${editor}.setValue('ui','snap',false)`);await frames();
