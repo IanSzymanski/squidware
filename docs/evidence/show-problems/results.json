@@ -1,0 +1,132 @@
+{
+  "checks": [
+    "all moves match the reference; every finding is reachable through native keyboard pagination, sorting, move/type filters and performer search",
+    "finding and timeline-marker input seeks the exact count, selects the right IDs and highlights paths without modifying project/history",
+    "native drags check both adjacent moves in an isolated throttled worker; pending previews hide old overlays, Escape cancels and commit/undo retains one edit",
+    "decode and startup failures remain visible as unavailable moves and native keyboard retry recovers without synchronous analysis",
+    "127 moves with 500 performers complete with bounded DOM markers; rapid edits and same-ID project replacement keep reference-correct results",
+    "supported themes, narrow field layout, enlarged text, keyboard focus and modal dismissal remain usable"
+  ],
+  "metrics": {
+    "findings": 210,
+    "maximumShowMs": 8692,
+    "rapidEditDispatchMs": [
+      9.800000000046566,
+      4.300000000046566,
+      2.5,
+      2.800000000046566,
+      3.6000000000931323,
+      4,
+      3.5999999998603016,
+      3.6000000000931323,
+      3.4000000001396984,
+      2.3999999999068677,
+      3,
+      3.6000000000931323,
+      3.3999999999068677,
+      3.5,
+      2.8999999999068677,
+      3.5,
+      2.300000000046566,
+      3.4000000001396984,
+      3,
+      3,
+      3,
+      2.8999999999068677,
+      3.800000000046566,
+      3.4000000001396984,
+      3.800000000046566,
+      3.7000000001862645,
+      2.300000000046566,
+      3.7000000001862645,
+      5.399999999906868,
+      2.8999999999068677
+    ]
+  },
+  "viewports": [
+    {
+      "name": "problems-field-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-panel-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-selected.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-drag-pending.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-drag-ready.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-unavailable.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-field-narrow.png",
+      "width": 1120,
+      "height": 768,
+      "fieldHeight": 471
+    },
+    {
+      "name": "problems-enlarged.png",
+      "width": 819,
+      "height": 576,
+      "fieldHeight": 190.60000610351562
+    }
+  ],
+  "source": {
+    "revision": "471e19535c97b586776c169124677e399d5beb2f",
+    "tree": "05ed0ee7d5a551f0ce98b2017b97af725e92ee4f",
+    "dirty": true,
+    "contentHash": "14eafab3a4dc86463878f83df72feb4825468c6524260e2848f698c53c50ccb1",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "local_flags": [
+    "--no-sandbox",
+    "--disable-dev-shm-usage"
+  ],
+  "display": "Xorg dummy display",
+  "baseline_source": "471e19535c97b586776c169124677e399d5beb2f"
+}

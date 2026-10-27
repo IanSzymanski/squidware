@@ -36,3 +36,10 @@
 }
 .timeline { container-type: inline-size; }
 .timeline .audio-attach .audio-file-label { display: inline; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.problem-track { position: relative; height: 14px; }
+.timeline .problem-track .problem-marker { position: absolute; top: 0; width: 14px; height: 14px; padding: 0; display: flex; align-items: center; justify-content: center; transform: translateX(-50%); background: var(--surface); border-radius: 2px; z-index: 7; }
+.problem-marker.danger { color: var(--error); }
+.problem-marker.warning { color: var(--warning); }
+.timeline .track-labels .problem-track-label { height: 14px; }
+.problem-track-label button { display: flex; align-items: center; gap: 2px; background: transparent; font-size: 11px; padding: 0; }

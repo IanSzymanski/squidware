@@ -8,6 +8,7 @@ import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
 import { formatTimelineCount as fmt, timelineLabels, timelineWindow } from './timelineNavigation';
 import './timeline.css';
+import { ProblemTimeline, ProblemTimelineLabel } from './ProblemTimeline';
 
 export function TimelineTracks({ controller }: { controller: EditorController }) {
   const { project, duration, index, playing, selectSet, scrub, audioName, waveform, audioLoading } = controller;
@@ -52,7 +53,7 @@ export function TimelineTracks({ controller }: { controller: EditorController })
       <span className="timeline-window">{fmt(view.start)}–{fmt(Math.min(duration, view.start + span))}</span>
     </div>}
     <div className="timeline-tracks">
-      <div className="track-labels"><span><HelpButton title="Timeline view" description="Show or hide timeline zoom, pan, follow and the all-set picker." aria-expanded={viewOpen} className="timeline-view-toggle" onClick={() => setViewOpen(!viewOpen)}><SlidersHorizontal size={12} />View</HelpButton></span><span><Flag size={12} />SETS</span>{audioName && <span><AudioLines size={12} />AUDIO</span>}</div>
+      <div className="track-labels"><span><HelpButton title="Timeline view" description="Show or hide timeline zoom, pan, follow and the all-set picker." aria-expanded={viewOpen} className="timeline-view-toggle" onClick={() => setViewOpen(!viewOpen)}><SlidersHorizontal size={12} />View</HelpButton></span><span><Flag size={12} />SETS</span><ProblemTimelineLabel />{audioName && <span><AudioLines size={12} />AUDIO</span>}</div>
       <div className="timeline-viewport" ref={viewportRef}>
         <div className="tracks">
           <div className="count-ruler">{labels.map(label => <span key={label} style={{ left: `${percent(label)}%` }}>{fmt(label)}</span>)}</div>
@@ -66,7 +67,8 @@ export function TimelineTracks({ controller }: { controller: EditorController })
             })}
             {view.start === 0 && <HelpButton command="set.select" showShortcut={false} title={`Opening set: ${project.sets[0].name}`} description="Set 1 is the opening picture at show count zero." className={`timeline-opening ${index === 0 ? 'active' : ''}`} onClick={() => selectSet(0)}>01</HelpButton>}
           </div>
-          {/* Music/rehearsal and show-wide problem lanes attach to this count axis in #51/#45. */}
+          <ProblemTimeline start={view.start} span={span} width={width} />
+          {/* Music/rehearsal lanes attach to this count axis in #51. */}
           <div className="timeline-music-lanes" />
           {audioName && <div className={`audio-track ${waveform.length ? 'has-audio' : ''}`}><span className="audio-clock-status" role="status">{clockStatus}</span>{waveform.length ? waveform.map((value, i) => {
             const at = i / waveform.length * duration;

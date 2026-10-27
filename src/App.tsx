@@ -3,8 +3,9 @@ import { EditorProvider } from './editor/react';
 import { createEditorStore } from './editor/store';
 import { createDemoProject } from './domain';
 import { EditorShell } from './editor/EditorShell';
+import { ShowAnalysisProvider } from './editor/ShowAnalysis';
 
 export default function App() {
   const [store] = useState(() => createEditorStore(createDemoProject()));
-  return <EditorProvider store={store}><EditorShell /></EditorProvider>;
+  return <EditorProvider store={store}><ShowAnalysisProvider><EditorShell /></ShowAnalysisProvider></EditorProvider>;
 }

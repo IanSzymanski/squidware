@@ -59,6 +59,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 | `audio-clock` | Real media clock at five speeds with renderer stalls; offsets, paused navigation/timing edits and undo, replacement, loops, failure/retry, status/theme/layout review | Detailed decoder/fallback state permutations owned by `rehearsalClock` source tests; metronome scheduling belongs to #14. |
 | `analysis` | Production worker loading, maximum-size oracle comparisons, localized edits, stale results, replacement and keyboard failure recovery | Full geometry permutations and cancellation/cache invariants owned by `src/analysis` source tests; pointer dragging owned by `playback`. |
 | `recovery` | Maximum-size project durability and reopening in a fresh desktop process | Filesystem corruption/retention permutations owned by native tests. |
+| `analysis` | Whole-show reference results, pagination/filter/navigation, marker input, isolated drag checks, unavailable/retry and maximum-show freshness | Engine pair mathematics and portable-rule persistence owned by source/analysis-rules tests. |
 | `print` | Real native PDF handler, long content, all-set coverage and a dense chart | Static HTML-only demo printing. |
 
 Layered overlap is intentional when the failure modes differ: a codec unit test cannot prove IPC rejects an untrusted frame, and mocked native handlers cannot prove packaged worker paths exist. Keep those boundaries. Prefer a small, deterministic fixture for ordinary behavior; use maximum fixtures where scale is part of the assertion.

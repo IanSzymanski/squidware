@@ -159,3 +159,5 @@ Dependencies retain their own licenses, recorded in [THIRD_PARTY_NOTICES.txt](TH
 `private: true` in `package.json` prevents accidental publication to the npm registry; source licensing and desktop distribution use MIT regardless of that flag. See the [licensing decision and notice update guide](docs/licensing.md) for distribution details.
 
 Named history uses reversible patches and commit/cancel boundaries; the [history contract](docs/history.md) explains field behavior, revision identity and retention limits.
+
+Show-wide spacing and stride review, exact count navigation and isolated live drag checks are documented in [Show-wide problems](docs/show-wide-problems.md).
