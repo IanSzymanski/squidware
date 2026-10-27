@@ -13,6 +13,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
   const selection = ids.length === 1 ? project.performers.find(p => p.id === ids[0])?.label ?? '1 performer' : `${ids.length} performers`;
   let name: string;
   switch (id) {
+    case 'metronome.configure': name = 'Edit production meter'; break;
     case 'analysis.rules-save': name = 'Edit production analysis rules'; break;
     case 'analysis.direction-set': name = `${a.direction ? `Declare ${a.direction} travel` : 'Clear travel direction'} · ${ids.length} performers — ${picture}`; break;
     case 'rehearsal.save': name = `Save rehearsal passage · ${(a.passage as { name: string }).name}`; break;

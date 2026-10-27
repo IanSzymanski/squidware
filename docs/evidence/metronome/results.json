@@ -1,0 +1,506 @@
+{
+  "checks": [
+    "native settings route saves compound grouping as one undo action and retains session count-in",
+    "six-count lead-in at 1.5× holds the requested count and lands the first show click on count 3",
+    "3/4, 4/4 and 6/8 clicks retain exact audio-time spacing through 1600ms rendering stalls",
+    "pause, stopped seek and resume cancel pending clicks without a delayed tail",
+    "a renderer stall across the lead-in handover starts the recording and first show click at the intended count",
+    "track-backed count-in holds audio, follows media time, and cancels before recording playback",
+    "short loops emit each boundary beat once and never repeat the count-in",
+    "invalid groups disable Apply and native Escape discards the pending meter draft",
+    "an unavailable audio processor leaves rehearsal running and reports the missing click output",
+    "all themes and enlarged narrow-window controls remain usable; Cancel leaves production unchanged"
+  ],
+  "measurements": [
+    {
+      "fixture": "compound count-in",
+      "clicks": [
+        {
+          "type": "click",
+          "time": 0.6404988662131521,
+          "count": -3,
+          "accent": "bar",
+          "phase": "count-in",
+          "deliveredAt": 727.4000000022352
+        },
+        {
+          "type": "click",
+          "time": 0.9435291692434551,
+          "count": -2,
+          "accent": "beat",
+          "phase": "count-in",
+          "deliveredAt": 1037.4000000022352
+        },
+        {
+          "type": "click",
+          "time": 1.2465594722737583,
+          "count": -1,
+          "accent": "beat",
+          "phase": "count-in",
+          "deliveredAt": 1337.5
+        },
+        {
+          "type": "click",
+          "time": 1.549589775304061,
+          "count": 0,
+          "accent": "group",
+          "phase": "count-in",
+          "deliveredAt": 1637.300000000745
+        },
+        {
+          "type": "click",
+          "time": 1.8526200783343643,
+          "count": 1,
+          "accent": "beat",
+          "phase": "count-in",
+          "deliveredAt": 1947.2000000029802
+        },
+        {
+          "type": "click",
+          "time": 2.155650381364667,
+          "count": 2,
+          "accent": "beat",
+          "phase": "count-in",
+          "deliveredAt": 2247.300000000745
+        },
+        {
+          "type": "click",
+          "time": 2.4586806843949702,
+          "count": 3,
+          "accent": "group",
+          "phase": "show",
+          "deliveredAt": 2547.2000000029802
+        },
+        {
+          "type": "click",
+          "time": 2.7617109874252734,
+          "count": 4,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 2857.60000000149
+        }
+      ]
+    },
+    {
+      "fixture": "3/4 renderer blocked 1600ms",
+      "before": 3.2420861678004536,
+      "clicks": [
+        {
+          "type": "click",
+          "time": 2.9212018140589566,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 3026
+        },
+        {
+          "type": "click",
+          "time": 3.22423211708926,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 3323.400000002235
+        },
+        {
+          "type": "click",
+          "time": 3.5272624201195626,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 4944.20000000298
+        },
+        {
+          "type": "click",
+          "time": 3.830292723149866,
+          "count": 3,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 4955.10000000149
+        },
+        {
+          "type": "click",
+          "time": 4.133323026180169,
+          "count": 4,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 4955.20000000298
+        },
+        {
+          "type": "click",
+          "time": 4.436353329210472,
+          "count": 5,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 4955.20000000298
+        },
+        {
+          "type": "click",
+          "time": 4.7393836322407745,
+          "count": 6,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 4955.20000000298
+        }
+      ]
+    },
+    {
+      "fixture": "4/4 renderer blocked 1600ms",
+      "before": 5.392834467120181,
+      "clicks": [
+        {
+          "type": "click",
+          "time": 5.080657596371882,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 5182.20000000298
+        },
+        {
+          "type": "click",
+          "time": 5.383687899402185,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 5477.800000000745
+        },
+        {
+          "type": "click",
+          "time": 5.6867182024324885,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 7096.400000002235
+        },
+        {
+          "type": "click",
+          "time": 5.989748505462791,
+          "count": 3,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 7111.20000000298
+        },
+        {
+          "type": "click",
+          "time": 6.292778808493094,
+          "count": 4,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 7111.20000000298
+        },
+        {
+          "type": "click",
+          "time": 6.595809111523397,
+          "count": 5,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 7111.20000000298
+        },
+        {
+          "type": "click",
+          "time": 6.8988394145537,
+          "count": 6,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 7111.20000000298
+        }
+      ]
+    },
+    {
+      "fixture": "6/8 renderer blocked 1600ms",
+      "before": 7.552290249433106,
+      "clicks": [
+        {
+          "type": "click",
+          "time": 7.240113378684807,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 7329.400000002235
+        },
+        {
+          "type": "click",
+          "time": 7.54314368171511,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 7637.300000000745
+        },
+        {
+          "type": "click",
+          "time": 7.8461739847454135,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 9246.10000000149
+        },
+        {
+          "type": "click",
+          "time": 8.149204287775715,
+          "count": 3,
+          "accent": "group",
+          "phase": "show",
+          "deliveredAt": 9247
+        },
+        {
+          "type": "click",
+          "time": 8.45223459080602,
+          "count": 4,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 9247
+        },
+        {
+          "type": "click",
+          "time": 8.755264893836323,
+          "count": 5,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 9247
+        },
+        {
+          "type": "click",
+          "time": 9.058295196866625,
+          "count": 6,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 9247
+        }
+      ]
+    },
+    {
+      "fixture": "track-backed count-in",
+      "held": {
+        "count": 3,
+        "paused": true,
+        "time": 1.363636
+      },
+      "paired": {
+        "count": 4.0630898,
+        "time": 1.854963,
+        "clicks": [
+          {
+            "type": "click",
+            "time": 11.260725623582767,
+            "count": 0,
+            "accent": "bar",
+            "phase": "count-in",
+            "deliveredAt": 11347.20000000298
+          },
+          {
+            "type": "click",
+            "time": 11.715271078128222,
+            "count": 1,
+            "accent": "beat",
+            "phase": "count-in",
+            "deliveredAt": 11807.300000000745
+          },
+          {
+            "type": "click",
+            "time": 12.169816532673675,
+            "count": 2,
+            "accent": "beat",
+            "phase": "count-in",
+            "deliveredAt": 12257.20000000298
+          },
+          {
+            "type": "click",
+            "time": 13.195929852195423,
+            "count": 4,
+            "accent": "beat",
+            "phase": "show",
+            "deliveredAt": 13287.20000000298
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "1800ms renderer stall across recording count-in handover",
+      "count": 3.2294943999999997,
+      "time": 1.483143,
+      "clicks": [
+        {
+          "type": "click",
+          "time": 13.362131519274376,
+          "count": 0,
+          "accent": "bar",
+          "phase": "count-in",
+          "deliveredAt": 15210.20000000298
+        },
+        {
+          "type": "click",
+          "time": 13.816676973819831,
+          "count": 1,
+          "accent": "beat",
+          "phase": "count-in",
+          "deliveredAt": 15218
+        },
+        {
+          "type": "click",
+          "time": 14.271222428365284,
+          "count": 2,
+          "accent": "beat",
+          "phase": "count-in",
+          "deliveredAt": 15218
+        },
+        {
+          "type": "click",
+          "time": 15.121995828488972,
+          "count": 3,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 15218.10000000149
+        }
+      ]
+    },
+    {
+      "fixture": "three-count loop",
+      "clicks": [
+        {
+          "type": "click",
+          "time": 16.182698412698414,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 16285
+        },
+        {
+          "type": "click",
+          "time": 16.432698412698414,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 16527.400000002235
+        },
+        {
+          "type": "click",
+          "time": 16.682698412698414,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 16777.20000000298
+        },
+        {
+          "type": "click",
+          "time": 16.932698412698414,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 17027.20000000298
+        },
+        {
+          "type": "click",
+          "time": 17.182698412698414,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 17270.60000000149
+        },
+        {
+          "type": "click",
+          "time": 17.432698412698414,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 17538.20000000298
+        },
+        {
+          "type": "click",
+          "time": 17.682698412698414,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 17786.300000000745
+        },
+        {
+          "type": "click",
+          "time": 17.932698412698414,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 18027.10000000149
+        },
+        {
+          "type": "click",
+          "time": 18.182698412698414,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "deliveredAt": 18285.10000000149
+        },
+        {
+          "type": "click",
+          "time": 18.432698412698414,
+          "count": 0,
+          "accent": "bar",
+          "phase": "show",
+          "deliveredAt": 18527.20000000298
+        }
+      ]
+    }
+  ],
+  "viewports": [
+    {
+      "name": "metronome-workspace.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "metronome-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "metronome-count-in.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "metronome-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "metronome-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "metronome-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "metronome-enlarged.png",
+      "width": 896,
+      "height": 614,
+      "fieldHeight": 243,
+      "timelineHeight": 143.60000610351562
+    },
+    {
+      "name": "metronome-unavailable.png",
+      "width": 896,
+      "height": 614,
+      "fieldHeight": 243,
+      "timelineHeight": 143.60000610351562
+    }
+  ],
+  "source": {
+    "revision": "92ed5c36b980b27b93566e00a326227c1bcab393",
+    "tree": "d4d316274404aa1f972e488a7c131c248e6d5391",
+    "dirty": true,
+    "contentHash": "06977b4645e7eb19cc9ac5bff4950e7b34bada6513e89a6fd2088f9e7020c439",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  }
+}

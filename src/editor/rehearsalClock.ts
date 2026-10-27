@@ -13,11 +13,12 @@ export interface RehearsalMedia {
   load(): void;
 }
 
-export type ClockStatus = 'silent' | 'audio' | 'waiting' | 'before' | 'after' | 'failed';
+export type ClockStatus = 'silent' | 'audio' | 'waiting' | 'before' | 'after' | 'failed' | 'count-in';
 export const clockStatusText: Record<ClockStatus, string> = {
   silent: 'Silent playback', audio: 'Audio clock', waiting: 'Waiting for audio…',
   before: 'Before audio · silent playback', after: 'Audio ended · silent playback',
   failed: 'Audio unavailable · silent playback. Pause and play to retry.',
+  'count-in': 'Counting in…',
 };
 export interface ClockSample { seconds: number; playing: boolean; status: ClockStatus }
 const AUDIO_TIMEOUT_SECONDS = 10;
@@ -40,6 +41,7 @@ export class RehearsalClock {
   private progressTime: number;
   private lastMediaTime = -1;
   private parkedAt: number | null = null;
+  private delayedUntil: number | null = null;
 
   constructor(private readonly options: {
     totalSeconds: number; rangeStart?: number; rangeEnd?: number; offset: number; media?: RehearsalMedia; now: () => number;
@@ -48,7 +50,7 @@ export class RehearsalClock {
   }
 
   /** Omit seekSeconds for pause/resume, rate, or loop-option changes. */
-  update(transport: { playing: boolean; speed: number; loop: boolean }, seekSeconds?: number): ClockSample {
+  update(transport: { playing: boolean; speed: number; loop: boolean }, seekSeconds?: number, delaySeconds = 0): ClockSample {
     if (this.initialized) this.sample();
     this.initialized = true;
     const starting = transport.playing && !this.playing;
@@ -73,7 +75,9 @@ export class RehearsalClock {
     this.playing = transport.playing && this.options.totalSeconds > 0;
     this.speed = transport.speed;
     this.loop = transport.loop;
+    this.delayedUntil = this.playing && delaySeconds > 0 ? this.options.now() + delaySeconds : null;
     this.anchor();
+    if (this.delayedUntil !== null) { this.anchorTime = this.delayedUntil; this.cancelPlay(); }
     if (!this.playing) this.cancelPlay();
     if (this.options.media) this.options.media.playbackRate = this.speed;
     return this.sample();
@@ -83,6 +87,14 @@ export class RehearsalClock {
     if (this.disposed) return this.snapshot();
     const now = this.options.now();
     const media = this.options.media;
+    if (this.playing && this.delayedUntil !== null) {
+      if (now < this.delayedUntil) { this.status = 'count-in'; return this.snapshot(); }
+      this.delayedUntil = null; this.status = 'silent';
+      // Media can only start after its play request reaches the UI thread.
+      // A delayed request must still start at the chosen count, never seek
+      // forward by the time spent blocked across the end of the count-in.
+      if (media) this.anchorTime = now;
+    }
     if (this.playing) {
       if (this.status === 'audio' || this.status === 'waiting') {
         if (media && !media.error && !this.failed && !this.needsSeek) {
@@ -131,6 +143,7 @@ export class RehearsalClock {
   }
 
   dispose() { this.disposed = true; this.playing = false; this.cancelPlay(); }
+  get countInEndTime() { return this.delayedUntil; }
 
   private snapshot(): ClockSample { return { seconds: this.seconds, playing: this.playing, status: this.status }; }
   private anchor() { this.anchorSeconds = this.seconds; this.anchorTime = this.options.now(); }

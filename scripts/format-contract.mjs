@@ -46,6 +46,7 @@ export function formatSchema(version, limits) {
     definitions.sectionAnalysisRules = object({ sectionId: ref('id'), ...thresholds, directions: ref('directionRules') }, ['sectionId']);
     definitions.projectAnalysisRules = object({ defaults: object(thresholds), directions: ref('directionRules'), sections: array(ref('sectionAnalysisRules'), 0, limits.sections) }, ['defaults']);
     properties.analysisRules = ref('projectAnalysisRules');
+    properties.meter = object({ numerator: number(1,32,true), denominator: { enum: [2,4,8,16] }, grouping: array(number(1,32,true),1,32) });
     definitions.move.properties.marchingDirections = { type: 'object', maxProperties: limits.performers, propertyNames: ref('id'), additionalProperties: { enum: ['forward','backward','sideways'] } };
     definitions.rehearsalAnchor = { oneOf: [object({ kind: { const: 'set' }, setId: ref('id') }), object({ kind: { const: 'move' }, moveId: ref('id'), fromSetId: ref('id'), toSetId: ref('id'), count: number(0, limits.counts.max) })] };
     definitions.rehearsalFocus = { oneOf: [object({ kind: { const: 'all' } }), object({ kind: { const: 'section' }, sectionId: ref('id') }), object({ kind: { const: 'performers' }, performerIds: { ...array(ref('id'), 1, limits.performers), uniqueItems: true } })] };
@@ -60,7 +61,7 @@ export function formatSchema(version, limits) {
   }
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules')),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter')),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});
