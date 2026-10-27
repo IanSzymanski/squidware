@@ -9,38 +9,38 @@
   ],
   "metrics": {
     "findings": 210,
-    "maximumShowMs": 8692,
+    "maximumShowMs": 8797,
     "rapidEditDispatchMs": [
-      9.800000000046566,
-      4.300000000046566,
+      4.600000000093132,
+      3.3999999999068677,
+      3.8999999999068677,
       2.5,
-      2.800000000046566,
-      3.6000000000931323,
-      4,
-      3.5999999998603016,
-      3.6000000000931323,
-      3.4000000001396984,
-      2.3999999999068677,
+      2.5,
       3,
-      3.6000000000931323,
+      2.6000000000931323,
+      3.5,
+      3.400000000372529,
+      2.7999999998137355,
+      3.3999999999068677,
       3.3999999999068677,
       3.5,
-      2.8999999999068677,
       3.5,
-      2.300000000046566,
-      3.4000000001396984,
+      3.3999999999068677,
+      3.400000000372529,
+      3.3999999999068677,
+      2.2000000001862645,
+      5,
       3,
+      3.2000000001862645,
+      4.699999999720603,
+      2.7999999998137355,
+      2.6000000000931323,
       3,
-      3,
-      2.8999999999068677,
-      3.800000000046566,
-      3.4000000001396984,
-      3.800000000046566,
-      3.7000000001862645,
-      2.300000000046566,
-      3.7000000001862645,
-      5.399999999906868,
-      2.8999999999068677
+      2.5,
+      2.2999999998137355,
+      2.1000000000931323,
+      2.3999999999068677,
+      4.5
     ]
   },
   "viewports": [
@@ -48,68 +48,68 @@
       "name": "problems-field-dark.png",
       "width": 1366,
       "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-panel-dark.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-selected.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-drag-pending.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-drag-ready.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-unavailable.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-light.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
-    },
-    {
-      "name": "problems-high-contrast.png",
-      "width": 1366,
-      "height": 768,
-      "fieldHeight": 471
+      "fieldHeight": 485
     },
     {
       "name": "problems-field-narrow.png",
       "width": 1120,
       "height": 768,
-      "fieldHeight": 471
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-panel-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-selected.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-drag-pending.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-drag-ready.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-unavailable.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "problems-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
     },
     {
       "name": "problems-enlarged.png",
       "width": 819,
       "height": 576,
-      "fieldHeight": 190.60000610351562
+      "fieldHeight": 204.60000610351562
     }
   ],
   "source": {
-    "revision": "471e19535c97b586776c169124677e399d5beb2f",
-    "tree": "05ed0ee7d5a551f0ce98b2017b97af725e92ee4f",
+    "revision": "e9a2bebafb377ad9c6babe3ec5496c60807e08b9",
+    "tree": "5b1d082e09463406a0af70488d530681fcaef622",
     "dirty": true,
-    "contentHash": "14eafab3a4dc86463878f83df72feb4825468c6524260e2848f698c53c50ccb1",
+    "contentHash": "bf7d64568acfde60e2b2c1d8a717722225de56bdf748306a63d8233f1967c9f4",
     "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
   },
   "runtime": {

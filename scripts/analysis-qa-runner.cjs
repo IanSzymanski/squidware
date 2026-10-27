@@ -55,6 +55,11 @@ app.whenReady().then(async () => {
     const project=fixture();await evaluate(`${editor}.setValue('ui','dialog',null);${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('preferences','value',{...${state}.preferences.value,inspectorChecksOpen:true});${editor}.dispatch('set.select',{index:1})`);
     const moves=await oracle(), total=moves.reduce((n,m)=>n+m.issues.length,0);assert.ok(total>120);metrics.findings=total;
     await capture('problems-field-dark.png');assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);assert.ok(viewports.at(-1).fieldHeight>=470);
+    // Capture fixed-size layout before showing the window: macOS can constrain
+    // visible windows to its desktop work area despite setContentSize(…,768).
+    window.setContentSize(1120,768);await settleNativeViewport(window,'fixed narrow analysis');await capture('problems-field-narrow.png');
+    assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1120,768]);assert.ok(viewports.at(-1).fieldHeight>=470);
+    window.setContentSize(1366,768);await settleNativeViewport(window,'fixed analysis restored');
     await openProblems();assert.equal(await evaluate("document.querySelectorAll('.problem-result').length"),40);assert.match(await evaluate("document.querySelector('.problems-panel .problem-pagination').textContent"),new RegExp('of '+total+' matching'));
     await capture('problems-panel-dark.png');
     BrowserWindow.prototype.show=showWindow;window.show();window.focus();await frames();await settleNativeViewport(window,'visible analysis window');await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
@@ -112,7 +117,7 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
     pass('127 moves with 500 performers complete with bounded DOM markers; rapid edits and same-ID project replacement keep reference-correct results');
     await openProblems();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await capture(`problems-${theme}.png`);}
-    await close();window.setContentSize(1120,768);await settleNativeViewport(window,'narrow analysis');await capture('problems-field-narrow.png');assert.ok(viewports.at(-1).fieldHeight>=470);
+    await close();
     window.setContentSize(1024,720);window.webContents.setZoomFactor(1.25);await settleNativeViewport(window,'enlarged analysis');await openProblems();await capture('problems-enlarged.png');
     await evaluate("document.querySelector('[aria-label=\"Next problems page\"]').focus()");await key(window,'Return');assert.ok(await evaluate("(()=>{const r=document.activeElement.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()"));await close();
     assert.deepEqual(await evaluate(qa+'.errors'),[]);pass('supported themes, narrow field layout, enlarged text, keyboard focus and modal dismissal remain usable');
