@@ -17,6 +17,12 @@ function render(p: ClickPlan, from: number, end: number) {
 }
 
 describe('audio-thread click lookahead', () => {
+  it('cues a recording start once after delayed confirmation without shifting following beats', () => {
+    const p = plan({ seconds: 1.6, cue: { count: 3, time: 10.01 } });
+    expect(render(p, 10, 11).map(e => [e.count,e.time])).toEqual([[3,10.01],[4,10.4],[5,10.9]]);
+    const exact = plan({ seconds: 1.5, cue: { count: 3, time: 10.01 } });
+    expect(render(exact, 10, 10.6).map(e => [e.count,e.time])).toEqual([[3,10.01],[4,10.5]]);
+  });
   it('preserves queued loop-boundary clicks when the render and media clocks straddle the edge', () => {
     expect(clockDifference(.742, .002, .75, true)).toBeCloseTo(.01);
     expect(clockDifference(.002, .742, .75, true)).toBeCloseTo(.01);

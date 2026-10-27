@@ -5,7 +5,7 @@ import { projectMeter } from '../meter';
 import { rehearsalBounds } from '../rehearsal';
 import { clockStatusText, RehearsalClock } from './rehearsalClock';
 import { MetronomeAudio } from './metronomeAudio';
-import { clockDifference, countAt, secondsAt, tempoSpans } from './clickSchedule';
+import { clockDifference, countAt, tempoSpans } from './clickSchedule';
 import type { ClickPlan } from './clickSchedule';
 import { useEditorSelector, useEditorStore } from './react';
 
@@ -30,13 +30,18 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     const clock = new RehearsalClock({ totalSeconds, rangeStart: start, rangeEnd: end,
       offset: project.audioOffsetSeconds, media, now });
     let raf = 0, writing = false, disposed = false, plan: ClickPlan | null = null;
+    let pendingStartCount: number | null = null;
     const current = () => !disposed && store.getState().project.present === project && store.getState().playback.rehearsalId === rehearsalId;
     function updateClicks(force = false) {
       if (!current()) { audio?.update(null); return; }
       const transport = store.getState().playback, sample = clock.sample(), at = now();
       const leadEnd = clock.countInEndTime;
       const audible = sample.playing && sample.status !== 'waiting' && (transport.metronome || leadEnd !== null);
-      if (!audible) { if (plan) audio?.update(null); plan = null; return; }
+      if (!audible) {
+        if (plan) audio?.update(null); plan = null;
+        if (!transport.playing || !transport.metronome && leadEnd === null) pendingStartCount = null;
+        return;
+      }
       if (!force && plan) {
         if (leadEnd !== null) return;
         let predicted = plan.seconds + (at - plan.anchorTime) * plan.speed;
@@ -47,14 +52,16 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       }
       const secondsPerCount = spans.find(s => sample.seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? spans.at(-1)?.secondsPerCount ?? .5;
       const counts = transport.countInBars * meter.numerator;
-      const beatSeconds = secondsAt(spans, Math.round(countAt(spans, sample.seconds)));
-      // Give the first render block a small delivery margin for an exact start
-      // beat. Later synchronization never replays the beat just emitted.
-      const cue = !plan && leadEnd === null && sample.seconds >= beatSeconds && sample.seconds - beatSeconds < .02;
-      plan = { spans, meter, anchorTime: leadEnd ?? (at + (cue ? .01 : 0)), seconds: cue ? beatSeconds : sample.seconds, speed: transport.speed,
+      // Startup confirmation may arrive later than one control tick. Preserve
+      // the requested first beat as an explicit cue; subsequent beats retain
+      // their actual media-time mapping instead of inheriting that latency.
+      const cue = leadEnd === null && pendingStartCount !== null ? { time: at + .01, count: pendingStartCount } : undefined;
+      if (cue || leadEnd !== null && !media) pendingStartCount = null;
+      plan = { spans, meter, anchorTime: leadEnd ?? at, seconds: sample.seconds, speed: transport.speed,
         // During a recording's lead-in, the audio thread emits only lead-in
         // clicks. Show clicks begin after media confirms its actual start.
         start, end, loop: transport.loop, clicks: transport.metronome && !(media && leadEnd !== null),
+        ...(cue ? { cue } : {}),
         ...(leadEnd === null ? {} : { countIn: { startTime: leadEnd - counts * secondsPerCount / transport.speed,
           counts, startCount: countAt(spans, sample.seconds), secondsPerCount } }) };
       audio?.update(plan);
@@ -88,6 +95,8 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       const seconds = countToSeconds(project, transport.count);
       const countSeconds = spans.find(s => seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? .5;
       const delay = starting && transport.countInBars ? transport.countInBars * meter.numerator * countSeconds / transport.speed + .06 : 0;
+      if (starting) pendingStartCount = Number.isInteger(transport.count) ? transport.count : null;
+      if (!transport.playing) pendingStartCount = null;
       clock.update(transport, seek ? seconds : undefined, delay);
       updateClicks(true);
     }

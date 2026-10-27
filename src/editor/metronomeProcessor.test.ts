@@ -23,6 +23,20 @@ const plan: ClickPlan = { spans: [{ count: 0, seconds: 0, counts: 6, secondsPerC
   anchorTime: .1, seconds: 0, speed: 1, start: 0, end: 1.5, loop: true, clicks: true };
 
 describe('actual click PCM from the production audio processor', () => {
+  it('renders a late-delivered recording-start cue and keeps later beats on their media anchor', () => {
+    vi.stubGlobal('currentTime', .2);
+    const processor = new Worklet(), messages: { count: number; time: number }[] = [];
+    processor.port.postMessage = message => messages.push(message as { count: number; time: number });
+    processor.port.onmessage!({ data: { type: 'diagnostics', diagnostics: true } });
+    processor.port.onmessage!({ data: { type: 'plan', plan: { ...plan, anchorTime: .1, seconds: .75, cue: { time: .11, count: 3 } } } });
+    let audible = false;
+    for (let frame = 9600; frame < 26000; frame += 128) {
+      const output = block(processor, frame); audible = output.some(value => value !== 0) || audible;
+    }
+    expect(audible).toBe(true);
+    expect(messages[0].count).toBe(3); expect(messages[0].time).toBeCloseTo(.2 + 128 / 48000);
+    expect(messages[1]).toMatchObject({ count: 4, time: .35 });
+  });
   it('renders distinct accent frequencies with sample-accurate onsets and bounded amplitude without UI callbacks', () => {
     vi.stubGlobal('currentTime', 0);
     const processor = new Worklet(); processor.port.onmessage!({ data: { type: 'plan', plan } });

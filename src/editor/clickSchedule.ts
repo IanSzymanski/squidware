@@ -7,6 +7,9 @@ export interface ClickPlan {
   start: number; end: number; loop: boolean; clicks: boolean;
   /** Before show time starts, counts are held and only these lead-in clicks run. */
   countIn?: { startTime: number; counts: number; startCount: number; secondsPerCount: number };
+  /** A recording can confirm startup after its first beat. Cue that requested
+   * count once without shifting subsequent beats away from media time. */
+  cue?: { time: number; count: number };
 }
 export interface ScheduledClick { time: number; count: number; accent: 'bar' | 'group' | 'beat'; phase: 'show' | 'count-in' }
 export function tempoSpans(project: Project): TempoSpan[] {
@@ -50,6 +53,9 @@ export class ClickSchedule {
           accent: clickAccent(i, p.meter), phase: 'count-in' });
       }
     }
+    if (p.clicks && p.cue && p.cue.time >= from && p.cue.time < endTime) {
+      events.push({ ...p.cue, accent: clickAccent(p.cue.count, p.meter), phase: 'show' });
+    }
     const begin = Math.max(from, lead ? p.anchorTime : from);
     if (endTime <= begin || !p.clicks) return events;
     const length = p.end - p.start;
@@ -65,6 +71,7 @@ export class ClickSchedule {
         const first = Math.ceil(countAt(p.spans, low) - 1e-8) || 0;
         const last = Math.floor(countAt(p.spans, high) + 1e-8);
         for (let count = first; count <= last; count++) {
+          if (p.cue && count === p.cue.count && cycle === 0) continue;
           const seconds = secondsAt(p.spans, count);
           if (seconds < p.start - 1e-8 || seconds > p.end + 1e-8 || (p.loop && seconds >= p.end - 1e-8)) continue;
           const time = p.anchorTime + (seconds + cycleOffset - p.seconds) / p.speed;

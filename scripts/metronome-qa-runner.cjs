@@ -126,7 +126,7 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('playback.scrub',{count:3})`); await pause(50); await clear(); await toggle();
     await wait(`${state}.playback.clockStatus.startsWith('Count-in')`,'blocked handover lead-in');
     await evaluate('(() => {const end=performance.now()+1800;while(performance.now()<end){} })()');
-    await wait(`${state}.playback.clockStatus==='Audio clock' && ${state}.playback.count>3.2`,'blocked handover starts recording');
+    await wait(`${state}.playback.clockStatus==='Audio clock' && ${state}.playback.count>3.2 && ${qa}.clicks.some(c=>c.phase==='show')`,'blocked handover starts recording and renders its first click');
     const handover = await evaluate(`({count:${state}.playback.count,time:document.querySelector('audio').currentTime,clicks:${qa}.clicks})`);
     const started = handover.clicks.filter(c=>c.phase==='show');
     assert.ok(started.length>0); assert.equal(started[0].count,3);
@@ -166,6 +166,13 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('dialog.open',{dialog:'metronome'})`); await capture('metronome-enlarged.png');
     assert.equal(await evaluate("[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Apply').getBoundingClientRect().bottom<=innerHeight"),true);
     await click('Cancel'); await wait(`!${state}.ui.dialog`,'cancel enlarged');
+    window.setContentSize(1120,680); await settleNativeViewport(window,'short enlarged dialog');
+    await evaluate(`${editor}.dispatch('dialog.open',{dialog:'metronome'})`);
+    await wait("!!document.querySelector('[aria-label=\"Count-in\"]')",'short dialog mounted');
+    await selectNativeOption(window,'[aria-label="Count-in"]','2');
+    await capture('metronome-short.png');
+    assert.equal(await evaluate("[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Apply').getBoundingClientRect().bottom<=innerHeight"),true);
+    await click('Cancel'); await wait(`!${state}.ui.dialog`,'cancel short dialog');
     await evaluate(`${qa}.rejectWorklet=true; ${editor}.dispatch('project.update',{title:'Unavailable click output'}); ${editor}.setValue('playback','countInBars',0)`);
     await pause(100); await toggle(); await wait(`${state}.playback.clockStatus.includes('Metronome unavailable') && ${state}.playback.count>.3`,'unavailable processor fallback');
     await capture('metronome-unavailable.png'); await stop();

@@ -20,7 +20,9 @@ export class MetronomeAudio {
       this.node = new AudioWorkletNode(this.context, 'squidware-metronome', { numberOfInputs: 0, outputChannelCount: [1] });
       this.node.onprocessorerror = () => { if (!this.disposed) this.failed(); };
       this.node.connect(this.context.destination);
-      this.node.port.postMessage({ type: 'plan', plan: this.plan });
+      const plan = this.plan?.cue && this.plan.cue.time < this.context.currentTime
+        ? { ...this.plan, cue: { ...this.plan.cue, time: this.context.currentTime + .01 } } : this.plan;
+      this.node.port.postMessage({ type: 'plan', plan });
     }).catch(() => { if (!this.disposed) this.failed(); });
   }
   dispose() { this.disposed = true; this.plan = null; this.node?.port.postMessage({ type: 'plan', plan: null }); this.node?.disconnect(); this.node?.port.close(); }

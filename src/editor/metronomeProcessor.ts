@@ -8,13 +8,18 @@ declare function registerProcessor(name: string, processor: typeof AudioWorkletP
 
 class MetronomeProcessor extends AudioWorkletProcessor {
   private scheduler: ClickSchedule | null = null;
-  private queue: ScheduledClick[] = [];
+  private queue: (ScheduledClick & { reported?: boolean })[] = [];
   private diagnostics = false;
   constructor() {
     super();
     this.port.onmessage = ({ data }: MessageEvent<{ type: string; plan?: ClickPlan; diagnostics?: boolean }>) => {
       if (data.type === 'diagnostics') { this.diagnostics = !!data.diagnostics; return; }
-      this.scheduler = data.plan ? new ClickSchedule(data.plan, currentTime) : null;
+      // The control message itself can arrive late under load. Place its
+      // one-time startup cue in an upcoming audio block, while preserving the
+      // media anchor used by every following beat.
+      const plan = data.plan?.cue ? { ...data.plan, cue: { ...data.plan.cue,
+        time: Math.max(data.plan.cue.time, currentTime + 128 / sampleRate) } } : data.plan;
+      this.scheduler = plan ? new ClickSchedule(plan, currentTime) : null;
       this.queue = [];
     };
   }
@@ -30,7 +35,11 @@ class MetronomeProcessor extends AudioWorkletProcessor {
         const elapsed = currentTime + i / sampleRate - event.time;
         if (elapsed >= 0 && elapsed < .04) output[i] += .12 * Math.sin(2 * Math.PI * frequency * elapsed) * Math.exp(-150 * elapsed);
       }
-      if (this.diagnostics && event.time >= currentTime && event.time < end) this.port.postMessage({ type: 'click', ...event });
+      if (!event.reported && start < output.length && event.time + .04 > currentTime) {
+        event.reported = true;
+        if (this.diagnostics) this.port.postMessage({ type: 'click', time: event.time, count: event.count,
+          accent: event.accent, phase: event.phase, renderTime: currentTime + start / sampleRate });
+      }
     }
     this.queue = this.queue.filter(event => event.time + .04 >= end);
     return true;
