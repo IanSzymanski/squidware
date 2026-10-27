@@ -3,17 +3,17 @@
 .timeline-navigation select { min-width: 80px; max-width: 180px; flex: 1; font-size: 12px; height: 26px; padding: 2px 5px; }
 .timeline-navigation input { width: 60px; min-width: 40px; flex: 1; height: 20px; padding: 0; margin: 0; accent-color: var(--accent); }
 .timeline-window { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.timeline-view-toggle { display: flex; align-items: center; gap: 3px; padding: 1px; background: var(--surface); color: var(--text); font-size: 11px; border-radius: 3px; }
+.timeline-view-toggle { display: flex; align-items: center; gap: 3px; height: 14px; padding: 0; background: var(--surface); color: var(--text); font-size: 11px; line-height: 12px; border-radius: 3px; }
 .timeline-viewport { flex: 1; min-width: 0; padding: 0 14px; overflow: hidden; }
 .timeline-viewport .tracks { width: 100%; }
-.timeline-viewport .count-ruler { position: relative; display: block; }
-.timeline-viewport .count-ruler > span { position: absolute; transform: translateX(-50%); font-size: 11px; }
-.timeline-viewport .set-track { position: relative; display: block; }
-.timeline .timeline-viewport .set-track > button { position: absolute; height: 29px; border-radius: 2px; justify-content: center; gap: 5px; padding: 3px; }
+.timeline-viewport .count-ruler { position: relative; display: block; height: 14px; }
+.timeline-viewport .count-ruler > span { position: absolute; transform: translateX(-50%); font-size: 11px; line-height: 12px; }
+.timeline-viewport .set-track { position: relative; display: block; height: 25px; }
+.timeline .timeline-viewport .set-track > button { position: absolute; height: 23px; border-radius: 2px; justify-content: center; gap: 5px; padding: 0 3px; }
 .timeline-set-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .timeline .timeline-viewport .set-track > .timeline-opening { left: -14px; top: -3px; width: 28px; height: 20px; z-index: 4; border-width: 2px; }
 .timeline-viewport .playhead { pointer-events: none; z-index: 5; }
-.timeline-viewport .timeline-scrubber { top: 0; height: 22px; z-index: 6; cursor: crosshair; }
+.timeline-viewport .timeline-scrubber { top: 0; height: 14px; z-index: 6; cursor: crosshair; }
 .timeline-viewport .audio-track { display: block; overflow: hidden; }
 .timeline-viewport .audio-track > i { position: absolute; width: 2px; bottom: 0; }
 .timeline-viewport .audio-clock-status { z-index: 1; }
@@ -36,3 +36,15 @@
 }
 .timeline { container-type: inline-size; }
 .timeline .audio-attach .audio-file-label { display: inline; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.problem-track { position: relative; height: 14px; }
+.timeline .problem-track .problem-marker { position: absolute; top: 0; width: 14px; height: 14px; padding: 0; display: flex; align-items: center; justify-content: center; transform: translateX(-50%); background: var(--surface); border-radius: 2px; z-index: 7; }
+.problem-marker.danger { color: var(--error); }
+.problem-marker.warning { color: var(--warning); }
+/* Ruler + sets + problems share the existing 53px track area (14 + 25 + 14).
+   Keep label heights in step so the label column cannot enlarge the timeline. */
+.timeline .track-labels > span:first-child { height: 14px; padding-top: 0; }
+.timeline .track-labels > span:nth-child(2) { height: 25px; }
+.timeline .track-labels > span:last-child:not(.problem-track-label) { height: 31px; }
+.timeline .track-labels .problem-track-label { height: 14px; }
+.problem-track-label button { display: flex; align-items: center; gap: 2px; background: transparent; font-size: 11px; padding: 0; }

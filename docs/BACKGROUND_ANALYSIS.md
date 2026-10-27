@@ -12,7 +12,7 @@ Correctness comparisons retain the reference's `1e-8` geometric boundary epsilon
 
 ## Worker and editor lifecycle
 
-Only the selected move's endpoint tracks, timing, model signature and rules cross the worker boundary. The show is never serialized for analysis. The transition-check panel owns the worker hook, so asynchronous results cannot invalidate the editor shell or sibling Inspector controls during playback. The client coalesces requests within an event-loop turn and assigns monotonic revisions. Changed input immediately hides old flags, including the render before the request effect runs. Only a response matching the current revision and worker instance can become current.
+One move’s endpoint tracks, timing, model signature and rules cross the worker boundary at a time. The show is never serialized for analysis. The session-owned queue checks all moves, and dedicated subscribers render results without invalidating the editor shell or sibling Inspector controls during playback. The client coalesces requests within an event-loop turn and assigns monotonic revisions. Changed inputs synchronously hide their old flags before the next renderer update. Only a response matching the current revision and worker instance can become current.
 
 Worker tasks yield after each 2,048 candidate visits, allowing superseding requests to cancel them cooperatively. Canceled tasks cannot commit their caches. Startup, execution, message-decoding and fifteen-second timeout failures clear flags and display a keyboard-accessible **Retry check** action. Retry creates a fresh worker; there is no synchronous analysis fallback. Unmount terminates the worker and clears both timers. Production uses the existing self-only script/worker policy, with no new Node bridge or network permission.
 
@@ -25,3 +25,7 @@ The registered `analysis` suite compares real production-worker results with the
 [Design guidance](DESIGN_GUIDANCE.md) sections 2–4 apply: the check reuses Inspector typography, status colors, Lucide icons, shared buttons and help. Pending, error and ready states have text and distinct glyphs, with `aria-busy` and status announcements. Pending or failed checks never display a passing message. No workspace dimensions, physical coordinates or personal preference schema change. [Before/after, theme and enlarged-window evidence](evidence/analysis/README.md) records the rendered review. The existing flag badge's dense-count sizing is retained.
 
 These are bounded Linux/Xvfb checks. Hosted CI remains responsible for Windows/macOS/Linux certification. Writer, assistive-technology and representative school-device qualification remain #64/#3. Worker compute gains do not establish a 60 fps editor or complete the separate whole-application performance gate.
+
+## Show-wide review
+
+The session-owned queue now checks all moves and retains unaffected results. Complete pagination, count navigation, timeline markers and isolated checks of both adjacent moves during a drag are documented in [Show-wide problems](show-wide-problems.md). Historical evidence above records the earlier selected-move-only UI. Current Inspector flags page in groups of 12 without truncation.

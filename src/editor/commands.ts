@@ -26,6 +26,8 @@ import { drillPlan } from './drillCommands';
 import { shortcutIds } from '../shortcuts';
 
 export interface CommandArguments {
+  'analysis.problems-open': undefined;
+  'analysis.problem-review': { epoch: number; moveId: string; atCount: number; ids: string[] };
   'analysis.rules-open': undefined; 'analysis.rules-save': { rules: ProjectAnalysisRules; declaration?: { index: number; ids: string[]; direction: MarchingDirection | null } };
   'analysis.direction-set': { index: number; ids: string[]; direction: MarchingDirection | null };
   'rehearsal.open': undefined; 'rehearsal.save': { passage: RehearsalPassage };

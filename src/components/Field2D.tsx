@@ -137,6 +137,8 @@ interface Field2DProps extends DrawingProps {
   selectedIds: string[];
   onSelect: (ids: string[]) => void;
   onMove: (updates: Record<string, Point>) => void;
+  onMovePreview?: (updates: Record<string, Point> | null) => void;
+  problemOverlay?: React.ReactNode;
   tool: 'select' | 'pan' | 'lasso';
   selectionPreview?: SelectionReview | null;
   selectionToolsOpen?: boolean; onSelectionClose?: () => void;
@@ -160,7 +162,7 @@ type Gesture =
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const readoutId = useId();
@@ -283,11 +285,14 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   useEffect(() => {
     if (!gesture.current) return;
     gesture.current = null;
+    onMovePreview?.(null);
+    onMovePreview?.(null);
     setPreview({});
     setMarquee(null);
     setLasso(null);
     setMoving(false);
-  }, [positions, readOnly, project.id, orientation, snap, project.snapping, tool]);
+  }, [positions, readOnly, project.id, orientation, snap, project.snapping, tool, onMovePreview]);
+  useEffect(() => () => onMovePreview?.(null), [onMovePreview]);
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
@@ -355,6 +360,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       current.moved = true;
       hitCycle.current = null;
       current.updates = moveSelection(current.originals, Object.keys(current.originals), { x: dx, y: dy }, project.field, project.snapping ?? DEFAULT_SNAPPING, snap, current.anchorId);
+      onMovePreview?.(current.updates);
       setPreview(current.updates);
       setMoving(true);
     }
@@ -376,6 +382,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
         onSelect([...new Set([...current.initialIds, ...inside])]);
       }
     }
+    onMovePreview?.(null);
     setPreview({});
     setMarquee(null);
     setLasso(null);
@@ -384,6 +391,9 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
 
   function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
     if (event.nativeEvent.isComposing) return;
+    if (event.key === 'Escape' && gesture.current?.kind === 'move') {
+      event.preventDefault(); event.stopPropagation(); gesture.current = null; setPreview({}); setMoving(false); onMovePreview?.(null); return;
+    }
     if (selectionPreview && ['Enter', 'Escape'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); if (event.key === 'Escape') onSelectionCancel?.(); else onSelectionApply?.(); return; }
     if (event.key === 'Escape' && selectionToolsOpen && !gesture.current) { event.preventDefault(); event.stopPropagation(); onSelectionClose?.(); return; }
     if (event.key === 'Enter' && coordinatePreview) { event.preventDefault(); event.stopPropagation(); coordinatePreview.onApply(); return; }
@@ -436,6 +446,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
       <g ref={geometryRef} data-field-geometry={orientation} transform={fieldViewTransform(project.field, orientation)}>
       <FieldDrawing project={project} positions={displayedPositions} neighbors={moving ? [] : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
+      {problemOverlay}
       {selectionPreview && <g aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
       {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />}
