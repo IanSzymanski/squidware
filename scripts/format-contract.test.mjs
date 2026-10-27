@@ -28,6 +28,15 @@ test('optional rehearsal references preserve repairable targets and reject malfo
   const repairable = { ...project, rehearsal: [{ ...passage, start: { kind: 'set', setId: 'deleted' }, focus: { kind: 'section', sectionId: 'deleted' } }] };
   assert.ok(check(repairable)); assert.deepEqual(tools.parseProject(tools.serializeProject(repairable)).rehearsal, repairable.rehearsal);
 });
+test('portable analysis rules and declared directions pass both validators with bounded numeric units', () => {
+  const p = smallExample(); p.analysisRules = { defaults: { minimumSpacing: 1, maximumStride: 1.25 }, directions: { backward: { maximumStride: .75 } }, sections: [{ sectionId: 'brass', minimumSpacing: 2, directions: { sideways: { minimumSpacing: 3 } } }] }; p.moves[0].marchingDirections = { a: 'backward' };
+  assert.ok(check(p)); const reopened = tools.parseProject(tools.serializeProject(p)); assert.deepEqual(reopened.analysisRules, p.analysisRules); assert.deepEqual(reopened.moves[0].marchingDirections, p.moves[0].marchingDirections);
+  for (const analysisRules of [null, { defaults: { minimumSpacing: 0, maximumStride: 1 } }, { defaults: { minimumSpacing: 1, maximumStride: 6 } }, { ...p.analysisRules, directions: { north: {} } }, { ...p.analysisRules, sections: Array(tools.PROJECT_LIMITS.sections + 1).fill(p.analysisRules.sections[0]) }]) {
+    const bad = { ...p, analysisRules }; assert.equal(check(bad), false); assert.throws(() => tools.parseProject(JSON.stringify(bad)), /analysisRules/);
+  }
+  for (const marchingDirections of [null, { a: 'north' }]) { const bad = structuredClone(p); bad.moves[0].marchingDirections = marchingDirections; assert.equal(check(bad), false); assert.throws(() => tools.parseProject(JSON.stringify(bad)), /marchingDirections/); }
+  const stale = { ...p, analysisRules: { ...p.analysisRules, sections: [{ sectionId: 'deleted' }] } }; assert.ok(check(stale)); assert.throws(() => tools.parseProject(JSON.stringify(stale)), /existing section/);
+});
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
   for(const name of ['basic-v1','basic-v2','maximum-v2']) {

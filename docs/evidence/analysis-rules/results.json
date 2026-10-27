@@ -1,0 +1,77 @@
+{
+  "checks": [
+    "native rule/declaration drafts save as one transaction, clear stale flags and update mixed-section worker outcomes without editing positions",
+    "personal preferences do not change active-project flags; undo/redo restores rules and declared directions together",
+    "native save/reopen preserves portable rules and direction declarations independently of local preferences",
+    "invalid numeric rules are blocked, Escape discards drafts, and supported themes/enlarged layouts retain acceptance controls",
+    "personal defaults are copied into newly created productions, leaving imported projects portable"
+  ],
+  "viewports": [
+    {
+      "name": "analysis-rules-default.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "analysis-rules-editor-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "analysis-rules-flags.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "analysis-rules-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "analysis-rules-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "timelineHeight": 117
+    },
+    {
+      "name": "analysis-rules-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "timelineHeight": 143.33334350585938
+    }
+  ],
+  "scope": "targeted",
+  "source": {
+    "revision": "b4a7bcdf6eabb37f8c8716894b665925c85ac993",
+    "tree": "3880abf894a88c2a2838f77d070b84fb04e0eea8",
+    "dirty": true,
+    "contentHash": "dd9abcf1b1b3ce5c7db2c91b511926978250e0367bec33eb0263aba29cce2689",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "local_flags": [
+    "--no-sandbox",
+    "--disable-dev-shm-usage"
+  ],
+  "display": "Xorg dummy display"
+}

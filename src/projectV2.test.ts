@@ -36,7 +36,8 @@ describe('schema v2 migration and compatibility', () => {
     }
     for (let index = 0; index < old.sets.length; index += 1) {
       expect(setStartCount(compatible, index)).toBe(legacy.setStartCount(old, index));
-      expect(analyzeTransition(compatible, index)).toEqual(legacy.analyzeTransition(old, index));
+      // Rule explanations are new; migration preserves the original flag content and semantics.
+      expect(analyzeTransition(compatible, index).map(issue => ({ ...issue, message: issue.message.split(/ (?:Limit|Minimum) /)[0] }))).toEqual(legacy.analyzeTransition(old, index));
     }
     const originalRows = legacy.exportCoordinatesCsv(old).trimEnd().split('\r\n');
     const currentRows = exportCoordinatesCsv(compatible).trimEnd().split('\r\n');

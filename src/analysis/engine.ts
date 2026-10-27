@@ -1,3 +1,5 @@
+import { PROJECT_LIMITS } from '../projectValidation';
+import { spacingRuleText, strideRuleText } from './rules';
 import type { TransitionIssue } from '../types';
 import type { AnalysisInput, AnalysisResult, Track } from './input';
 
@@ -11,9 +13,9 @@ const sameTrack = (a: Track, b: Track) => a.from.x === b.from.x && a.from.y === 
 function stride(input: AnalysisInput, p: Track): TransitionIssue | undefined {
   const distance = Math.hypot(p.to.x - p.from.x, p.to.y - p.from.y);
   const peak = distance / input.counts * (input.transition === 'ease' ? 1.5 : 1);
-  if (peak <= input.maximumStride + EPSILON) return;
-  return { type: 'stride', performerIds: [p.id], severity: peak > input.maximumStride * 4 / 3 ? 'danger' : 'warning',
-    message: `${p.label}: ${distance.toFixed(1)} yards in ${input.counts} counts; ${input.transition === 'ease' ? 'peak ' : ''}${(5 / peak).toFixed(1)} steps per 5 yards.`, atCount: input.startCount + input.counts / 2 };
+  if (peak <= p.maximumStride + EPSILON) return;
+  return { type: 'stride', performerIds: [p.id], severity: peak > p.maximumStride * 4 / 3 ? 'danger' : 'warning',
+    message: `${p.label}: ${distance.toFixed(1)} yards in ${input.counts} counts; ${input.transition === 'ease' ? 'peak ' : ''}${(5 / peak).toFixed(1)} steps per 5 yards.${strideRuleText(p)}`, atCount: input.startCount + input.counts / 2 };
 }
 function collision(input: AnalysisInput, a: Track, b: Track): TransitionIssue | undefined {
   const rx = a.from.x - b.from.x, ry = a.from.y - b.from.y;
@@ -21,7 +23,8 @@ function collision(input: AnalysisInput, a: Track, b: Track): TransitionIssue | 
   const squared = vx * vx + vy * vy;
   const closest = squared < EPSILON ? 0 : Math.max(0, Math.min(1, -(rx * vx + ry * vy) / squared));
   const distance = Math.hypot(rx + vx * closest, ry + vy * closest);
-  if (distance >= input.minimumSpacing - EPSILON) return;
+  const minimumSpacing = Math.max(a.minimumSpacing, b.minimumSpacing);
+  if (distance >= minimumSpacing - EPSILON) return;
   let progress = closest;
   if (input.transition === 'ease') {
     let low = 0, high = 1;
@@ -29,13 +32,13 @@ function collision(input: AnalysisInput, a: Track, b: Track): TransitionIssue | 
     progress = (low + high) / 2;
   }
   const atCount = input.startCount + progress * input.counts;
-  return { type: 'collision', performerIds: [a.id, b.id], severity: distance < input.minimumSpacing / 2 ? 'danger' : 'warning',
-    message: `${a.label} / ${b.label}: ${distance.toFixed(2)} yards apart near count ${Number(atCount.toFixed(1))}.`, atCount };
+  return { type: 'collision', performerIds: [a.id, b.id], severity: distance < minimumSpacing / 2 ? 'danger' : 'warning',
+    message: `${a.label} / ${b.label}: ${distance.toFixed(2)} yards apart near count ${Number(atCount.toFixed(1))}.${spacingRuleText(a, b)}`, atCount };
 }
 function compatible(a: AnalysisInput, b: AnalysisInput) {
   return a.projectKey === b.projectKey && a.modelKey === b.modelKey && a.counts === b.counts && a.tempo === b.tempo
     && a.transition === b.transition && a.startCount === b.startCount && a.minimumSpacing === b.minimumSpacing && a.maximumStride === b.maximumStride
-    && a.tracks.length === b.tracks.length && a.tracks.every((p, i) => p.id === b.tracks[i].id && p.label === b.tracks[i].label);
+    && a.tracks.length === b.tracks.length && a.tracks.every((p, i) => p.id === b.tracks[i].id && p.label === b.tracks[i].label && p.minimumSpacing === b.tracks[i].minimumSpacing && p.maximumStride === b.tracks[i].maximumStride && p.context === b.tracks[i].context);
 }
 
 /** LRU is bounded to four moves. Canceled work never mutates a committed cache. */
@@ -44,7 +47,7 @@ export class TransitionAnalyzer {
   private projectKey = '';
   async analyze(input: AnalysisInput, canceled = () => false, yieldTask = () => new Promise<void>(resolve => setTimeout(resolve, 0))): Promise<AnalysisResult | null> {
     const started = performance.now();
-    if (![input.minimumSpacing, input.maximumStride].every(n => Number.isFinite(n) && n >= .1 && n <= 5)) throw new Error('Check thresholds must be between 0.1 and 5.');
+    if (![input.minimumSpacing, input.maximumStride, ...input.tracks.flatMap(t => [t.minimumSpacing, t.maximumStride])].every(n => Number.isFinite(n) && n >= PROJECT_LIMITS.analysisThreshold.min && n <= PROJECT_LIMITS.analysisThreshold.max)) throw new Error('Check thresholds must be between 0.1 and 5.');
     if (input.projectKey !== this.projectKey) { this.cache.clear(); this.projectKey = input.projectKey; }
     const old = this.cache.get(input.moveId), reuse = old && compatible(old.input, input);
     const n = input.tracks.length, dirty = new Set<number>();

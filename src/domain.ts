@@ -1,3 +1,4 @@
+import { resolveAnalysisRules, spacingRuleText, strideRuleText } from './analysis/rules';
 import { affinePoint } from './transforms';
 import type { LegacyDrillSet, FormationKind, FormationOptions, Move, Performer, Point, Project, Section, TimelineSample, TransitionIssue } from './types';
 import { PROJECT_LIMITS } from './projectValidation';
@@ -287,22 +288,24 @@ export function secondsToCount(project: Project, seconds: number): number {
   return count;
 }
 
-export function analyzeTransition(project: Project, setIndex: number, { minimumSpacing = 1, maximumStride = 1.25 } = {}): TransitionIssue[] {
-  if (![minimumSpacing, maximumStride].every(value => Number.isFinite(value) && value >= .1 && value <= 5)) throw new Error('Check thresholds must be between 0.1 and 5.');
+export function analyzeTransition(project: Project, setIndex: number, base?: Partial<import('./types').AnalysisThresholds>): TransitionIssue[] {
+  if (!Object.values(base ?? {}).every(value => Number.isFinite(value) && value >= PROJECT_LIMITS.analysisThreshold.min && value <= PROJECT_LIMITS.analysisThreshold.max)) throw new Error('Check thresholds must be between 0.1 and 5.');
   if (!Number.isInteger(setIndex) || setIndex < 1 || setIndex >= project.sets.length) return [];
   const destination = project.sets[setIndex];
   const move = project.moves[setIndex - 1];
   const previous = project.sets[setIndex - 1];
   const issues: TransitionIssue[] = [];
   const startCount = setStartCount(project, setIndex - 1);
-  project.performers.forEach(performer => {
+  const appliedRules = project.performers.map(p => resolveAnalysisRules(project, setIndex - 1, p, base));
+  project.performers.forEach((performer, index) => {
+    const rule = appliedRules[index], maximumStride = rule.maximumStride;
     const from = previous.positions[performer.id];
     const to = destination.positions[performer.id];
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
     const peakStride = distance / move.counts * (move.transition === 'ease' ? 1.5 : 1);
     if (peakStride > maximumStride + EPSILON) {
       issues.push({ type: 'stride', performerIds: [performer.id], severity: peakStride > maximumStride * 4 / 3 ? 'danger' : 'warning',
-        message: `${performer.label}: ${distance.toFixed(1)} yards in ${move.counts} counts; ${move.transition === 'ease' ? 'peak ' : ''}${(5 / peakStride).toFixed(1)} steps per 5 yards.`,
+        message: `${performer.label}: ${distance.toFixed(1)} yards in ${move.counts} counts; ${move.transition === 'ease' ? 'peak ' : ''}${(5 / peakStride).toFixed(1)} steps per 5 yards.${strideRuleText(rule)}`,
         atCount: startCount + move.counts / 2 });
     }
   });
@@ -321,11 +324,12 @@ export function analyzeTransition(project: Project, setIndex: number, { minimumS
       const velocitySquared = vx * vx + vy * vy;
       const closestProgress = velocitySquared < EPSILON ? 0 : clamp(-(rx * vx + ry * vy) / velocitySquared, 0, 1);
       const distance = Math.hypot(rx + vx * closestProgress, ry + vy * closestProgress);
+      const minimumSpacing = Math.max(appliedRules[a].minimumSpacing, appliedRules[b].minimumSpacing);
       if (distance < minimumSpacing - EPSILON) {
         const timeProgress = move.transition === 'ease' ? inverseSmoothstep(closestProgress) : closestProgress;
         const atCount = startCount + timeProgress * move.counts;
         issues.push({ type: 'collision', performerIds: [first.id, second.id], severity: distance < minimumSpacing / 2 ? 'danger' : 'warning',
-          message: `${first.label} / ${second.label}: ${distance.toFixed(2)} yards apart near count ${Number(atCount.toFixed(1))}.`, atCount });
+          message: `${first.label} / ${second.label}: ${distance.toFixed(2)} yards apart near count ${Number(atCount.toFixed(1))}.${spacingRuleText(appliedRules[a], appliedRules[b])}`, atCount });
       }
     }
   }
