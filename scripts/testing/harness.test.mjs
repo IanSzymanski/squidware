@@ -199,3 +199,22 @@ test('a compositor retry captures the requested viewport after a content-size nu
   assert.equal(context.innerWidth, 1366);
   assert.equal(await readFile(path.join(output, 'retry.png'), 'utf8'), 'retry pixels');
 });
+
+test('serial progress may exceed the idle deadline while stalled or failed work cannot', async () => {
+  let step = 0;
+  await renderer.waitForProgress(async () => {
+    await renderer.pause(8); step++;
+    return { progress: step, done: step === 8 };
+  }, 'serial fixture', { idleTimeoutMs: 30, timeoutMs: 500, intervalMs: 1 });
+  assert.equal(step,8);
+  await assert.rejects(renderer.waitForProgress(() => ({ progress: 1, done: false }), 'stalled fixture',
+    { idleTimeoutMs: 15, timeoutMs: 500, intervalMs: 1 }), /no progress beyond 1/);
+  await assert.rejects(renderer.waitForProgress(() => ({ progress: 1, done: false, error: 'worker failed' }), 'failed fixture'), /worker failed/);
+});
+
+test('serial progress retains an absolute deadline even when work keeps advancing', async () => {
+  let progress = 0;
+  await assert.rejects(renderer.waitForProgress(() => ({ progress: ++progress, done: false }), 'unbounded fixture',
+    { idleTimeoutMs: 500, timeoutMs: 25, intervalMs: 1 }), /Timed out: unbounded fixture/);
+  assert.ok(progress>1);
+});

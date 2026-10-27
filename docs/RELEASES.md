@@ -1,12 +1,10 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published; their 17 and 19 planned implementation issues are completed. **v0.7 — Show timing and analysis** is active, with 6 of 15 issues completed. Portable project analysis rules [#44](https://github.com/IanSzymanski/squidware/issues/44) joined the completed background analysis, audio clock, timeline navigation, set creation and rehearsal passages through [#148](https://github.com/IanSzymanski/squidware/pull/148). Continue with [#45 — show-wide problems and count navigation](https://github.com/IanSzymanski/squidware/issues/45), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 7 of 15 issues completed. Show-wide problems [#45](https://github.com/IanSzymanski/squidware/issues/45) landed through [#149](https://github.com/IanSzymanski/squidware/pull/149). Continue with [#14 — meter-aware metronome](https://github.com/IanSzymanski/squidware/issues/14), respecting the maintained queue and hard prerequisites.
 
-**Main certification:** [Source checks and Windows/macOS/Linux certification](https://github.com/IanSzymanski/squidware/actions/runs/40529077542) passed on merged main `471e195`, including the portable analysis rules from [#148](https://github.com/IanSzymanski/squidware/pull/148). The [Release train](https://github.com/IanSzymanski/squidware/actions/runs/40530574439) reconciled milestones and skipped publication because v0.7 still has 9 unfinished issues. Earlier screenshot viewport/layout failures remain resolved; every future publication requires successful exact-source main CI.
+**Main certification:** [PR #149 certification](https://github.com/IanSzymanski/squidware/actions/runs/40538218581) passed on Windows, macOS and Linux before merge. The later [merged-main run](https://github.com/IanSzymanski/squidware/actions/runs/40578566724) on `92ed5c3` passed source, Windows and Linux but failed macOS while waiting for the 127-move analysis backlog. The metronome change replaces that single total wait with bounded progress/error checks and retains every oracle assertion; its cross-platform result must be checked separately. v0.7 remains unpublished with 8 unfinished issues; publication still requires successful exact-source main CI.
 
 **Validation policy:** Maintainer decision (2026-10-22): human review, participant sessions, first-time discovery checks, subjective listening and physical/representative school-hardware qualification are not completion or release gates. Automated software tests, rendered-output review, cross-platform CI, package verification and signing requirements remain applicable. Historical references to human/hardware gates are superseded; no waived check is claimed to have passed. See [the validation policy](VALIDATION_POLICY.md). #3 is complete on its delivered local measurement scope; #64 retains software-based platform/coverage review.
-
-**Publication tooling follow-up:** The checksum filename fix and preferences startup/native-input fixes landed in [#142](https://github.com/IanSzymanski/squidware/pull/142), after [Windows/macOS/Linux certification](https://github.com/IanSzymanski/squidware/actions/runs/39668585257) passed. The earlier v0.6.0 checksum manifest repair retained the certified tag and package assets.
 
 Releases progress in order from v0.5 through v1.2. GitHub milestones own live scope/status; [release-plan.json](../release-plan.json) owns membership and hard prerequisites. Versions and grouping are planning decisions, not delivery dates. Issue acceptance criteria use automated/software-host evidence under the 2026-10-22 maintainer validation policy; human review and physical-hardware qualification are not gates.
 
@@ -64,7 +62,7 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-6/15 implementation issues completed at reconciliation.
+7/15 implementation issues completed at reconciliation.
 
 - [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
 - [x] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
@@ -75,7 +73,7 @@ Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, por
 - [x] [#29 · Audit A29 Give add, duplicate, hold and insert-before sets distinct behavior](https://github.com/IanSzymanski/squidware/issues/29)
 - [x] [#31 · Audit A33 Add timeline zoom, set-aware labels and one-count stepping](https://github.com/IanSzymanski/squidware/issues/31)
 - [x] [#44 · Audit A45 Store per-section and per-direction analysis rules in the project](https://github.com/IanSzymanski/squidware/issues/44)
-- [ ] [#45 · Audit A32 Add show-wide problems with count navigation and live field overlays](https://github.com/IanSzymanski/squidware/issues/45)
+- [x] [#45 · Audit A32 Add show-wide problems with count navigation and live field overlays](https://github.com/IanSzymanski/squidware/issues/45)
 - [ ] [#51 · Audit A51 Add measures, meter, rehearsal marks and pickup counts](https://github.com/IanSzymanski/squidware/issues/51)
 - [ ] [#52 · Audit A52 Support tempo changes, ramps and fermatas within a move](https://github.com/IanSzymanski/squidware/issues/52)
 - [ ] [#53 · Audit A53 Align the tempo map to audio using per-set/count anchors](https://github.com/IanSzymanski/squidware/issues/53)
@@ -170,3 +168,5 @@ Tracker #1 spans all releases and belongs to the last milestone; it closes only 
 The release coordinator creates/synchronizes milestones and reconciles issue ranks. It considers only the first unpublished release, requires every planned issue to be closed as completed and no open milestone items, and requires successful CI on the exact source commit. It then builds and verifies Windows, macOS and Linux packages. Only successful builds can create a version commit/tag and publish a GitHub release with packages, checksums and issue-based notes. Existing published releases and tags are never overwritten. Pre-1.0 releases are marked prerelease. Release commits record the packaged version; normal development remains on main.
 
 Publication is rechecked against live issue state immediately before it becomes public. A failure keeps the release unpublished. Scheduled reconciliation retries interrupted work without treating cancelled/not-planned issues as fulfilled. Human review and physical-hardware qualification are not release gates under the [2026-10-22 validation policy](VALIDATION_POLICY.md). Automated acceptance, exact-source cross-platform CI, package verification and signing requirements in #72 remain in force; waived checks are not recorded as passed.
+
+All implementation work follows the [shared design guidance](DESIGN_GUIDANCE.md). Record applicable review evidence or a reasoned not-applicable result, and document deviations; retain the guidance link in each issue during reconciliation.
