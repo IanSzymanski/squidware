@@ -1,0 +1,20 @@
+# Compact sets and direct reorder
+
+The Set list defaults to 32 px rows with the absolute set number, name, incoming move counts and BPM. The opening row shows a dash for counts because it has no incoming move. Long names truncate; row help gives their full name and timing. Resize the pane for longer names. **Show set thumbnails** switches to the formation previews and saves that choice on this device, independently of the project.
+
+**Find set** accepts an exact one-based set number (`40`, `040`, or `set 40`), or a literal, case-insensitive part of a name. Filtering retains the original set numbers and order. Enter goes to the first match and focuses its row. Arrow keys move through the visible matches; Home/End go to their first/last row. Escape clears search and returns focus to the current set. Search and navigation create no history; going to a set pauses playback and arrives at the set. Clear search or **Show current** recovers a hidden current row. Selection, undo, reordering and project replacement reveal the current row automatically. Only one row is in the list's Tab sequence.
+
+Select a row, enter its final one-based position in **Move to**, and press Enter or the arrow button. Set 40 can move directly to position 12 in one operation. Invalid and unchanged positions cannot apply. A row can also be dragged onto another row: dropping an earlier set on a later row places it after that row, while dropping a later set on an earlier row places it before. The insertion border identifies the resulting position; the list scrolls near its edges during a drag. Alt+Up/Down moves a focused row one absolute show position, including when a name filter is active. The Inspector's adjacent-position buttons use the same reorder behavior.
+
+## What follows a reordered set
+
+- Pictures keep their stable IDs, names, notes and performer coordinates. The active picture remains selected by ID, even when another picture moves across its old index. Playback stops at the active picture's new arrival count and clears rehearsal focus.
+- Each surviving incoming move follows its destination picture, preserving its ID, counts, tempo, transition and supported line-path segments. Its source is rewired to the new previous picture. A changed source clears that move's declared marching directions because they described different travel; declarations on unchanged connections remain intact.
+- The new first picture has zero elapsed counts and no incoming move. If it previously had an incoming move, that move is removed and its tempo/transition become inert opening metadata. The former opening picture receives a fresh 32-count move using its former stored opening tempo/transition and implicit straight paths. This preserves the established v1/v2 editing policy; changing the opening can change show duration. The direct-position control explains this before an opening reorder.
+- Musical anchors remain at absolute show counts. Reordering that would strand an anchor beyond the new duration fails without changing data, history, selection or playback. Rehearsal references continue to use stable picture/move IDs; a reference to a removed incoming move becomes repairable through the existing passage editor.
+
+Each accepted reorder is one named undo action. Undo restores the exact previous pictures, moves, paths and declarations; redo reuses the accepted move IDs. Undo/redo preserve the currently selected picture whenever it survives, falling back to a remaining index if it has been removed. Reordering is unavailable during pending edits, previews or dialogs. Drag requests carry the reviewed revision and project session; stale or external drops cannot reorder a different project.
+
+V1 files migrate through the canonical v2 codec before editing; no format field is added for compact rows or search. Native save, recovery, coordinate export and timeline/playback consume the same reordered canonical project. The panel retains a single primary **Add set** control.
+
+[Design guidance and recorded software validation](evidence/set-list/README.md) cover rendered layouts, keyboard/pointer actions, maximum-size shows and persistence.

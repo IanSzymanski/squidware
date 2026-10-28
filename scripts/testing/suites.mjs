@@ -24,6 +24,7 @@ export const desktopSuites = [
   { name: 'score-map', title: 'Measures, pickups, meter changes, rehearsal marks and shared accents', script: 'score-map-qa.mjs', timeoutMs: 240000 },
   { name: 'production-sheet', title: 'Editable sheet, validated spreadsheet paste and atomic undo', script: 'production-sheet-qa.mjs', timeoutMs: 270000 },
   { name: 'set-creation', title: 'Distinct new, duplicate, insert-before and hold actions', script: 'set-creation-qa.mjs', timeoutMs: 210000 },
+  { name: 'set-list', title: 'Compact navigation, native drag, direct reorder and active identity', script: 'set-list-qa.mjs', timeoutMs: 210000 },
   { name: 'analysis-rules', title: 'Portable section/direction rules, declarations and worker invalidation', script: 'analysis-rules-qa.mjs', timeoutMs: 240000 },
   { name: 'analysis', title: 'Whole-show problems, count navigation, live drag checks and worker recovery', script: 'analysis-qa.mjs', timeoutMs: 270000 },
   { name: 'recovery', title: 'Durable production recovery after restart', script: 'recovery-qa.mjs', timeoutMs: 330000 },

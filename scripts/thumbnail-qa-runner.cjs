@@ -65,6 +65,7 @@ app.whenReady().then(async () => {
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); window.webContents.reload();
     await uiWait(`!!window.__thumbnailQA?.editor && ${state}.preferences.status !== 'loading'`, 'store');
     if (await evaluate("!!document.querySelector('dialog[open]')")) await evaluate(`${store}.setValue('ui','dialog',null)`);
+    if (!baseline) await evaluate(`${store}.setValue('preferences','value',{...${state}.preferences.value,setThumbnails:true})`);
     native('Open project…'); await uiWait("document.querySelectorAll('.mini-field').length === 128 && document.querySelectorAll('.field-performer').length === 500", 'maximum fixture');
     await pause(400);
     const project = await evaluate(state + '.project.present'); const id = project.performers[0].id; const originalX = project.sets[0].positions[id].x;

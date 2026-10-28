@@ -23,6 +23,7 @@ This is an independent early release of a Pyware-style alternative. It implement
 - **Write in musical time:** use pickups, meter changes, measure/beat readouts and rehearsal marks through a shared [Score map](docs/score-map.md), with matching metronome accents and musical navigation.
 - **Edit the Production sheet:** change names, counts, tempos and notes across the show; review CSV/TSV ranges before one atomic paste, append hold rows, and navigate with the keyboard. [Production sheet](docs/production-sheet.md).
 - **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo named actions, review session History, and cancel text/color drafts.
+- **Navigate long shows:** use [compact set rows](docs/set-list.md), search by number/name, drag to reorder or move a set directly to a position in one undo action; enable thumbnails when needed.
 - **Manage the ensemble:** add performers, import a CSV roster, edit names and sections, and select sections from the field legend.
 - **Set portable analysis rules:** save production, section and declared-direction spacing/stride limits with undo, explicit unknown-direction handling and applied thresholds in flags. [Analysis rules](docs/analysis-rules.md).
 - **Rehearse a passage:** save annotated bookmarks and cross-move count ranges, loop on the shared clock, and focus on a section or saved performers. [Passage behavior and references](docs/rehearsal-passages.md).

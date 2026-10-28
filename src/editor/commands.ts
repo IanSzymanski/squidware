@@ -2,7 +2,7 @@ import { projectMeter, validateMeter } from '../meter';
 import { PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
 import type { Dialog, EditorState, SessionSlice, Workspace } from './state';
-import { createPicture, reconnectSets, updateSetProperties, type SetCreationKind, type SetCreationOptions } from './projectEdits';
+import { createPicture, reconnectSets, moveSetTo, updateSetProperties, type SetCreationKind, type SetCreationOptions } from './projectEdits';
 import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
@@ -64,6 +64,7 @@ export interface CommandArguments {
   'set.update': { index: number; update: SetPropertyUpdate };
   'set.create': { index: number; kind: SetCreationKind } & SetCreationOptions;
   'set.add': { index: number }; 'set.remove': { index: number }; 'set.reorder': { index: number; direction: -1 | 1 };
+  'set.move-to': { id: string; target: number; revision: number; epoch: number };
   'performers.add': { performers: Performer[] }; 'performers.remove': { ids: string[] };
   'performer.update': { id: string; update: Partial<Pick<Performer, 'name' | 'sectionId'>> };
   'section.add': undefined; 'section.update': { id: string; update: Partial<Pick<Section, 'name' | 'color'>> };
@@ -133,6 +134,12 @@ const selectSet = (context: CommandContext, index: number) => {
   context.patch('playback', { rehearsalId: null });
   context.patch('selection', { activeIndex: next }); context.patch('playback', { playing: false, count: setStartCount(project, next), seekVersion: context.getState().playback.seekVersion + 1 });
 };
+
+function reorderSet(c: CommandContext, id: string, target: number) {
+  const state = c.getState(), activeId = state.project.present.sets[state.selection.activeIndex].id;
+  c.edit(p => moveSetTo(p, id, target));
+  selectSet(c, c.getState().project.present.sets.findIndex(set => set.id === activeId));
+}
 
 const canOpenSetCreation = (s: EditorState) => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets;
 function openSetCreation(c: CommandContext, kind: SetCreationKind) {
@@ -296,7 +303,10 @@ export const commandRegistry = {
   'set.add': define({ id: 'set.add', name: 'New set after index', description: 'Create a fresh staging grid with blank notes and the default move counts.', arguments: { index: 'integer' }, enabled: (s, a) => !!a && setExists(s, a.index) && canOpenSetCreation(s),
     execute: (c, a) => applySetCreation(c, a.index, 'new') }),
   'set.remove': define({ id: 'set.remove', name: 'Delete set', description: 'Remove a set and connect its neighbors.', arguments: { index: 'integer' }, enabled: (s, a) => setExists(s, a.index) && s.project.present.sets.length > 1, execute: (c, a) => { c.edit(p => reconnectSets(p, p.sets.filter((_, i) => i !== a.index))); selectSet(c, Math.max(0, a.index - 1)); c.patch('ui', { dialog: null }); } }),
-  'set.reorder': define({ id: 'set.reorder', name: 'Move set', description: 'Move a set earlier or later in the show.', arguments: { index: 'integer', direction: '-1 | 1' }, enabled: (s, a) => setExists(s, a.index) && setExists(s, a.index + a.direction), execute: (c, a) => { c.edit(p => { const sets = [...p.sets]; const target = a.index + a.direction; [sets[a.index], sets[target]] = [sets[target], sets[a.index]]; return reconnectSets(p, sets); }); selectSet(c, a.index + a.direction); } }),
+  'set.reorder': define({ id: 'set.reorder', name: 'Move set', description: 'Move a set earlier or later in the show. Incoming timing follows its destination.', arguments: { index: 'integer', direction: '-1 | 1' }, enabled: (s, a) => canNavigate(s) && !!a && [-1, 1].includes(a.direction) && setExists(s, a.index) && setExists(s, a.index + a.direction), execute: (c, a) => reorderSet(c, c.getState().project.present.sets[a.index].id, a.index + a.direction) }),
+  'set.move-to': define({ id: 'set.move-to', name: 'Move set to position', description: 'Reorder a set directly in one undo action. Incoming timing follows its destination; the current set stays selected.', arguments: { id: 'stable set ID', target: 'final zero-based position', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => canNavigate(s) && !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && setExists(s, a.target) && s.project.present.sets.some((set, i) => set.id === a.id && i !== a.target),
+    execute: (c, a) => reorderSet(c, a.id, a.target) }),
   'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' }, enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers, execute: (c, a) => { c.edit(p => { const start = p.performers.length; return { ...p, performers: [...p.performers, ...a.performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...Object.fromEntries(a.performers.map((performer, i) => [performer.id, { x: 5 + ((start + i) % 40) * 2.3, y: Math.max(1, p.field.height - 3 - Math.floor((start + i) / 40) * 2.3) }])) } })) }; }); c.patch('selection', { selectedIds: a.performers.map(p => p.id) }); c.patch('ui', { dialog: null }); } }),
   'performers.remove': define({ id: 'performers.remove', name: 'Remove performers', description: 'Remove roster members and their positions in every set.', arguments: { ids: 'string[]' }, enabled: (s, a) => a.ids.some(id => s.project.present.performers.some(p => p.id === id)), execute: (c, a) => { c.edit(p => ({ ...p, performers: p.performers.filter(person => !a.ids.includes(person.id)), ...(p.selectionGroups ? { selectionGroups: p.selectionGroups.map(g => ({ ...g, performerIds: g.performerIds.filter(id => !a.ids.includes(id)) })) } : {}), moves: p.moves.map(move => ({ ...move, ...(move.marchingDirections ? { marchingDirections: Object.fromEntries(Object.entries(move.marchingDirections).filter(([id]) => !a.ids.includes(id))) } : {}), paths: Object.fromEntries(Object.entries(move.paths).filter(([id]) => !a.ids.includes(id))) })), sets: p.sets.map(set => ({ ...set, positions: Object.fromEntries(Object.entries(set.positions).filter(([id]) => !a.ids.includes(id))) })) })); c.patch('selection', { selectedIds: [] }); c.patch('ui', { dialog: null }); } }),
   'performer.update': define({ id: 'performer.update', name: 'Edit performer', description: 'Update a performer name or section across the show.', arguments: { id: 'string', update: 'name? | sectionId?' }, enabled: (s, a) => s.project.present.performers.some(p => p.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, performers: p.performers.map(person => person.id === a.id ? { ...person, ...a.update } : person) })) }),

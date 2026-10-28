@@ -1,0 +1,102 @@
+{
+  "passed": [
+    "128-set number/name navigation, filtered Home/End, no-match recovery and current-row reveal create no history",
+    "set 40 moves to position 12 in one named undo; undo/redo preserve active identity and invalid positions cannot commit",
+    "native save/reopen preserves all reordered data; optional thumbnails persist as personal preferences without a project edit",
+    "native pointer drag and Alt+Down use atomic reorder while preserving active set identity",
+    "supported themes and enlarged narrow layouts retain search, reorder, rows and the single Add control"
+  ],
+  "layouts": [
+    {
+      "name": "reference",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "rowHeight": 32,
+      "add": 1
+    },
+    {
+      "width": 1120,
+      "height": 768,
+      "zoom": 1.25,
+      "viewport": {
+        "width": 896,
+        "height": 614
+      },
+      "list": {
+        "top": 225.40000915527344,
+        "bottom": 484.00001525878906,
+        "left": 0,
+        "right": 215.1999969482422,
+        "width": 215.1999969482422,
+        "height": 258.6000061035156
+      },
+      "search": {
+        "top": 153.40000915527344,
+        "bottom": 183.40000915527344,
+        "left": 8,
+        "right": 207.1999969482422,
+        "width": 199.1999969482422,
+        "height": 30
+      },
+      "move": {
+        "top": 490.8000183105469,
+        "bottom": 518.8000183105469,
+        "left": 130.1999969482422,
+        "right": 174.1999969482422,
+        "width": 44,
+        "height": 28
+      },
+      "add": {
+        "top": 524.7999877929688,
+        "bottom": 560.3999900817871,
+        "left": 8,
+        "right": 207.1999969482422,
+        "width": 199.1999969482422,
+        "height": 35.60000228881836
+      }
+    },
+    {
+      "width": 1024,
+      "height": 720,
+      "zoom": 1.5,
+      "viewport": {
+        "width": 683,
+        "height": 480
+      },
+      "list": {
+        "top": 225.6666717529297,
+        "bottom": 349.3333435058594,
+        "left": 30,
+        "right": 189.33334350585938,
+        "width": 159.33334350585938,
+        "height": 123.66667175292969
+      },
+      "search": {
+        "top": 153,
+        "bottom": 183,
+        "left": 38,
+        "right": 181.33334350585938,
+        "width": 143.33334350585938,
+        "height": 30
+      },
+      "move": {
+        "top": 356,
+        "bottom": 384,
+        "left": 104.33333587646484,
+        "right": 148.33333587646484,
+        "width": 44,
+        "height": 28
+      },
+      "add": {
+        "top": 390,
+        "bottom": 425.33333587646484,
+        "left": 38,
+        "right": 181.33334350585938,
+        "width": 143.33334350585938,
+        "height": 35.333335876464844
+      }
+    }
+  ],
+  "platform": "linux"
+}
