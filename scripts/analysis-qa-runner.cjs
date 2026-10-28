@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key, selectNativeOption, waitFor, waitForProgress, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--analysis-manifest=')).slice('--analysis-manifest='.length));
 const { root, output, profile, bundle } = manifest;
 const { analyzeTransition, createPerformanceFixture, fixture } = require(bundle);
@@ -30,7 +30,13 @@ function instrument() {
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; if(v?.getSnapshot && v?.draft && v?.retry)qa.analysis=v;visit(f.child);visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
-const ready = () => wait(`${snapshot}.moves.length===${state}.project.present.moves.length && ${snapshot}.moves.every(m=>m.status==='ready')`, 'whole-show worker results');
+const ready = () => waitForProgress(async () => {
+  const progress = await evaluate(`({expected:${state}.project.present.moves.length,moves:${snapshot}.moves.map(m=>({index:m.index,status:m.status,error:m.error}))})`);
+  const failed = progress.moves.find(m => m.status === 'error');
+  const completed = progress.moves.filter(m => m.status === 'ready').length;
+  return { done: progress.moves.length === progress.expected && completed === progress.expected, progress: completed,
+    error: failed ? `move ${failed.index}: ${failed.error}` : undefined };
+}, 'whole-show worker results', { idleTimeoutMs: 30000, timeoutMs: 120000, failure: () => failure });
 async function oracle() { await ready(); const p=await evaluate(state+'.project.present'), moves=await evaluate(snapshot+'.moves'); for(const m of moves)assert.deepEqual(m.issues,analyzeTransition(p,m.index)); return moves; }
 async function click(selector) {
   const point=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)throw Error('Unavailable '+${JSON.stringify(selector)});e.scrollIntoView({block:'nearest'});const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()`);
@@ -130,5 +136,5 @@ app.whenReady().then(async () => {
     await evaluate("document.querySelector('[aria-label=\"Next problems page\"]').focus()");await key(window,'Return');assert.ok(await evaluate("(()=>{const r=document.activeElement.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()"));await close();
     assert.deepEqual(await evaluate(qa+'.errors'),[]);pass('supported themes, narrow field layout, enlarged text, keyboard focus and modal dismissal remain usable');
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,metrics,viewports,source:manifest.source,runtime:manifest.runtime},null,2));app.exit(0);
-  } catch(error) { console.error(error);if(window)await capture('failure.png').catch(()=>{});await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,metrics,viewports,error:error.stack},null,2));app.exit(1); }
+  } catch(error) { console.error(error);if(window)console.error('Worker progress',await evaluate(`({expected:${state}.project.present.moves.length,moves:${snapshot}.moves.map(m=>({index:m.index,status:m.status,error:m.error})),requests:${qa}.requests.length})`).catch(()=>null));if(window)await capture('failure.png').catch(()=>{});await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,metrics,viewports,error:error.stack},null,2));app.exit(1); }
 });

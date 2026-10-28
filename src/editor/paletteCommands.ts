@@ -65,7 +65,7 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);
   for (const preset of ['write', 'review', 'rehearse'] as const) add('layout.preset', { preset }, `${preset[0].toUpperCase()}${preset.slice(1)} workspace preset`, `layout-${preset}`);
   for (const [mode, name] of [['panel', 'Show Cast beside field'], ['table', 'Edit Cast table'], ['closed', 'Show Design workspace']] as const) add('cast.show', { mode }, name, `cast-${mode}`);
-  for (const [dialog, name] of [['settings', 'Production settings'], ['snapping', 'Grid and snapping'], ['remove-cast', 'Remove selected performers'], ['remove-set', 'Delete current set']] as const) {
+  for (const [dialog, name] of [['metronome', 'Metronome and count-in'], ['settings', 'Production settings'], ['snapping', 'Grid and snapping'], ['remove-cast', 'Remove selected performers'], ['remove-set', 'Delete current set']] as const) {
     add('dialog.open', { dialog }, name, `dialog-${dialog}`);
   }
   state.project.present.sets.forEach((set, index) => add('set.select', { index }, `Go to set ${index + 1}: ${set.name}`, `set-${set.id}`));

@@ -1,3 +1,4 @@
+import { projectMeter, validateMeter } from '../meter';
 import { PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
 import type { Dialog, EditorState, SessionSlice, Workspace } from './state';
@@ -49,7 +50,7 @@ export interface CommandArguments {
   'layout.preset': { preset: WorkspacePreset };
   'layout.focus': undefined;
   'cast.show': { mode: 'panel' | 'table' | 'closed' };
-  'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds'>> & { preset?: Project['field']['preset'] };
+  'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds' | 'meter'>> & { preset?: Project['field']['preset'] };
   'project.load': { project: Project };
   'history.undo': undefined; 'history.redo': undefined; 'history.open': undefined;
   'set.update': { index: number; update: SetPropertyUpdate };
@@ -76,6 +77,8 @@ export interface CommandArguments {
   'formation.update': { options: FormationOptions };
   'formation.apply': undefined; 'formation.cancel': undefined;
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
+  'metronome.configure': { meter: import('../types').Meter; enabled: boolean; countInBars: number; speed: number };
+  'metronome.toggle': undefined;
   'playback.toggle': undefined; 'playback.scrub': { count: number }; 'tool.select': { tool: 'select' | 'pan' | 'lasso' };
   'dialog.open': { dialog: Dialog };
   'file.new': undefined; 'file.open': undefined; 'file.save': undefined; 'file.save-as': undefined;
@@ -280,6 +283,14 @@ export const commandRegistry = {
   'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),
   'selection.clear': define({ id: 'selection.clear', name: 'Clear selection', description: 'Clear selected performers and dismiss the project menu.', arguments: {}, enabled: always, execute: c => { c.patch('selection', { selectedIds: [] }); c.patch('ui', { menu: false }); } }),
   'set.select': define({ id: 'set.select', name: 'Go to set', description: 'Stop playback and arrive at a set for editing.', arguments: { index: 'integer' }, enabled: (_s, a) => Number.isInteger(a.index), execute: (c, a) => selectSet(c, a.index) }),
+  'metronome.toggle': define({ id: 'metronome.toggle', name: 'Toggle metronome', description: 'Turn rehearsal clicks on or off. Configure meter and count-in in Production settings.', arguments: {}, enabled: always, execute: c => c.patch('playback', { metronome: !c.getState().playback.metronome }) }),
+  'metronome.configure': define({ id: 'metronome.configure', name: 'Configure metronome', description: 'Save meter and set rehearsal click, speed and count-in options.', arguments: { meter: 'Meter', enabled: 'boolean', countInBars: '0 | 1 | 2', speed: '0.5 | 0.75 | 1 | 1.25 | 1.5' }, enabled: always, execute: (c, a) => {
+    const meter = validateMeter(a.meter);
+    if (typeof a.enabled !== 'boolean' || ![0,1,2].includes(a.countInBars) || ![.5,.75,1,1.25,1.5].includes(a.speed)) throw new Error('Choose a supported rehearsal speed and zero, one or two count-in bars.');
+    c.patch('playback', { playing: false, metronome: a.enabled, countInBars: a.countInBars, speed: a.speed });
+    if (JSON.stringify(projectMeter(c.getState().project.present)) !== JSON.stringify(meter)) c.edit(p => ({ ...p, meter }));
+    c.patch('ui', { dialog: null });
+  } }),
   'playback.toggle': define({ id: 'playback.toggle', name: 'Play / pause', description: 'Rehearse or pause the production.', arguments: {}, enabled: s => totalCounts(s.project.present) > 0, execute: c => { const s = c.getState(), bounds = rehearsalBounds(s.project.present, s.playback.rehearsalId); c.patch('playback', { playing: !s.playback.playing, count: s.playback.count >= bounds.end || s.playback.count < bounds.start ? bounds.start : s.playback.count }); } }),
   'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); const bounds = rehearsalBounds(p, c.getState().playback.rehearsalId); if (count < bounds.start || count > bounds.end) c.patch('playback', { rehearsalId: null }); c.patch('playback', { playing: false, count, seekVersion: c.getState().playback.seekVersion + 1 }); c.patch('selection', { activeIndex: sampleTimeline(p, count).setIndex }); } }),
   'tool.select': define({ id: 'tool.select', name: 'Select / pan / lasso', description: 'Choose box selection, pan or a freehand lasso. Lasso results are reviewed before Apply.', arguments: { tool: 'select | pan | lasso' }, enabled: (s, a) => !!a && ['select', 'pan', 'lasso'].includes(a.tool) && (a.tool !== 'lasso' || !s.ui.dialog && !s.ui.pendingDraft && editable(s)), execute: (c, a) => c.patch('ui', { tool: a.tool }) }),

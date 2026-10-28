@@ -214,6 +214,7 @@ async function checkCompactChrome() {
     await evaluate('document.querySelector(\'[aria-label="Play show"]\').focus()'); await sendKey(window, 'Return');
     await uiWait("!!document.querySelector('[aria-label=\"Pause playback\"]') && Number(document.querySelector('.count-display strong').textContent)>0", 'compact playback advances');
     await evaluate('document.querySelector(\'[aria-label="Pause playback"]\').focus()'); await sendKey(window, 'Return');
+    await uiWait("!!document.querySelector('[aria-label=\"Play show\"]')", 'compact playback paused');
     await clickSelector('.set-card:nth-child(2)');
     destination = path.join(output, `compact-${width}-${scale}-${process.pid}.squid`);
     await evaluate('document.querySelector(\'[aria-label="Save"]\').focus()'); await sendKey(window, 'Return');

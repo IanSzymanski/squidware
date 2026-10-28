@@ -218,3 +218,32 @@ describe('absolute-time count-range playback', () => {
     clock.update({ playing: true, speed: 1, loop: false }, 15); expect(clock.sample().seconds).toBe(10);
   });
 });
+
+describe('count-in on the shared rehearsal clock', () => {
+  it.each([false,true])('holds the requested count and media until the lead-in ends (audio=%s)', audio => {
+    const { clock, media, controls, now } = fixture({ audio });
+    clock.update(controls, 20, 2);
+    expect(clock.countInEndTime).toBe(2);
+    now(1.75); expect(clock.sample()).toEqual({ seconds: 20, playing: true, status: 'count-in' });
+    expect(media.plays).toBe(0); expect(media.paused).toBe(true);
+    now(2); expect(clock.sample().seconds).toBe(20); expect(clock.countInEndTime).toBeNull();
+    if (audio) { expect(media.plays).toBe(1); expect(media.currentTime).toBe(20); }
+    else { now(2.5); expect(clock.sample().seconds).toBe(20.5); }
+  });
+  it('cancels a count-in on stop or seek and reschedules at a new rehearsal speed', () => {
+    const { clock, media, controls, now } = fixture();
+    clock.update(controls, 10, 4); now(1);
+    controls.playing = false; clock.update(controls);
+    now(6); expect(clock.sample().seconds).toBe(10); expect(media.plays).toBe(0); expect(clock.countInEndTime).toBeNull();
+    controls.playing = true; controls.speed = .5; clock.update(controls, 30, 8); now(7);
+    expect(clock.sample().seconds).toBe(30); expect(clock.countInEndTime).toBe(14);
+    controls.playing = false; clock.update(controls, 40); now(20);
+    expect(clock.sample().seconds).toBe(40); expect(media.plays).toBe(0);
+  });
+  it('retains the intended recording start after a renderer stall spans the end of count-in', () => {
+    const { clock, media, controls, now } = fixture();
+    clock.update(controls, 30, 2); now(3.5);
+    expect(clock.sample().seconds).toBe(30);
+    expect(media.seeks).toEqual([30]); expect(media.plays).toBe(1);
+  });
+});

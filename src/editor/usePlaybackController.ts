@@ -1,82 +1,134 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { countToSeconds, sampleTimeline, secondsToCount, totalCounts } from '../domain';
+import { projectMeter } from '../meter';
 import { rehearsalBounds } from '../rehearsal';
 import { clockStatusText, RehearsalClock } from './rehearsalClock';
+import { MetronomeAudio } from './metronomeAudio';
+import { clockDifference, countAt, tempoSpans } from './clickSchedule';
+import type { ClickPlan } from './clickSchedule';
 import { useEditorSelector, useEditorStore } from './react';
 
-/** The clock writes frames without subscribing the shell to the playhead. */
+/** rAF only publishes the field. Audio rendering owns the click queue; a small
+ * control timer synchronizes media handovers even when no frame is painted. */
 export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | null>, audioUrl: string) {
   const store = useEditorStore();
   const project = useEditorSelector(state => state.project.present);
   const rehearsalId = useEditorSelector(state => state.playback.rehearsalId);
   const audioContext = useRef<AudioContext | null>(null);
   useEffect(() => {
-    if ((store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) return;
+    if (store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId) return;
+    let unavailable = false;
+    try { audioContext.current ??= new AudioContext(); } catch { unavailable = true; }
+    const ctx = audioContext.current;
+    const now = () => ctx ? ctx.currentTime : performance.now() / 1000;
+    const audio = ctx ? new MetronomeAudio(ctx, () => { unavailable = true; }) : null;
     const media = audioUrl ? audioRef.current ?? undefined : undefined;
     const duration = totalCounts(project), totalSeconds = countToSeconds(project, duration);
-    const bounds = rehearsalBounds(project, rehearsalId);
-    const clock = new RehearsalClock({ totalSeconds,
-      rangeStart: countToSeconds(project, bounds.start), rangeEnd: countToSeconds(project, bounds.end),
-      offset: project.audioOffsetSeconds, media, now: () => performance.now() / 1000 });
-    let raf = 0, writing = false, lastBeat = -1;
+    const bounds = rehearsalBounds(project, rehearsalId), meter = projectMeter(project), spans = tempoSpans(project);
+    const start = countToSeconds(project, bounds.start), end = countToSeconds(project, bounds.end);
+    const clock = new RehearsalClock({ totalSeconds, rangeStart: start, rangeEnd: end,
+      offset: project.audioOffsetSeconds, media, now });
+    let raf = 0, writing = false, disposed = false, plan: ClickPlan | null = null;
+    let pendingStartCount: number | null = null;
+    const current = () => !disposed && store.getState().project.present === project && store.getState().playback.rehearsalId === rehearsalId;
+    function updateClicks(force = false) {
+      if (!current()) { audio?.update(null); return; }
+      const transport = store.getState().playback, sample = clock.sample(), at = now();
+      const leadEnd = clock.countInEndTime;
+      const audible = sample.playing && sample.status !== 'waiting' && (transport.metronome || leadEnd !== null);
+      if (!audible) {
+        if (plan) audio?.update(null); plan = null;
+        if (!transport.playing || !transport.metronome && leadEnd === null) pendingStartCount = null;
+        return;
+      }
+      if (!force && plan) {
+        if (leadEnd !== null) return;
+        let predicted = plan.seconds + (at - plan.anchorTime) * plan.speed;
+        if (plan.loop && predicted >= end) predicted = start + (predicted - start) % (end - start);
+        // Media remains authoritative; cancel future clicks after a real drift
+        // or handover. Ordinary frame/timer quantization does not requeue beats.
+        if (clockDifference(predicted, sample.seconds, end - start, plan.loop) < .05 && plan.clicks === transport.metronome) return;
+      }
+      const secondsPerCount = spans.find(s => sample.seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? spans.at(-1)?.secondsPerCount ?? .5;
+      const counts = transport.countInBars * meter.numerator;
+      // Startup confirmation may arrive later than one control tick. Preserve
+      // the requested first beat as an explicit cue; subsequent beats retain
+      // their actual media-time mapping instead of inheriting that latency.
+      const cue = leadEnd === null && pendingStartCount !== null ? { time: at + .01, count: pendingStartCount } : undefined;
+      if (cue || leadEnd !== null && !media) pendingStartCount = null;
+      plan = { spans, meter, anchorTime: leadEnd ?? at, seconds: sample.seconds, speed: transport.speed,
+        // During a recording's lead-in, the audio thread emits only lead-in
+        // clicks. Show clicks begin after media confirms its actual start.
+        start, end, loop: transport.loop, clicks: transport.metronome && !(media && leadEnd !== null),
+        ...(cue ? { cue } : {}),
+        ...(leadEnd === null ? {} : { countIn: { startTime: leadEnd - counts * secondsPerCount / transport.speed,
+          counts, startCount: countAt(spans, sample.seconds), secondsPerCount } }) };
+      audio?.update(plan);
+    }
     function publish(updatePosition = store.getState().playback.playing) {
-      // Commands publish new timing before React replaces this effect. Never
-      // map a newly edited/undone count through the previous project's tempos.
-      if ((store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) return;
+      if (!current()) return;
       const sample = clock.sample();
       const rawCount = sample.seconds >= totalSeconds ? duration : secondsToCount(project, sample.seconds);
       const count = Math.abs(rawCount - Math.round(rawCount)) < 1e-9 ? Math.round(rawCount) : rawCount;
       writing = true;
       try {
-        // Paused navigation and editing own their exact count and selected set.
-        // Only running frames or an ordinary pause adopt a sampled position.
         if (updatePosition) {
           store.setValue('playback', 'count', count);
           store.setValue('selection', 'activeIndex', sampleTimeline(project, count).setIndex);
         }
         store.setValue('playback', 'playing', sample.playing);
-        store.setValue('playback', 'clockStatus', audioUrl ? clockStatusText[sample.status] : '');
+        const leadEnd = clock.countInEndTime;
+        const status = leadEnd !== null ? `Count-in · ${Math.max(1, Math.ceil((leadEnd - now()) * store.getState().playback.speed / (plan?.countIn?.secondsPerCount ?? .5)))} remaining`
+          : audioUrl ? clockStatusText[sample.status] : '';
+        store.setValue('playback', 'clockStatus', unavailable && (store.getState().playback.metronome || leadEnd !== null) ? 'Metronome unavailable · check the audio output' : status);
       } finally { writing = false; }
-      const beat = Math.floor(count);
-      if (sample.playing && store.getState().playback.metronome && beat !== lastBeat) {
-        try {
-          const ctx = audioContext.current || (audioContext.current = new AudioContext()); void ctx.resume();
-          const oscillator = ctx.createOscillator(); const gain = ctx.createGain();
-          oscillator.frequency.value = beat % 4 === 0 ? 1100 : 740;
-          gain.gain.setValueAtTime(0.07, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-          oscillator.connect(gain); gain.connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + 0.06);
-        } catch { /* Audio devices may be unavailable. The lookahead scheduler is #14. */ }
-      }
-      lastBeat = beat;
     }
     function frame() { raf = 0; publish(); schedule(); }
     function schedule() {
-      if ((store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) { cancelAnimationFrame(raf); raf = 0; return; }
+      if (!current()) { cancelAnimationFrame(raf); raf = 0; audio?.update(null); return; }
       if (store.getState().playback.playing && !raf) raf = requestAnimationFrame(frame);
       else if (!store.getState().playback.playing && raf) { cancelAnimationFrame(raf); raf = 0; }
     }
+    function update(transport: ReturnType<typeof store.getState>['playback'], seek: boolean, starting: boolean) {
+      if (transport.playing) void ctx?.resume().catch(() => { unavailable = true; });
+      const seconds = countToSeconds(project, transport.count);
+      const countSeconds = spans.find(s => seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? .5;
+      const delay = starting && transport.countInBars ? transport.countInBars * meter.numerator * countSeconds / transport.speed + .06 : 0;
+      if (starting) pendingStartCount = Number.isInteger(transport.count) ? transport.count : null;
+      if (!transport.playing) pendingStartCount = null;
+      clock.update(transport, seek ? seconds : undefined, delay);
+      updateClicks(true);
+    }
     let previous = store.getState().playback;
-    clock.update(previous, countToSeconds(project, previous.count)); publish(); schedule();
-    previous = store.getState().playback;
+    update(previous, true, previous.playing); publish(); schedule(); previous = store.getState().playback;
     const unsubscribe = store.subscribe(() => {
       const next = store.getState().playback, before = previous; previous = next;
-      if (writing || (store.getState().project.present !== project || store.getState().playback.rehearsalId !== rehearsalId)) return;
+      if (writing) return;
+      if (!current()) { audio?.update(null); return; }
       const seek = next.seekVersion !== before.seekVersion || next.count !== before.count;
-      if (seek || next.playing !== before.playing || next.speed !== before.speed || next.loop !== before.loop) {
-        clock.update(next, seek ? countToSeconds(project, next.count) : undefined);
+      if (seek || next.playing !== before.playing || next.speed !== before.speed || next.loop !== before.loop || next.countInBars !== before.countInBars) {
+        update(next, seek, next.playing && (!before.playing || clock.countInEndTime !== null));
         publish(next.playing || (!seek && before.playing)); schedule();
-      }
+      } else if (next.metronome !== before.metronome) updateClicks(true);
     });
-    // Complete deferred paused seeks when metadata arrives. An ended event
-    // anchors the silent tail promptly, even if no animation frame is due.
-    const onMedia = () => { publish(); schedule(); };
+    const timer = window.setInterval(() => {
+      if (!current() || !store.getState().playback.playing) return;
+      const counting = clock.countInEndTime !== null;
+      updateClicks();
+      const ended = !clock.sample().playing;
+      // Frames own position writes. Only count-in status and an exact natural
+      // stop need publishing when the compositor is not asking for frames.
+      if (counting || ended) publish(ended);
+      schedule();
+    }, 25);
+    const onMedia = () => { updateClicks(); publish(); schedule(); };
     const events = ['loadedmetadata', 'canplay', 'playing', 'waiting', 'seeked', 'ended', 'error'] as const;
     events.forEach(event => media?.addEventListener(event, onMedia));
     return () => {
-      unsubscribe(); cancelAnimationFrame(raf);
+      disposed = true; unsubscribe(); cancelAnimationFrame(raf); clearInterval(timer); audio?.dispose();
       events.forEach(event => media?.removeEventListener(event, onMedia)); clock.dispose();
     };
   }, [store, project, audioUrl, audioRef, rehearsalId]);
-  useEffect(() => () => { void audioContext.current?.close(); }, []);
+  useEffect(() => () => { const ctx = audioContext.current; audioContext.current = null; void ctx?.close(); }, []);
 }

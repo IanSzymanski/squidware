@@ -19,6 +19,20 @@ async function waitFor(condition, label, { timeoutMs = 20000, intervalMs = 20, f
   } finally { stopped = true; clearTimeout(timer); }
 }
 
+/** A serial backlog can exceed one operation's deadline while making progress.
+ * Keep an idle deadline and an absolute cap; never retry the work itself. */
+async function waitForProgress(probe, label, { idleTimeoutMs = 30000, timeoutMs = 120000, ...options } = {}) {
+  let progress = -1, advancedAt = Date.now();
+  await waitFor(async () => {
+    const state = await probe();
+    if (state.error) throw new Error(`${label}: ${state.error}`);
+    if (state.progress > progress) { progress = state.progress; advancedAt = Date.now(); }
+    if (state.done) return true;
+    if (Date.now() - advancedAt >= idleTimeoutMs) throw new Error(`Timed out: ${label} · no progress beyond ${progress}`);
+    return false;
+  }, label, { ...options, timeoutMs });
+}
+
 async function key(window, keyCode, modifiers = [], settleMs = 5) {
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
   if (keyCode === 'Return' || keyCode === 'Space') window.webContents.sendInputEvent({ type: 'char', keyCode: keyCode === 'Return' ? '\r' : ' ', modifiers });
@@ -115,4 +129,4 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
     await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }
-module.exports = { pause, waitFor, key, selectNativeOption, capturePage, waitViewport, settleNativeViewport };
+module.exports = { pause, waitFor, waitForProgress, key, selectNativeOption, capturePage, waitViewport, settleNativeViewport };
