@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { countToSeconds, sampleTimeline, secondsToCount, totalCounts } from '../domain';
-import { projectMeter } from '../meter';
+import { compileScore, scoreSpanAt } from '../score';
 import { rehearsalBounds } from '../rehearsal';
 import { clockStatusText, RehearsalClock } from './rehearsalClock';
 import { MetronomeAudio } from './metronomeAudio';
@@ -25,7 +25,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     const audio = ctx ? new MetronomeAudio(ctx, () => { unavailable = true; }) : null;
     const media = audioUrl ? audioRef.current ?? undefined : undefined;
     const duration = totalCounts(project), totalSeconds = countToSeconds(project, duration);
-    const bounds = rehearsalBounds(project, rehearsalId), meter = projectMeter(project), spans = tempoSpans(project);
+    const bounds = rehearsalBounds(project, rehearsalId), score = compileScore(project), spans = tempoSpans(project);
     const start = countToSeconds(project, bounds.start), end = countToSeconds(project, bounds.end);
     const clock = new RehearsalClock({ totalSeconds, rangeStart: start, rangeEnd: end,
       offset: project.audioOffsetSeconds, media, now });
@@ -51,13 +51,14 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
         if (clockDifference(predicted, sample.seconds, end - start, plan.loop) < .05 && plan.clicks === transport.metronome) return;
       }
       const secondsPerCount = spans.find(s => sample.seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? spans.at(-1)?.secondsPerCount ?? .5;
+      const meter = scoreSpanAt(score, countAt(spans,sample.seconds)).meter;
       const counts = transport.countInBars * meter.numerator;
       // Startup confirmation may arrive later than one control tick. Preserve
       // the requested first beat as an explicit cue; subsequent beats retain
       // their actual media-time mapping instead of inheriting that latency.
       const cue = leadEnd === null && pendingStartCount !== null ? { time: at + .01, count: pendingStartCount } : undefined;
       if (cue || leadEnd !== null && !media) pendingStartCount = null;
-      plan = { spans, meter, anchorTime: leadEnd ?? at, seconds: sample.seconds, speed: transport.speed,
+      plan = { spans, meter, scoreSpans: score.spans, anchorTime: leadEnd ?? at, seconds: sample.seconds, speed: transport.speed,
         // During a recording's lead-in, the audio thread emits only lead-in
         // clicks. Show clicks begin after media confirms its actual start.
         start, end, loop: transport.loop, clicks: transport.metronome && !(media && leadEnd !== null),
@@ -94,7 +95,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       if (transport.playing) void ctx?.resume().catch(() => { unavailable = true; });
       const seconds = countToSeconds(project, transport.count);
       const countSeconds = spans.find(s => seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? .5;
-      const delay = starting && transport.countInBars ? transport.countInBars * meter.numerator * countSeconds / transport.speed + .06 : 0;
+      const delay = starting && transport.countInBars ? transport.countInBars * scoreSpanAt(score,transport.count).meter.numerator * countSeconds / transport.speed + .06 : 0;
       if (starting) pendingStartCount = Number.isInteger(transport.count) ? transport.count : null;
       if (!transport.playing) pendingStartCount = null;
       clock.update(transport, seek ? seconds : undefined, delay);

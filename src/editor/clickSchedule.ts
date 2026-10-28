@@ -1,9 +1,10 @@
+import { scoreAccent, type ScoreSpan } from '../score';
 import { clickAccent } from '../meter';
 import type { Meter, Project } from '../types';
 
 export interface TempoSpan { count: number; seconds: number; counts: number; secondsPerCount: number }
 export interface ClickPlan {
-  spans: TempoSpan[]; meter: Meter; anchorTime: number; seconds: number; speed: number;
+  spans: TempoSpan[]; meter: Meter; scoreSpans?: ScoreSpan[]; anchorTime: number; seconds: number; speed: number;
   start: number; end: number; loop: boolean; clicks: boolean;
   /** Before show time starts, counts are held and only these lead-in clicks run. */
   countIn?: { startTime: number; counts: number; startCount: number; secondsPerCount: number };
@@ -54,7 +55,7 @@ export class ClickSchedule {
       }
     }
     if (p.clicks && p.cue && p.cue.time >= from && p.cue.time < endTime) {
-      events.push({ ...p.cue, accent: clickAccent(p.cue.count, p.meter), phase: 'show' });
+      events.push({ ...p.cue, accent: p.scoreSpans ? scoreAccent(p.cue.count,p.scoreSpans) : clickAccent(p.cue.count, p.meter), phase: 'show' });
     }
     const begin = Math.max(from, lead ? p.anchorTime : from);
     if (endTime <= begin || !p.clicks) return events;
@@ -75,7 +76,7 @@ export class ClickSchedule {
           const seconds = secondsAt(p.spans, count);
           if (seconds < p.start - 1e-8 || seconds > p.end + 1e-8 || (p.loop && seconds >= p.end - 1e-8)) continue;
           const time = p.anchorTime + (seconds + cycleOffset - p.seconds) / p.speed;
-          if (time >= begin - 1e-9 && time < endTime - 1e-9) events.push({ time, count, accent: clickAccent(count, p.meter), phase: 'show' });
+          if (time >= begin - 1e-9 && time < endTime - 1e-9) events.push({ time, count, accent: p.scoreSpans ? scoreAccent(count,p.scoreSpans) : clickAccent(count, p.meter), phase: 'show' });
         }
       }
       if (!p.loop || p.anchorTime + (p.end + cycleOffset - p.seconds) / p.speed >= endTime) break;

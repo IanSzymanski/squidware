@@ -1,3 +1,4 @@
+import { compileScore, scoreLabel, scorePosition, scoreTicks } from '../score';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AudioLines, Flag, LocateFixed, Maximize2, SlidersHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
 import { setStartCount, setTiming } from '../domain';
@@ -32,7 +33,12 @@ export function TimelineTracks({ controller }: { controller: EditorController })
     }
   }, [count, duration, width, zoom, follow, playing, span, view.start]);
   const arrivals = useMemo(() => project.sets.map((set, i) => ({ set, index: i, count: setStartCount(project, i), from: setStartCount(project, Math.max(0, i - 1)), counts: setTiming(project, i).counts })), [project]);
-  const labels = timelineLabels(project, view.start, span, width);
+  const score = useMemo(()=>compileScore(project),[project]);
+  const [musicalRuler,setMusicalRuler] = useState(true);
+  const labels = musicalRuler ? scoreTicks(score,view.start,Math.min(duration,view.start+span),width) : timelineLabels(project,view.start,span,width).map(count=>({count,label:fmt(count)}));
+  const markGroups = new Map<number,typeof score.marks>();
+  for(const mark of score.marks.filter(m=>m.count>=view.start&&m.count<=view.start+span)){const bucket=Math.floor((mark.count-view.start)/span*width/75);markGroups.set(bucket,[...(markGroups.get(bucket)??[]),mark]);}
+  const marks=[...markGroups.values()];
   const percent = (value: number) => (value - view.start) / span * 100;
   const changeZoom = (next: number) => {
     const anchor = count >= view.start && count <= view.start + span ? count : view.start + span / 2;
@@ -50,13 +56,14 @@ export function TimelineTracks({ controller }: { controller: EditorController })
         {arrivals.map(a => <option key={a.set.id} value={a.index}>Set{String(a.index + 1).padStart(3, '0')} · {a.set.name} · {fmt(a.count)}</option>)}
       </select></Tooltip>
       <Tooltip name="Pan timeline" description="Move the visible count window without moving the playhead. Use arrow keys while focused. Panning turns follow off." disabledReason="Zoom in to pan the timeline."><input aria-label="Pan timeline" type="range" min={0} max={Math.max(0, duration - span)} step="any" value={view.start} disabled={view.zoom <= 1} onChange={e => { setFollow(false); setStart(Number(e.target.value)); }} /></Tooltip>
+      <HelpButton command="score.open" title="Score map" className="button subtle" onClick={()=>controller.dispatch('score.open')}>Score map</HelpButton><label className="microcopy">Ruler<select aria-label="Timeline ruler" value={musicalRuler?'measures':'counts'} onChange={e=>setMusicalRuler(e.target.value==='measures')}><option value="measures">Measures</option><option value="counts">Show counts</option></select></label>
       <span className="timeline-window">{fmt(view.start)}–{fmt(Math.min(duration, view.start + span))}</span>
     </div>}
     <div className="timeline-tracks">
       <div className="track-labels"><span><HelpButton title="Timeline view" description="Show or hide timeline zoom, pan, follow and the all-set picker." aria-expanded={viewOpen} className="timeline-view-toggle" onClick={() => setViewOpen(!viewOpen)}><SlidersHorizontal size={12} />View</HelpButton></span><span><Flag size={12} />SETS</span><ProblemTimelineLabel />{audioName && <span><AudioLines size={12} />AUDIO</span>}</div>
       <div className="timeline-viewport" ref={viewportRef}>
         <div className="tracks">
-          <div className="count-ruler">{labels.map(label => <span key={label} style={{ left: `${percent(label)}%` }}>{fmt(label)}</span>)}</div>
+          <div className="count-ruler">{labels.filter(label=>marks.every(group=>Math.abs(label.count-group[0].count)/span*width>55)).map(label => <span key={label.count} style={{ left: `${percent(label.count)}%` }}>{label.label}</span>)}{marks.map(group=>{const mark=group[0],p=scorePosition(score,mark.count);return <HelpButton key={mark.count} title={group.length===1?`Rehearsal mark ${mark.label}`:`${group.length} rehearsal marks`} description={group.map(m=>`${m.label} · ${scoreLabel(score,m.count)} · count ${m.count}`).join('; ')} className="score-mark" style={{left:`${percent(mark.count)}%`}} onClick={()=>group.length===1?controller.dispatch('score.seek',{measure:p.measure,beat:p.beat}):controller.dispatch('score.open')}>{group.length===1?mark.label:`${group.length} marks`}</HelpButton>;})}</div>
           <div className="set-track">
             {arrivals.filter(a => a.index > 0 && a.count > view.start && a.from < view.start + span).map(a => {
               const left = Math.max(0, percent(a.from)), right = Math.min(100, percent(a.count));
@@ -68,14 +75,14 @@ export function TimelineTracks({ controller }: { controller: EditorController })
             {view.start === 0 && <HelpButton command="set.select" showShortcut={false} title={`Opening set: ${project.sets[0].name}`} description="Set 1 is the opening picture at show count zero." className={`timeline-opening ${index === 0 ? 'active' : ''}`} onClick={() => selectSet(0)}>01</HelpButton>}
           </div>
           <ProblemTimeline start={view.start} span={span} width={width} />
-          {/* Music/rehearsal lanes attach to this count axis in #51. */}
+          {/* Musical labels share the ruler so the field retains its height. */}
           <div className="timeline-music-lanes" />
           {audioName && <div className={`audio-track ${waveform.length ? 'has-audio' : ''}`}><span className="audio-clock-status" role="status">{clockStatus}</span>{waveform.length ? waveform.map((value, i) => {
             const at = i / waveform.length * duration;
             return at >= view.start && at <= view.start + span ? <i key={i} style={{ left: `${percent(at)}%`, height: `${Math.max(2, value * 95)}%` }} /> : null;
           }) : <span>{audioLoading ? 'Loading audio…' : 'Audio attached'}</span>}</div>}
           {count >= view.start && count <= view.start + span && <div className="playhead" style={{ left: `${percent(count)}%` }}><i /></div>}
-          <input className="timeline-scrubber" type="range" min={view.start} max={Math.min(duration, view.start + span) || 1} step="any" value={Math.max(view.start, Math.min(view.start + span, count))} aria-label="Timeline playhead" aria-valuetext={`Show count ${fmt(count)}`} onChange={e => scrub(Number(e.target.value))} />
+          <input className="timeline-scrubber" type="range" min={view.start} max={Math.min(duration, view.start + span) || 1} step="any" value={Math.max(view.start, Math.min(view.start + span, count))} aria-label="Timeline playhead" aria-valuetext={`Show count ${fmt(count)} · ${scoreLabel(score,Math.min(duration,Math.max(0,count)))}`} onChange={e => scrub(Number(e.target.value))} />
         </div>
       </div>
     </div>

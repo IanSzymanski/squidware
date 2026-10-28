@@ -1,3 +1,4 @@
+import { compileScore, scoreLabel } from '../score';
 import { useState } from 'react';
 import { Modal } from '../components/Modal';
 import { PROJECT_LIMITS, totalCounts, uid } from '../domain';
@@ -16,7 +17,7 @@ function Target({ label, project, value, onChange }: { label: string; project: P
     onChange(move ? { kind: 'move', moveId: move.id, fromSetId: move.fromSetId, toSetId: move.toSetId, count: 0 } : { kind: 'set', setId: e.target.value.slice(4) });
   }}>{!choices.some(c => c.key === key) && <option value={key}>Missing target — choose a replacement</option>}{choices.map(c => <option value={c.key} key={c.key}>{c.label}</option>)}</select></label>
     {value.kind === 'move' && <label className="form-label">{label} local count<input aria-label={`${label} local count`} type="number" required min="0" max={project.moves.find(m => m.id === value.moveId)?.counts ?? 0} step="any" value={Number.isFinite(value.count) ? value.count : ''} onChange={e => onChange({ ...value, count: e.target.value === '' ? NaN : Number(e.target.value) })} /></label>}
-    <p className="microcopy">{resolved.error ?? `${resolved.label} · show count ${Number(resolved.count.toFixed(3))}`}</p>
+    <p className="microcopy">{resolved.error ?? `${resolved.label} · show count ${Number(resolved.count.toFixed(3))} · ${scoreLabel(compileScore(project),Math.min(totalCounts(project),resolved.count))}`}</p>
   </fieldset>;
 }
 export function RehearsalPanel({ controller }: { controller: EditorController }) {

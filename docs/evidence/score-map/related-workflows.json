@@ -1,0 +1,163 @@
+{
+  "runId": "2026-10-28T19-40-53-565Z-3e959aea",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "cf07215ac237c1ae815c2385b2fae05c64d396da",
+    "tree": "75700970a2844c25881679cfd1f47d7d22b373ee",
+    "dirty": true,
+    "contentHash": "6b2d91fc8220cb58594d7ab807a712570b7a1eb02c303b78c77943bd959c173d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "score-map",
+    "production-sheet",
+    "metronome",
+    "timeline",
+    "rehearsal",
+    "editor",
+    "themes",
+    "commands",
+    "playback",
+    "audio-clock",
+    "accessibility"
+  ],
+  "checks": [
+    {
+      "name": "score-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 26525,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/score-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/score-map"
+    },
+    {
+      "name": "production-sheet",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 27647,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/production-sheet.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/production-sheet"
+    },
+    {
+      "name": "metronome",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 25927,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/metronome.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/metronome"
+    },
+    {
+      "name": "timeline",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 18769,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/timeline.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/timeline"
+    },
+    {
+      "name": "rehearsal",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 12715,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/rehearsal.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/rehearsal"
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 162943,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/editor.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/editor"
+    },
+    {
+      "name": "themes",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 81886,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/themes.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/themes"
+    },
+    {
+      "name": "commands",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 24819,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/commands.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/commands"
+    },
+    {
+      "name": "playback",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 14563,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/playback.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/playback"
+    },
+    {
+      "name": "audio-clock",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 18090,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/audio-clock.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/audio-clock"
+    },
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 45942,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/accessibility.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T19-40-53-565Z-3e959aea/accessibility"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-28T19:39:44.668Z",
+    "source": {
+      "revision": "cf07215ac237c1ae815c2385b2fae05c64d396da",
+      "tree": "75700970a2844c25881679cfd1f47d7d22b373ee",
+      "dirty": true,
+      "contentHash": "6b2d91fc8220cb58594d7ab807a712570b7a1eb02c303b78c77943bd959c173d",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.55",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "9b141f172d8dc1d3ad0fdafd469ae44ba747f2d62bb1e6c848fd697f353e0689"
+  }
+}

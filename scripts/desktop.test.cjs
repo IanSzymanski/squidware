@@ -440,3 +440,11 @@ test('macOS text editing requires a native key event in trusted text context and
   assert.equal(prevented, 3);
   assert.deepEqual(h.messages.map(message => [...message]), [['text-edit', 'copy'], ['text-edit', 'selectAll'], ['text-edit', 'redo']]);
 });
+
+test('native score save/open retains musical anchors and rejects contradictory meter changes atomically', async t => {
+ const h=await harness(t),data=JSON.parse(project);
+ data.score={firstMeasure:1,pickupCounts:0,changes:[{count:16,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:16,label:'A'}]};
+ const filename=path.join(h.directory,'score.squid');h.dialog({canceled:false,filePath:filename});await h.invoke('save-project',JSON.stringify(data),'Score');
+ h.dialog({canceled:false,filePaths:[filename]});const reopened=JSON.parse((await h.invoke('open-project')).content);assert.deepEqual(reopened.score,data.score);assert.deepEqual(reopened.sets,data.sets);
+ const before=await fs.readFile(filename,'utf8');data.score.changes[0].count=3;await assert.rejects(h.invoke('save-project',JSON.stringify(data),'Score'),/inside a bar/);assert.equal(await fs.readFile(filename,'utf8'),before);
+});

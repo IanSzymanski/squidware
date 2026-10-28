@@ -111,6 +111,9 @@
         "grouping"
       ]
     },
+    "score": {
+      "$ref": "#/definitions/scoreMap"
+    },
     "rehearsal": {
       "type": "array",
       "items": {
@@ -568,6 +571,104 @@
       },
       "required": [
         "defaults"
+      ]
+    },
+    "scoreMap": {
+      "type": "object",
+      "properties": {
+        "firstMeasure": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "pickupCounts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 31
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 130048
+              },
+              "meter": {
+                "type": "object",
+                "properties": {
+                  "numerator": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 32
+                  },
+                  "denominator": {
+                    "enum": [
+                      2,
+                      4,
+                      8,
+                      16
+                    ]
+                  },
+                  "grouping": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 32
+                    },
+                    "minItems": 1,
+                    "maxItems": 32
+                  }
+                },
+                "required": [
+                  "numerator",
+                  "denominator",
+                  "grouping"
+                ]
+              }
+            },
+            "required": [
+              "count",
+              "meter"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 256
+        },
+        "marks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 130048
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$"
+              }
+            },
+            "required": [
+              "count",
+              "label"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "firstMeasure",
+        "pickupCounts",
+        "changes",
+        "marks"
       ]
     },
     "rehearsalAnchor": {
