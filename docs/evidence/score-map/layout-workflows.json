@@ -1,0 +1,769 @@
+{
+  "runId": "2026-10-28T20-15-59-018Z-73ad2158",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "c52f3995fcb2b36fae04460f28a52d6c4d3f60d3",
+    "tree": "3719765984d9c122dde81c751131a8580b0729ac",
+    "dirty": true,
+    "contentHash": "4f1988e8e006c04490cd162b17f1856e17bce350417e83af98ab31460b7a71b9",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "formation-assignment",
+    "spacing",
+    "coordinate-entry",
+    "score-map"
+  ],
+  "checks": [
+    {
+      "name": "formation-assignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 22258,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/formation-assignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/formation-assignment"
+    },
+    {
+      "name": "spacing",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 53325,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/spacing.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/spacing"
+    },
+    {
+      "name": "coordinate-entry",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 23650,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/coordinate-entry.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/coordinate-entry"
+    },
+    {
+      "name": "score-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 45353,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/score-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/score-map"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-28T20:15:58.212Z",
+    "source": {
+      "revision": "c52f3995fcb2b36fae04460f28a52d6c4d3f60d3",
+      "tree": "3719765984d9c122dde81c751131a8580b0729ac",
+      "dirty": true,
+      "contentHash": "4f1988e8e006c04490cd162b17f1856e17bce350417e83af98ab31460b7a71b9",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.55",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "381862ed57f7016c04e2bf034cb929d2aaa02097511f7bfab1b40bfd63bc2bd4"
+  },
+  "layouts": {
+    "formation-assignment": [
+      {
+        "width": 1366,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "assignment": {
+          "left": 1121,
+          "right": 1344,
+          "top": 396.59375,
+          "bottom": 432.59375,
+          "width": 223,
+          "height": 36
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        }
+      },
+      {
+        "width": 1366,
+        "zoom": 1.25,
+        "baselineHeight": 332.20001220703125,
+        "viewport": {
+          "width": 1093,
+          "height": 614
+        },
+        "field": {
+          "left": 234,
+          "right": 816.7999877929688,
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "width": 582.7999877929688,
+          "height": 332.20001220703125
+        },
+        "assignment": {
+          "left": 847.6000366210938,
+          "right": 1072.800033569336,
+          "top": 270.20001220703125,
+          "bottom": 305.8000144958496,
+          "width": 225.1999969482422,
+          "height": 35.60000228881836
+        },
+        "apply": {
+          "left": 847.6000366210938,
+          "right": 961.2000350952148,
+          "top": 227.60000610351562,
+          "bottom": 261.6000061035156,
+          "width": 113.5999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 967.2000122070312,
+          "right": 1080.8000106811523,
+          "top": 227.60000610351562,
+          "bottom": 261.6000061035156,
+          "width": 113.5999984741211,
+          "height": 34
+        }
+      },
+      {
+        "width": 1120,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 844,
+          "top": 130,
+          "bottom": 615,
+          "width": 610,
+          "height": 485
+        },
+        "assignment": {
+          "left": 875,
+          "right": 1098,
+          "top": 366.59375,
+          "bottom": 402.59375,
+          "width": 223,
+          "height": 36
+        },
+        "apply": {
+          "left": 875,
+          "right": 988.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 994.5,
+          "right": 1108,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        }
+      },
+      {
+        "width": 1120,
+        "zoom": 1.25,
+        "baselineHeight": 243,
+        "viewport": {
+          "width": 896,
+          "height": 614
+        },
+        "field": {
+          "left": 234,
+          "right": 620,
+          "top": 191.8000030517578,
+          "bottom": 434.8000030517578,
+          "width": 386,
+          "height": 243
+        },
+        "assignment": {
+          "left": 650.7999877929688,
+          "right": 875.9999847412109,
+          "top": 306.6000061035156,
+          "bottom": 342.200008392334,
+          "width": 225.1999969482422,
+          "height": 35.60000228881836
+        },
+        "apply": {
+          "left": 650.7999877929688,
+          "right": 764.3999862670898,
+          "top": 264,
+          "bottom": 298,
+          "width": 113.5999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 770.4000244140625,
+          "right": 884.0000228881836,
+          "top": 264,
+          "bottom": 298,
+          "width": 113.5999984741211,
+          "height": 34
+        }
+      }
+    ],
+    "spacing": [
+      {
+        "width": 1366,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "panel": {
+          "left": 1109,
+          "right": 1356,
+          "top": 270.59375,
+          "bottom": 1153.59375,
+          "width": 247,
+          "height": 883
+        }
+      },
+      {
+        "width": 1366,
+        "zoom": 1.25,
+        "baselineHeight": 332.20001220703125,
+        "viewport": {
+          "width": 1093,
+          "height": 614
+        },
+        "field": {
+          "left": 234,
+          "right": 816.7999877929688,
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "width": 582.7999877929688,
+          "height": 332.20001220703125
+        },
+        "apply": {
+          "left": 847.6000366210938,
+          "right": 961.2000350952148,
+          "top": 227.60000610351562,
+          "bottom": 261.6000061035156,
+          "width": 113.5999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 967.2000122070312,
+          "right": 1080.8000106811523,
+          "top": 227.60000610351562,
+          "bottom": 261.6000061035156,
+          "width": 113.5999984741211,
+          "height": 34
+        },
+        "panel": {
+          "left": 835.6000366210938,
+          "right": 1084.800033569336,
+          "top": 270.3999938964844,
+          "bottom": 1129.0000305175781,
+          "width": 249.1999969482422,
+          "height": 858.6000366210938
+        }
+      },
+      {
+        "width": 1120,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 844,
+          "top": 130,
+          "bottom": 615,
+          "width": 610,
+          "height": 485
+        },
+        "apply": {
+          "left": 875,
+          "right": 988.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 994.5,
+          "right": 1108,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "panel": {
+          "left": 863,
+          "right": 1110,
+          "top": 270.59375,
+          "bottom": 1131.59375,
+          "width": 247,
+          "height": 861
+        }
+      },
+      {
+        "width": 1120,
+        "zoom": 1.25,
+        "baselineHeight": 243,
+        "viewport": {
+          "width": 896,
+          "height": 614
+        },
+        "field": {
+          "left": 234,
+          "right": 620,
+          "top": 191.8000030517578,
+          "bottom": 434.8000030517578,
+          "width": 386,
+          "height": 243
+        },
+        "apply": {
+          "left": 650.7999877929688,
+          "right": 764.3999862670898,
+          "top": 264,
+          "bottom": 298,
+          "width": 113.5999984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 770.4000244140625,
+          "right": 884.0000228881836,
+          "top": 264,
+          "bottom": 298,
+          "width": 113.5999984741211,
+          "height": 34
+        },
+        "panel": {
+          "left": 638.7999877929688,
+          "right": 887.9999847412109,
+          "top": 306.8000183105469,
+          "bottom": 1165.4000549316406,
+          "width": 249.1999969482422,
+          "height": 858.6000366210938
+        }
+      }
+    ],
+    "coordinate-entry": [
+      {
+        "width": 1366,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1239.6875,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 118.6875,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1245.6875,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 108.3125,
+          "height": 34
+        },
+        "input": {
+          "left": 1126,
+          "right": 1339,
+          "top": 414.59375,
+          "bottom": 500.59375,
+          "width": 213,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 1121,
+            "right": 1192.875,
+            "top": 160.59375,
+            "bottom": 188.59375
+          },
+          {
+            "name": "Rotate selection",
+            "left": 1195.875,
+            "right": 1273.765625,
+            "top": 160.59375,
+            "bottom": 188.59375
+          },
+          {
+            "name": "Shape selection",
+            "left": 1276.765625,
+            "right": 1354,
+            "top": 160.59375,
+            "bottom": 188.59375
+          },
+          {
+            "name": "Mirror selection",
+            "left": 1121,
+            "right": 1198.640625,
+            "top": 191.59375,
+            "bottom": 219.59375
+          },
+          {
+            "name": "Align selection",
+            "left": 1201.640625,
+            "right": 1274.65625,
+            "top": 191.59375,
+            "bottom": 219.59375
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 1277.65625,
+            "right": 1354,
+            "top": 191.59375,
+            "bottom": 219.59375
+          }
+        ]
+      },
+      {
+        "width": 1366,
+        "zoom": 1.25,
+        "baselineHeight": 332.20001220703125,
+        "viewport": {
+          "width": 1093,
+          "height": 614
+        },
+        "field": {
+          "left": 234,
+          "right": 816.7999877929688,
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "width": 582.7999877929688,
+          "height": 332.20001220703125
+        },
+        "apply": {
+          "left": 847.6000366210938,
+          "right": 965.8875350952148,
+          "top": 227.60000610351562,
+          "bottom": 261.6000061035156,
+          "width": 118.2874984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 971.8875122070312,
+          "right": 1080.8000106811523,
+          "top": 227.60000610351562,
+          "bottom": 261.6000061035156,
+          "width": 108.9124984741211,
+          "height": 34
+        },
+        "input": {
+          "left": 849.6000366210938,
+          "right": 1070.800033569336,
+          "top": 410.8000183105469,
+          "bottom": 496.8000183105469,
+          "width": 221.1999969482422,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 847.6000366210938,
+            "right": 919.5375366210938,
+            "top": 160.60000610351562,
+            "bottom": 188.60000610351562
+          },
+          {
+            "name": "Rotate selection",
+            "left": 922.5375366210938,
+            "right": 1000.5000381469727,
+            "top": 160.60000610351562,
+            "bottom": 188.60000610351562
+          },
+          {
+            "name": "Shape selection",
+            "left": 1003.5,
+            "right": 1080.8000030517578,
+            "top": 160.60000610351562,
+            "bottom": 188.60000610351562
+          },
+          {
+            "name": "Mirror selection",
+            "left": 847.6000366210938,
+            "right": 925.3125381469727,
+            "top": 191.60000610351562,
+            "bottom": 219.60000610351562
+          },
+          {
+            "name": "Align selection",
+            "left": 928.3125,
+            "right": 1001.3875045776367,
+            "top": 191.60000610351562,
+            "bottom": 219.60000610351562
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 1004.3875122070312,
+            "right": 1080.8000106811523,
+            "top": 191.60000610351562,
+            "bottom": 219.60000610351562
+          }
+        ]
+      },
+      {
+        "width": 1120,
+        "zoom": 1,
+        "baselineHeight": 485,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 844,
+          "top": 130,
+          "bottom": 615,
+          "width": 610,
+          "height": 485
+        },
+        "apply": {
+          "left": 875,
+          "right": 993.6875,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 118.6875,
+          "height": 34
+        },
+        "cancel": {
+          "left": 999.6875,
+          "right": 1108,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 108.3125,
+          "height": 34
+        },
+        "input": {
+          "left": 877,
+          "right": 1096,
+          "top": 411.59375,
+          "bottom": 497.59375,
+          "width": 219,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 875,
+            "right": 946.875,
+            "top": 160.59375,
+            "bottom": 188.59375
+          },
+          {
+            "name": "Rotate selection",
+            "left": 949.875,
+            "right": 1027.765625,
+            "top": 160.59375,
+            "bottom": 188.59375
+          },
+          {
+            "name": "Shape selection",
+            "left": 1030.765625,
+            "right": 1108,
+            "top": 160.59375,
+            "bottom": 188.59375
+          },
+          {
+            "name": "Mirror selection",
+            "left": 875,
+            "right": 952.640625,
+            "top": 191.59375,
+            "bottom": 219.59375
+          },
+          {
+            "name": "Align selection",
+            "left": 955.640625,
+            "right": 1028.65625,
+            "top": 191.59375,
+            "bottom": 219.59375
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 1031.65625,
+            "right": 1108,
+            "top": 191.59375,
+            "bottom": 219.59375
+          }
+        ]
+      },
+      {
+        "width": 1120,
+        "zoom": 1.25,
+        "baselineHeight": 243,
+        "viewport": {
+          "width": 896,
+          "height": 614
+        },
+        "field": {
+          "left": 234,
+          "right": 620,
+          "top": 191.8000030517578,
+          "bottom": 434.8000030517578,
+          "width": 386,
+          "height": 243
+        },
+        "apply": {
+          "left": 650.7999877929688,
+          "right": 769.0874862670898,
+          "top": 264,
+          "bottom": 298,
+          "width": 118.2874984741211,
+          "height": 34
+        },
+        "cancel": {
+          "left": 775.0875244140625,
+          "right": 884.0000228881836,
+          "top": 264,
+          "bottom": 298,
+          "width": 108.9124984741211,
+          "height": 34
+        },
+        "input": {
+          "left": 652.7999877929688,
+          "right": 873.9999847412109,
+          "top": 447.20001220703125,
+          "bottom": 533.2000122070312,
+          "width": 221.1999969482422,
+          "height": 86
+        },
+        "actions": [
+          {
+            "name": "Move selection",
+            "left": 650.7999877929688,
+            "right": 722.7374877929688,
+            "top": 197,
+            "bottom": 225
+          },
+          {
+            "name": "Rotate selection",
+            "left": 725.7374877929688,
+            "right": 803.6999893188477,
+            "top": 197,
+            "bottom": 225
+          },
+          {
+            "name": "Shape selection",
+            "left": 806.7000122070312,
+            "right": 884.0000152587891,
+            "top": 197,
+            "bottom": 225
+          },
+          {
+            "name": "Mirror selection",
+            "left": 650.7999877929688,
+            "right": 728.5124893188477,
+            "top": 228,
+            "bottom": 256
+          },
+          {
+            "name": "Align selection",
+            "left": 731.5125122070312,
+            "right": 804.587516784668,
+            "top": 228,
+            "bottom": 256
+          },
+          {
+            "name": "Enter coordinates",
+            "left": 807.5875244140625,
+            "right": 884.0000228881836,
+            "top": 228,
+            "bottom": 256
+          }
+        ]
+      }
+    ]
+  }
+}
