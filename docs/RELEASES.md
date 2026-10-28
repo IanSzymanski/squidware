@@ -1,8 +1,8 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 7 of 15 issues completed. Show-wide problems [#45](https://github.com/IanSzymanski/squidware/issues/45) landed through [#149](https://github.com/IanSzymanski/squidware/pull/149). Continue with [#14 — meter-aware metronome](https://github.com/IanSzymanski/squidware/issues/14), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 8 of 15 issues completed. Meter-aware metronome [#14](https://github.com/IanSzymanski/squidware/issues/14) landed through [#150](https://github.com/IanSzymanski/squidware/pull/150), following show-wide problems. Continue with [#28 — editable Production sheet](https://github.com/IanSzymanski/squidware/issues/28), respecting the maintained queue and hard prerequisites.
 
-**Main certification:** [PR #149 certification](https://github.com/IanSzymanski/squidware/actions/runs/40538218581) passed on Windows, macOS and Linux before merge. The later [merged-main run](https://github.com/IanSzymanski/squidware/actions/runs/40578566724) on `92ed5c3` passed source, Windows and Linux but failed macOS while waiting for the 127-move analysis backlog. The metronome change replaces that single total wait with bounded progress/error checks and retains every oracle assertion; its cross-platform result must be checked separately. v0.7 remains unpublished with 8 unfinished issues; publication still requires successful exact-source main CI.
+**Main certification:** [Source checks and Windows/macOS/Linux certification](https://github.com/IanSzymanski/squidware/actions/runs/40713767359) passed on merged main `f041205`, including the analysis progress-wait repair after the earlier macOS timeout on `92ed5c3`. v0.7 remains unpublished with 7 unfinished issues; publication still requires successful exact-source main CI.
 
 **Validation policy:** Maintainer decision (2026-10-22): human review, participant sessions, first-time discovery checks, subjective listening and physical/representative school-hardware qualification are not completion or release gates. Automated software tests, rendered-output review, cross-platform CI, package verification and signing requirements remain applicable. Historical references to human/hardware gates are superseded; no waived check is claimed to have passed. See [the validation policy](VALIDATION_POLICY.md). #3 is complete on its delivered local measurement scope; #64 retains software-based platform/coverage review.
 
@@ -62,11 +62,11 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-7/15 implementation issues completed at reconciliation.
+8/15 implementation issues completed at reconciliation.
 
 - [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
 - [x] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
-- [ ] [#14 · Audit A13 Schedule a meter-aware metronome on the audio clock](https://github.com/IanSzymanski/squidware/issues/14)
+- [x] [#14 · Audit A13 Schedule a meter-aware metronome on the audio clock](https://github.com/IanSzymanski/squidware/issues/14)
 - [ ] [#17 · Audit A16 Add a compact set list with drag reorder and jump-to-set](https://github.com/IanSzymanski/squidware/issues/17)
 - [ ] [#24 · Audit A23 Split a transition at a selected count into a new set](https://github.com/IanSzymanski/squidware/issues/24)
 - [ ] [#28 · Audit A28 Make the production sheet editable with spreadsheet paste](https://github.com/IanSzymanski/squidware/issues/28)

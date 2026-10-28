@@ -1,0 +1,38 @@
+.production-workspace.sheet-workspace{padding:0;gap:0;overflow:hidden}
+.sheet-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sheet-toolbar p{margin-right:auto;display:flex;flex-direction:column;gap:4px;font-size:12px;font-variant-numeric:tabular-nums}
+.sheet-toolbar p span{color:var(--muted)}
+.sheet-toolbar .button{font-size:12px;min-height:32px}
+.sheet-help{padding:8px 12px;font-size:12px;color:var(--muted);line-height:1.5;flex-shrink:0}
+.sheet-help summary{cursor:pointer}
+.sheet-help p{margin-top:6px}
+.sheet-scroll{overflow:auto;flex:1;min-height:0}
+.sheet-scroll table{min-width:560px;table-layout:fixed}
+.sheet-scroll th:first-child{width:70px}
+.sheet-scroll th:nth-child(2){width:28%}
+.sheet-scroll th:nth-child(3),.sheet-scroll th:nth-child(4){width:72px}
+.sheet-scroll td:first-child{display:table-cell}
+.sheet-scroll td,.sheet-scroll tbody th{padding:3px;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;letter-spacing:0}
+.sheet-scroll tbody th{position:static;text-align:left;font-weight:500;padding:4px 8px;font-variant-numeric:tabular-nums}
+.sheet-current{display:block;font-size:11px;color:var(--accent)}
+.sheet-scroll .sheet-active>*{background:var(--selected-bg)}
+.sheet-scroll input,.sheet-scroll textarea{display:block;width:100%;min-width:0;min-height:32px;font-size:12px;color:var(--text);padding:7px 6px;background:transparent;border:1px solid transparent;border-radius:3px;font-variant-numeric:tabular-nums}
+.sheet-scroll textarea{resize:vertical;line-height:1.4}
+.sheet-scroll input:hover,.sheet-scroll textarea:hover{border-color:var(--border)}
+.sheet-scroll input:focus,.sheet-scroll textarea:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
+.sheet-scroll input[readonly]{color:var(--muted)}
+.sheet-scroll input,.sheet-scroll textarea{scroll-margin-top:44px}
+.sheet-error{padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--warning);font-size:12px;border:1px solid var(--warning)}
+.sheet-error .button{padding:5px;font-size:12px}
+.sheet-paste-modal{display:flex;flex-direction:column;overflow:auto;gap:8px}
+.sheet-paste-modal .modal-header,.sheet-paste-modal .modal-intro,.sheet-paste-modal .form-label{margin-bottom:4px}
+.sheet-paste-modal textarea{width:100%;min-height:70px;resize:vertical;font-size:12px}
+.sheet-paste-modal p{font-size:12px;line-height:1.5}
+.sheet-preview-scroll{overflow:auto;max-height:28vh;min-height:60px;flex-shrink:0;border:1px solid var(--border)}
+.sheet-preview{border-collapse:collapse;width:100%;font-size:12px;text-align:left;table-layout:fixed}
+.sheet-preview th,.sheet-preview td{padding:6px;border-bottom:1px solid var(--border);white-space:pre-wrap;overflow-wrap:anywhere}
+.sheet-preview thead th{position:sticky;top:0;background:var(--surface-muted)}
+.sheet-preview tbody th{font-weight:500}
+.sheet-invalid strong{display:block;color:var(--warning)}
+.sheet-error-list{font-size:12px;line-height:1.5;color:var(--warning);max-height:15vh;overflow:auto;padding-left:24px;flex-shrink:0}
+.sheet-paste-modal .modal-actions{margin-top:4px;flex-shrink:0;flex-wrap:wrap}

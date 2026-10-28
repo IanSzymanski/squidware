@@ -1,0 +1,123 @@
+{
+  "runId": "2026-10-28T18-44-57-164Z-d564f93e",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "f041205c9cc7745141fff32a367f098a53d94832",
+    "tree": "6bb8aefbc88d18e4e6ce14a7ed1a679bfb79f506",
+    "dirty": true,
+    "contentHash": "8f96f45507be90eafccae871f746d8a6c7d69b5924c35d3e91333157d8f4bd80",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "production-sheet",
+    "editor",
+    "timeline",
+    "set-creation",
+    "accessibility",
+    "themes",
+    "commands"
+  ],
+  "checks": [
+    {
+      "name": "production-sheet",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 15826,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/production-sheet.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/production-sheet"
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 166563,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/editor.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/editor"
+    },
+    {
+      "name": "timeline",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10841,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/timeline.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/timeline"
+    },
+    {
+      "name": "set-creation",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 11883,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/set-creation.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/set-creation"
+    },
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 48811,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/accessibility.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/accessibility"
+    },
+    {
+      "name": "themes",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 81607,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/themes.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/themes"
+    },
+    {
+      "name": "commands",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 23229,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/commands.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T18-44-57-164Z-d564f93e/commands"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-28T18:44:45.733Z",
+    "source": {
+      "revision": "f041205c9cc7745141fff32a367f098a53d94832",
+      "tree": "6bb8aefbc88d18e4e6ce14a7ed1a679bfb79f506",
+      "dirty": true,
+      "contentHash": "8f96f45507be90eafccae871f746d8a6c7d69b5924c35d3e91333157d8f4bd80",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.55",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "f333183b83a255a741ee877979d272bd0ecfc42de6700ccc9986553a369efe57"
+  }
+}

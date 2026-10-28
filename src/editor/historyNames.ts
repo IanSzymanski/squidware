@@ -13,6 +13,8 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
   const selection = ids.length === 1 ? project.performers.find(p => p.id === ids[0])?.label ?? '1 performer' : `${ids.length} performers`;
   let name: string;
   switch (id) {
+    case 'sheet.apply': name = `Edit production sheet · ${Array.isArray(a.cells) ? a.cells.length : 0} rows`; break;
+    case 'sheet.append': name = 'Append production sheet row'; break;
     case 'metronome.configure': name = 'Edit production meter'; break;
     case 'analysis.rules-save': name = 'Edit production analysis rules'; break;
     case 'analysis.direction-set': name = `${a.direction ? `Declare ${a.direction} travel` : 'Clear travel direction'} · ${ids.length} performers — ${picture}`; break;
