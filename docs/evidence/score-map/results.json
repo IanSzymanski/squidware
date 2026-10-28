@@ -1,0 +1,431 @@
+{
+  "checks": [
+    "legacy default map and 1366×768 field budget; pending preview, invalid bar anchor and Escape preserve the show",
+    "one undoable map applies pickups, compound and mixed meters without altering written tempos, geometry or motion",
+    "Meter/Mark sheet columns use atomic commands and invalid count edits cannot strand musical anchors",
+    "measure/beat and rehearsal-mark navigation match sheet positions, timeline markers and count readouts",
+    "real audio-thread clicks share pickup, compound/mixed boundaries and a six-count lead-in at the active meter",
+    "native save/reopen retains score metadata, geometry, identities and written timing",
+    "supported themes and narrow 150% scale retain map preview, errors, keyboard navigation and reachable actions",
+    "maximum 128-set/500-performer show retains bounded rulers and all 256 meter changes and marks remain editable, reachable and reversible"
+  ],
+  "viewports": [
+    {
+      "name": "score-field.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "score-preview.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 583.578125
+    },
+    {
+      "name": "score-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 488.375
+    },
+    {
+      "name": "score-timeline.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "score-sheet-dark.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "score-map-dark.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 691.1875
+    },
+    {
+      "name": "score-sheet-light.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "score-map-light.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 691.1875
+    },
+    {
+      "name": "score-sheet-high-contrast.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "score-map-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 691.1875
+    },
+    {
+      "name": "score-map-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "dialogHeight": 432
+    }
+  ],
+  "audio": [
+    {
+      "type": "click",
+      "time": 9.492448979591837,
+      "count": 0,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 9.492471655328798,
+      "deliveredAt": 9587
+    },
+    {
+      "type": "click",
+      "time": 9.61578231292517,
+      "count": 1,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 9.61578231292517,
+      "deliveredAt": 9700
+    },
+    {
+      "type": "click",
+      "time": 9.749115646258504,
+      "count": 2,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 9.749138321995463,
+      "deliveredAt": 9825.099999999627
+    },
+    {
+      "type": "click",
+      "time": 9.882448979591837,
+      "count": 3,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 9.882448979591837,
+      "deliveredAt": 9965.299999999814
+    },
+    {
+      "type": "click",
+      "time": 10.01578231292517,
+      "count": 4,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 10.01578231292517,
+      "deliveredAt": 10099.599999999627
+    },
+    {
+      "type": "click",
+      "time": 10.149115646258503,
+      "count": 5,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 10.149115646258503,
+      "deliveredAt": 10225.099999999627
+    },
+    {
+      "type": "click",
+      "time": 10.282448979591837,
+      "count": 6,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 10.282471655328798,
+      "deliveredAt": 10365.200000000186
+    },
+    {
+      "type": "click",
+      "time": 10.41578231292517,
+      "count": 7,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 10.415804988662131,
+      "deliveredAt": 10498.200000000186
+    },
+    {
+      "type": "click",
+      "time": 10.549115646258503,
+      "count": 8,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 10.549115646258505,
+      "deliveredAt": 10625.400000000373
+    },
+    {
+      "type": "click",
+      "time": 10.682448979591836,
+      "count": 9,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 10.682448979591838,
+      "deliveredAt": 10770.299999999814
+    },
+    {
+      "type": "click",
+      "time": 10.81578231292517,
+      "count": 10,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 10.815804988662132,
+      "deliveredAt": 10900.799999999814
+    },
+    {
+      "type": "click",
+      "time": 10.949115646258504,
+      "count": 11,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 10.949138321995465,
+      "deliveredAt": 11025.200000000186
+    },
+    {
+      "type": "click",
+      "time": 11.082448979591836,
+      "count": 12,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 11.082471655328797,
+      "deliveredAt": 11164.900000000373
+    },
+    {
+      "type": "click",
+      "time": 11.215782312925171,
+      "count": 13,
+      "accent": "group",
+      "phase": "show",
+      "renderTime": 11.215804988662132,
+      "deliveredAt": 11297.900000000373
+    },
+    {
+      "type": "click",
+      "time": 11.349115646258504,
+      "count": 14,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 11.349138321995465,
+      "deliveredAt": 11425
+    },
+    {
+      "type": "click",
+      "time": 11.482448979591837,
+      "count": 15,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 11.482471655328798,
+      "deliveredAt": 11565.599999999627
+    },
+    {
+      "type": "click",
+      "time": 11.61578231292517,
+      "count": 16,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 11.61578231292517,
+      "deliveredAt": 11698.200000000186
+    },
+    {
+      "type": "click",
+      "time": 11.749115646258504,
+      "count": 17,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 11.749138321995463,
+      "deliveredAt": 11824.900000000373
+    },
+    {
+      "type": "click",
+      "time": 11.882448979591837,
+      "count": 18,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 11.882448979591837,
+      "deliveredAt": 11955
+    },
+    {
+      "type": "click",
+      "time": 12.01578231292517,
+      "count": 19,
+      "accent": "group",
+      "phase": "show",
+      "renderTime": 12.01578231292517,
+      "deliveredAt": 12097.400000000373
+    },
+    {
+      "type": "click",
+      "time": 12.149115646258503,
+      "count": 20,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 12.149115646258503,
+      "deliveredAt": 12224.900000000373
+    },
+    {
+      "type": "click",
+      "time": 12.282448979591837,
+      "count": 21,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 12.282471655328798,
+      "deliveredAt": 12365.099999999627
+    },
+    {
+      "type": "click",
+      "time": 12.41578231292517,
+      "count": 22,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 12.415804988662131,
+      "deliveredAt": 12500.299999999814
+    },
+    {
+      "type": "click",
+      "time": 12.549115646258503,
+      "count": 23,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 12.549115646258503,
+      "deliveredAt": 12624.900000000373
+    },
+    {
+      "type": "click",
+      "time": 12.682448979591838,
+      "count": 24,
+      "accent": "group",
+      "phase": "show",
+      "renderTime": 12.682471655328799,
+      "deliveredAt": 12765.599999999627
+    },
+    {
+      "type": "click",
+      "time": 12.81578231292517,
+      "count": 25,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 12.815804988662132,
+      "deliveredAt": 12898.599999999627
+    },
+    {
+      "type": "click",
+      "time": 12.949115646258504,
+      "count": 26,
+      "accent": "group",
+      "phase": "show",
+      "renderTime": 12.949138321995465,
+      "deliveredAt": 13024.900000000373
+    },
+    {
+      "type": "click",
+      "time": 13.082448979591836,
+      "count": 27,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 13.082471655328797,
+      "deliveredAt": 13164.900000000373
+    },
+    {
+      "type": "click",
+      "time": 13.215782312925171,
+      "count": 28,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 13.215804988662132,
+      "deliveredAt": 13297.799999999814
+    },
+    {
+      "type": "click",
+      "time": 13.349115646258504,
+      "count": 29,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 13.349138321995465,
+      "deliveredAt": 13425
+    },
+    {
+      "type": "click",
+      "time": 13.482448979591837,
+      "count": 30,
+      "accent": "beat",
+      "phase": "show",
+      "renderTime": 13.482471655328798,
+      "deliveredAt": 13564.900000000373
+    }
+  ],
+  "countIn": [
+    {
+      "type": "click",
+      "time": 13.61174603174603,
+      "count": 4,
+      "accent": "bar",
+      "phase": "count-in",
+      "renderTime": 13.611746031746032,
+      "deliveredAt": 13685
+    },
+    {
+      "type": "click",
+      "time": 13.745079365079363,
+      "count": 5,
+      "accent": "beat",
+      "phase": "count-in",
+      "renderTime": 13.745079365079365,
+      "deliveredAt": 13825
+    },
+    {
+      "type": "click",
+      "time": 13.878412698412697,
+      "count": 6,
+      "accent": "beat",
+      "phase": "count-in",
+      "renderTime": 13.8784126984127,
+      "deliveredAt": 13957.700000000186
+    },
+    {
+      "type": "click",
+      "time": 14.01174603174603,
+      "count": 7,
+      "accent": "group",
+      "phase": "count-in",
+      "renderTime": 14.011746031746032,
+      "deliveredAt": 14094.900000000373
+    },
+    {
+      "type": "click",
+      "time": 14.145079365079363,
+      "count": 8,
+      "accent": "beat",
+      "phase": "count-in",
+      "renderTime": 14.145079365079365,
+      "deliveredAt": 14225
+    },
+    {
+      "type": "click",
+      "time": 14.278412698412696,
+      "count": 9,
+      "accent": "beat",
+      "phase": "count-in",
+      "renderTime": 14.278412698412698,
+      "deliveredAt": 14355
+    },
+    {
+      "type": "click",
+      "time": 14.41174603174603,
+      "count": 10,
+      "accent": "bar",
+      "phase": "show",
+      "renderTime": 14.41174603174603,
+      "deliveredAt": 14495
+    }
+  ],
+  "source": {
+    "revision": "0e04f8ecbc61d89098230fe5234f88593062d4e8",
+    "tree": "4b6046cac42e7cb00b3e61da9f033caae8f0529f",
+    "dirty": true,
+    "contentHash": "487a1b129da413ce67f4446ffa36915ac50f263a374a83351a4bc0fa1ffd2812",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

@@ -1,3 +1,4 @@
+import { ScorePanel } from './ScorePanel';
 import { MetronomePanel } from './MetronomePanel';
 import { shortcutCommands } from './commands';
 import { CommandKeycaps } from './ControlHelp';
@@ -25,6 +26,7 @@ import { SetCreationPanel } from './SetCreationPanel';
 export function EditorDialogs({ controller }: { controller: EditorController }) {
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, dirty, removeSet, replaceProduction, saveProject, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
+    {dialog === 'score' && <ScorePanel controller={controller} />}
     {dialog === 'metronome' && <MetronomePanel controller={controller} />}
     {dialog === 'problems' && <ProblemsPanel controller={controller} />}
     {dialog === 'analysis-rules' && <AnalysisRulesPanel controller={controller} />}

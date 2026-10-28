@@ -56,6 +56,7 @@ async function clickSelector(selector) {
 }
 const numberSelector = label => `([...document.querySelectorAll('label.form-label')].find(node => node.firstChild?.textContent === ${JSON.stringify(label)})?.querySelector('input'))`;
 async function editNumber(label, value) {
+  await uiWait(`!!${numberSelector(label)} && !${numberSelector(label)}.disabled`, `${label} numeric input ready`);
   await evaluate(`(() => { const input = ${numberSelector(label)}; if (!input || input.disabled) throw new Error('Number field unavailable'); input.focus(); input.select(); })()`);
   await window.webContents.debugger.sendCommand('Input.insertText', { text: String(value) });
   await pause(20);

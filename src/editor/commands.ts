@@ -26,8 +26,13 @@ import { selectionCommands } from './selectionCommands';
 import { drillPlan } from './drillCommands';
 import { shortcutIds } from '../shortcuts';
 import { applySheetRange, type SheetEdit } from './productionSheet';
+import { compileScore, countForScore, validateScore } from '../score';
+import type { Meter, ScoreMap } from '../types';
 
 export interface CommandArguments {
+  'score.open': undefined;
+  'score.save': { meter: Meter; score: ScoreMap; revision: number; epoch: number };
+  'score.seek': { measure: number; beat: number };
   'sheet.apply': SheetEdit;
   'sheet.append': undefined;
   'analysis.problems-open': undefined;
@@ -140,6 +145,13 @@ function applySetCreation(c: CommandContext, index: number, kind: SetCreationKin
 }
 
 export const commandRegistry = {
+  'score.open': simple('score.open', 'Score map', 'Edit pickups, meter changes and rehearsal marks, or navigate by measure and beat.', canNavigate, c => showDialog(c,'score')),
+  'score.save': define({ id:'score.save',name:'Save score map',description:'Validate all musical anchors and apply them as one undo action without changing drill counts.',arguments:{meter:'opening meter',score:'ScoreMap',revision:'reviewed revision',epoch:'project session'},
+    enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='score'?null:s.ui.dialog}}),
+    execute:(c,a)=>{const meter=validateMeter(a.meter),score=validateScore(a.score);compileScore({...c.getState().project.present,meter,score});c.edit(p=>({...p,meter,score}));c.patch('playback',{playing:false});c.patch('ui',{dialog:null});} }),
+  'score.seek': define({id:'score.seek',name:'Go to measure and beat',description:'Stop at a written score position using the same map as clicks and timeline labels.',arguments:{measure:'integer measure',beat:'denominator beat, fractions allowed'},
+    enabled:(s,a)=>{if(!a || !canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='score'?null:s.ui.dialog}}))return false;try{countForScore(compileScore(s.project.present),a.measure,a.beat);return true;}catch{return false;}},
+    execute:(c,a)=>{const s=c.getState(),count=countForScore(compileScore(s.project.present),a.measure,a.beat);c.patch('playback',{count,playing:false,rehearsalId:null,seekVersion:s.playback.seekVersion+1});c.patch('selection',{activeIndex:sampleTimeline(s.project.present,count).setIndex});c.patch('ui',{dialog:null});} }),
   'sheet.apply': define({ id: 'sheet.apply', name: 'Edit production sheet', description: 'Validate and apply a sheet range as one undo action. Rows beyond the sheet become holds.', arguments: { row: 'zero-based row', column: 'zero-based column', cells: 'rectangular text range', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'sheet-paste' ? null : s.ui.dialog } }),
     execute: (c, a) => {
@@ -298,6 +310,7 @@ export const commandRegistry = {
   'metronome.toggle': define({ id: 'metronome.toggle', name: 'Toggle metronome', description: 'Turn rehearsal clicks on or off. Configure meter and count-in in Production settings.', arguments: {}, enabled: always, execute: c => c.patch('playback', { metronome: !c.getState().playback.metronome }) }),
   'metronome.configure': define({ id: 'metronome.configure', name: 'Configure metronome', description: 'Save meter and set rehearsal click, speed and count-in options.', arguments: { meter: 'Meter', enabled: 'boolean', countInBars: '0 | 1 | 2', speed: '0.5 | 0.75 | 1 | 1.25 | 1.5' }, enabled: always, execute: (c, a) => {
     const meter = validateMeter(a.meter);
+    compileScore({...c.getState().project.present,meter});
     if (typeof a.enabled !== 'boolean' || ![0,1,2].includes(a.countInBars) || ![.5,.75,1,1.25,1.5].includes(a.speed)) throw new Error('Choose a supported rehearsal speed and zero, one or two count-in bars.');
     c.patch('playback', { playing: false, metronome: a.enabled, countInBars: a.countInBars, speed: a.speed });
     if (JSON.stringify(projectMeter(c.getState().project.present)) !== JSON.stringify(meter)) c.edit(p => ({ ...p, meter }));

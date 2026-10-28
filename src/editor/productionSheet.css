@@ -7,9 +7,9 @@
 .sheet-help summary{cursor:pointer}
 .sheet-help p{margin-top:6px}
 .sheet-scroll{overflow:auto;flex:1;min-height:0}
-.sheet-scroll table{min-width:560px;table-layout:fixed}
-.sheet-scroll th:first-child{width:70px}
-.sheet-scroll th:nth-child(2){width:28%}
+.sheet-scroll table{min-width:880px;table-layout:fixed}
+.sheet-scroll th:first-child{width:120px}
+.sheet-scroll th:nth-child(2){width:18%}
 .sheet-scroll th:nth-child(3),.sheet-scroll th:nth-child(4){width:72px}
 .sheet-scroll td:first-child{display:table-cell}
 .sheet-scroll td,.sheet-scroll tbody th{padding:3px;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;letter-spacing:0}
@@ -36,3 +36,7 @@
 .sheet-invalid strong{display:block;color:var(--warning)}
 .sheet-error-list{font-size:12px;line-height:1.5;color:var(--warning);max-height:15vh;overflow:auto;padding-left:24px;flex-shrink:0}
 .sheet-paste-modal .modal-actions{margin-top:4px;flex-shrink:0;flex-wrap:wrap}
+
+.sheet-score-position{display:block;font-size:11px;color:var(--muted);white-space:nowrap}
+.sheet-scroll th:nth-child(6){width:115px}
+.sheet-scroll th:nth-child(7){width:100px}

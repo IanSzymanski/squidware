@@ -15,7 +15,7 @@ describe('production sheet input', () => {
     expect(parseSheetText('1\t2\n\t\n')).toEqual([['1','2'],['','']]);
   });
   it('rejects malformed, oversized and excess ranges without silently dropping cells', () => {
-    for (const text of ['', '"unclosed', 'a"b,c', '"a"tail,c', 'a,b,c,d,e', 'a\n'.repeat(129), 'x'.repeat(PROJECT_LIMITS.projectBytes+1)]) expect(() => parseSheetText(text)).toThrow();
+    for (const text of ['', '"unclosed', 'a"b,c', '"a"tail,c', 'a,b,c,d,e,f,g', 'a\n'.repeat(129), 'x'.repeat(PROJECT_LIMITS.projectBytes+1)]) expect(() => parseSheetText(text)).toThrow();
     const p = fixture();
     for (const range of [
       { row: -1, column: 0, cells: [['A']] }, { row: 4, column: 0, cells: [['A']] },
@@ -97,4 +97,11 @@ describe('atomic sheet command', () => {
     const notes = applySheetRange(next, { row: 4, column: 3, cells: [['New notes'],['Next notes']] }, 16);
     expect(notes.moves.at(-1)).toMatchObject({counts:16,tempo:200});
   });
+});
+
+it('accepts the full score editor event range while preserving the sheet row limit',()=>{
+ const text=Array.from({length:512},(_,i)=>`${i},,Mark${i}`).join('\n');
+ expect(()=>parseSheetText(text)).toThrow(/128/);
+ expect(parseSheetText(text,{maxRows:512,maxColumns:3})).toHaveLength(512);
+ expect(()=>parseSheetText(text+'\n513,,Extra',{maxRows:512,maxColumns:3})).toThrow(/512/);
 });

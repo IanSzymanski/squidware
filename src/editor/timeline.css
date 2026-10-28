@@ -22,6 +22,10 @@
 .timeline .count-display { flex: 1 0 auto; gap: 8px; }
 .timeline .count-display .move-count { display: flex; flex-direction: column; align-items: flex-start; font-size: 12px; }
 .timeline .count-display .move-count small { font-size: 11px; }
+/* Share the heading row so the score cannot add a third transport line. */
+.timeline .move-heading { display: flex; align-items: baseline; gap: 4px; max-width: 190px; }
+.timeline .move-heading > span { flex-shrink: 0; }
+.timeline .move-heading .score-readout { min-width: 0; }
 .timeline .count-display .show-count { display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
 .timeline .count-display .show-count strong { font-size: 16px; }
 @container (max-width: 650px) {
@@ -30,6 +34,8 @@
   .timeline .play-controls .timeline-edge-set { display: none; }
   .timeline .count-display { gap: 4px; }
   .timeline .count-display .move-count { letter-spacing: 0; font-size: 11px; }
+  .timeline .move-heading { max-width: 95px; }
+  .timeline .move-heading > span { display: none; }
   .timeline .count-display .show-count { display: grid; grid-template-columns: auto auto; gap: 0 3px; letter-spacing: 0; }
   .timeline .count-display .show-count > small:first-child { grid-column: 1 / -1; font-size: 11px; }
   .timeline .count-display .show-count strong { font-size: 14px; }

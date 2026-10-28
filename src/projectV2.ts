@@ -3,6 +3,7 @@ import { validateSnapSettings } from './snapping';
 import { validateAnalysisRules, validateMarchingDirections } from './analysis/rules';
 import { validateRehearsal } from './rehearsal';
 import { validateMeter } from './meter';
+import { compileScore, validateScore } from './score';
 import type { GeometryValidation } from './projectValidation';
 import type { DrillSet, LegacyDrillSet, LegacyProject, Move, OpeningTiming, Project, LinePathSegment } from './types';
 export type { Move, OpeningTiming, LinePathSegment, PerformerPath } from './types';
@@ -155,7 +156,9 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
     return { id: moveId, fromSetId, toSetId, counts, ...moveTiming, paths, ...(move.marchingDirections === undefined ? {} : { marchingDirections: validateMarchingDirections(move.marchingDirections, performerIds, `${path}.marchingDirections`) }) };
   });
   const { schemaVersion: _version, sets: checkedSets, ...common } = base;
-  return { schemaVersion: 2, ...common, ...(data.meter === undefined ? {} : { meter: validateMeter(data.meter) }), ...(data.analysisRules === undefined ? {} : { analysisRules: validateAnalysisRules(data.analysisRules, new Set(base.sections.map(s => s.id))) }), ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
+  const project: Project = { schemaVersion: 2, ...common, ...(data.score === undefined ? {} : { score: validateScore(data.score) }), ...(data.meter === undefined ? {} : { meter: validateMeter(data.meter) }), ...(data.analysisRules === undefined ? {} : { analysisRules: validateAnalysisRules(data.analysisRules, new Set(base.sections.map(s => s.id))) }), ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
+  if (project.score) compileScore(project);
+  return project;
 }
 
 /** Reads either supported wire version and always returns a canonical v2 object. */
@@ -181,6 +184,6 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
-  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, rehearsal: _rehearsal, analysisRules: _analysisRules, meter: _meter, ...common } = checked;
+  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, rehearsal: _rehearsal, analysisRules: _analysisRules, meter: _meter, score: _score, ...common } = checked;
   return { schemaVersion: 1, ...common, sets: legacySets(sets, moves, openingTiming) };
 }

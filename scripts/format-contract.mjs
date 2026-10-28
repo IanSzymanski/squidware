@@ -47,6 +47,10 @@ export function formatSchema(version, limits) {
     definitions.projectAnalysisRules = object({ defaults: object(thresholds), directions: ref('directionRules'), sections: array(ref('sectionAnalysisRules'), 0, limits.sections) }, ['defaults']);
     properties.analysisRules = ref('projectAnalysisRules');
     properties.meter = object({ numerator: number(1,32,true), denominator: { enum: [2,4,8,16] }, grouping: array(number(1,32,true),1,32) });
+    definitions.scoreMap = object({ firstMeasure: number(1,limits.scoreMeasures,true), pickupCounts: number(0,31,true),
+      changes: array(object({ count: number(1,limits.counts.max*(limits.sets-1),true), meter: properties.meter }),0,limits.scoreEvents),
+      marks: array(object({ count: number(0,limits.counts.max*(limits.sets-1),true), label: { ...text(limits.text.groupName), pattern: '^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$' } }),0,limits.scoreEvents) });
+    properties.score = ref('scoreMap');
     definitions.move.properties.marchingDirections = { type: 'object', maxProperties: limits.performers, propertyNames: ref('id'), additionalProperties: { enum: ['forward','backward','sideways'] } };
     definitions.rehearsalAnchor = { oneOf: [object({ kind: { const: 'set' }, setId: ref('id') }), object({ kind: { const: 'move' }, moveId: ref('id'), fromSetId: ref('id'), toSetId: ref('id'), count: number(0, limits.counts.max) })] };
     definitions.rehearsalFocus = { oneOf: [object({ kind: { const: 'all' } }), object({ kind: { const: 'section' }, sectionId: ref('id') }), object({ kind: { const: 'performers' }, performerIds: { ...array(ref('id'), 1, limits.performers), uniqueItems: true } })] };
@@ -61,7 +65,7 @@ export function formatSchema(version, limits) {
   }
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter')),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score')),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});
@@ -75,8 +79,9 @@ export function smallExample() {
 }
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
+  const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const files = new Map([['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],
-    ['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
+    ['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);
 }

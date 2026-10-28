@@ -1,0 +1,19 @@
+.modal.score-panel{display:flex;flex-direction:column;overflow:hidden;padding:20px;max-height:90vh}
+.score-panel .modal-header{flex-shrink:0;margin-bottom:12px}
+.score-fields{overflow:auto;min-height:0;padding:2px 4px}
+.score-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.score-settings .button{margin-bottom:12px;min-height:34px;font-size:12px;white-space:normal}
+.score-panel input,.score-panel textarea{width:100%;min-width:0;font-size:12px}
+.score-preview{overflow:auto;max-height:150px;border:1px solid var(--border);margin-top:10px}
+.score-preview table{border-collapse:collapse;width:100%;font-size:12px;text-align:left;font-variant-numeric:tabular-nums}
+.score-preview td,.score-preview th{padding:5px;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.score-preview thead th{position:sticky;top:0;background:var(--surface-muted)}
+.score-panel .modal-actions{flex-shrink:0;margin-top:12px;flex-wrap:wrap}
+.score-navigation{margin-top:12px;font-size:12px}
+.score-navigation summary{cursor:pointer;padding:5px}
+.score-marks{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.score-marks .button{font-size:12px}
+.sheet-score-position{font-variant-numeric:tabular-nums}
+.timeline .score-readout{font-size:11px;letter-spacing:0;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline .count-ruler .score-mark{position:absolute;top:0;transform:translateX(-50%);height:14px;max-width:80px;font-size:11px;background:var(--surface);color:var(--accent);padding:0 3px;line-height:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:7}
+@media(max-width:600px){.score-settings{grid-template-columns:repeat(2,minmax(0,1fr))}.score-settings .button{grid-column:1/-1}}

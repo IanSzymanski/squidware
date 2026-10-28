@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -73,4 +73,11 @@ test('unknown metadata is discarded, unsupported versions and geometry are never
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
   project.schemaVersion=3;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+});
+
+test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
+ const p=smallExample();p.score={firstMeasure:1,pickupCounts:0,changes:[{count:16,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:16,label:'A'}]};
+ assert.ok(check(p));assert.deepEqual(tools.parseProject(tools.serializeProject(p)).score,p.score);
+ for(const score of [null,{...p.score,pickupCounts:32},{...p.score,changes:[{count:.5,meter:p.score.changes[0].meter}]},{...p.score,marks:[{count:0,label:'\u0000'}]}]){assert.equal(check({...p,score}),false);assert.throws(()=>tools.parseProject(JSON.stringify({...p,score})));}
+ for(const score of [{...p.score,pickupCounts:4},{...p.score,changes:[{count:3,meter:p.score.changes[0].meter}]},{...p.score,marks:[{count:25,label:'Outside'}]}]){assert.ok(check({...p,score}));assert.throws(()=>tools.parseProject(JSON.stringify({...p,score})),/Score map/);}
 });

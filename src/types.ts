@@ -33,6 +33,11 @@ export interface LegacyProject {
 export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'>;
 export interface OpeningTiming { tempo: number; transition: 'linear' | 'ease' }
 export interface Meter { numerator: number; denominator: number; grouping: number[] }
+export interface ScoreMap {
+  firstMeasure: number; pickupCounts: number;
+  changes: { count: number; meter: Meter }[];
+  marks: { count: number; label: string }[];
+}
 export type MarchingDirection = 'forward' | 'backward' | 'sideways';
 export interface AnalysisThresholds { minimumSpacing: number; maximumStride: number }
 export type AnalysisOverrides = Partial<AnalysisThresholds>;
@@ -53,6 +58,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   rehearsal?: RehearsalPassage[];
   analysisRules?: ProjectAnalysisRules;
   meter?: Meter;
+  score?: ScoreMap;
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;
