@@ -76,6 +76,15 @@ app.whenReady().then(async () => {
     if (manifest.baseline) { await capture('sheet-before.png'); app.exit(0); return; }
     await capture('sheet-after.png');
     assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);
+    // The field budget belongs to this exact viewport. Once shown, macOS can
+    // constrain the native window to its shorter desktop work area.
+    await evaluate(`${editor}.dispatch('workspace.show',{workspace:'design'})`); await frames();
+    await capture('sheet-field.png');
+    const fixedField = viewports.at(-1);
+    assert.deepEqual([fixedField.width,fixedField.height],[1366,768]);
+    assert.ok(fixedField.fieldHeight>=470,JSON.stringify(fixedField));
+    pass('Design retains the field-height budget at an asserted 1366 × 768 viewport');
+    await evaluate(`${editor}.dispatch('workspace.show',{workspace:'production'})`); await frames();
     BrowserWindow.prototype.show = showWindow; window.show(); window.focus(); await frames(); await settleNativeViewport(window,'visible sheet');
     await type(cell(1,0),'Renamed'); await key(window,'Tab');
     assert.equal(await evaluate('document.activeElement.dataset.column'),'1');
@@ -179,8 +188,9 @@ app.whenReady().then(async () => {
     await key(window,'Escape'); await wait(`${state}.ui.dialog===null`,'enlarged cancel');
     await evaluate(`${editor}.dispatch('workspace.show',{workspace:'design'})`); await frames();
     window.webContents.setZoomFactor(1); window.setContentSize(1366,768); await settleNativeViewport(window,'field');
-    await capture('sheet-field.png');
-    assert.ok(viewports.at(-1).fieldHeight>=470,JSON.stringify(viewports.at(-1)));
+    await capture('sheet-field-native.png');
+    const nativeField = viewports.at(-1);
+    assert.ok(nativeField.fieldHeight>0 && nativeField.fieldHeight<=nativeField.height,JSON.stringify(nativeField));
     assert.deepEqual(await evaluate('window.__sheetQA.errors'),[]);
     pass('supported themes, narrow enlarged sheet and paste controls remain keyboard reachable; Design retains field height');
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,viewports,source:manifest.source,scope:manifest.scope},null,2)); app.exit(0);
