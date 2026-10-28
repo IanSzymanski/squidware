@@ -1,0 +1,63 @@
+{
+  "runId": "2026-10-28T23-55-45-450Z-123bc67e",
+  "state": "completed",
+  "concurrency": 1,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "887b1e53e001cf3c20ed8cc935fefdd3757039d1",
+    "tree": "c3a52c9faf905b3cdd87d8f23257334f2d09e2d2",
+    "dirty": true,
+    "contentHash": "5319318c2f8a02d252d0359d6e2750dc7c3d1959feb5ccf452b911fc44c9faa9",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "set-list"
+  ],
+  "checks": [
+    {
+      "name": "set-list",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 61260,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T23-55-45-450Z-123bc67e/set-list.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T23-55-45-450Z-123bc67e/set-list"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-28T23:55:44.930Z",
+    "source": {
+      "revision": "887b1e53e001cf3c20ed8cc935fefdd3757039d1",
+      "tree": "c3a52c9faf905b3cdd87d8f23257334f2d09e2d2",
+      "dirty": true,
+      "contentHash": "5319318c2f8a02d252d0359d6e2750dc7c3d1959feb5ccf452b911fc44c9faa9",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.55",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "b17019eaafa87c243192999045638865191fdf6694dfccaa99c58d4e0599e279"
+  }
+}

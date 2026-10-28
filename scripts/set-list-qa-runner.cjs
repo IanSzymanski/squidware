@@ -43,7 +43,8 @@ async function click(selector) {
 }
 async function type(selector, value) {
   await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.focus();n.select()})()`);
-  await debug('Input.insertText', { text: String(value) }); await frames();
+  await debug('Input.insertText', { text: String(value) });
+  await wait(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});return document.activeElement===n&&n.value===${JSON.stringify(String(value))}})()`, 'observed native input '+selector); await frames();
 }
 const named = s => `[aria-label=${JSON.stringify(s)}]`;
 const row = id => `[data-set-id=${JSON.stringify(id)}]`;
@@ -95,9 +96,13 @@ app.whenReady().then(async () => {
     await key(window, 'Home'); await wait(`${state}.selection.activeIndex===39`, 'filtered Home');
     await type(named('Find set'), 'not found'); assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 0); await capture('set-list-empty.png'); await evaluate("document.querySelector('[aria-label=\"Find set\"]').focus()");
     await key(window, 'Escape'); await wait("document.querySelectorAll('.set-card').length===128", 'escape clears search'); await visibleCurrent();
+    await wait("document.activeElement.matches('.set-card[aria-current]')", 'Escape restores current-row focus');
+    // A user can leave search before its deferred focus restoration runs.
+    await evaluate("(()=>{const n=document.querySelector('[aria-label=\"Find set\"]');n.focus();n.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('[aria-label=\"Move current set to position\"]').focus()})()"); await frames();
+    assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Move current set to position');
     assert.equal(await evaluate(`${state}.project.past.length`), 0);
     pass('128-set number/name navigation, filtered Home/End, no-match recovery and current-row reveal create no history');
-    await type(named('Move current set to position'), '12'); await key(window, 'Return');
+    await type(named('Move current set to position'), '12'); await wait("document.querySelector('[aria-label=\"Move set to position\"]').getAttribute('aria-disabled')!=='true'", 'direct reorder ready'); await key(window, 'Return');
     await wait(`${state}.project.present.sets[11].id===${JSON.stringify(maximum.sets[39].id)} && ${state}.project.past.length===1`, 'single direct reorder');
     let accepted = await evaluate(state + '.project.present'); assert.equal(await evaluate(`${state}.selection.activeIndex`), 11); assert.equal(await evaluate(`${state}.playback.count`), setStartCount(accepted, 11)); await visibleCurrent(); await capture('set-list-reordered.png');
     await evaluate(`${editor}.dispatch('history.undo')`); await wait(`${state}.selection.activeIndex===39`, 'undo retains identity'); assert.deepEqual(await evaluate(state + '.project.present'), maximum);
@@ -136,5 +141,5 @@ app.whenReady().then(async () => {
     pass('supported themes and enlarged narrow layouts retain search, reorder, rows and the single Add control');
     assert.deepEqual(errors, []); assert.deepEqual(await evaluate('window.__setListQA.errors'), []);
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, layouts, platform: process.platform }, null, 2)); app.exit(0);
-  } catch (error) { console.error(error); if (window && !window.isDestroyed()) await capturePage(window, output, 'failure.png').catch(() => {}); app.exit(1); }
+  } catch (error) { console.error(error); console.error('Set-list diagnostic',await evaluate("({focus:document.activeElement?.outerHTML.slice(0,300),position:document.querySelector('#set-order-position')?.value,query:document.querySelector('[aria-label=\"Find set\"]')?.value,moveDisabled:document.querySelector('[aria-label=\"Move set to position\"]')?.getAttribute('aria-disabled'),active:window.__setListQA?.editor?.getState().selection.activeIndex,history:window.__setListQA?.editor?.getState().project.past.length})").catch(()=>null)); if (window && !window.isDestroyed()) await capturePage(window, output, 'failure.png').catch(() => {}); app.exit(1); }
 });

@@ -46,7 +46,10 @@ export function SetListPanel({ controller: c }: { controller: Controller }) {
       <div className="set-find"><Tooltip pointerPassThrough name="Find set" description="Enter an exact set number or part of a name. Enter goes to the first match; Escape clears search. Arrow keys navigate the focused result rows."><input type="search" aria-label="Find set" placeholder="Set number or name" maxLength={160} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => {
         if (e.nativeEvent.isComposing) return;
         if (e.key === 'Enter' && rows.length && !locked) { e.preventDefault(); select(rows[0], true); }
-        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setQuery(''); requestAnimationFrame(() => rowButton(activeId)?.focus()); }
+        if (e.key === 'Escape') {
+          e.preventDefault(); e.stopPropagation(); setQuery(''); const field = e.currentTarget;
+          requestAnimationFrame(() => { if (document.activeElement === field) rowButton(activeId)?.focus(); });
+        }
       }} /></Tooltip>{query && <HelpButton className="icon-button" title="Clear set search" onClick={() => setQuery('')}><X size={14} /></HelpButton>}</div>
       <div className="set-list-summary" role="status">{query ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}` : '↑ / ↓ navigate · Alt+↑ / ↓ move'}{!rows.includes(index) && <HelpButton title="Show current set" onClick={() => setQuery('')}>Show current</HelpButton>}</div>
       <div className="set-list-columns" aria-hidden="true"><span>Set / name</span><span>cts</span><span>BPM</span></div>
