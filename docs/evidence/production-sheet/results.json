@@ -1,0 +1,102 @@
+{
+  "checks": [
+    "native Tab/Enter navigate cells and synchronize active set/timeline; invalid edits and Escape preserve data",
+    "focusing a sheet cell preserves an unrelated invalid Inspector draft and its active set",
+    "real native clipboard TSV opens a non-destructive preview and applies every cell as one reversible command",
+    "real native save/reopen retains sheet metadata, timing, geometry and IDs",
+    "malformed CSV, nonrectangular data, invalid opening counts, over-limit names and tempo cannot commit",
+    "quoted CSV and appended rows block out a production while preserving existing pictures and using hold positions",
+    "128-set keyboard editing, cancellation, over-limit rejection and all 512 cells in one undo pass at 500 performers",
+    "stale preview cannot overwrite a newer project revision",
+    "supported themes, narrow enlarged sheet and paste controls remain keyboard reachable; Design retains field height"
+  ],
+  "viewports": [
+    {
+      "name": "sheet-after.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "sheet-paste-preview.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 560.21875
+    },
+    {
+      "name": "sheet-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 628.21875
+    },
+    {
+      "name": "sheet-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 363.1875
+    },
+    {
+      "name": "sheet-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 363.1875
+    },
+    {
+      "name": "sheet-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 532.1875
+    },
+    {
+      "name": "sheet-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 610.21875
+    },
+    {
+      "name": "sheet-dark.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "sheet-light.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "sheet-high-contrast.png",
+      "width": 1366,
+      "height": 768
+    },
+    {
+      "name": "sheet-errors.png",
+      "width": 1366,
+      "height": 768,
+      "dialogHeight": 592.1875
+    },
+    {
+      "name": "sheet-enlarged.png",
+      "width": 683,
+      "height": 480
+    },
+    {
+      "name": "sheet-preview-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "dialogHeight": 403.16668701171875
+    },
+    {
+      "name": "sheet-field.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    }
+  ],
+  "source": {
+    "revision": "f041205c9cc7745141fff32a367f098a53d94832",
+    "tree": "6bb8aefbc88d18e4e6ce14a7ed1a679bfb79f506",
+    "dirty": true,
+    "contentHash": "cf75a064d18798a5ff3403f836802085e37d8884c0f66c930c8368af0e1aba05",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

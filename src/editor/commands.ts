@@ -25,8 +25,11 @@ import type { RehearsalPassage } from '../types';
 import { selectionCommands } from './selectionCommands';
 import { drillPlan } from './drillCommands';
 import { shortcutIds } from '../shortcuts';
+import { applySheetRange, type SheetEdit } from './productionSheet';
 
 export interface CommandArguments {
+  'sheet.apply': SheetEdit;
+  'sheet.append': undefined;
   'analysis.problems-open': undefined;
   'analysis.problem-review': { epoch: number; moveId: string; atCount: number; ids: string[] };
   'analysis.rules-open': undefined; 'analysis.rules-save': { rules: ProjectAnalysisRules; declaration?: { index: number; ids: string[]; direction: MarchingDirection | null } };
@@ -137,6 +140,15 @@ function applySetCreation(c: CommandContext, index: number, kind: SetCreationKin
 }
 
 export const commandRegistry = {
+  'sheet.apply': define({ id: 'sheet.apply', name: 'Edit production sheet', description: 'Validate and apply a sheet range as one undo action. Rows beyond the sheet become holds.', arguments: { row: 'zero-based row', column: 'zero-based column', cells: 'rectangular text range', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'sheet-paste' ? null : s.ui.dialog } }),
+    execute: (c, a) => {
+      c.edit(p => applySheetRange(p, a, c.getState().preferences.value.newSetCounts));
+      const s = c.getState();
+      c.patch('playback', { playing: false, count: setStartCount(s.project.present, s.selection.activeIndex), rehearsalId: null, seekVersion: s.playback.seekVersion + 1 });
+    } }),
+  'sheet.append': simple('sheet.append', 'Append sheet row', 'Add a hold at the end of the production. Edit its name, timing and notes in the sheet.', s => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets,
+    c => { const s = c.getState(); c.edit(p => createPicture(p, p.sets.length - 1, 'hold', s.preferences.value.newSetCounts)); selectSet(c, c.getState().project.present.sets.length - 1); }),
   ...selectionCommands,
   ...rehearsalCommands,
   ...analysisCommands,
