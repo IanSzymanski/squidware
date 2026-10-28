@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { ArrowRight, GripVertical, Image, Plus, X } from 'lucide-react';
 import { countToSeconds, PROJECT_LIMITS, setTiming } from '../domain';
 import { MiniField } from './EditorControls';
+import { Tooltip } from '../components/Tooltip';
 import { HelpButton } from './ControlHelp';
 import { canChangeLayout, commandRegistry } from './commands';
 import { useEditorSelector } from './react';
@@ -42,11 +43,11 @@ export function SetListPanel({ controller: c }: { controller: Controller }) {
   return <aside className="set-panel set-list-panel" aria-label="Set list">
     <div className="set-list-tools">
       <div className="set-list-heading"><strong><span className="count-badge">{project.sets.length}</span> {project.sets.length === 1 ? 'set' : 'sets'}</strong><HelpButton pointerPassThrough title="Show set thumbnails" description="Switch between compact rows and formation thumbnails. This is a personal display preference." active={thumbnails} className="icon-button" onClick={() => preferences.update({ setThumbnails: !thumbnails })}><Image size={15} /></HelpButton></div>
-      <div className="set-find"><input type="search" aria-label="Find set" placeholder="Set number or name" maxLength={160} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => {
+      <div className="set-find"><Tooltip pointerPassThrough name="Find set" description="Enter an exact set number or part of a name. Enter goes to the first match; Escape clears search. Arrow keys navigate the focused result rows."><input type="search" aria-label="Find set" placeholder="Set number or name" maxLength={160} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => {
         if (e.nativeEvent.isComposing) return;
         if (e.key === 'Enter' && rows.length && !locked) { e.preventDefault(); select(rows[0], true); }
         if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setQuery(''); requestAnimationFrame(() => rowButton(activeId)?.focus()); }
-      }} />{query && <HelpButton className="icon-button" title="Clear set search" onClick={() => setQuery('')}><X size={14} /></HelpButton>}</div>
+      }} /></Tooltip>{query && <HelpButton className="icon-button" title="Clear set search" onClick={() => setQuery('')}><X size={14} /></HelpButton>}</div>
       <div className="set-list-summary" role="status">{query ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}` : '↑ / ↓ navigate · Alt+↑ / ↓ move'}{!rows.includes(index) && <HelpButton title="Show current set" onClick={() => setQuery('')}>Show current</HelpButton>}</div>
       <div className="set-list-columns" aria-hidden="true"><span>Set / name</span><span>cts</span><span>BPM</span></div>
     </div>
@@ -82,7 +83,7 @@ export function SetListPanel({ controller: c }: { controller: Controller }) {
     </div>
     <div className="set-panel-footer">
       <form className="set-order" onSubmit={e => { e.preventDefault(); if (canMove) move({ id: activeId, revision, epoch: projectEpoch }, target); }}>
-        <label htmlFor="set-order-position">Move to</label><input id="set-order-position" aria-label="Move current set to position" inputMode="numeric" value={position} maxLength={3} onChange={e => setPosition(e.target.value)} disabled={locked} />
+        <label htmlFor="set-order-position">Move to</label><Tooltip pointerPassThrough name="Move current set to position" description={`Enter a final position from 1 to ${project.sets.length}, then press Enter or Move set to position. The reorder is one undo action.`}><input id="set-order-position" aria-label="Move current set to position" inputMode="numeric" value={position} maxLength={3} onChange={e => setPosition(e.target.value)} disabled={locked} /></Tooltip>
         <HelpButton pointerPassThrough type="submit" title="Move set to position" command="set.move-to" description={policy} disabled={!canMove} disabledReason={locked ? 'Finish or cancel the pending edit first.' : `Choose a different whole position from 1 to ${project.sets.length}.`} className="icon-button"><ArrowRight size={15} /></HelpButton>
       </form>
       {position && !validPosition && <p className="set-order-note" role="alert">Use a whole position from 1 to {project.sets.length}.</p>}
