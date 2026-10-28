@@ -1,5 +1,5 @@
 {
-  "runId": "2026-10-28T20-15-59-018Z-73ad2158",
+  "runId": "2026-10-28T20-28-09-051Z-360bb2d7",
   "state": "completed",
   "concurrency": 2,
   "platform": "linux",
@@ -16,65 +16,85 @@
     "runnerImageVersion": null
   },
   "source": {
-    "revision": "c52f3995fcb2b36fae04460f28a52d6c4d3f60d3",
-    "tree": "3719765984d9c122dde81c751131a8580b0729ac",
+    "revision": "0e04f8ecbc61d89098230fe5234f88593062d4e8",
+    "tree": "4b6046cac42e7cb00b3e61da9f033caae8f0529f",
     "dirty": true,
-    "contentHash": "4f1988e8e006c04490cd162b17f1856e17bce350417e83af98ab31460b7a71b9",
+    "contentHash": "487a1b129da413ce67f4446ffa36915ac50f263a374a83351a4bc0fa1ffd2812",
     "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
   },
   "scope": "targeted",
   "selected": [
+    "cast",
     "formation-assignment",
     "spacing",
     "coordinate-entry",
-    "score-map"
+    "score-map",
+    "timeline"
   ],
   "checks": [
+    {
+      "name": "cast",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 22656,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/cast.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/cast"
+    },
     {
       "name": "formation-assignment",
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "elapsedMs": 22258,
-      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/formation-assignment.log",
-      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/formation-assignment"
+      "elapsedMs": 20239,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/formation-assignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/formation-assignment"
     },
     {
       "name": "spacing",
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "elapsedMs": 53325,
-      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/spacing.log",
-      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/spacing"
+      "elapsedMs": 52823,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/spacing.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/spacing"
     },
     {
       "name": "coordinate-entry",
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "elapsedMs": 23650,
-      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/coordinate-entry.log",
-      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/coordinate-entry"
+      "elapsedMs": 20968,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/coordinate-entry.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/coordinate-entry"
     },
     {
       "name": "score-map",
       "status": "passed",
       "exitCode": 0,
       "signal": null,
-      "elapsedMs": 45353,
-      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/score-map.log",
-      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-15-59-018Z-73ad2158/score-map"
+      "elapsedMs": 45971,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/score-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/score-map"
+    },
+    {
+      "name": "timeline",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 13392,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/timeline.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-28T20-28-09-051Z-360bb2d7/timeline"
     }
   ],
   "build": {
     "schema": 1,
-    "builtAt": "2026-10-28T20:15:58.212Z",
+    "builtAt": "2026-10-28T20:28:08.501Z",
     "source": {
-      "revision": "c52f3995fcb2b36fae04460f28a52d6c4d3f60d3",
-      "tree": "3719765984d9c122dde81c751131a8580b0729ac",
+      "revision": "0e04f8ecbc61d89098230fe5234f88593062d4e8",
+      "tree": "4b6046cac42e7cb00b3e61da9f033caae8f0529f",
       "dirty": true,
-      "contentHash": "4f1988e8e006c04490cd162b17f1856e17bce350417e83af98ab31460b7a71b9",
+      "contentHash": "487a1b129da413ce67f4446ffa36915ac50f263a374a83351a4bc0fa1ffd2812",
       "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
     },
     "runtime": {
@@ -88,9 +108,149 @@
       "runnerImage": null,
       "runnerImageVersion": null
     },
-    "outputHash": "381862ed57f7016c04e2bf034cb929d2aaa02097511f7bfab1b40bfd63bc2bd4"
+    "outputHash": "819661106a25caea9b8c3e5f4d7177aaf2c4ced3c1e4fe6e78c82c412022fa7c"
   },
   "layouts": {
+    "cast": [
+      {
+        "nativeWidth": 1366,
+        "zoom": 1,
+        "width": 1366,
+        "height": 768,
+        "field": {
+          "top": 130,
+          "bottom": 615,
+          "left": 234,
+          "right": 1048,
+          "width": 814,
+          "height": 485
+        },
+        "cast": {
+          "top": 82,
+          "bottom": 740,
+          "left": 1066,
+          "right": 1366,
+          "width": 300,
+          "height": 658
+        },
+        "edit": {
+          "top": 475,
+          "bottom": 662,
+          "left": 1067,
+          "right": 1366,
+          "width": 299,
+          "height": 187
+        },
+        "list": {
+          "top": 247,
+          "bottom": 475,
+          "left": 1067,
+          "right": 1366,
+          "width": 299,
+          "height": 228
+        },
+        "footer": {
+          "top": 740,
+          "bottom": 768,
+          "left": 0,
+          "right": 1366,
+          "width": 1366,
+          "height": 28
+        }
+      },
+      {
+        "nativeWidth": 1366,
+        "zoom": 1.25,
+        "width": 1093,
+        "height": 614,
+        "field": {
+          "top": 129.40000915527344,
+          "bottom": 461.6000213623047,
+          "left": 234,
+          "right": 774.7999877929688,
+          "width": 540.7999877929688,
+          "height": 332.20001220703125
+        },
+        "cast": {
+          "top": 82,
+          "bottom": 586.3999938964844,
+          "left": 792.7999877929688,
+          "right": 1092.7999877929688,
+          "width": 300,
+          "height": 504.3999938964844
+        },
+        "edit": {
+          "top": 325.6000061035156,
+          "bottom": 512.2000122070312,
+          "left": 793.6000366210938,
+          "right": 1092.800048828125,
+          "width": 299.20001220703125,
+          "height": 186.60000610351562
+        },
+        "list": {
+          "top": 245.60000610351562,
+          "bottom": 325.6000061035156,
+          "left": 793.6000366210938,
+          "right": 1092.800048828125,
+          "width": 299.20001220703125,
+          "height": 80
+        },
+        "footer": {
+          "top": 586.4000244140625,
+          "bottom": 614.4000244140625,
+          "left": 0,
+          "right": 1092.800048828125,
+          "width": 1092.800048828125,
+          "height": 28
+        }
+      },
+      {
+        "nativeWidth": 1120,
+        "zoom": 1,
+        "width": 1120,
+        "height": 768,
+        "field": {
+          "top": 130,
+          "bottom": 615,
+          "left": 234,
+          "right": 802,
+          "width": 568,
+          "height": 485
+        },
+        "cast": {
+          "top": 82,
+          "bottom": 740,
+          "left": 820,
+          "right": 1120,
+          "width": 300,
+          "height": 658
+        },
+        "edit": {
+          "top": 475,
+          "bottom": 662,
+          "left": 821,
+          "right": 1120,
+          "width": 299,
+          "height": 187
+        },
+        "list": {
+          "top": 247,
+          "bottom": 475,
+          "left": 821,
+          "right": 1120,
+          "width": 299,
+          "height": 228
+        },
+        "footer": {
+          "top": 740,
+          "bottom": 768,
+          "left": 0,
+          "right": 1120,
+          "width": 1120,
+          "height": 28
+        }
+      }
+    ],
     "formation-assignment": [
       {
         "width": 1366,
