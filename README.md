@@ -150,7 +150,7 @@ The desktop renderer has Node integration disabled and a small, fixed preload AP
 
 The editor supports up to 500 performers and 128 sets, straight travel between sets with constant-speed or eased timing, and standard college/high-school football markings. This release accepts only the standard 100 × 53⅓-yard field. Transition flags model performer centers, not instrument dimensions or marching technique. The figures in 3D are rehearsal markers, not uniform or instrument simulations.
 
-Audio attachments last for the current session and must be reattached after reopening. There is no proprietary Pyware import/export, curved individual travel paths, performer assignment optimization, props editor, video export, multiplayer editing, or cloud synchronization in this release. The current roadmap is explicit about these gaps: [ROADMAP.md](ROADMAP.md).
+Use **Export → Portable production with audio** to bundle a recording in a `.squidpack` file or reference it relative to the package folder. Packages reopen with their recording and offset; missing references can be relinked. Plain `.squid` files and recovery retain drill and offset without audio bytes. See [portable audio packages](docs/AUDIO_PACKAGES.md). There is no proprietary Pyware import/export, curved individual travel paths, performer assignment optimization, props editor, video export, multiplayer editing, or cloud synchronization in this release. The current roadmap is explicit about these gaps: [ROADMAP.md](ROADMAP.md).
 
 Squidware is not affiliated with or endorsed by Pyware or its owners.
 

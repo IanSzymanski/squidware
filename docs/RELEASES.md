@@ -1,8 +1,8 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 11 of 15 issues completed. Compact set navigation [#17](https://github.com/IanSzymanski/squidware/issues/17) landed through [#153](https://github.com/IanSzymanski/squidware/pull/153). Continue with [#24 — split a transition](https://github.com/IanSzymanski/squidware/issues/24), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 12 of 15 issues completed. Transition splitting [#24](https://github.com/IanSzymanski/squidware/issues/24) landed through [#154](https://github.com/IanSzymanski/squidware/pull/154). Continue with [#71 — portable audio](https://github.com/IanSzymanski/squidware/issues/71), respecting the maintained queue and hard prerequisites.
 
-**Main certification:** [PR #153 certification](https://github.com/IanSzymanski/squidware/actions/runs/40790853888) passed source checks, all desktop suites and package verification on Windows/macOS/Linux before merge. It includes the field-gesture lifecycle repair for the macOS pan timeout observed after #152. v0.7 remains unpublished with 4 unfinished issues; publication still requires successful exact-source main CI.
+**Main certification:** [PR #153 certification](https://github.com/IanSzymanski/squidware/actions/runs/40790853888) passed source checks, all desktop suites and package verification on Windows/macOS/Linux before merge. It includes the field-gesture lifecycle repair for the macOS pan timeout observed after #152. v0.7 remains unpublished with 3 unfinished issues; publication still requires successful exact-source main CI.
 
 **Validation policy:** Maintainer decision (2026-10-22): human review, participant sessions, first-time discovery checks, subjective listening and physical/representative school-hardware qualification are not completion or release gates. Automated software tests, rendered-output review, cross-platform CI, package verification and signing requirements remain applicable. Historical references to human/hardware gates are superseded; no waived check is claimed to have passed. See [the validation policy](VALIDATION_POLICY.md). #3 is complete on its delivered local measurement scope; #64 retains software-based platform/coverage review.
 
@@ -62,13 +62,13 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-11/15 implementation issues completed at reconciliation.
+12/15 implementation issues completed at reconciliation.
 
 - [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
 - [x] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
 - [x] [#14 · Audit A13 Schedule a meter-aware metronome on the audio clock](https://github.com/IanSzymanski/squidware/issues/14)
 - [x] [#17 · Audit A16 Add a compact set list with drag reorder and jump-to-set](https://github.com/IanSzymanski/squidware/issues/17)
-- [ ] [#24 · Audit A23 Split a transition at a selected count into a new set](https://github.com/IanSzymanski/squidware/issues/24)
+- [x] [#24 · Audit A23 Split a transition at a selected count into a new set](https://github.com/IanSzymanski/squidware/issues/24)
 - [x] [#28 · Audit A28 Make the production sheet editable with spreadsheet paste](https://github.com/IanSzymanski/squidware/issues/28)
 - [x] [#29 · Audit A29 Give add, duplicate, hold and insert-before sets distinct behavior](https://github.com/IanSzymanski/squidware/issues/29)
 - [x] [#31 · Audit A33 Add timeline zoom, set-aware labels and one-count stepping](https://github.com/IanSzymanski/squidware/issues/31)

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import type { ChangeEvent } from 'react';
 
-import type { SetPropertyUpdate, Performer, Point, Project } from '../types';
+import type { AudioAttachment, SetPropertyUpdate, Performer, Point, Project } from '../types';
 import { exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, totalCounts, uid, PROJECT_LIMITS } from '../domain';
 import { FieldDrawing } from '../components/Field2D';
 
@@ -93,6 +93,12 @@ export function useEditorController() {
   const [castPrefix, setCastPrefix] = useEditorValue('ui', 'castPrefix');
   const [printMode, setPrintMode] = useEditorValue('ui', 'printMode');
   const [printing, setPrinting] = useEditorValue('ui', 'printing');
+  const portableAudio = useEditorSelector(s => s.fileSession);
+  function patchAudio(values: Partial<typeof portableAudio>) {
+    for (const key of Object.keys(values) as (keyof typeof portableAudio)[]) {
+      store.setValue('fileSession', key, values[key]!);
+    }
+  }
   const [audioName, setAudioName] = useEditorValue('fileSession', 'audioName');
   const [audioUrl, setAudioUrl] = useEditorValue('fileSession', 'audioUrl');
   const [waveform, setWaveform] = useEditorValue('fileSession', 'waveform');
@@ -148,6 +154,7 @@ export function useEditorController() {
   function applyFormation() { if (dispatch('formation.apply')) notify('Formation applied to the selection.'); }
   function loadProject(next: Project) {
     draftTracker.current.clear();
+    patchAudio({ audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '' });
     dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
   }
   function replaceProduction(next: Project, cast = false) {
@@ -191,7 +198,9 @@ export function useEditorController() {
         assertUnchangedSince(before, store.getState());
         loadProject(parseProject(result.content));
         markFileOpened(store, !result.path.toLowerCase().endsWith('.squid'));
-        notify('Project opened');
+        if (result.audio) await attachAudio(result.audio);
+        if (result.audioWarning) store.setValue('fileSession', 'audioWarning', result.audioWarning);
+        notify(result.audioWarning || 'Project opened');
       } catch (error) { window.squidware.resetProject(); setNeedsSaveAs(true); throw error; }
       finally { store.setValue('fileSession', 'fileOperation', null); }
     } catch (error) { notify(`Could not open: ${(error as Error).message}`); }
@@ -220,20 +229,62 @@ export function useEditorController() {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try { if (window.squidware) { if (await window.squidware.exportPdf(preferences.value.paperSize)) notify('PDF saved'); } else window.print(); } catch (error) { notify(`PDF export failed: ${(error as Error).message}`); } finally { setPrinting(false); }
   }
-  async function onAudioFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+  async function attachAudio(attachment: AudioAttachment | File) {
     const generation = ++audioDecodeGeneration.current;
     setPlaying(false); setAudioLoading(true);
     let ctx: AudioContext | null = null;
     try {
-      if (file.size > 200 * 1024 * 1024) throw new Error('Choose an audio file under 200 MB.');
-      ctx = new AudioContext(); const buffer = await ctx.decodeAudioData(await file.arrayBuffer());
-      const channel = buffer.getChannelData(0); const bars = 180; const chunk = Math.max(1, Math.floor(channel.length / bars));
+      const bytes = attachment instanceof File ? new Uint8Array(await attachment.arrayBuffer()) : attachment.bytes;
+      if (bytes.byteLength > 200 * 1024 * 1024) throw new Error('Choose an audio file up to 200 MiB.');
+      ctx = new AudioContext(); const buffer = await ctx.decodeAudioData(new Uint8Array(bytes).buffer);
+      const channel = buffer.getChannelData(0), bars = 180, chunk = Math.max(1, Math.floor(channel.length / bars));
       const peaks = Array.from({ length: bars }, (_, i) => { let max = 0; for (let j = i * chunk; j < Math.min(channel.length, (i + 1) * chunk); j += 32) max = Math.max(max, Math.abs(channel[j])); return max; });
       if (generation !== audioDecodeGeneration.current) return;
-      setAudioUrl(URL.createObjectURL(file)); setAudioName(file.name); setWaveform(peaks); notify('Audio attached for this session. Set the sync offset in project settings.');
-    } catch (error) { if (generation === audioDecodeGeneration.current) notify(`Audio could not be loaded: ${(error as Error).message}`); }
-    finally { await ctx?.close(); if (generation === audioDecodeGeneration.current) setAudioLoading(false); }
+      const native = attachment instanceof File ? await window.squidware?.stageAudio(attachment.name, bytes) : attachment;
+      if (generation !== audioDecodeGeneration.current) return;
+      if (native) await window.squidware?.useAudio(native.token);
+      if (generation !== audioDecodeGeneration.current) return;
+      const blob = new Blob([new Uint8Array(bytes)], { type: native?.type || (attachment as File).type });
+      setAudioUrl(URL.createObjectURL(blob)); setAudioName(attachment.name); setWaveform(peaks);
+      patchAudio({ audioToken: native?.token || '', audioSize: bytes.length, audioReferenceAvailable: native?.referenceAvailable || false, audioWarning: '' });
+      notify('Audio attached. Export a portable package to transfer it with this production.');
+    } catch (error) {
+      if (generation === audioDecodeGeneration.current) {
+        const message = `Audio could not be loaded: ${(error as Error).message}. Attach or relink a supported recording; drill and offset are intact.`;
+        store.setValue('fileSession', 'audioWarning', message); notify(message);
+      }
+    } finally { await ctx?.close(); if (generation === audioDecodeGeneration.current) setAudioLoading(false); }
+  }
+  async function chooseAudio() {
+    if (!window.squidware) { audioInput.current?.click(); return; }
+    if (store.getState().fileSession.fileOperation || store.getState().fileSession.audioLoading) return;
+    const epoch = store.getState().ui.projectEpoch;
+    setAudioLoading(true);
+    try { const result = await window.squidware.pickAudio(); if (result && epoch === store.getState().ui.projectEpoch) await attachAudio(result); }
+    catch (error) { notify(`Could not attach audio: ${(error as Error).message}`); }
+    finally { if (epoch === store.getState().ui.projectEpoch) setAudioLoading(false); }
+  }
+  async function onAudioFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    if (file.size > 200 * 1024 * 1024) { notify('Choose an audio file up to 200 MiB.'); return; }
+    await attachAudio(file);
+  }
+  async function exportPackage(mode: 'bundle' | 'reference') {
+    try {
+      flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
+      const before = store.getState();
+      assertCanReplace(before);
+      if (before.fileSession.audioLoading || !before.fileSession.audioToken) throw new Error('Attach audio before exporting a portable package.');
+      if (!window.squidware) throw new Error('Portable packages are available in the desktop app.');
+      store.setValue('fileSession', 'fileOperation', 'exporting');
+      try {
+        const result = await window.squidware.exportPackage(serializeProject(before.project.present), `${cleanFilename(before.project.present.title)}.squidpack`, before.fileSession.audioToken, mode);
+        if (result && before.ui.projectEpoch === store.getState().ui.projectEpoch) {
+          if (store.getState().ui.dialog === 'package') setDialog(null);
+          notify(before.project.revision === store.getState().project.revision ? 'Portable package exported. Save keeps using your .squid project destination.' : 'Earlier revision exported. Export another package to include your latest edits.');
+        }
+      } finally { store.setValue('fileSession', 'fileOperation', null); }
+    } catch (error) { notify(`Package export failed: ${(error as Error).message}`); }
   }
   usePlaybackController(audioRef, audioUrl);
   function togglePlay() { if (!duration) { notify('Add a second set to rehearse a transition.'); return; } dispatch('playback.toggle'); }
@@ -266,6 +317,6 @@ export function useEditorController() {
 
   const filteredCast = useMemo(() => filterCast(project.performers, castQuery, sectionFilter), [project.performers, sectionFilter, castQuery]);
   const visibleSet = activeSet;
-  return { selectionPreview, coordinatePreview, coordinateResult, spacingPreview, spacingResult, castPanelOpen, showCast, formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { portableAudio, chooseAudio, exportPackage, selectionPreview, coordinatePreview, coordinateResult, spacingPreview, spacingResult, castPanelOpen, showCast, formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;

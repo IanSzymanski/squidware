@@ -352,7 +352,7 @@ export const commandRegistry = {
     if (a.dialog === 'add-cast') { const s = c.getState(); c.patch('ui', { castAmount: Math.max(1, Math.min(s.ui.castAmount, PROJECT_LIMITS.performers - s.project.present.performers.length)) }); }
   } }),
   'file.new': define({ id: 'file.new', name: 'New production', description: 'Choose a blank production or demo.', arguments: {}, enabled: always, execute: c => { assertCanReplace(c.getState()); showDialog(c, 'new'); c.patch('ui', { menu: false }); } }),
-  'file.open': define({ id: 'file.open', name: 'Open production', description: 'Open a saved .squid project.', arguments: {}, enabled: always, execute: c => c.external('file.open') }),
+  'file.open': define({ id: 'file.open', name: 'Open production', description: 'Open a saved .squid project or portable .squidpack production.', arguments: {}, enabled: always, execute: c => c.external('file.open') }),
   'file.save': define({ id: 'file.save', name: 'Save production', description: 'Save an editable .squid file.', arguments: {}, enabled: always, execute: c => c.external('file.save') }),
   'file.save-as': define({ id: 'file.save-as', name: 'Save production as', description: 'Choose a new destination for the project.', arguments: {}, enabled: always, execute: c => c.external('file.save-as') }),
   'file.export': define({ id: 'file.export', name: 'Export rehearsal packet', description: 'Choose field charts, coordinates, CSV or SVG.', arguments: {}, enabled: always, execute: c => showDialog(c, 'export') }),

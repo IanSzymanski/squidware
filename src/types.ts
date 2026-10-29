@@ -81,10 +81,15 @@ export interface RecoveryBridge {
   writeRecovery: (session: string, sequence: number, revision: number, project: Project) => Promise<{ status: 'saved' | 'stale'; version?: RecoveryVersion }>;
   migrateRecovery: (session: string, content: string) => Promise<{ status: 'migrated' | 'unreadable'; warning?: string }>;
 }
+export interface AudioAttachment { name: string; token: string; bytes: Uint8Array; size: number; type: string; referenceAvailable: boolean }
 export interface DesktopBridge extends RecoveryBridge, PreferencesBridge {
   platform: string;
   resetProject: () => void;
-  openProject: () => Promise<{ content: string; path: string } | null>;
+  openProject: () => Promise<{ content: string; path: string; audio?: AudioAttachment; audioWarning?: string } | null>;
+  pickAudio: () => Promise<AudioAttachment | null>;
+  useAudio: (token: string) => Promise<void>;
+  stageAudio: (name: string, bytes: Uint8Array) => Promise<AudioAttachment>;
+  exportPackage: (content: string, name: string, token: string, mode: 'bundle' | 'reference') => Promise<string | null>;
   saveProject: (content: string, suggestedName: string, saveAs?: boolean) => Promise<string | null>;
   exportFile: (content: string, suggestedName: string, kind: 'csv' | 'svg' | 'html') => Promise<string | null>;
   exportPdf: (paper?: 'letter' | 'a4') => Promise<string | null>;

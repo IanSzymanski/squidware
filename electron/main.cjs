@@ -11,6 +11,28 @@ const { createRecoveryService } = require('./recovery-service.cjs');
 const { createPreferencesService } = require('./preferences-service.cjs');
 const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences, textEditAction } = require('./preferences-codec.cjs');
 const textOperations = { cut: 'cut', copy: 'copy', paste: 'paste', undo: 'undo', redo: 'redo', 'select-all': 'selectAll' };
+const { MAX_AUDIO, MAX_PACKAGE, digest, audioInfo, safeRelative, encodePackage, decodePackage } = require('./audio-package.cjs');
+const audioAttachments = new Map();
+let activeAudioToken = null;
+function rememberAudio(name, bytes, filename = null) {
+  const info = audioInfo(name, bytes), token = randomUUID();
+  audioAttachments.set(token, { ...info, bytes, filename });
+  for (const key of audioAttachments.keys()) { if (key !== token && key !== activeAudioToken) audioAttachments.delete(key); }
+  return { ...info, token, bytes: new Uint8Array(bytes), referenceAvailable: !!filename };
+}
+async function boundedRead(filename, limit, noFollow = false) {
+  const { O_RDONLY, O_NONBLOCK, O_NOFOLLOW } = require('node:fs').constants;
+  const handle = await fs.open(filename, O_RDONLY | O_NONBLOCK | (noFollow ? (O_NOFOLLOW || 0) : 0));
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile() || stat.size > limit) throw new Error('File is not regular or exceeds the supported size.');
+    const buffer = Buffer.alloc(stat.size + 1);
+    let offset = 0;
+    while (offset < buffer.length) { const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, offset); if (!bytesRead) break; offset += bytesRead; }
+    if (offset > stat.size) throw new Error('File changed while reading. Retry opening it.');
+    return buffer.subarray(0, offset);
+  } finally { await handle.close(); }
+}
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
@@ -166,35 +188,37 @@ function registerIpc() {
   handleFileRequest('squidware:open-project', async () => {
     const result = await dialog.showOpenDialog(window, {
       title: 'Open Squidware project',
-      filters: [{ name: 'Squidware projects', extensions: ['squid', 'json'] }],
+      filters: [{ name: 'Squidware projects', extensions: ['squid', 'json', 'squidpack'] }],
       properties: ['openFile'],
     });
     if (result.canceled || !result.filePaths[0]) return null;
     const filename = result.filePaths[0];
-    if (!['.squid', '.json'].includes(path.extname(filename).toLowerCase())) {
-      throw new Error('Choose a .squid or .json project file.');
+    if (!['.squid', '.json', '.squidpack'].includes(path.extname(filename).toLowerCase())) {
+      throw new Error('Choose a .squid, .json or .squidpack project file.');
     }
-    const handle = await fs.open(filename, 'r');
-    let content;
-    try {
-      const stats = await handle.stat();
-      if (!stats.isFile() || stats.size > MAX_PROJECT_BYTES) throw new Error('Project files must be smaller than 10 MB.');
-      // Limit actual reads as well as stat size, even if another process grows
-      // this file after it was opened.
-      const buffer = Buffer.alloc(MAX_PROJECT_BYTES + 1);
-      let offset = 0;
-      while (offset < buffer.length) {
-        const { bytesRead } = await handle.read(buffer, offset, buffer.length - offset, offset);
-        if (bytesRead === 0) break;
-        offset += bytesRead;
+    let content, audio, audioWarning;
+    if (path.extname(filename).toLowerCase() === '.squidpack') {
+      const loaded = decodePackage(await boundedRead(filename, MAX_PACKAGE));
+      content = loaded.content;
+      validateProject(content);
+      let bytes = loaded.bytes, audioPath = null;
+      if (loaded.audio.mode === 'reference') {
+        try {
+          const directory = await fs.realpath(path.dirname(filename));
+          audioPath = await fs.realpath(path.join(directory, ...safeRelative(loaded.audio.path).split('/')));
+          const relative = path.relative(directory, audioPath);
+          if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Reference leaves the package folder.');
+          bytes = await boundedRead(audioPath, MAX_AUDIO, true);
+          if (bytes.length !== loaded.audio.size || digest(bytes) !== loaded.audio.sha256) throw new Error('Recording differs from the packaged reference.');
+          audioInfo(loaded.audio.name, bytes);
+        } catch { audioWarning = `Missing or changed recording: ${loaded.audio.name}. Relink audio to keep rehearsing; drill and offset are intact.`; }
       }
-      if (offset > MAX_PROJECT_BYTES) throw new Error('Project files must be smaller than 10 MB.');
-      content = buffer.subarray(0, offset).toString('utf8');
-    } finally { await handle.close(); }
+      if (!audioWarning) audio = rememberAudio(loaded.audio.name, bytes, audioPath);
+    } else content = (await boundedRead(filename, MAX_PROJECT_BYTES)).toString('utf8');
     validateProject(content);
-    // JSON imports receive a new .squid destination on their first save.
+    // Package and JSON imports receive a new .squid destination on their first save.
     savedPath = path.extname(filename).toLowerCase() === '.squid' ? filename : null;
-    return { content, path: filename };
+    return { content, path: filename, ...(audio ? { audio } : {}), ...(audioWarning ? { audioWarning } : {}) };
   });
 
   handleFileRequest('squidware:save-project', async (content, suggestedName, saveAs = false) => {
@@ -215,6 +239,51 @@ function registerIpc() {
     }
     await atomicWrite(filename, content);
     savedPath = filename;
+    return filename;
+  });
+
+  handleFileRequest('squidware:pick-audio', async () => {
+    const result = await dialog.showOpenDialog(window, { title: 'Attach or relink rehearsal audio', properties: ['openFile'], filters: [{ name: 'Rehearsal audio', extensions: ['wav', 'mp3', 'ogg', 'm4a', 'flac'] }] });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const filename = result.filePaths[0];
+    return rememberAudio(path.basename(filename), await boundedRead(filename, MAX_AUDIO), filename);
+  });
+  ipcMain.handle('squidware:use-audio', async (event, token) => {
+    assertSender(event);
+    if (!audioAttachments.has(token)) throw new Error('Attach the recording again.');
+    activeAudioToken = token;
+    for (const key of audioAttachments.keys()) { if (key !== token) audioAttachments.delete(key); }
+  });
+  ipcMain.handle('squidware:stage-audio', async (event, name, bytes) => {
+    assertSender(event);
+    if (!ArrayBuffer.isView(bytes) || bytes.BYTES_PER_ELEMENT !== 1 || bytes.byteLength > MAX_AUDIO) throw new Error('Invalid audio attachment.');
+    return rememberAudio(name, Buffer.from(bytes));
+  });
+  handleFileRequest('squidware:export-package', async (content, suggestedName, token, mode) => {
+    validateProject(content);
+    const audio = audioAttachments.get(token);
+    if (!audio) throw new Error('Attach the recording again before exporting a package.');
+    if (!['bundle', 'reference'].includes(mode)) throw new Error('Choose bundled audio or a relative reference.');
+    if (mode === 'reference' && !audio.filename) throw new Error('Use Attach audio to choose a local recording before exporting a reference.');
+    const name = safeFilename(suggestedName, 'squidpack');
+    const result = await dialog.showSaveDialog(window, { title: 'Export portable production', defaultPath: name, filters: [{ name: 'Squidware package', extensions: ['squidpack'] }], properties: ['showOverwriteConfirmation', 'createDirectory'] });
+    if (result.canceled || !result.filePath) return null;
+    const filename = await selectedDestination(result.filePath, 'squidpack');
+    if (!filename) return null;
+    let reference;
+    if (mode === 'reference') {
+      reference = safeRelative(path.relative(path.dirname(filename), audio.filename).split(path.sep).join('/'));
+      const directory = await fs.realpath(path.dirname(filename)), realAudio = await fs.realpath(audio.filename);
+      const relative = path.relative(directory, realAudio);
+      if (relative.startsWith('..') || path.isAbsolute(relative) || path.resolve(filename) === realAudio) throw new Error('Choose a package folder containing the recording, without overwriting it.');
+      const current = await boundedRead(realAudio, MAX_AUDIO, true);
+      if (digest(current) !== audio.sha256) throw new Error('The recording changed on disk. Attach it again before exporting.');
+    }
+    if (audio.filename && path.resolve(filename) === path.resolve(audio.filename)) throw new Error('Choose a different package filename.');
+    const bytes = encodePackage(content, audio, mode, reference);
+    const { response } = await dialog.showMessageBox(window, { type: 'question', title: 'Review portable production', message: mode === 'bundle' ? 'Include this recording in the package?' : 'Save a relative audio reference?', detail: `Project: ${JSON.parse(content).title}\nRecording: ${audio.name} (${audio.size} bytes)\n${mode === 'bundle' ? 'The recording is included. Share only with its intended recipients.' : `Reference: ${reference}. Transfer the package folder and recording together.`}\nPackage size: ${bytes.length} bytes. Saved locally; no upload.`, buttons: ['Cancel', 'Export package'], defaultId: 0, cancelId: 0, noLink: true });
+    if (response !== 1) return null;
+    await atomicWrite(filename, bytes);
     return filename;
   });
 
