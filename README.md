@@ -1,44 +1,68 @@
 # Squidware
 
-The public [`.squid` format contract](format/FORMAT.md) includes v1/v2 JSON Schemas, small migration examples, a 500-performer/128-picture fixture and a reference validator.
-
 **Find your flow. A desktop drill design studio for marching ensembles.**
 
-Selection tools support additive sections, reviewed lasso/rank/file selection, filtered invert and saved performer groups. See [selection tools](docs/SELECTION_TOOLS.md).
-Squidware brings cast management, an interactive 2D field, 3D rehearsal, count-based playback, and printable drill books into one local workspace. It is built with Electron, React, TypeScript, and Three.js, with native project dialogs and no account requirement.
+Write formations, refine transitions, rehearse in 3D, and export the next rehearsal packet. Squidware brings the cast, field, musical timeline and production sheet into one local workspace on Windows, macOS and Linux. Free, open source, and no account required.
 
-This is an independent early release of a Pyware-style alternative. It implements a complete basic design-to-rehearsal workflow; it does **not** claim feature parity with mature professional drill software or compatibility with proprietary Pyware files.
+[Download v0.6.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) · [User guide](docs/USER_GUIDE.md) · [Run from source](#run-from-source) · [Roadmap](ROADMAP.md)
 
-![Squidware desktop studio with the 2D field, set list, formation inspector, and count timeline](docs/images/studio.png)
+> **Release and development:** v0.6.0 is the newest published prerelease. This README and its screenshots show current `main`, including v0.7 work such as musical timing, the editable Production sheet and portable audio. [Run from source](#run-from-source) to use those features before the next release.
 
-## What you can do
+![The Tidal forces demo in Squidware's 2D editor, with 24 brass performers selected, compact set navigation, a contextual Inspector and the musical timeline](docs/images/studio.png)
 
-- **Design in 2D:** select individual performers or groups, marquee-select, drag, enter exact coordinates, snap to an 8-to-5 step grid, nudge, pan, zoom, and inspect paths from the previous set.
-- **Personalize the field:** save [dot/label sizes, coloring and audience orientation](docs/FIELD_DISPLAY.md) on this device while preserving production and print geometry.
-- **Arrange the workspace:** [resize or collapse panels, choose Write/Review/Rehearse and focus on the field](docs/WORKSPACE_LAYOUT.md), with saved device layouts and keyboard alternatives.
-- **Align and space:** [preview alignment, distribution and exact intervals](docs/SPACING_ALIGNMENT.md) in yards or marching steps, with field guides, rotated axes and optional row/file grouping.
-- **Enter drill coordinates:** [place a performer or move a selected group](docs/COORDINATE_ENTRY.md) using yard-line/hash phrases and exact field directions, with explicit side/unit choices and a preview before Apply.
-- **Shape formations:** explicitly select performers, then [preview lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md) with field handles and independent parameters. Apply accepts one undoable edit; Cancel keeps the original geometry. [Exact transforms](docs/EXACT_TRANSFORMS.md) preview rotation, scale and field mirrors with numeric or direct controls and a chosen pivot. The [contextual Inspector](docs/SELECTION_INSPECTOR.md) keeps selection actions visible and remembers collapsed sections.
-- **Rehearse in 3D:** orbit an actual WebGL field with section-colored performer markers, shadows, and perspective, front, and overhead cameras.
-- **Write in musical time:** use pickups, meter changes, measure/beat readouts and rehearsal marks through a shared [Score map](docs/score-map.md), with matching metronome accents and musical navigation.
-- **Edit the Production sheet:** change names, counts, tempos and notes across the show; review CSV/TSV ranges before one atomic paste, append hold rows, and navigate with the keyboard. [Production sheet](docs/production-sheet.md).
-- **Build a production:** add, duplicate, reorder, and remove sets; assign move counts, tempo, easing, and rehearsal notes; undo and redo named actions, review session History, and cancel text/color drafts.
-- **Split a transition:** [preview a picture at an interior count](docs/split-transition.md), compare movement and apply the insertion as one undo action. Counts and duration stay stable; eased moves require an explicit motion-change review.
-- **Navigate long shows:** use [compact set rows](docs/set-list.md), search by number/name, drag to reorder or move a set directly to a position in one undo action; enable thumbnails when needed.
-- **Manage the ensemble:** add performers, import a CSV roster, edit names and sections, and select sections from the field legend.
-- **Set portable analysis rules:** save production, section and declared-direction spacing/stride limits with undo, explicit unknown-direction handling and applied thresholds in flags. [Analysis rules](docs/analysis-rules.md).
-- **Rehearse a passage:** save annotated bookmarks and cross-move count ranges, loop on the shared clock, and focus on a section or saved performers. [Passage behavior and references](docs/rehearsal-passages.md).
-- **Play the show:** scrub the timeline, change playback speed, loop, use a metronome, and attach an audio track with a sync offset. Attached audio drives the show clock; silent playback continues before/after the recording or if audio fails.
-- **Review transitions:** inspect continuous minimum spacing and excessive stride flags, then select the affected performers on the field.
-- **Take it to rehearsal:** save editable `.squid` projects; export PDF field charts, individual coordinate sheets, coordinate CSV, and the current chart as SVG.
+## Design with precision
 
-The included **Tidal forces** demo has 64 performers across six editable sets. A blank production starts with four customizable sections and an opening set.
+Start with the **Tidal forces** demo—64 performers and six editable sets—or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
 
-Download the Windows portable application, macOS Apple Silicon DMG, or Linux x64 AppImage from [release v0.1.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.1.0), or run it from source below. Packages are unsigned; the Windows executable was launch-tested locally, while macOS and Linux packages were built in GitHub Actions.
+| Your next step | Tools in the workspace |
+| --- | --- |
+| Build the cast | CSV roster import, editable names and sections, and [shared selection between Cast and field](docs/CAST_PANEL.md). |
+| Select the right performers | Individual and additive section selection, marquee and reviewed lasso selection, rank/file selection and [saved groups](docs/SELECTION_TOOLS.md). |
+| Place the picture | Drag, configurable [grids and group snapping](docs/GRID_SNAPPING.md), keyboard nudges and [drill-language coordinate entry](docs/COORDINATE_ENTRY.md). |
+| Shape and refine | Preview [lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md); [rotate, scale and mirror](docs/EXACT_TRANSFORMS.md); set [alignment and exact intervals](docs/SPACING_ALIGNMENT.md). |
+| Connect the sets | Previous/next ghosts and paths, counts and tempo per move, distinct New/Duplicate/Insert/Hold actions, and a [sampled transition split](docs/split-transition.md). |
 
-## Run the desktop app
+Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture. Resize or collapse panels, switch Write/Review/Rehearse layouts, and choose dark, light or high-contrast display settings without changing drill geometry.
 
-Use **Node.js 24** and **pnpm 11.25.0**, the versions used by this repository's workflows. The package manager version is recorded in `package.json`.
+## Plan the whole show
+
+Edit set names, counts, tempos and notes in the **Production sheet**. Navigate cells with the keyboard or review a CSV/TSV paste before applying the range as one undoable edit. Add pickups, meter changes and rehearsal marks through the **Score map**; measure/beat readouts and the metronome use the same count axis.
+
+![The editable Production sheet for Tidal forces, showing six sets with names, incoming counts, tempos, notes and musical positions, plus Score map and Paste range controls](docs/images/production-sheet.png)
+
+Use the [compact set list](docs/set-list.md) to search by number or name, reorder by drag or direct position, and enable thumbnails when useful. The [Production sheet guide](docs/production-sheet.md) and [Score map guide](docs/score-map.md) explain editing and timing rules.
+
+## Rehearse and review
+
+Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in.
+
+![Squidware's live 3D preview of the Orbital motion set, with section-colored performer markers, perspective camera controls and the shared show timeline in the Rehearse layout](docs/images/rehearsal-3d.png)
+
+[Show-wide problems](docs/show-wide-problems.md) flag minimum spacing and excessive stride and take you to the affected count and performers. [Production, section and direction rules](docs/analysis-rules.md) travel with the project. Checks describe performer-center geometry; review physical clearance and traffic separately.
+
+## Bring the recording with you
+
+Choose **Export → Portable production with audio** to bundle the recording in a `.squidpack` file or reference it relative to the package folder. Review the contents and size before export. Opening the package restores its recording and offset; a missing or changed reference offers an explicit relink action while keeping the drill intact.
+
+![Portable production export showing bundled audio, six drill sets, a two-second sync offset, recording size and estimated package size before export](docs/images/portable-audio.png)
+
+[Portable audio packages](docs/AUDIO_PACKAGES.md) support WAV, MP3, OGG, M4A and FLAC up to 200 MiB, subject to decoder support. Export the package again after edits or relinking.
+
+## Get Squidware
+
+The latest downloadable build is **[v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0)**, a prerelease. Choose the asset for your platform:
+
+| Platform | Download |
+| --- | --- |
+| Windows x64 | [Portable executable](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/Squidware.0.6.0.exe) |
+| macOS Apple Silicon | [ARM64 disk image](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/Squidware-0.6.0-arm64.dmg) |
+| Linux x64 | [AppImage](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/Squidware-0.6.0.AppImage) |
+
+Packages are unsigned. The release includes [SHA-256 checksums](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/SHA256SUMS.txt). See [all releases](https://github.com/IanSzymanski/squidware/releases) for release notes and available assets; the [release plan](docs/RELEASES.md) tracks upcoming work.
+
+### Run from source
+
+Use **Node.js 24** and **pnpm 11.25.0**, matching the repository workflows.
 
 ```sh
 git clone https://github.com/IanSzymanski/squidware.git
@@ -48,32 +72,70 @@ pnpm exec install-electron
 pnpm desktop
 ```
 
-`pnpm desktop` starts the local development server and the Electron window together. Close the app or stop the command to stop both processes. Port 5173 must be available.
-
-To run the built desktop application:
+`pnpm desktop` starts the development server and Electron together. Port 5173 must be available; closing the app stops the server. To run a production build locally:
 
 ```sh
 pnpm build
 pnpm start
 ```
 
-The built app works locally without a development server. A graphics device that supports WebGL is needed for 3D; the 2D editor remains available when 3D cannot initialize.
+3D requires WebGL; the 2D editor remains available if 3D cannot initialize. For browser-only renderer development, use `pnpm dev`; the preview uses downloads and browser printing in place of native file/PDF dialogs. Portable packages use the desktop app.
 
-For renderer development in a browser, use `pnpm dev`. Browser preview uses file downloads and the browser print dialog in place of native desktop save and PDF dialogs.
+## Your first rehearsal
 
-## Build a distributable
+1. Explore the demo, choose a set, and select a section from the field legend.
+2. Move the selection or preview a formation. Apply it, then use Undo to compare.
+3. Add a New, Duplicate, Insert before or Hold set. Set its incoming counts, tempo and rehearsal notes.
+4. Review paths and flagged transitions, attach audio, then play or scrub in 2D or 3D.
+5. Save the editable project and export field charts, performer sheets or a portable audio package.
 
-On Windows, build the portable executable:
+The [user guide](docs/USER_GUIDE.md) covers the full workflow, including roster import, coordinate conventions and file handling.
 
-```sh
-pnpm dist:win --publish never
-```
+### Keyboard essentials
 
-Artifacts are written to `release/`. `pnpm dist --publish never` builds the configured target for the current host: portable EXE on Windows, DMG on macOS, or AppImage on Linux. Build each platform on its corresponding OS; signing and automatic updates are not configured.
+Use `Ctrl` on Windows/Linux and `⌘` on macOS. Defaults can be changed in **Preferences → Keyboard shortcuts**.
 
-The [release train](.github/workflows/release-train.yml) coordinates the [release plan](docs/RELEASES.md). It invokes desktop packaging only after a release's issues are fulfilled and source CI passes. Publication checks Windows, macOS and Linux packages, checksums and immutable tags again. A configured target does not imply a platform has already been tested or released.
+| Action | Shortcut |
+| --- | --- |
+| Command palette | `Ctrl/⌘ K` |
+| Play / pause | `Space` |
+| Previous / next set | `[` / `]` |
+| Previous / next count | `,` / `.` |
+| Select / pan | `V` / `H` |
+| Move the selection / fast move | `Alt` + arrow / `Shift+Alt` + arrow |
+| Undo / redo | `Ctrl/⌘ Z` / `Ctrl/⌘ Shift Z` |
+| Save / Save As | `Ctrl/⌘ S` / `Ctrl/⌘ Shift S` |
+| Open / new production | `Ctrl/⌘ O` / `Ctrl/⌘ N` |
+| Toggle 2D / 3D | `T` |
 
-## Verify changes
+The field is one Tab stop: arrows move performer focus, Enter/Space selects, and Shift+Enter/Space adds or removes a performer. Editing shortcuts respect text entry. See [commands, drill phrases and rebinding](docs/COMMAND_PALETTE.md).
+
+## Files stay local
+
+The desktop app runs without an account or external service. Automatic recovery and explicit file saves have separate status; use Save for a lasting project copy.
+
+| File or output | What it keeps |
+| --- | --- |
+| `.squid` | Editable drill, cast, sections, timing, notes and audio offset. Recording bytes and undo history are excluded. |
+| `.squidpack` | Editable production plus bundled audio or a relative recording reference. Export is a snapshot and does not replace the plain Save destination. |
+| Local recovery | Automatic drill recovery copies; keep the package separately for its recording. |
+| PDF / CSV / SVG | Field charts and performer coordinate sheets, coordinate data, or the current field chart. |
+
+The public [`.squid` format contract](format/FORMAT.md) includes v1/v2 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Current saves use schema v2; v1 projects migrate on open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
+
+## Development and verification
+
+Squidware uses Electron, React, TypeScript and Three.js. Geometry, timing and validation share a [pure engine](docs/domain.md); the editor uses typed commands and named history transactions. The desktop renderer has Node integration disabled and a fixed preload API for native operations.
+
+| Path | Responsibility |
+| --- | --- |
+| `src/editor/` | Editor state, commands, workspaces, playback and file sessions |
+| `src/domain.ts` | Geometry, timeline, validation and data exchange |
+| `src/components/` | Interactive 2D field, Three.js rehearsal scene and print output |
+| `electron/` | Isolated native window, file dialogs, atomic saves, packages and recovery |
+| `scripts/` | Development, validation, packaging and desktop workflow tooling |
+
+Run the checks appropriate to a change:
 
 ```sh
 pnpm test
@@ -83,85 +145,18 @@ pnpm test:native
 pnpm test:workflows
 ```
 
-The [testing guide](docs/TESTING.md) maps each contract to its owning layer. Source/contracts run once in CI, while native and production workflows run once on each supported desktop OS. For a focused check, use `pnpm test:workflows --suite=editor,field`; use `--list` to find other owners. The runner preserves each suite's logs and status in a new `.qa/desktop-matrix/<run-id>` directory and continues independent suites after a failure.
+`pnpm certify` runs the complete certification plan for the current OS, including packaging and packaged startup. See the [testing guide](docs/TESTING.md) for Python, graphical desktop/Xvfb requirements and focused suites. CI runs source/contracts once and native, desktop and package checks on Windows, macOS and Linux. The [validation policy](docs/VALIDATION_POLICY.md) defines acceptance and release requirements.
 
-Production workflows require a graphical desktop; the [reusable desktop workflow](.github/workflows/desktop-regression.yml) configures Linux Xvfb and the Chromium sandbox. The [desktop/print guide](docs/DESKTOP_REGRESSION.md) covers independent PDF inspection and packaged startup. `pnpm test:desktop` remains available to generate the codec and run native boundary tests without a full renderer build.
+To build for the current host, run `pnpm dist --publish never`; Windows also has `pnpm dist:win --publish never`. Outputs go to `release/`. Build each target on its corresponding OS. Signing and automatic updates are not configured.
 
-The [initial verification record](docs/VERIFICATION.md) records the checks completed for this release and their limits. Automated checks do not replace interactive review of drag selection, 3D graphics, audio devices, or printed output. See the [user guide](docs/USER_GUIDE.md) for a practical acceptance walkthrough.
+## Scope and roadmap
 
-## First rehearsal
+Squidware currently supports standard 100 × 53⅓-yard college/high-school fields, straight travel between sets, and constant-speed or eased movement. The 3D figures are rehearsal markers. Curved individual paths, within-move tempo ramps and fermatas, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
 
-1. Open the demo, select a set from the left panel, and select a section from the field legend.
-2. Drag the group or apply a formation from the Inspector. Use **Undo** to compare changes.
-3. Use **Add set** to review New, Duplicate, Insert before or Hold positions, then Apply. Edit **counts into the set**, tempo, and notes. See [set creation](docs/SET_CREATION.md) for copy and timing rules.
-4. Switch to **3D preview**, then play or scrub the show. Check flagged transitions in the Inspector.
-5. Save the production as a `.squid` file and export a rehearsal packet.
-
-Read the [full user guide](docs/USER_GUIDE.md) for cast import, coordinate conventions, audio synchronization, and file handling.
-
-## Keyboard shortcuts
-
-Use `Ctrl` on Windows/Linux and `⌘` on macOS. These are defaults; change or clear bindings in **Preferences → Keyboard shortcuts**. [Command palette and drill phrases](docs/COMMAND_PALETTE.md) documents search, preview and rebinding.
-
-| Action | Shortcut |
-| --- | --- |
-| Command palette / Preferences | `Ctrl/⌘ K` / `Ctrl/⌘ ,` |
-| Add performers / duplicate current set | `A` / `D` |
-| New set / insert before / hold positions | `N` / `Shift+N` / `Shift+D` |
-| Preview midfield mirror / toggle 2D–3D | `M` / `T` |
-| Previous paths / label modes | `P` / `J` |
-| Field zoom in / out / fit | `=` / `-` / `0` |
-| Previous / next count | `,` / `.` |
-| Play / pause | `Space` |
-| Select / pan tool | `V` / `H` |
-| Select all / clear selection | `Ctrl/⌘ A` / `Esc` |
-| Focus a performer on the field | Arrow key |
-| Move selection one 8-to-5 step | `Alt` + arrow key |
-| Move selection four steps | `Shift` + `Alt` + arrow key |
-| Previous / next set | `[` / `]` |
-| Undo / redo | `Ctrl/⌘ Z` / `Ctrl/⌘ Shift Z` |
-| Save / Save As | `Ctrl/⌘ S` / `Ctrl/⌘ Shift S` |
-| Open / new project | `Ctrl/⌘ O` / `Ctrl/⌘ N` |
-| Export dialog / help in desktop | `Ctrl/⌘ P` / `F1` |
-
-Editing shortcuts do not change a formation while typing into a form field. Tab enters and leaves the 2D field in one stop. Arrows change performer focus; Enter/Space selects, and Shift+Enter/Space adds or removes that performer. Page Up/Down walks the roster, including overlapping dots; Home/End reaches the first/last performer.
-
-## Files and architecture
-
-`.squid` files are UTF-8 JSON with `schemaVersion: 2`, project metadata, field settings, sections, performers, complete pictures for every set, adjacent moves with timing and supported performer paths, notes, and an audio offset. Existing v1 files migrate when opened; saves write v2. Unsupported newer formats require an updated app. Files contain no embedded audio, undo history, or cloud references and are limited to 10 MiB of UTF-8 data. The renderer and native file handlers validate with the same [versioned codec and migration contract](docs/schema-v2.md).
-
-Coordinates use yards: `x = 0` at the left goal line and `y = 0` at the back sideline. The standard field is 100 × 53⅓ yards, excluding end zones. The [engine contract](docs/domain.md) describes schema limits, timing, coordinate conventions, and transition calculations.
-
-| Path | Responsibility |
-| --- | --- |
-| `src/App.tsx` | Editor store initialization and provider |
-| `src/editor/` | Selector subscriptions, typed commands, workspace/dialog components, playback and file controllers |
-| `src/domain.ts` | Pure drill geometry, timeline, validation, and data exchange |
-| `src/components/Field2D.tsx` | Interactive field and reusable SVG drawing |
-| `src/components/Stage3D.tsx` | Three.js scene and camera controls |
-| `src/components/PrintOutput.tsx` | Field chart and performer print layouts |
-| `src/useProject.ts` | Project/history subscriptions and recovery initialization |
-| `electron/` | Isolated desktop window, native dialogs, saves, and PDF export |
-| `scripts/` | Desktop development runner and native-boundary tests |
-
-The desktop renderer has Node integration disabled and a small, fixed preload API. Production content does not require external network connections. Recovery uses local app storage; **Save** creates the portable file you can back up and share.
-
-## Current scope
-
-The editor supports up to 500 performers and 128 sets, straight travel between sets with constant-speed or eased timing, and standard college/high-school football markings. This release accepts only the standard 100 × 53⅓-yard field. Transition flags model performer centers, not instrument dimensions or marching technique. The figures in 3D are rehearsal markers, not uniform or instrument simulations.
-
-Use **Export → Portable production with audio** to bundle a recording in a `.squidpack` file or reference it relative to the package folder. Packages reopen with their recording and offset; missing references can be relinked. Plain `.squid` files and recovery retain drill and offset without audio bytes. See [portable audio packages](docs/AUDIO_PACKAGES.md). There is no proprietary Pyware import/export, curved individual travel paths, performer assignment optimization, props editor, video export, multiplayer editing, or cloud synchronization in this release. The current roadmap is explicit about these gaps: [ROADMAP.md](ROADMAP.md).
-
-Squidware is not affiliated with or endorsed by Pyware or its owners.
+Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
 
 ## License and contributions
 
-Squidware is licensed under the [MIT License](LICENSE), copyright © 2026 Squidware contributors. You may use, modify, and redistribute it, including commercially, while preserving the copyright and license notice. Contributions submitted for inclusion in Squidware are provided under the same MIT license; preserve existing attribution and identify any third-party code or assets you add.
+Licensed under the [MIT License](LICENSE), copyright © 2026 Squidware contributors. You may use, modify and redistribute Squidware, including commercially, while preserving the license and copyright notice. Contributions are provided under the same license; preserve attribution and identify third-party code or assets.
 
-Dependencies retain their own licenses, recorded in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Desktop packages include the Squidware license, runtime dependency notices, and Electron's full Chromium notices in `resources/legal/` (`Contents/Resources/legal/` on macOS). Keep those files when redistributing a package.
-
-`private: true` in `package.json` prevents accidental publication to the npm registry; source licensing and desktop distribution use MIT regardless of that flag. See the [licensing decision and notice update guide](docs/licensing.md) for distribution details.
-
-Named history uses reversible patches and commit/cancel boundaries; the [history contract](docs/history.md) explains field behavior, revision identity and retention limits.
-
-Show-wide spacing and stride review, exact count navigation and isolated live drag checks are documented in [Show-wide problems](docs/show-wide-problems.md).
+Dependencies retain their own licenses in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Desktop packages include Squidware, dependency and Chromium notices in `resources/legal/` (`Contents/Resources/legal/` on macOS); keep those files when redistributing. See the [licensing guide](docs/licensing.md).
