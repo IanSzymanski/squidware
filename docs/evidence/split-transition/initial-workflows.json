@@ -1,0 +1,68 @@
+{
+  "checks": [
+    "native count entry rejects boundaries/fractions, renders every engine-sampled dot, and Escape cancels without history",
+    "palette and native Tab/Enter apply one named undo; native save/reopen retains sampled geometry and split move identities",
+    "paused playhead seeds the split; eased preview shows the motion change, requires acknowledgment and resets it after count edits",
+    "500 performers preview and commit at the final available set slot; the set limit prevents another split",
+    "all supported themes and 125%/150% narrow layouts keep the split review and actions accessible"
+  ],
+  "layouts": [
+    {
+      "name": "split-after.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "split-linear.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "split-easing-change.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "split-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "split-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "split-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "split-1120-1.25.png",
+      "width": 896,
+      "height": 614,
+      "fieldHeight": 243,
+      "dialogHeight": 590.4000244140625
+    },
+    {
+      "name": "split-1024-1.5.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "dialogHeight": 456
+    }
+  ],
+  "platform": "linux",
+  "localSandboxDisabled": true
+}

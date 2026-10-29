@@ -1,4 +1,5 @@
 import { commandRegistry, type CommandArguments, type CommandDefinition, type CommandId } from './commands';
+import { PROJECT_LIMITS } from '../domain';
 import { canEditPositions, isAtActiveSet } from './editMode';
 import { currentCoordinateResult } from './coordinateSession';
 import { currentFormationResult } from './formationSession';
@@ -30,6 +31,10 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   }
   if (id === 'history.undo') return 'There are no earlier edits to undo.';
   if (id === 'history.redo') return 'There are no undone edits to restore.';
+  if (id === 'set.split-open') {
+    if (state.project.present.sets.length >= PROJECT_LIMITS.sets) return 'The production has reached its set limit.';
+    return 'Choose a transition with at least two counts.';
+  }
   if (id === 'set.previous') return 'This is the first set.';
   if (id === 'set.next') return 'This is the last set.';
   if (['set.new', 'set.duplicate', 'set.insert-before', 'set.hold'].includes(id)) return 'The production has reached its set limit.';

@@ -14,6 +14,7 @@ Each platform installs the locked application toolchain and pinned PDF inspectio
 | Tooltip | Pointer/focus, disabled explanations and activation guards, native platform shortcut labels, modal layers, explicit unavailable-WebGL pass. |
 | Preferences | Multiple desktop launches, saved choices, reset, pending quit and A4/Letter PDF dimensions. |
 | Thumbnails | Maximum-size invalidation counts, roster/colors/selection, undo/redo and playback. |
+| Split transition | Whole-count preview, easing comparison and acknowledgment, keyboard Apply/Cancel, atomic undo, native persistence, maximum cast/set boundary and enlarged/theme layouts. |
 | Set list | Compact 128-set navigation, native drag and direct/keyboard reorder, atomic undo, active identity, native persistence and enlarged layouts. |
 | Playback | 500-performer committed-render counts, static-field invalidation, actual clock advancement and pointer-preview/history isolation. |
 | Recovery | Maximum 500-performer/128-set production restored and explicitly saved after process restart; stale/interrupted/unavailable storage cases. |

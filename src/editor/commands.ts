@@ -28,8 +28,11 @@ import { shortcutIds } from '../shortcuts';
 import { applySheetRange, type SheetEdit } from './productionSheet';
 import { compileScore, countForScore, validateScore } from '../score';
 import type { Meter, ScoreMap } from '../types';
+import { splitTransition, splitTransitionError, type SplitTransitionRequest } from './splitTransition';
 
 export interface CommandArguments {
+  'set.split-open': undefined;
+  'set.split': SplitTransitionRequest & { revision: number; epoch: number };
   'score.open': undefined;
   'score.save': { meter: Meter; score: ScoreMap; revision: number; epoch: number };
   'score.seek': { measure: number; beat: number };
@@ -151,7 +154,21 @@ function applySetCreation(c: CommandContext, index: number, kind: SetCreationKin
   c.patch('ui', { dialog: null });
 }
 
+const canOpenSplit = (s: EditorState) => {
+  const move = s.project.present.moves[Math.max(0, s.selection.activeIndex - 1)];
+  return canNavigate(s) && !!move && !splitTransitionError(s.project.present, move.id, 1);
+};
+
 export const commandRegistry = {
+  'set.split-open': simple('set.split-open', 'Split transition', 'Preview a picture at an interior count of the incoming move. From the opening set, split the first move.', canOpenSplit, c => showDialog(c, 'set-split')),
+  'set.split': define({ id: 'set.split', name: 'Split transition', description: 'Insert the sampled picture and divide the move as one undo action.', arguments: { moveId: 'reviewed move', count: 'interior whole count', allowEasingChange: 'explicit easing review', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'set-split' ? null : s.ui.dialog } }),
+    execute: (c, a) => {
+      const index = c.getState().project.present.moves.findIndex(move => move.id === a.moveId);
+      c.edit(p => splitTransition(p, a));
+      selectSet(c, index + 1);
+      c.patch('ui', { dialog: null });
+    } }),
   'score.open': simple('score.open', 'Score map', 'Edit pickups, meter changes and rehearsal marks, or navigate by measure and beat.', canNavigate, c => showDialog(c,'score')),
   'score.save': define({ id:'score.save',name:'Save score map',description:'Validate all musical anchors and apply them as one undo action without changing drill counts.',arguments:{meter:'opening meter',score:'ScoreMap',revision:'reviewed revision',epoch:'project session'},
     enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='score'?null:s.ui.dialog}}),
@@ -330,6 +347,7 @@ export const commandRegistry = {
   'playback.scrub': define({ id: 'playback.scrub', name: 'Seek count', description: 'Stop playback and inspect a count.', arguments: { count: 'number' }, enabled: (_s, a) => Number.isFinite(a.count), execute: (c, a) => { const p = c.getState().project.present; const count = Math.max(0, Math.min(totalCounts(p), a.count)); const bounds = rehearsalBounds(p, c.getState().playback.rehearsalId); if (count < bounds.start || count > bounds.end) c.patch('playback', { rehearsalId: null }); c.patch('playback', { playing: false, count, seekVersion: c.getState().playback.seekVersion + 1 }); c.patch('selection', { activeIndex: sampleTimeline(p, count).setIndex }); } }),
   'tool.select': define({ id: 'tool.select', name: 'Select / pan / lasso', description: 'Choose box selection, pan or a freehand lasso. Lasso results are reviewed before Apply.', arguments: { tool: 'select | pan | lasso' }, enabled: (s, a) => !!a && ['select', 'pan', 'lasso'].includes(a.tool) && (a.tool !== 'lasso' || !s.ui.dialog && !s.ui.pendingDraft && editable(s)), execute: (c, a) => c.patch('ui', { tool: a.tool }) }),
   'dialog.open': define({ id: 'dialog.open', name: 'Open dialog', description: 'Open an editor dialog and stop playback.', arguments: { dialog: 'Dialog' }, enabled: always, execute: (c, a) => {
+    if (a.dialog === 'set-split' && !canOpenSplit(c.getState())) throw new Error('Choose a transition with at least two counts and room for another set.');
     showDialog(c, a.dialog);
     if (a.dialog === 'add-cast') { const s = c.getState(); c.patch('ui', { castAmount: Math.max(1, Math.min(s.ui.castAmount, PROJECT_LIMITS.performers - s.project.present.performers.length)) }); }
   } }),
