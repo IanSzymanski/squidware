@@ -21,3 +21,11 @@ Source coverage compares every performer and the clock across the entire linear 
 The local host is Linux x64, Node 24.19.0, Electron 44.7.0 with software rendering under Xvfb. The host cannot configure Chromium's setuid helper, so local interaction runs set `ELECTRON_DISABLE_SANDBOX=1`; this is recorded in the new suite's result and does **not** certify sandbox boundaries or cross-platform packages. Hosted CI uses its configured sandbox and all registered suites on Windows/macOS/Linux. Source tests, published contracts and all 62 native boundary/harness tests passed locally. Hosted CI status must be checked separately; no human or physical-hardware gate is claimed.
 
 Captures and local interaction reports precede final documentation. Final source certification belongs to the PR's exact commit; these retained local runs are targeted development evidence.
+
+## Hosted audio-clock assertion repair
+
+The [initial hosted run](https://github.com/IanSzymanski/squidware/actions/runs/40896847794) passed the new split suite on macOS, but its existing audio-clock owner failed at the second speed's fixed wall-rate minimum: media advanced from 500.170125 to 500.350703 seconds, while the field remained synchronized and no correction seek occurred. The clock's source contract explicitly holds the field when media stalls. This is retained as a failure, not retried unchanged.
+
+The owner now measures the 900 ms renderer stall directly and requires positive actual media progress, retaining the shared-clock tolerance, every performer geometry check, native playback-rate checks and unchanged seek count at all five speeds. It records stall duration and actual media advancement. A VM audio-output rate is no longer an indirect oracle for whether the renderer stalled; no production audio behavior or synchronization tolerance changes.
+
+The targeted Linux `audio-clock,metronome` run passed with two concurrent owners after the repair. `audio-repair-workflows.json` records the run; `audio-repair-measurements.json` retains each measured renderer stall, actual media advance and synchronization error. Local Electron retains the sandbox limitation described above.
