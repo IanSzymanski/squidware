@@ -26,7 +26,7 @@ Formation, transform and spacing tools preview the result before Apply. Accepted
 
 ## Plan the whole show
 
-Edit set names, counts, tempos and notes in the **Production sheet**. Navigate cells with the keyboard or review a CSV/TSV paste before applying the range as one undoable edit. Add pickups, meter changes and rehearsal marks through the **Score map**; measure/beat readouts and the metronome use the same count axis.
+Edit set names, counts, tempos and notes in the **Production sheet**. Navigate cells with the keyboard or review a CSV/TSV paste before applying the range as one undoable edit. Add pickups, meter changes and rehearsal marks through the **Score map**; measure/beat readouts and the metronome use the same count axis. Preview [tempo ranges, linear BPM ramps and timed fermatas](docs/tempo-map.md) with one undoable Apply; playback and the metronome share the map.
 
 ![The editable Production sheet for Tidal forces, showing six sets with names, incoming counts, tempos, notes and musical positions, plus Score map and Paste range controls](docs/images/production-sheet.png)
 
@@ -121,7 +121,7 @@ The desktop app runs without an account or external service. Automatic recovery 
 | Local recovery | Automatic drill recovery copies; keep the package separately for its recording. |
 | PDF / CSV / SVG | Field charts and performer coordinate sheets, coordinate data, or the current field chart. |
 
-The public [`.squid` format contract](format/FORMAT.md) includes v1/v2 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Current saves use schema v2; v1 projects migrate on open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
+The public [`.squid` format contract](format/FORMAT.md) includes v1/v2/v3 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Ordinary saves use schema v2; nonempty tempo maps use schema v3 so older apps cannot discard timing. V1/v2 projects still open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
 
 ## Development and verification
 
@@ -151,7 +151,7 @@ To build for the current host, run `pnpm dist --publish never`; Windows also has
 
 ## Scope and roadmap
 
-Squidware currently supports standard 100 × 53⅓-yard college/high-school fields, straight travel between sets, and constant-speed or eased movement. The 3D figures are rehearsal markers. Curved individual paths, within-move tempo ramps and fermatas, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
+Squidware currently supports standard 100 × 53⅓-yard college/high-school fields, straight travel between sets, and constant-speed or eased movement. The 3D figures are rehearsal markers. Curved individual paths, audio-alignment anchors, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
 
 Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
 

@@ -22,6 +22,7 @@ export const desktopSuites = [
   { name: 'metronome', title: 'Audio-thread clicks, grouping, count-in and cancellation', script: 'metronome-qa.mjs', timeoutMs: 270000 },
   { name: 'timeline', title: 'Count viewport, 128-set navigation and stepping', script: 'timeline-qa.mjs', timeoutMs: 210000 },
   { name: 'rehearsal', title: 'Annotated bookmarks, saved ranges, focus and shared-clock loops', script: 'rehearsal-qa.mjs', timeoutMs: 240000 },
+  { name: 'tempo-map', title: 'Mapped ramps, fermatas, audio-thread beats, editing and exports', script: 'tempo-map-qa.mjs', timeoutMs: 240000 },
   { name: 'score-map', title: 'Measures, pickups, meter changes, rehearsal marks and shared accents', script: 'score-map-qa.mjs', timeoutMs: 240000 },
   { name: 'production-sheet', title: 'Editable sheet, validated spreadsheet paste and atomic undo', script: 'production-sheet-qa.mjs', timeoutMs: 270000 },
   { name: 'set-creation', title: 'Distinct new, duplicate, insert-before and hold actions', script: 'set-creation-qa.mjs', timeoutMs: 210000 },

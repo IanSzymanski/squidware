@@ -13,7 +13,7 @@ For #13 (Audit A12), playback reads the attached HTML audio element's `currentTi
 - Replacing audio pauses playback, retains the current show count and aligns the replacement to that count and the production offset. Project/timing/offset changes rebuild the clock from the current count; they may intentionally realign the recording.
 - Missing audio uses the monotonic silent clock immediately. A media error, rejected play request, or ten seconds without media progress switches to silent playback from the last known show position. The audio lane explains the fallback. There is no repeated automatic play/seek retry: pause and play retries the attached track. Replacing the recording also resets failure state. Late rejected play promises cannot affect a later transport action or a disposed clock.
 
-Mute changes sound output and leaves the audio clock running. Plain `.squid` saves keep audio session-only; [portable packages](AUDIO_PACKAGES.md) bundle or reference recordings for transfer and automatic reopen. A Web Audio lookahead metronome, meter map, count-in and within-move tempo ramps remain #14/#51/#52. The existing animation-frame metronome is unchanged by this clock work.
+Mute changes sound output and leaves the audio clock running. Plain `.squid` saves keep audio session-only; [portable packages](AUDIO_PACKAGES.md) bundle or reference recordings for transfer and automatic reopen. An audio-worklet [metronome and count-in](metronome.md), [score map](score-map.md), and [tempo ranges, ramps and fermatas](tempo-map.md) share the written count axis. The recording remains authoritative for show seconds.
 
 ## Implementation and validation
 

@@ -1,4 +1,4 @@
-.modal.score-panel{display:flex;flex-direction:column;overflow:hidden;padding:20px;max-height:90vh}
+.modal.score-panel{display:flex;flex-direction:column;overflow:hidden;padding:20px;max-height:min(90vh, calc(var(--viewport-height, 100dvh) - 24px))}
 .score-panel .modal-header{flex-shrink:0;margin-bottom:12px}
 .score-fields{overflow:auto;min-height:0;padding:2px 4px}
 .score-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}

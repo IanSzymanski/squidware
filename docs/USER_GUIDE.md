@@ -30,7 +30,7 @@ Recovery has its own status. **Recovery copy saved** means the automatic copy wa
 
 The project file includes cast, sections, all sets and positions, counts, tempo, easing, notes, field settings, and the audio offset. Audio data and undo history are not included. History lists named actions for Undo/Redo. It keeps up to 80 actions or 16 MiB of estimated history, with the latest action always retained even if larger. Older actions may expire, and opening a project starts a new history. Save named files for lasting versions.
 
-Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2; older apps that support only version 1 cannot reopen that saved file. Unsupported newer versions display an update instruction.
+Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2 for ordinary projects and version 3 for a nonempty tempo map. Older apps reject unsupported versions instead of discarding mapped timing. Unsupported newer versions display an update instruction.
 
 Project files are limited to 10 MiB of UTF-8 data. Valid recovery from older versions' browser storage is migrated before its old key is removed. Unreadable originals are kept, with a notice in **Recovery copies**. If recovery is unavailable, save a project file, check disk space or permissions, and use **Retry / refresh copies**. Editing remains available.
 
@@ -127,6 +127,12 @@ Deleting a set connects its neighbors directly. Check the resulting transition b
 A production can contain up to 128 sets. Set names, production titles, and section names commit when you leave the text input or press Enter; Escape cancels the current text draft.
 
 The **Production** view summarizes the cast, sets, total counts, runtime at written tempos, and rehearsal notes. Jump back to a set from its table to edit it.
+
+## Tempo maps and fermatas
+
+Open **Sheet → Tempo map**, **Timeline view → Tempo map** or the Command palette. Enter numeric CSV/TSV ranges as From count, To count, Start BPM, End BPM; equal BPMs make a fixed range and different BPMs make a linear ramp over counts. Enter fermatas as Count, Seconds. Preview the plot, exact intervals and duration before one undoable Apply. Cancel retains the original timing.
+
+Ranges override base move tempos only within their intervals; musical anchors remain at absolute show counts through structural edits. Fermatas freeze positions after that count’s click while recording time continues; the metronome waits. Pause/resume preserves progress. Seeking to a held count begins its pause, and count stepping can skip it. Mapped shows save as schema v3; ordinary projects keep v2 saving. CSV and PDF exports include mapped timing. See [tempo semantics, limits and compatibility](tempo-map.md).
 
 ## Playback and audio
 

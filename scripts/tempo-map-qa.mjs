@@ -1,0 +1,12 @@
+import { createRequire } from 'node:module';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { createQa, root } from './testing/launcher.mjs';
+const qa=await createQa('tempo-map',{timeoutMs:210000}),require=createRequire(import.meta.url);
+const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]}));
+const bundle=path.join(qa.output,'fixtures.cjs');
+await esbuild.build({stdin:{contents:`export {parseProject,serializeProject,countToSeconds,secondsToCount} from './src/domain'; export {compileTempo} from './src/tempo';import {createDemoProject} from './src/domain';export function fixture(){const p=createDemoProject();p.title='Tempo-map rehearsal';p.sets=p.sets.slice(0,3);p.moves=p.moves.slice(0,2).map(m=>({...m,counts:8,tempo:120,transition:'linear',paths:{}}));p.audioOffsetSeconds=.4;return p;}`,resolveDir:root,loader:'ts'},bundle:true,platform:'node',format:'cjs',outfile:bundle,logLevel:'silent'});
+const bytes=Buffer.alloc(44+8000*20*2);bytes.write('RIFF');bytes.writeUInt32LE(bytes.length-8,4);bytes.write('WAVEfmt ',8);bytes.writeUInt32LE(16,16);bytes.writeUInt16LE(1,20);bytes.writeUInt16LE(1,22);bytes.writeUInt32LE(8000,24);bytes.writeUInt32LE(16000,28);bytes.writeUInt16LE(2,32);bytes.writeUInt16LE(16,34);bytes.write('data',36);bytes.writeUInt32LE(bytes.length-44,40);
+const files=await fs.mkdtemp(path.join(qa.output,'files-'));
+const recording=path.join(files,'tempo-recording.wav');await fs.writeFile(recording,bytes);
+await qa.run('tempo-map-qa-runner.cjs','tempo-map-manifest',{bundle,recording,files});

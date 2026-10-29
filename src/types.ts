@@ -38,6 +38,11 @@ export interface ScoreMap {
   changes: { count: number; meter: Meter }[];
   marks: { count: number; label: string }[];
 }
+export interface TempoMap {
+  version: 1;
+  regions: { startCount: number; endCount: number; startTempo: number; endTempo: number }[];
+  holds: { count: number; seconds: number }[];
+}
 export type MarchingDirection = 'forward' | 'backward' | 'sideways';
 export interface AnalysisThresholds { minimumSpacing: number; maximumStride: number }
 export type AnalysisOverrides = Partial<AnalysisThresholds>;
@@ -59,6 +64,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   analysisRules?: ProjectAnalysisRules;
   meter?: Meter;
   score?: ScoreMap;
+  tempoMap?: TempoMap;
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;

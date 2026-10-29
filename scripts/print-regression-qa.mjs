@@ -25,5 +25,7 @@ for (const [coordinatePrecision, paper, label, coordinate] of [
   ['quarter', 'letter', 'Quarter steps', '0.25 steps inside the goal line; 0.25 steps in front of back hash'],
 ]) cases.push({ name: 'coordinates-' + coordinatePrecision, project: rehearsal, paper, mode: 'coordinates', coordinatePrecision, minimumPages: 1, coordinateRows: 5,
   coordinateRowPattern: '\\d+\\. (?:Opening|Rightward|Front eased|Hold|Back diagonal)', markers: [label, coordinate, 'Opening position', 'Hold for 8 counts', 'Average 8 steps per 5 yd', 'peak 5.33 steps per 5 yd', 'Toward Side 1 and back sideline'] });
+const tempo=structuredClone(rehearsal);tempo.title='TEMPO-MAP-APPENDIX';tempo.tempoMap={version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:240}],holds:[{count:8,seconds:2.5}]};
+cases.push({name:'tempo-map-letter',project:tempo,paper:'letter',mode:'charts',minimumPages:6,extraPrintPages:1,markers:['TEMPO-MAP-APPENDIX','SQUIDWARE / TEMPO MAP','Hold 2.5s','240.000','120.000','Fermatas hold positions','Offset:']});
 for(const entry of cases) { entry.fixture=path.join(output,entry.name+'.squid');await fs.writeFile(entry.fixture,tools.serializeProject(entry.project));delete entry.project; }
 await qa.run('print-regression-qa-runner.cjs', 'print-manifest', { cases, hardware: hardware(), sourceSha256: await fingerprint(path.join(root, 'src')), buildSha256: await fingerprint(path.join(root, 'dist')) });

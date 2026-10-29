@@ -7,6 +7,8 @@ export const PROJECT_LIMITS = {
   selectionGroups: 64,
   rehearsalPassages: 128,
   scoreEvents: 256,
+  tempoEvents: 256,
+  holdSeconds: 600,
   scoreMeasures: 1_000_000,
   projectBytes: 10 * 1024 * 1024,
   counts: { min: 1, max: 1024 },
