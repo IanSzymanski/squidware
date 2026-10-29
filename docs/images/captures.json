@@ -1,0 +1,59 @@
+{
+  "source": {
+    "revision": "14454e15484c64ef5bc141ba54b79969dceaf5db",
+    "tree": "4cf811db33882df7fb9635567ae9f1be33bcaeb4",
+    "dirty": false,
+    "contentHash": "3198a23eecd210678172ac3c97fded3d2188ef5f2b8ddd41c1621ec0e62d417c",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "captures": [
+    {
+      "name": "studio.png",
+      "width": 1600,
+      "height": 1000,
+      "workspace": "design",
+      "view": "2d",
+      "fieldHeight": 717,
+      "webglDraws": 0,
+      "sha256": "e798cb5be3aa332740ac9bf7618618497da03df176992354a570fd3c08c14abb"
+    },
+    {
+      "name": "production-sheet.png",
+      "width": 1600,
+      "height": 1000,
+      "workspace": "production",
+      "view": "2d",
+      "webglDraws": 0,
+      "sha256": "af0535c16f1a699699cb1762cffaf9d69973a6f882ee852613b48b82f830be87"
+    },
+    {
+      "name": "rehearsal-3d.png",
+      "width": 1600,
+      "height": 1000,
+      "workspace": "design",
+      "view": "3d",
+      "fieldHeight": 717,
+      "webglDraws": 38,
+      "sha256": "f8bf997013b93d11445804b68e78c335e0811eaa82f2a77d2bc446fa2b365e71"
+    },
+    {
+      "name": "portable-audio.png",
+      "width": 1600,
+      "height": 1000,
+      "workspace": "design",
+      "view": "2d",
+      "fieldHeight": 686,
+      "webglDraws": 38,
+      "crop": {
+        "x": 546,
+        "y": 200,
+        "width": 508,
+        "height": 599
+      },
+      "sha256": "feb3245f0e7ca0a6696a866461905966ffa9f2695ae2e5a29d59b701caaabcea"
+    }
+  ],
+  "recording": "Generated PCM waveform; no private recording.",
+  "renderer": "Production renderer/preload/main; SwiftShader WebGL.",
+  "date": "2026-10-29"
+}
