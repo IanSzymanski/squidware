@@ -448,3 +448,126 @@ test('native score save/open retains musical anchors and rejects contradictory m
  h.dialog({canceled:false,filePaths:[filename]});const reopened=JSON.parse((await h.invoke('open-project')).content);assert.deepEqual(reopened.score,data.score);assert.deepEqual(reopened.sets,data.sets);
  const before=await fs.readFile(filename,'utf8');data.score.changes[0].count=3;await assert.rejects(h.invoke('save-project',JSON.stringify(data),'Score'),/inside a bar/);assert.equal(await fs.readFile(filename,'utf8'),before);
 });
+
+function packageWav() {
+  const bytes = Buffer.alloc(16044); bytes.write('RIFF'); bytes.writeUInt32LE(bytes.length - 8, 4); bytes.write('WAVEfmt ', 8);
+  bytes.writeUInt32LE(16, 16); bytes.writeUInt16LE(1, 20); bytes.writeUInt16LE(1, 22); bytes.writeUInt32LE(8000, 24);
+  bytes.writeUInt32LE(16000, 28); bytes.writeUInt16LE(2, 32); bytes.writeUInt16LE(16, 34); bytes.write('data', 36); bytes.writeUInt32LE(16000, 40); return bytes;
+}
+const packageCodec = require('../electron/audio-package.cjs');
+function alterManifest(bytes, change) {
+  const size = bytes.readUInt32LE(8), manifest = JSON.parse(bytes.subarray(12, 12 + size)); change(manifest);
+  const json = Buffer.from(JSON.stringify(manifest)), header = Buffer.from(bytes.subarray(0, 12)); header.writeUInt32LE(json.length, 8);
+  return Buffer.concat([header, json, bytes.subarray(12 + size)]);
+}
+
+test('portable bundle transfers exact project/recording bytes and offset, leaves plain Save destination intact', async t => {
+  const h = await harness(t), bytes = packageWav();
+  const plain = path.join(h.directory, 'show.squid'); h.dialog({ filePath: plain }); await h.invoke('save-project', project, 'Show');
+  const audio = await h.invoke('stage-audio', 'recording.wav', new Uint8Array(bytes));
+  const filename = path.join(h.directory, 'show.squidpack'); h.dialog({ filePath: filename, response: 1 });
+  await h.invoke('export-package', project, 'Show', audio.token, 'bundle');
+  assert.equal(await h.invoke('save-project', project, 'Show'), plain);
+  const destination = path.join(h.directory, 'Transferred'); await fs.mkdir(destination);
+  await fs.rename(filename, path.join(destination, 'renamed.squidpack'));
+  h.dialog({ filePaths: [path.join(destination, 'renamed.squidpack')] }); const opened = await h.invoke('open-project');
+  assert.deepEqual(JSON.parse(opened.content), JSON.parse(project)); assert.deepEqual(Buffer.from(opened.audio.bytes), bytes);
+  assert.equal(opened.audio.name, 'recording.wav'); assert.equal(opened.audioWarning, undefined);
+  h.dialog({ canceled: true }); assert.equal(await h.invoke('save-project', project, 'Show'), null, 'package import asks for a plain .squid destination');
+});
+
+test('relative audio survives folder rename; missing/changed recordings keep drill and offset available for explicit relink', async t => {
+  const h = await harness(t), bytes = packageWav(), folder = path.join(h.directory, 'show'); await fs.mkdir(folder);
+  const recording = path.join(folder, 'recording.wav'); await fs.writeFile(recording, bytes);
+  h.dialog({ filePaths: [recording] }); const audio = await h.invoke('pick-audio'); assert.equal(audio.referenceAvailable, true);
+  const filename = path.join(folder, 'show.squidpack'); h.dialog({ filePath: filename, response: 1 });
+  await h.invoke('export-package', project, 'Show', audio.token, 'reference');
+  const renamed = path.join(h.directory, 'renamed'); await fs.rename(folder, renamed);
+  const moved = path.join(renamed, 'show.squidpack'); h.dialog({ filePaths: [moved] });
+  assert.deepEqual(Buffer.from((await h.invoke('open-project')).audio.bytes), bytes);
+  await fs.rename(path.join(renamed, 'recording.wav'), path.join(renamed, 'relinked.wav'));
+  const missing = await h.invoke('open-project'); assert.deepEqual(JSON.parse(missing.content), JSON.parse(project)); assert.match(missing.audioWarning, /Missing or changed/); assert.equal(missing.audio, undefined);
+  h.dialog({ filePaths: [path.join(renamed, 'relinked.wav')] }); assert.deepEqual(Buffer.from((await h.invoke('pick-audio')).bytes), bytes);
+  const changed = Buffer.from(bytes); changed[100] = 1; await fs.writeFile(path.join(renamed, 'recording.wav'), changed);
+  h.dialog({ filePaths: [moved] }); assert.match((await h.invoke('open-project')).audioWarning, /Missing or changed/);
+});
+
+test('package codec rejects malformed/truncated/oversized/future manifests, paths, tampered audio and extra payload without extracting', () => {
+  const bytes = packageCodec.encodePackage(project, { name: 'recording.wav', bytes: packageWav() }, 'bundle');
+  const badHash = Buffer.from(bytes); badHash[badHash.length - 1] ^= 1;
+  for (const bad of [Buffer.from('PK archive'), bytes.subarray(0, 11), bytes.subarray(0, -1), Buffer.concat([bytes, Buffer.from('extra')]), badHash,
+    alterManifest(bytes, m => m.version++), alterManifest(bytes, m => m.audio.size = packageCodec.MAX_AUDIO + 1)]) {
+    assert.throws(() => packageCodec.decodePackage(bad));
+  }
+  const overHeader = Buffer.from(bytes); overHeader.writeUInt32LE(0xffffffff, 8); assert.throws(() => packageCodec.decodePackage(overHeader), /manifest size/);
+  const reference = packageCodec.encodePackage(project, { name: 'recording.wav', bytes: packageWav() }, 'reference', 'audio/recording.wav');
+  for (const name of ['../secret.wav', '/absolute.wav', 'C:/secret.wav', 'audio\\secret.wav', 'audio//secret.wav', 'audio/./secret.wav', 'CON.wav', 'audio/secret.wav ', 'audio/secret\0.wav']) {
+    assert.throws(() => packageCodec.decodePackage(alterManifest(reference, m => m.audio.path = name)), /relative paths/);
+  }
+});
+
+test('package import validates drill before changing destinations; untrusted IPC, stale tokens and unsupported audio fail safely', async t => {
+  const h = await harness(t), filename = path.join(h.directory, 'bad.squidpack');
+  const bytes = packageCodec.encodePackage(project, { name: 'recording.wav', bytes: packageWav() }, 'bundle');
+  await fs.writeFile(filename, alterManifest(bytes, m => m.project.schemaVersion = 999)); h.dialog({ filePaths: [filename] });
+  await assert.rejects(h.invoke('open-project'), /Update Squidware/);
+  await assert.rejects(h.invoke('stage-audio', 'recording.exe', new Uint8Array(packageWav())), /Choose WAV/);
+  await assert.rejects(h.invoke('stage-audio', 'recording.wav', new Uint8Array([1, 2])), /contents/);
+  await assert.rejects(h.invoke('export-package', project, 'Show', 'stale-token', 'bundle'), /Attach/);
+  for (const [channel, args] of [['pick-audio', []], ['stage-audio', ['recording.wav', new Uint8Array(packageWav())]], ['export-package', [project, 'Show', 'unknown', 'bundle']]]) {
+    await assert.rejects(h.invokeAs(channel, { ...h.sender, senderFrame: {} }, ...args), /untrusted/);
+  }
+});
+
+test('canceled/failed package export leaves prior file and explicit project save state untouched', async t => {
+  for (const failRename of [false, true]) {
+    const h = await harness(t, { failRename }), filename = path.join(h.directory, 'show.squidpack'); await fs.writeFile(filename, 'prior valid file');
+    const audio = await h.invoke('stage-audio', 'recording.wav', new Uint8Array(packageWav()));
+    h.dialog({ filePath: filename, response: 0 }); assert.equal(await h.invoke('export-package', project, 'Show', audio.token, 'bundle'), null);
+    if (failRename) { h.dialog({ filePath: filename, response: 1 }); await assert.rejects(h.invoke('export-package', project, 'Show', audio.token, 'bundle'), /Simulated disk failure/); }
+    assert.equal(await fs.readFile(filename, 'utf8'), 'prior valid file'); assert.deepEqual(await fs.readdir(h.directory), ['show.squidpack']);
+  }
+});
+
+test('relative package refuses references outside its folder and rejects symlink escapes on import', async t => {
+  const h = await harness(t), bytes = packageWav(), outside = path.join(h.directory, 'outside.wav'), inside = path.join(h.directory, 'inside');
+  await fs.mkdir(inside); await fs.writeFile(outside, bytes); h.dialog({ filePaths: [outside] }); const audio = await h.invoke('pick-audio');
+  const filename = path.join(inside, 'show.squidpack'); h.dialog({ filePath: filename, response: 1 });
+  await assert.rejects(h.invoke('export-package', project, 'Show', audio.token, 'reference'), /relative paths/);
+  assert.equal(await fs.stat(filename).catch(() => null), null);
+  // Symlink creation may need OS privileges on Windows; other boundary cases still run there.
+  try { await fs.symlink(outside, path.join(inside, 'recording.wav')); } catch (error) { if (['EPERM', 'EACCES'].includes(error.code)) return; throw error; }
+  await fs.writeFile(filename, packageCodec.encodePackage(project, { name: 'recording.wav', bytes }, 'reference', 'recording.wav'));
+  h.dialog({ filePaths: [filename] }); const opened = await h.invoke('open-project'); assert.equal(opened.audio, undefined); assert.match(opened.audioWarning, /Missing or changed/);
+});
+
+test('failed decode candidates cannot evict the active recording, while successful adoption releases old attachments', async t => {
+  const h = await harness(t), bytes = new Uint8Array(packageWav());
+  const active = await h.invoke('stage-audio', 'active.wav', bytes); await h.invoke('use-audio', active.token);
+  await h.invoke('stage-audio', 'candidate-one.wav', bytes);
+  const latest = await h.invoke('stage-audio', 'candidate-two.wav', bytes);
+  h.dialog({ canceled: true }); assert.equal(await h.invoke('export-package', project, 'Show', active.token, 'bundle'), null);
+  await h.invoke('use-audio', latest.token);
+  await assert.rejects(h.invoke('export-package', project, 'Show', active.token, 'bundle'), /Attach/);
+  await assert.rejects(h.invokeAs('use-audio', { ...h.sender, senderFrame: {} }, latest.token), /untrusted/);
+});
+
+test('native package and audio readers reject oversized files before allocating payload buffers', async t => {
+  const h = await harness(t), filename = path.join(h.directory, 'oversized.squidpack');
+  const handle = await fs.open(filename, 'w'); await handle.truncate(packageCodec.MAX_PACKAGE + 1); await handle.close();
+  h.dialog({ filePaths: [filename] }); await assert.rejects(h.invoke('open-project'), /exceeds/);
+  const audioPath = path.join(h.directory, 'oversized.wav'); const audio = await fs.open(audioPath, 'w'); await audio.truncate(packageCodec.MAX_AUDIO + 1); await audio.close();
+  h.dialog({ filePaths: [audioPath] }); await assert.rejects(h.invoke('pick-audio'), /exceeds/);
+  await assert.rejects(h.invoke('stage-audio', 'recording.wav', { length: 1 }), /Invalid audio/);
+});
+
+test('the fixed v1 bundle fixture imports identical Linux-authored bytes on every supported platform', async t => {
+  const h = await harness(t), source = path.join(root, 'src/fixtures/audio-package-v1.squidpack');
+  const fixture = await fs.readFile(source);
+  // Authored with independent Python struct/json/hashlib code; never regenerated by the JS exporter under test.
+  assert.equal(packageCodec.digest(fixture), '88d07bb4a519564b4f45a5feecb543afc324d811a5d716dffa407ea83aa0103b');
+  const transferred = path.join(h.directory, 'transferred.squidpack'); await fs.copyFile(source, transferred);
+  h.dialog({ filePaths: [transferred] }); const opened = await h.invoke('open-project');
+  assert.deepEqual(JSON.parse(opened.content), { ...JSON.parse(project), audioOffsetSeconds: 2 });
+  assert.deepEqual(Buffer.from(opened.audio.bytes), packageWav());
+});

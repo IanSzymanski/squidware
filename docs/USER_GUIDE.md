@@ -20,7 +20,7 @@ Alt+arrows nudges the selection; Shift+Alt uses the fast amount. Move buttons sh
 
 Use **Grid and snapping** beside the field magnet to choose a production's step grid, subdivision, targets and group behavior. **Keep spacing** moves groups rigidly; **Individual dots** changes spacing and shows a drag preview before release. Escape cancels a drag, and Undo restores it. The active mode appears on the field. See [Grid and group snapping](GRID_SNAPPING.md) for numeric/nudge behavior, boundaries and personal defaults.
 
-**Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid` or JSON project files; a JSON import receives a `.squid` destination when saved.
+**Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid`, JSON or portable `.squidpack` files; JSON and package imports receive a `.squid` destination when saved.
 
 **Unsaved changes** beside the production title includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
 
@@ -136,14 +136,14 @@ The displayed count is the cumulative show count. Written tempo can differ betwe
 
 ### Attach a rehearsal track
 
-Choose **Attach audio** and select a file the system can decode. The timeline displays a waveform preview. Use the speaker control to mute or unmute the attached track.
+Choose **Attach audio** and select WAV, MP3, OGG, M4A or FLAC audio the system can decode. The timeline displays a waveform preview. Use the speaker control to mute or unmute the attached track.
 
 Set **Audio sync offset** in Production settings:
 
 - A positive value starts playback farther into the recording. For example, `10` plays the audio at 0:10 when the show starts.
 - A negative value delays the audio. For example, `-4` starts the recording four seconds after the drill begins.
 
-The audio follows the show timeline and playback-speed setting. Attachments are limited to 200 MB and remain in memory for the current session. The offset is saved in the project; the recording is not. Reattach the same recording after reopening a project. Audio decoding depends on the codecs supported by Electron and the host system.
+The audio follows the show timeline and playback-speed setting. Recordings are limited to 200 MiB. Plain `.squid` files save the offset without recording bytes. To transfer the recording too, choose **Export → Portable production with audio**. Bundle it in one `.squidpack` file, or reference it relative to a folder you transfer together. Review the contents and size, then export. Open the package to restore its recording automatically. If a reference is missing or changed, choose **Relink audio**; drill and offset remain intact. Export again after edits or relinking. Audio decoding depends on Electron and the host system. See [portable package details and format](AUDIO_PACKAGES.md).
 
 ## 3D rehearsal
 
@@ -183,6 +183,7 @@ Additional exports are:
 | --- | --- |
 | Coordinates CSV | All performers at all sets, including raw yards, coordinate descriptions, timing, sections, and notes |
 | Current chart SVG | A scalable drawing of the active set, using the current label visibility setting |
+| `.squidpack` via Export | Editable production with bundled audio or a relative audio reference |
 | `.squid` via Save | The editable production, suitable for reopening in Squidware |
 
 CSV and SVG are snapshots, not replacements for the editable project. The coordinate CSV has a different structure from the roster import CSV and cannot be imported as a drill.
@@ -221,7 +222,7 @@ In the 2D field, Tab enters at the remembered performer and the next Tab leaves 
 4. Add a set, apply a formation, change counts/tempo, reorder it, and delete it. Confirm playback arrives at the edited pictures.
 5. Switch to 3D, exercise all cameras, select a performer, and play through a transition. Return to 2D and verify the project is unchanged by camera controls.
 6. Import a small valid roster; try a duplicate label and an unknown section and confirm the app explains the rejection.
-7. Attach audio, adjust the offset, play, pause, scrub, loop, and mute. Reopen the project and verify the recording must be reattached.
+7. Attach audio, adjust the offset, play, pause, scrub, loop, and mute. Export a bundled package, move it to another folder and reopen it with its recording and offset. Also exercise missing-reference relinking; plain `.squid` still requires reattachment.
 8. Save a project, reopen it, and verify the cast, set positions, timing, and notes. Try canceling Open, Save As, and Export without changing the current project.
 9. Export chart and coordinate PDFs, CSV, and SVG. Inspect the PDFs and SVG in a viewer and check a known performer's coordinates against the editor.
 10. Make an edit and close the app. Confirm the unsaved-change prompt lets you cancel and return to save.

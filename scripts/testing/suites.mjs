@@ -17,6 +17,7 @@ export const desktopSuites = [
   { name: 'preferences', title: 'Preferences across process restarts', script: 'preferences-qa.mjs', timeoutMs: 390000 },
   { name: 'thumbnails', title: 'Thumbnail invalidation and shared selection', script: 'thumbnail-qa.mjs', timeoutMs: 210000 },
   { name: 'playback', title: 'Clock, subscriptions and drag preview isolation', script: 'playback-qa.mjs', timeoutMs: 210000 },
+  { name: 'audio-package', title: 'Portable audio packages, relative references, relink and native playback', script: 'audio-package-qa.mjs', timeoutMs: 210000 },
   { name: 'audio-clock', title: 'Media clock, offset, loops and silent fallback', script: 'audio-clock-qa.mjs', timeoutMs: 210000 },
   { name: 'metronome', title: 'Audio-thread clicks, grouping, count-in and cancellation', script: 'metronome-qa.mjs', timeoutMs: 270000 },
   { name: 'timeline', title: 'Count viewport, 128-set navigation and stepping', script: 'timeline-qa.mjs', timeoutMs: 210000 },

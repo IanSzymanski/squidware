@@ -1,0 +1,144 @@
+{
+  "checks": [
+    "native attach, package preview, keyboard activation and cancel; export does not mark plain project saved",
+    "transferred bundle restores the exact drill and recording, offset and actual media-clock playback",
+    "relative recording relocates with its folder; missing audio preserves drill/offset and keyboard relink restores playback",
+    "malformed package leaves the active production and recording intact",
+    "shared dark/light/high-contrast styles and keyboard-reachable package controls at 1024×720 and 150% scale"
+  ],
+  "viewports": [
+    {
+      "name": "audio-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "package-empty.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "modal": {
+        "x": 453,
+        "y": 101.40625,
+        "width": 460,
+        "height": 565.1875,
+        "top": 101.40625,
+        "right": 913,
+        "bottom": 666.59375,
+        "left": 453
+      }
+    },
+    {
+      "name": "package-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "modal": {
+        "x": 453,
+        "y": 108.90625,
+        "width": 460,
+        "height": 550.1875,
+        "top": 108.90625,
+        "right": 913,
+        "bottom": 659.09375,
+        "left": 453
+      }
+    },
+    {
+      "name": "package-reopened.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "package-missing.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 450
+    },
+    {
+      "name": "package-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "modal": {
+        "x": 453,
+        "y": 108.90625,
+        "width": 460,
+        "height": 550.1875,
+        "top": 108.90625,
+        "right": 913,
+        "bottom": 659.09375,
+        "left": 453
+      }
+    },
+    {
+      "name": "package-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454,
+      "modal": {
+        "x": 453,
+        "y": 108.90625,
+        "width": 460,
+        "height": 550.1875,
+        "top": 108.90625,
+        "right": 913,
+        "bottom": 659.09375,
+        "left": 453
+      }
+    },
+    {
+      "name": "package-enlarged.png",
+      "width": 1024,
+      "height": 720,
+      "fieldHeight": 270,
+      "modal": {
+        "x": 167,
+        "y": 18,
+        "width": 690,
+        "height": 684,
+        "top": 18,
+        "right": 857,
+        "bottom": 702,
+        "left": 167
+      }
+    },
+    {
+      "name": "package-enlarged-controls.png",
+      "width": 1024,
+      "height": 720,
+      "fieldHeight": 270,
+      "modal": {
+        "x": 167,
+        "y": 18,
+        "width": 690,
+        "height": 684,
+        "top": 18,
+        "right": 857,
+        "bottom": 702,
+        "left": 167
+      }
+    }
+  ],
+  "source": {
+    "revision": "eb3cfc061a307dba97936784eb6a4e92a37723e6",
+    "tree": "cece67e253c03d92a5ae7c1f0ff57191c953bbb6",
+    "dirty": true,
+    "contentHash": "7cad44315948c1e59975f8c9b2f66454b19413359633a8fb4d15f070e9f0162c",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "note": "Real production renderer, preload and native handlers. Dialog selection/confirmation is controlled; keyboard and pointer input is native. Generated WAV; no physical output qualification."
+}

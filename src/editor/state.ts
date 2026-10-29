@@ -9,7 +9,7 @@ import type { CoordinateEntrySession } from '../drillEntry';
 import type { SelectionReview } from '../selectionTools';
 import type { SetCreationKind } from './projectEdits';
 
-export type Dialog = 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
@@ -37,7 +37,8 @@ export interface EditorState {
   };
   fileSession: {
     savedRevision: number | null; needsSaveAs: boolean; saveStatus: string;
-    fileOperation: 'saving' | 'opening' | null;
+    fileOperation: 'saving' | 'opening' | 'exporting' | null;
+    audioToken: string; audioSize: number; audioReferenceAvailable: boolean; audioWarning: string;
     audioName: string; audioUrl: string; waveform: number[]; audioLoading: boolean;
   };
 }
@@ -55,6 +56,6 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {} },
     fileSession: { savedRevision: null, needsSaveAs: true, fileOperation: null,
-      saveStatus: 'Save a project file', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
+      saveStatus: 'Save a project file', audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '', audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };
 }

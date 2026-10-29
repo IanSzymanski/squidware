@@ -1,0 +1,12 @@
+import { createQa, root } from './testing/launcher.mjs';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+const qa = await createQa('audio-package', { timeoutMs: 180000 });
+const bytes = Buffer.alloc(44 + 8000 * 60 * 2);
+bytes.write('RIFF'); bytes.writeUInt32LE(bytes.length - 8, 4); bytes.write('WAVEfmt ', 8); bytes.writeUInt32LE(16, 16);
+bytes.writeUInt16LE(1, 20); bytes.writeUInt16LE(1, 22); bytes.writeUInt32LE(8000, 24); bytes.writeUInt32LE(16000, 28);
+bytes.writeUInt16LE(2, 32); bytes.writeUInt16LE(16, 34); bytes.write('data', 36); bytes.writeUInt32LE(bytes.length - 44, 40);
+for (let i = 0; i < 480000; i++) bytes.writeInt16LE(Math.round(1000 * Math.sin(i / 8000 * Math.PI * 880)), 44 + i * 2);
+const files = await fs.mkdtemp(path.join(qa.output, 'files-'));
+const recording = path.join(files, 'recording.wav'); await fs.writeFile(recording, bytes);
+await qa.run('audio-package-qa-runner.cjs', 'audio-package-manifest', { recording, files });
