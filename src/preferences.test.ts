@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { defaultPreferences, validatePreferences } from './preferences';
 import { analyzeTransition, coordinateDescription, createDemoProject, parseProject, serializeProject } from './domain';
 describe('personal preferences codec', () => {
+  it('defaults to compact sets and retains optional thumbnails only in device preferences', () => {
+    expect(validatePreferences({ version: 1 }).setThumbnails).toBe(false);
+    expect(validatePreferences({ setThumbnails: true }).setThumbnails).toBe(true);
+    expect(() => validatePreferences({ setThumbnails: 'true' })).toThrow();
+    expect(serializeProject(createDemoProject())).not.toContain('setThumbnails');
+  });
   it('migrates and bounds the integer default for new move counts', () => {
     expect(validatePreferences({ version: 1 }).newSetCounts).toBe(32);
     for (const counts of [1, 1024]) expect(validatePreferences({ newSetCounts: counts }).newSetCounts).toBe(counts);

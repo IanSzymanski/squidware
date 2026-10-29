@@ -137,6 +137,7 @@ app.whenReady().then(async () => {
       await uiWait("window.__preferencesQA.editor.getState().preferences.value.selectionHintDismissed", 'selection hint retired');
       await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
       assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
+      await click('[aria-label="Show set thumbnails"]'); await uiWait("window.__preferencesQA.editor.getState().preferences.value.setThumbnails", 'optional thumbnails');
       pass('selecting performers retires the introductory hint after clearing selection without a project edit');
     }
     await openPreferences();
@@ -187,7 +188,7 @@ app.whenReady().then(async () => {
       assert.equal((await fs.readdir(profile)).filter(name => name.startsWith('preferences-preserved-')).length, 1);
       pass('the older preferences original is preserved when the upgraded file is written');
     } else if (phase === 'restart') {
-      const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
+      const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.equal(expected.setThumbnails, true); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
       assert.equal(expected.selectionHintDismissed, true);
       assert.equal(expected.fieldOrientation, 'audience-top'); assert.equal(expected.fieldDotRadiusPx, 5); assert.equal(expected.fieldLabelSizePx, 16);
       assert.equal(expected.selectionLabelsOnly, true); assert.equal(expected.fieldColorMode, 'custom'); assert.equal(expected.fieldCustomColor, '#ee99dd');

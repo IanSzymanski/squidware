@@ -22,6 +22,16 @@ export function reconnectSets(project: Project, sets: DrillSet[], newTiming = ne
   return { ...project, sets, moves, openingTiming };
 }
 
+/** Target is the final zero-based position, not an insertion slot. */
+export function moveSetTo(project: Project, id: string, target: number): Project {
+  const from = project.sets.findIndex(set => set.id === id);
+  if (from < 0 || !Number.isInteger(target) || target < 0 || target >= project.sets.length) throw new Error('Choose an existing set and a position in this production.');
+  if (from === target) return project;
+  const sets = [...project.sets];
+  sets.splice(target, 0, sets.splice(from, 1)[0]);
+  return reconnectSets(project, sets);
+}
+
 export function updateSetProperties(project: Project, index: number, update: SetPropertyUpdate): Project {
   validateSetUpdate(update, index);
   const { counts, tempo, transition, name, notes } = update;

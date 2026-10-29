@@ -30,6 +30,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'set.add': name = `New set after ${picture}`; break;
     case 'set.remove': name = `Remove ${picture}`; break;
     case 'set.reorder': name = `Reorder ${picture}`; break;
+    case 'set.move-to': name = `Move set ${project.sets.findIndex(set => set.id === a.id) + 1} · ${project.sets.find(set => set.id === a.id)?.name ?? ''} to position ${Number(a.target) + 1}`; break;
     case 'positions.move': name = `Move ${selection} — ${picture}`; break;
     case 'selection.transform': name = `Transform ${selection} — ${picture}`; break;
     case 'transform.apply': {

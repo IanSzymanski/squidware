@@ -282,10 +282,11 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     return () => svg.removeEventListener('wheel', wheel);
   }, [safeZoom, width, height, onZoom, orientation]);
 
-  useEffect(() => {
+  // Retire the old gesture before the new tool can receive pointer input.
+  // A passive effect could otherwise cancel a gesture started after commit.
+  useLayoutEffect(() => {
     if (!gesture.current) return;
     gesture.current = null;
-    onMovePreview?.(null);
     onMovePreview?.(null);
     setPreview({});
     setMarquee(null);
@@ -294,7 +295,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   }, [positions, readOnly, project.id, orientation, snap, project.snapping, tool, onMovePreview]);
   useEffect(() => () => onMovePreview?.(null), [onMovePreview]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setPan({ x: 0, y: 0 });
   }, [project.id, fitVersion, orientation]);
 

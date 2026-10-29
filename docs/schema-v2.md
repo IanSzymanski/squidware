@@ -4,6 +4,8 @@ This records the canonical project format for issue #5. Creation, sampling, edit
 
 ## Pictures and moves
 
+The [compact set list](set-list.md) documents the shared reorder policy, including incoming moves following destinations, changed-source direction declarations and the 32-count move for a former opening picture.
+
 Keep the project ID, field, ensemble, sections, performers, audio offset and all existing entity IDs. Keep the ordered `sets` array; each picture has `id`, `name`, `notes` and a complete `positions` map. Coordinates remain yards, with the established field convention and limits. A picture has no duration, tempo or easing.
 
 Add an ordered `moves` array with exactly one move between each pair of adjacent pictures. Move i connects sets i and i+1 through `fromSetId` and `toSetId`. Each move has its own stable ID, positive integer `counts`, `tempo`, `transition` (`linear` or `ease`) and `paths` map. Moves are chronological; skipped, reversed, dangling, duplicate or missing connections are rejected. One picture has zero moves. Keep the current 128-picture limit, so at most 127 moves exist.

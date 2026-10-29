@@ -70,8 +70,9 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     if (Object.entries(update).every(([key, value]) => Object.is(current[key], value))) return;
     publish({ ...state, [slice]: { ...state[slice], ...update } });
   };
-  const reconcile = (nextProject: Project, arrive = false) => {
-    const activeIndex = Math.min(state.selection.activeIndex, nextProject.sets.length - 1);
+  const reconcile = (nextProject: Project, arrive = false, activeId?: string) => {
+    const found = activeId ? nextProject.sets.findIndex(set => set.id === activeId) : -1;
+    const activeIndex = found >= 0 ? found : Math.min(state.selection.activeIndex, nextProject.sets.length - 1);
     const selectedIds = state.selection.selectedIds.filter(id => nextProject.performers.some(p => p.id === id));
     if (activeIndex !== state.selection.activeIndex || selectedIds.length !== state.selection.selectedIds.length) patch('selection', { activeIndex, selectedIds });
     let count = arrive ? setStartCount(nextProject, activeIndex) : Math.min(state.playback.count, totalCounts(nextProject));
@@ -105,6 +106,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     patch,
     edit: change => {
       if (active?.error) throw active.error;
+      const activeId = state.project.present.sets[state.selection.activeIndex].id;
       const next = change(state.project.present);
       const changes = projectPatches(state.project.present, next);
       if (!changes.length) return;
@@ -112,7 +114,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       const revision = ++revisionClock;
       if (active) publish({ ...state, project: { ...state.project, present: next, revision } });
       else commit(state.project, next, actionName, revision, changes);
-      reconcile(next);
+      reconcile(next, false, activeId);
     },
     load: project => {
       const next = validateProject(project);
@@ -129,11 +131,12 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       if (active) return;
       const entry = direction === 'undo' ? history.past.at(-1) : history.future[0];
       if (!entry) return;
+      const activeId = history.present.sets[state.selection.activeIndex].id;
       publish({ ...state, project: { ...history, present: applyProjectPatches(history.present, entry.patches, direction),
         past: direction === 'undo' ? history.past.slice(0, -1) : [...history.past, entry],
         future: direction === 'undo' ? [entry, ...history.future] : history.future.slice(1),
         revision: direction === 'undo' ? entry.beforeRevision : entry.afterRevision } });
-      reconcile(state.project.present, true);
+      reconcile(state.project.present, true, activeId);
     },
     external: id => {
       commitTransaction();
