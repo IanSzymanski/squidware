@@ -100,12 +100,16 @@ app.whenReady().then(async () => {
       await selectNativeOption(window, '[aria-label="Playback speed"]', String(speed));
       await toggle(); await wait(`${state}.playback.clockStatus==='Audio clock' && !${audio}.paused`, 'audio clock running');
       await pause(250); const before = await synchronized(project);
-      await evaluate('(() => {const end=performance.now()+900;while(performance.now()<end){} })()');
+      const stallMs = await evaluate('(() => {const start=performance.now();while(performance.now()-start<900){} return performance.now()-start;})()');
       const after = await synchronized(project);
-      assert.ok(after.media > before.media + speed * .5, JSON.stringify({ before, after }));
+      // Measure the renderer stall directly. Virtual audio output can also
+      // stall; the field must follow actual media time, not compensate by
+      // advancing at an assumed wall-clock rate (see rehearsalClock tests).
+      assert.ok(stallMs >= 900, JSON.stringify({ speed, stallMs }));
+      assert.ok(after.media > before.media, JSON.stringify({ speed, stallMs, before, after }));
       assert.equal(after.seeks, before.seeks, 'Dropped frames must never cause correction seeks');
       assert.equal(await evaluate(audio + '.playbackRate'), speed);
-      measurements.push({ speed, before, after, errorSeconds: countToSeconds(project, after.count) - after.media });
+      measurements.push({ speed, stallMs, mediaAdvance: after.media - before.media, before, after, errorSeconds: countToSeconds(project, after.count) - after.media });
       await toggle(); await wait(`!${state}.playback.playing && ${audio}.paused`, 'paused');
       const stopped = await snapshot(); await pause(200);
       assert.equal((await snapshot()).count, stopped.count); assert.ok(Math.abs((await snapshot()).media - stopped.media) < .05);

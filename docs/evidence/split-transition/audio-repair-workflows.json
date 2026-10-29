@@ -1,0 +1,73 @@
+{
+  "runId": "2026-10-29T15-08-02-744Z-06bf0e78",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.55",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "fe50fe86e4d5063e8336ef55f9e306c090ba8a4a",
+    "tree": "829404e2cd3776a0a44a653047d66dc3c3fbb1fa",
+    "dirty": true,
+    "contentHash": "6d443a6f52c9c77a65e137251c3a6c38730833e824f28e80dc266754f581d6b8",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "audio-clock",
+    "metronome"
+  ],
+  "checks": [
+    {
+      "name": "audio-clock",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 19428,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-29T15-08-02-744Z-06bf0e78/audio-clock.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-29T15-08-02-744Z-06bf0e78/audio-clock"
+    },
+    {
+      "name": "metronome",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 22540,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-29T15-08-02-744Z-06bf0e78/metronome.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-29T15-08-02-744Z-06bf0e78/metronome"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-29T15:08:02.280Z",
+    "source": {
+      "revision": "fe50fe86e4d5063e8336ef55f9e306c090ba8a4a",
+      "tree": "829404e2cd3776a0a44a653047d66dc3c3fbb1fa",
+      "dirty": true,
+      "contentHash": "6d443a6f52c9c77a65e137251c3a6c38730833e824f28e80dc266754f581d6b8",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.55",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "ff245344e1cd432102ce120c15911f1142ad6ddb59f26793e9665257fc27720a"
+  }
+}
