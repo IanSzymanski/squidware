@@ -29,7 +29,7 @@ export function captureFormationSnapshot(project: Project, setIndex: number, ids
 export interface TemplatePlacement { center: Point; rotation: number; assignment: FormationAssignment }
 
 /** Pure preview. Applying its updates belongs to a guarded editor command, not this module. */
-export function previewFormationTemplate(input: FormationTemplate, positions: Record<string, Point>, ids: readonly string[], field: Project['field'], placement: TemplatePlacement): FormationResult {
+export function previewFormationTemplate(input: FormationTemplate, positions: Record<string, Point>, ids: readonly string[], field: Project['field'], placement: TemplatePlacement, assignmentOrder?: readonly string[]): FormationResult {
   try {
     const template = validateTemplate(input);
     if (template.kind !== 'formation') throw new Error('Choose a formation template.');
@@ -38,10 +38,13 @@ export function previewFormationTemplate(input: FormationTemplate, positions: Re
     if (placement.center.x < 0 || placement.center.y < 0 || placement.center.x > field.width || placement.center.y > field.height) throw new Error('The formation center must be inside the field.');
     if (!['position', 'roster'].includes(placement.assignment)) throw new Error('Choose positional or roster assignment.');
     const geometry = template.geometry;
-    if (geometry.kind === 'parametric') return previewFormation(positions, ids, geometry.shape, { ...geometry, ...placement }, field);
+    if (geometry.kind === 'parametric') return previewFormation(positions, ids, geometry.shape, { ...geometry, ...placement }, field, assignmentOrder);
     if (ids.length !== template.sourceCount) throw new Error(`This saved picture requires exactly ${template.sourceCount} selected performers; ${ids.length} are selected. Parametric formations support different member counts.`);
     // Snapshot slots are in local x/y order; source assignment uses the same rotated axes.
-    const order = formationAssignmentOrder(positions, ids, 'line', { ...placement, width: 1, height: 0, columns: 1 });
+    const positional = formationAssignmentOrder(positions, ids, 'line', { ...placement, width: 1, height: 0, columns: 1 });
+    const order = assignmentOrder ?? positional;
+    const selected = new Set(ids);
+    if (order.length !== ids.length || new Set(order).size !== ids.length || order.some(id => !selected.has(id))) throw new Error('The assignment must include every selected performer exactly once.');
     const points = geometry.points.map(point => affinePoint({ x: placement.center.x + point.x, y: placement.center.y + point.y }, placement.center, placement.rotation, 1));
     let total = 0, maximum = 0, changed = false, outside = false;
     const updates = Object.fromEntries(order.map((id, i) => {

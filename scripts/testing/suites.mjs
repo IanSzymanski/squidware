@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  { name: 'templates', title: 'Personal templates, native import/export, guarded previews and persistence', script: 'templates-qa.mjs', timeoutMs: 300000 },
   { name: 'smoke', title: 'Sandbox and native bridge', timeoutMs: 60000 },
   { name: 'editor', title: 'Editing, file dialogs, drafts and undo', script: 'editor-qa.mjs', timeoutMs: 270000 },
   { name: 'accessibility', title: 'Keyboard navigation and rendered text', script: 'accessibility-qa.mjs', timeoutMs: 270000 },

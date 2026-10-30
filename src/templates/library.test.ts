@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { createBlankProject, createDemoProject, parseProject, serializeProject } from '../domain';
 import { captureParametricFormation } from './formations';
 import { captureShowTemplate, productionFromTemplate } from './production';
@@ -11,6 +12,12 @@ const formation = captureParametricFormation('Arc', 'arc', { center: { x: 50, y:
 const library: TemplateLibrary = { format: 'squidware-template-library', version: 1, entries: [show, formation] };
 
 describe('template library import and export boundary', () => {
+  it('imports and round-trips the documented mixed-library fixture', () => {
+    const content = readFileSync(new URL('../../format/examples/template-library-v1.squidlib', import.meta.url), 'utf8');
+    const parsed = parseTemplateLibrary(content);
+    expect(parsed.entries).toHaveLength(3);
+    expect(parseTemplateLibrary(serializeTemplateLibrary(parsed))).toEqual(parsed);
+  });
   it('round-trips mixed and empty libraries without aliasing input objects', () => {
     expect(parseTemplateLibrary(serializeTemplateLibrary(library))).toEqual(library);
     const copy = validateTemplateLibrary(library);

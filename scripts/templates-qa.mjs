@@ -1,0 +1,11 @@
+import { createRequire } from 'node:module';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { createQa, root } from './testing/launcher.mjs';
+const qa = await createQa('templates', { timeoutMs: 240000 });
+const require = createRequire(import.meta.url);
+const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
+const bundle = path.join(qa.output, 'fixtures.cjs');
+await esbuild.build({ stdin: { contents: `export {createDemoProject,parseProject,serializeProject} from './src/domain';export {parseTemplateLibrary} from './src/templates/library';`, resolveDir: root, loader: 'ts' }, bundle: true, platform: 'node', format: 'cjs', outfile: bundle, logLevel: 'silent' });
+const files = await fs.mkdtemp(path.join(qa.output, 'files-'));
+await qa.run('templates-qa-runner.cjs', 'templates-manifest', { bundle, files }, ['write', 'read']);

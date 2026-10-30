@@ -9,6 +9,8 @@ const { pathToFileURL } = require('node:url');
 const { parseProjectV2 } = require('./project-codec.cjs');
 const { createRecoveryService } = require('./recovery-service.cjs');
 const { createPreferencesService } = require('./preferences-service.cjs');
+const { createTemplateLibraryService, readLibraryFile } = require('./template-library-service.cjs');
+const { parseTemplateLibrary, serializeTemplateLibrary } = require('./template-library-codec.cjs');
 const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences, textEditAction } = require('./preferences-codec.cjs');
 const textOperations = { cut: 'cut', copy: 'copy', paste: 'paste', undo: 'undo', redo: 'redo', 'select-all': 'selectAll' };
 const { MAX_AUDIO, MAX_PACKAGE, digest, audioInfo, safeRelative, encodePackage, decodePackage } = require('./audio-package.cjs');
@@ -51,6 +53,7 @@ let discardOnClose = false;
 let fileOperationActive = false;
 let recoveryService;
 let preferencesService;
+let templateLibraryService;
 let drainingPreferences = false;
 let keyboardContext = 'editor';
 
@@ -171,6 +174,29 @@ function registerIpc() {
   });
   const recovery = () => recoveryService ||= createRecoveryService(path.join(app.getPath('userData'), 'recovery'));
   const preferences = () => preferencesService ||= createPreferencesService(app.getPath('userData'), atomicWrite);
+  const templates = () => templateLibraryService ||= createTemplateLibraryService(app.getPath('userData'), atomicWrite);
+  for (const [channel, action] of [
+    ['read-template-library', () => templates().read()],
+    ['save-template-library', content => templates().save(content)],
+  ]) ipcMain.handle(`squidware:${channel}`, async (event, ...args) => { assertSender(event); return action(...args); });
+  handleFileRequest('squidware:open-template-library', async () => {
+    const result = await dialog.showOpenDialog(window, { title: 'Import template library',
+      filters: [{ name: 'Squidware template library', extensions: ['squidlib', 'json'] }], properties: ['openFile'] });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const filename = result.filePaths[0];
+    if (!['.squidlib', '.json'].includes(path.extname(filename).toLowerCase())) throw new Error('Choose a .squidlib or .json template library.');
+    return serializeTemplateLibrary(parseTemplateLibrary(await readLibraryFile(filename)));
+  });
+  handleFileRequest('squidware:export-template-library', async content => {
+    const canonical = serializeTemplateLibrary(parseTemplateLibrary(content));
+    const result = await dialog.showSaveDialog(window, { title: 'Export template library', defaultPath: 'Squidware-templates.squidlib',
+      filters: [{ name: 'Squidware template library', extensions: ['squidlib'] }], properties: ['showOverwriteConfirmation', 'createDirectory'] });
+    if (result.canceled || !result.filePath) return null;
+    const filename = await selectedDestination(result.filePath, 'squidlib');
+    if (!filename) return null;
+    await atomicWrite(filename, canonical);
+    return filename;
+  });
   for (const [channel, action] of [
     ['read-preferences', async () => { const result = await preferences().read(); installMenu(result.preferences); return result; }],
     ['save-preferences', value => { const canonical = validatePreferences(value); const request = preferences().save(canonical); installMenu(canonical); return request; }],
@@ -509,9 +535,9 @@ if (!app.requestSingleInstanceLock() && !smokeTest) {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
   app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
   app.on('before-quit', event => {
-    if (!preferencesService?.pending) return;
+    if (!preferencesService?.pending && !templateLibraryService?.pending) return;
     event.preventDefault(); if (drainingPreferences) return;
     drainingPreferences = true;
-    void preferencesService.drain().finally(() => { drainingPreferences = false; app.quit(); });
+    void Promise.all([preferencesService?.drain(), templateLibraryService?.drain()]).finally(() => { drainingPreferences = false; app.quit(); });
   });
 }

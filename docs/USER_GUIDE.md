@@ -112,6 +112,14 @@ The initial formation center is the selected performers' center. **Positional or
 
 Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 
+### Reuse setups and formations
+
+Open **Project menu → Templates** (also searchable in Commands), or **Saved formations** in the formation panel. **Save new template** captures an ensemble setup, the explicitly selected dot picture, or an adaptable shape. Give it a name and review the included data. Performer names and labels are excluded; section names are generic unless you check the inclusion option.
+
+Choose a saved formation to preview it on the selected performers. Saved dot pictures require the same count; parametric shapes adapt to 1–500 selected performers. Adjust center/rotation, shape dimensions and positional or Cast order. Drag the preview's center handle or use its arrows; numeric fields give exact placement. Review the dashed travel paths, then **Apply saved formation** for one named undo action, or **Cancel / close** to leave positions unchanged. Out-of-field and stale previews cannot apply. Refresh a stale preview by choosing the template again.
+
+**New production** lists saved ensemble setups and previews their anonymous roster, sections, field and opening tempo. Creating from a setup starts a fresh production; save current work before replacing it. Use **Import library** to review and add `.squidlib` files, and **Export library** or **Export selected** to review included names before sharing. Rename/remove entries under their management disclosure. The personal library persists on this device outside production files; transfer it by exporting a library. See [template behavior and privacy](template-library.md).
+
 ## Sets and production structure
 
 The left panel lists the production's sets with thumbnails. Click a set to pause playback and jump to its arrival count.
