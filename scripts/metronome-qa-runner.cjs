@@ -89,18 +89,35 @@ app.whenReady().then(async () => {
     pass('six-count lead-in at 1.5× holds the requested count and lands the first show click on count 3');
     // Clicks are reported from the actual audio render block, while a deliberate
     // main-thread busy loop prevents timers, frames and message delivery.
+    // A virtual device can render slower than wall time on a loaded runner.
+    // Keep the renderer blocked for both 1600 ms wall time and 1.6 audio seconds,
+    // with a finite wall-time budget if the device stops making progress.
     for (const [numerator,denominator,grouping] of [[3,4,[3]],[4,4,[4]],[6,8,[3,3]]]) {
       await evaluate(`${editor}.dispatch('metronome.configure',{meter:{numerator:${numerator},denominator:${denominator},grouping:${JSON.stringify(grouping)}},enabled:true,countInBars:0,speed:1.5}); ${editor}.dispatch('playback.scrub',{count:0})`);
       await pause(100); await clear(); await toggle(); await wait(`${qa}.clicks.length>=2`,'clicks running');
-      const before = await evaluate(`${qa}.context.currentTime`);
-      await evaluate('(() => {const end=performance.now()+1600;while(performance.now()<end){} })()');
-      await pause(100); await stop();
+      const stall = await evaluate(`(() => {
+        const wallStart=performance.now(), before=${qa}.context.currentTime;
+        while(performance.now()-wallStart<20000 && (performance.now()-wallStart<1600 || ${qa}.context.currentTime-before<1.6)){}
+        return {before,after:${qa}.context.currentTime,wallMs:performance.now()-wallStart};
+      })()`);
+      assert.ok(stall.wallMs>=1600 && stall.after-stall.before>=1.6,JSON.stringify({audioClockDidNotProgress:stall}));
+      const interval = (60/tempo)/1.5;
+      // Worklet diagnostics queue during the block. Wait for its final beat,
+      // rather than assuming the renderer drains the queue within 100 ms.
+      await wait(`${qa}.clicks.some(c=>c.time>=${stall.after-interval-.003})`,'post-stall audio diagnostics delivered');
+      await stop();
       const events = await evaluate(qa+'.clicks');
-      const during = events.filter(e=>e.time>before+.05&&e.time<before+1.5);
-      assert.ok(during.length>=4,JSON.stringify({before,events}));
-      for(let i=1;i<events.length;i++) assert.ok(Math.abs(events[i].time-events[i-1].time-(60/tempo)/1.5)<.015,JSON.stringify(events));
-      for(const e of events) assert.equal(e.accent,e.count%numerator===0?'bar':numerator===6&&e.count%6===3?'group':'beat');
-      measurements.push({ fixture:`${numerator}/${denominator} renderer blocked 1600ms`,before,clicks:events });
+      const during = events.filter(e=>e.time>stall.before+.05&&e.time<stall.after-.05);
+      assert.ok(during.length>=4,JSON.stringify({stall,events}));
+      for(let i=1;i<events.length;i++) {
+        assert.equal(events[i].count,events[i-1].count+1,JSON.stringify(events));
+        assert.ok(Math.abs(events[i].time-events[i-1].time-interval)<.015,JSON.stringify(events));
+      }
+      for(const e of events) {
+        assert.ok(Math.abs(e.renderTime-e.time)<.003,JSON.stringify(e));
+        assert.equal(e.accent,e.count%numerator===0?'bar':numerator===6&&e.count%6===3?'group':'beat');
+      }
+      measurements.push({ fixture:`${numerator}/${denominator} renderer blocked for 1600ms wall time and 1.6 audio seconds`,...stall,clicks:events });
     }
     pass('3/4, 4/4 and 6/8 clicks retain exact audio-time spacing through 1600ms rendering stalls');
     await clear(); await pause(600); assert.deepEqual(await evaluate(qa+'.clicks'),[]);
