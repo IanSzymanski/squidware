@@ -1,0 +1,97 @@
+{
+  "checks": [
+    "menu and native keyboard New production use privacy-safe setup previews, unsaved replacement cancellation and fresh identities",
+    "snapshot previews and Cancel are pure; Apply changes only selected dots, names one undo action, supports native undo/redo and saves through the project codec",
+    "count mismatches, stale selection and field overflow block Apply; adaptable shapes support 16 members, handle keyboard/numeric sync, three themes and narrow 150% scale",
+    "native export disclosure/cancel, version rejection, import review/cancel/append and rename/remove preserve production history and project save destination"
+  ],
+  "viewports": [
+    {
+      "name": "templates-empty.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-capture-show.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-new-production.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-snapshot-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-count-error.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-boundary-error.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    },
+    {
+      "name": "templates-enlarged.png",
+      "width": 1024,
+      "height": 720,
+      "fieldHeight": 270,
+      "overflow": false
+    },
+    {
+      "name": "templates-export-review.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "overflow": false
+    }
+  ],
+  "source": {
+    "revision": "d756c6ec155aac6f80b2bdec78e4e4dde4b6dfc4",
+    "tree": "2d938c8ee9e9c8383e41f9b5b2be5e2ddb84ff38",
+    "dirty": true,
+    "contentHash": "bf2ad7feaf60405401f66c473887d931864dc543ee69c4e8a061a6994076a9f2",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "host": "linux",
+  "backend": "Electron software rendering; native input and controlled OS file dialogs; 64-member/6-set production",
+  "limits": "Linux software host; no human or physical-device validation claimed."
+}

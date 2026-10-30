@@ -1,0 +1,41 @@
+{
+  "source": {
+    "revision": "d756c6ec155aac6f80b2bdec78e4e4dde4b6dfc4",
+    "tree": "2d938c8ee9e9c8383e41f9b5b2be5e2ddb84ff38",
+    "dirty": true,
+    "contentHash": "bf2ad7feaf60405401f66c473887d931864dc543ee69c4e8a061a6994076a9f2",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-30T17:41:24.501Z",
+    "source": {
+      "revision": "d756c6ec155aac6f80b2bdec78e4e4dde4b6dfc4",
+      "tree": "2d938c8ee9e9c8383e41f9b5b2be5e2ddb84ff38",
+      "dirty": true,
+      "contentHash": "bf2ad7feaf60405401f66c473887d931864dc543ee69c4e8a061a6994076a9f2",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "b5c81ed25dbee89150f38b2659364c9b25f38e7a75dddb7e58401f4c756ead94"
+  },
+  "checks": [
+    "browser local storage persists library across reload independently from production files",
+    "browser library download and file-input import work; newer import leaves saved library untouched",
+    "invalid numeric preview blocks Apply; Cancel clears draft guards so project save remains usable",
+    "denied browser storage reports read-only state and preserves the editor without uncaught errors"
+  ],
+  "errors": [],
+  "engine": "154.0.8037.57",
+  "limits": "Production browser preview on Linux software host; isolated contexts and downloads."
+}

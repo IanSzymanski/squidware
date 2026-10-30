@@ -32,8 +32,12 @@ import { applySheetRange, type SheetEdit } from './productionSheet';
 import { compileScore, countForScore, validateScore } from '../score';
 import type { Meter, ScoreMap } from '../types';
 import { splitTransition, splitTransitionError, type SplitTransitionRequest } from './splitTransition';
+import { templateReviewError, templateReviewResult } from './templateReview';
+import type { TemplateReview } from './templateReview';
 
 export interface CommandArguments {
+  'templates.open': undefined;
+  'templates.apply': TemplateReview;
   'audio.align-open': undefined;
   'audio.align-save': { anchors: import('../types').AudioAnchor[]; offset: number; revision: number; epoch: number };
   'tempo.open': undefined;
@@ -167,6 +171,18 @@ const canOpenSplit = (s: EditorState) => {
 };
 
 export const commandRegistry = {
+  'templates.open': simple('templates.open', 'Templates', 'Save ensemble setups and formations, import a library or preview reusable formations.', canNavigate,
+    c => { showDialog(c, 'templates'); c.patch('ui', { menu: false }); }),
+  'templates.apply': define({ id: 'templates.apply', name: 'Apply saved formation', description: 'Recheck the reviewed selection and apply a saved formation as one undo action.',
+    arguments: { template: 'FormationTemplate', placement: 'center, rotation and assignment', ids: 'reviewed performers in Cast order', setId: 'reviewed set', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => !!a && s.ui.dialog === 'templates' && !s.ui.pendingDraft && !templateReviewError(s, a),
+    execute: (c, a) => {
+      const s = c.getState(), result = templateReviewResult(s, a);
+      if (result.error) throw new Error(result.error);
+      if (!result.changed) throw new Error('The preview matches the current positions.');
+      c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === a.setId ? { ...set, positions: result.positions } : set) }));
+      c.patch('ui', { dialog: null });
+    } }),
   'audio.align-open': simple('audio.align-open', 'Align recording', 'Preview count-to-recording anchors with waveform and tap assistance.', canNavigate, c => showDialog(c, 'audio-alignment')),
   'audio.align-save': define({ id:'audio.align-save', name:'Align recording', description:'Validate recording anchors and offset as one undo action.', arguments:{anchors:'AudioAnchor[]',offset:'seconds',revision:'reviewed revision',epoch:'project session'},
     enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='audio-alignment'?null:s.ui.dialog}}),

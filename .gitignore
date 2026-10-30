@@ -10,3 +10,4 @@ coverage/
 .env*
 electron/project-codec.cjs
 electron/preferences-codec.cjs
+electron/template-library-codec.cjs

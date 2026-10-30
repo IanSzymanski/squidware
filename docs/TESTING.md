@@ -39,6 +39,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 
 | Suite | Owns | Avoid duplicating |
 | --- | --- | --- |
+| `templates` | Anonymous setups, dot/parametric previews, count/stale/boundary errors, native pointer/keyboard placement, undo/save, library IO/disclosure, themes/scale and process restart | Codec/size matrices and native storage fault injection owned by source/native tests. |
 | `smoke` | Sandbox, isolated bridge and recovery-worker round trip | Detailed editing and filesystem cases. |
 | `editor` | Native open/save/export, invalid drafts, editing integration, one undoable drag, save races and cancellation | Complete codec matrices or every keyboard traversal. |
 | `accessibility` | One field Tab stop, all 500 performers including overlaps, native keyboard workflows, focus, text size/contrast and enlarged UI | Nearest-pointer selection algorithms. |

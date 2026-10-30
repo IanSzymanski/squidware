@@ -9,3 +9,5 @@ await esbuild.build({ entryPoints: [path.join(root, 'src/projectV2.ts')], outfil
   bundle: true, platform: 'node', format: 'cjs', target: 'node24', logLevel: 'silent' });
 await esbuild.build({ entryPoints: [path.join(root, 'src/preferences.ts')], outfile: path.join(root, 'electron/preferences-codec.cjs'),
   bundle: true, platform: 'node', format: 'cjs', target: 'node24', logLevel: 'silent' });
+await esbuild.build({ entryPoints: [path.join(root, 'src/templates/library.ts')], outfile: path.join(root, 'electron/template-library-codec.cjs'),
+  bundle: true, platform: 'node', format: 'cjs', target: 'node24', logLevel: 'silent' });

@@ -1,0 +1,30 @@
+{
+  "format": "squidware-template-library",
+  "version": 1,
+  "entries": [
+    {
+      "kind": "show",
+      "name": "Small ensemble setup",
+      "field": { "width": 100, "height": 53.333333333333336, "preset": "college" },
+      "openingTiming": { "tempo": 120, "transition": "linear" },
+      "sections": [
+        { "name": "Section 1", "color": "#f0bf62", "count": 16 },
+        { "name": "Section 2", "color": "#b9a1e5", "count": 16 }
+      ]
+    },
+    {
+      "kind": "formation",
+      "name": "Twenty-yard line",
+      "sourceCount": 32,
+      "coordinateFrame": "yards-relative-center",
+      "geometry": { "kind": "parametric", "shape": "line", "width": 20, "height": 0, "columns": 1 }
+    },
+    {
+      "kind": "formation",
+      "name": "Four-dot diamond",
+      "sourceCount": 4,
+      "coordinateFrame": "yards-relative-center",
+      "geometry": { "kind": "snapshot", "points": [{ "x": -4, "y": 0 }, { "x": 0, "y": -4 }, { "x": 0, "y": 4 }, { "x": 4, "y": 0 }] }
+    }
+  ]
+}

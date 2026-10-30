@@ -15,6 +15,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
   const update = (patch: Partial<FormationOptions>) => { if (options) c.dispatch('formation.update', { options: { ...options, ...patch } }); };
   const unavailable = c.pendingDraft ? 'Finish or cancel the pending input first.' : c.readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   return <div ref={region} className="formation-panel">
+    {!session && <HelpButton title="Browse saved formations" command="templates.open" className="button subtle" disabled={c.pendingDraft} onClick={() => c.dispatch('templates.open')}>Saved formations…</HelpButton>}
     <p className="section-description">{session ? `Preview · ${session.ids.length} selected · ${options?.assignment === 'position' ? 'positional' : 'roster'} order` : 'Choose a shape to preview the explicit selection.'}</p>
     <div className="formation-grid">{formations.map(f => <HelpButton key={f.kind} command="formation.preview" title={`${f.label} formation`}
       description={`Preview ${f.label.toLowerCase()} for the selected performers. Apply accepts; Cancel keeps their positions.`}

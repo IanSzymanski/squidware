@@ -95,12 +95,14 @@ test('parallel suites respect the worker limit, retain order and failures, and s
 
 test('native dropdown selection uses real typeahead for numeric labels without Home or an OS popup', async () => {
   let selected = '1.5', buffer = '';
+  const listeners = new Map();
   const events = [], options = [{ value: '1', label: '100%' }, { value: '1.1', label: '110%' }, { value: '1.25', label: '125%' }, { value: '1.5', label: '150%' }];
-  const control = { tagName: 'SELECT', disabled: false, options, get value() { return selected; }, set value(_) { throw new Error('Do not replace native selection with a DOM setter.'); }, focus() { context.document.activeElement = this; buffer = ''; } };
+  const control = { tagName: 'SELECT', disabled: false, options, get value() { return selected; }, set value(_) { throw new Error('Do not replace native selection with a DOM setter.'); }, focus() { context.document.activeElement = this; buffer = ''; },
+    addEventListener: (type, listener) => listeners.set(type, listener), removeEventListener: type => listeners.delete(type) };
   const context = { document: { querySelector: () => control, activeElement: null } };
   const window = { webContents: {
     executeJavaScript: async source => vm.runInNewContext(source, context),
-    sendInputEvent(event) { events.push(event); if (event.type === 'char') { buffer += event.keyCode; const target = options.find(option => option.label.startsWith(buffer)); if (target) selected = target.value; } },
+    sendInputEvent(event) { events.push(event); if (event.type === 'char') { buffer += event.keyCode; const target = options.find(option => option.label.startsWith(buffer)); if (target) selected = target.value; } if (event.type === 'keyUp') listeners.get('keyup')?.({ key: event.keyCode, target: control }); },
   } };
   for (const value of ['1', '1.25', '1.5']) { await renderer.selectNativeOption(window, '[aria-label="UI scale"]', value); assert.equal(selected, value); }
   assert.ok(events.some(event => event.type === 'char'));
@@ -110,6 +112,33 @@ test('native dropdown selection uses real typeahead for numeric labels without H
   await assert.rejects(renderer.selectNativeOption(window, 'select', '1.25'), /Ambiguous native option/);
   options.pop(); window.webContents.sendInputEvent = () => {}; selected = '1.5';
   await assert.rejects(renderer.selectNativeOption(window, 'select', '1', { timeoutMs: 30 }), /Timed out: native option.*observed.*1.5/);
+  assert.equal(listeners.size, 0);
+  assert.equal(control.__squidwareSelectProbe, undefined);
+});
+test('native dropdown waits for queued key releases even when its value already matches', async () => {
+  const listeners = new Map(), events = [];
+  let queued;
+  const ready = new Promise(resolve => { queued = resolve; });
+  const control = { tagName: 'SELECT', disabled: false, options: [{ value: '8', label: 'Set 2' }, { value: '16', label: 'Set 3' }], value: '8',
+    focus() { context.document.activeElement = this; }, addEventListener: (type, listener) => listeners.set(type, listener), removeEventListener: type => listeners.delete(type) };
+  const context = { document: { querySelector: () => control, activeElement: null } };
+  const window = { webContents: {
+    executeJavaScript: async source => vm.runInNewContext(source, context),
+    sendInputEvent(event) { events.push(event); if (event.type === 'keyUp' && event.keyCode === '2') queued(); },
+  } };
+  let complete = false;
+  const selection = renderer.selectNativeOption(window, 'select', '8').then(() => { complete = true; });
+  await ready;
+  // Drain pending JS checks while all native key releases remain queued.
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(complete, false, 'Matching selection alone must not complete typeahead');
+  const releases = events.filter(event => event.type === 'keyUp');
+  for (const event of releases.slice(0, -1)) listeners.get('keyup')({ key: event.keyCode, target: control });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(complete, false, 'The final release must arrive before focus can change');
+  listeners.get('keyup')({ key: releases.at(-1).keyCode, target: control });
+  await selection;
+  assert.equal(complete, true); assert.equal(listeners.size, 0); assert.equal(control.__squidwareSelectProbe, undefined);
 });
 test('renderer waits use observed state and time out even when a probe never resolves', async () => {
   let probes = 0;

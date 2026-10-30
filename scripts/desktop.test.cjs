@@ -365,6 +365,28 @@ test('preferences IPC validates values, trusts only the editor and fixes the app
   assert.equal((await h.invoke('reset-preferences')).paperSize, 'letter');
 });
 
+test('template library IPC validates, persists separately, and imports and exports without changing the project destination', async t => {
+  const h = await harness(t);
+  const library = JSON.stringify({ format: 'squidware-template-library', version: 1, entries: [] });
+  for (const name of ['read-template-library', 'save-template-library', 'open-template-library', 'export-template-library']) await assert.rejects(h.invokeAs(name, { sender: {}, senderFrame: h.sender.senderFrame }, library), /untrusted/);
+  await assert.rejects(h.invoke('save-template-library', '{}'), /format/);
+  await assert.rejects(h.invoke('export-template-library', '{}'), /format/);
+  assert.equal(h.saveDialogCount(), 0);
+  await h.invoke('save-template-library', library, '../../escape');
+  assert.equal(JSON.parse((await h.invoke('read-template-library')).content).version, 1);
+  assert.deepEqual(await fs.readdir(h.directory), ['template-library.json']);
+  const projectFile = path.join(h.directory, 'show.squid'); h.dialog({ filePath: projectFile });
+  await h.invoke('save-project', project, 'Show');
+  const exportFile = path.join(h.directory, 'shared.squidlib'); h.dialog({ filePath: exportFile });
+  assert.equal(await h.invoke('export-template-library', library), exportFile);
+  h.dialog({ filePaths: [exportFile] }); assert.equal(JSON.parse(await h.invoke('open-template-library')).format, 'squidware-template-library');
+  assert.equal(await h.invoke('save-project', project, 'Other title'), projectFile);
+  h.dialog({ canceled: true }); assert.equal(await h.invoke('open-template-library'), null); assert.equal(await h.invoke('export-template-library', library), null);
+  const badFile = path.join(h.directory, 'newer.squidlib'); await fs.writeFile(badFile, library.replace('"version":1', '"version":99'));
+  h.dialog({ filePaths: [badFile] }); await assert.rejects(h.invoke('open-template-library'), /unsupported/);
+  assert.equal(JSON.parse((await h.invoke('read-template-library')).content).version, 1);
+});
+
 test('PDF paper defaults are allowlisted before the save dialog', async t => {
   const h = await harness(t);
   await assert.rejects(h.invoke('export-pdf', 'custom'), /Letter or A4/); assert.equal(h.saveDialogCount(), 0);

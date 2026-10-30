@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "five templates survive a full native process restart"
+  ],
+  "source": {
+    "revision": "d756c6ec155aac6f80b2bdec78e4e4dde4b6dfc4",
+    "tree": "2d938c8ee9e9c8383e41f9b5b2be5e2ddb84ff38",
+    "dirty": true,
+    "contentHash": "bf2ad7feaf60405401f66c473887d931864dc543ee69c4e8a061a6994076a9f2",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  }
+}

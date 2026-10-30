@@ -1,5 +1,6 @@
 import type { PreferencesBridge } from './preferences';
 import type { SnapSettings } from './snapping';
+import type { TemplateLibraryBridge } from './templates/storage';
 export interface Point { x: number; y: number }
 export interface Section { id: string; name: string; color: string }
 export interface Performer { id: string; label: string; name: string; sectionId: string }
@@ -90,7 +91,7 @@ export interface RecoveryBridge {
   migrateRecovery: (session: string, content: string) => Promise<{ status: 'migrated' | 'unreadable'; warning?: string }>;
 }
 export interface AudioAttachment { name: string; token: string; bytes: Uint8Array; size: number; type: string; referenceAvailable: boolean }
-export interface DesktopBridge extends RecoveryBridge, PreferencesBridge {
+export interface DesktopBridge extends RecoveryBridge, PreferencesBridge, TemplateLibraryBridge {
   platform: string;
   resetProject: () => void;
   openProject: () => Promise<{ content: string; path: string; audio?: AudioAttachment; audioWarning?: string } | null>;
