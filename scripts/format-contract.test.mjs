@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { formatTools, smallExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=5;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=6;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -99,4 +99,20 @@ test('v4 alignment survives independent schema and canonical validation with mon
  for(const audioAnchors of [null,[],[{count:0,seconds:1}],[{count:8,seconds:0}],Array(257).fill({count:8,seconds:5})]){assert.equal(check({...p,audioAnchors}),false);assert.throws(()=>tools.parseProject(JSON.stringify({...p,audioAnchors})));}
  for(const audioAnchors of [[{count:8,seconds:5},{count:8,seconds:6}],[{count:8,seconds:5},{count:24,seconds:4}],[{count:25,seconds:10}],[{count:8,seconds:.000001}]]){assert.ok(check({...p,audioAnchors}));assert.throws(()=>tools.parseProject(JSON.stringify({...p,audioAnchors})));}
  for(const schemaVersion of [1,2,3])assert.throws(()=>tools.parseProject(JSON.stringify({...p,schemaVersion})),/requires schema version 4/);
+});
+
+test('v5 cubic geometry passes independent schema and codec without permitting an old-version downgrade', async () => {
+ const input=JSON.parse(await readFile(new URL('../format/examples/curved-v5.squid',import.meta.url),'utf8'));
+ assert.ok(check(input)); const canonical=tools.parseProject(JSON.stringify(input));
+ assert.equal(JSON.parse(tools.serializeProject(canonical)).schemaVersion,5);
+ const mid=tools.sampleProject(canonical,8).positions.a;
+ assert.deepEqual(mid,{x:20,y:26.25});
+ for(const controls of [{x:-1,y:0},{x:101,y:0},{x:1,y:54},null]) {
+  const bad=structuredClone(input);bad.moves[0].paths.a.segments[0].control1=controls;
+  assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/control1/);
+ }
+ for(const version of [2,3,4]) {
+  const bad={...input,schemaVersion:version,...(version===3?{tempoMap:{version:1,regions:[],holds:[]}}:{}),...(version===4?{audioAnchors:[{count:8,seconds:5}]}:{})};
+  assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/schema version 5/);
+ }
 });

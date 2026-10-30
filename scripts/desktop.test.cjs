@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 5 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 6 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -605,4 +605,17 @@ for (const version of [3,4]) test(`schema-v${version} timing survives native sav
   const audio=await h.invoke('stage-audio','recording.wav',new Uint8Array(packageWav())),pack=path.join(h.directory,'tempo.squidpack');
   h.dialog({filePath:pack,response:1});await h.invoke('export-package',wire,'Tempo',audio.token,'bundle');h.dialog({filePaths:[pack]});const imported=await h.invoke('open-project');assert.deepEqual(parseProjectV2(imported.content).tempoMap,canonical.tempoMap);assert.deepEqual(parseProjectV2(imported.content).audioAnchors,canonical.audioAnchors);
   const bad=JSON.parse(wire);bad.tempoMap.holds.push({...bad.tempoMap.holds[0]});await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Tempo'),/distinct/);assert.equal(await fs.readFile(filename,'utf8'),wire);
+});
+
+test('native v5 open/save preserves curved geometry and failed control validation leaves the file intact', async t => {
+ const h=await harness(t), filename=path.join(h.directory,'curve.squid');
+ const content=await fs.readFile(path.join(root,'format/examples/curved-v5.squid'),'utf8');
+ await fs.writeFile(filename,content);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,content);
+ await h.invoke('save-project',content,'Curve');
+ assert.equal(await fs.readFile(filename,'utf8'),content);
+ const bad=JSON.parse(content);bad.moves[0].paths.a.segments[0].control1.x=-1;
+ await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Curve'),/control1/);
+ assert.equal(await fs.readFile(filename,'utf8'),content);
+ assert.equal(h.saveDialogCount(),0);
 });

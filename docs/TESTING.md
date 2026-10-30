@@ -39,6 +39,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 
 | Suite | Owns | Avoid duplicating |
 | --- | --- | --- |
+| `paths` | Explicit single selection, native numeric cubic preview, invalid controls/Cancel, shared scrub and vector overlays, one undo, native v5 files and coordinate exports, themes and enlarged keyboard Apply | Analytic/path precision, unsupported operations and full-size sampling owned by source tests; generic file races remain with editor. |
 | `templates` | Anonymous setups, dot/parametric previews, count/stale/boundary errors, native pointer/keyboard placement, undo/save, library IO/disclosure, themes/scale and process restart | Codec/size matrices and native storage fault injection owned by source/native tests. |
 | `smoke` | Sandbox, isolated bridge and recovery-worker round trip | Detailed editing and filesystem cases. |
 | `editor` | Native open/save/export, invalid drafts, editing integration, one undoable drag, save races and cancellation | Complete codec matrices or every keyboard traversal. |
@@ -77,7 +78,9 @@ Layered overlap is intentional when the failure modes differ: a codec unit test 
 
 Run a selected owner with `pnpm test:workflows --suite=editor,field`. Unknown or duplicate suite names fail before execution. Each invocation gets a new output directory under `.qa/desktop-matrix/<run-id>`. Its summary records every selected suite's status, duration, exit code and log path. An independent failure does not prevent later suites from running. The latest report pointer is `.qa/desktop-matrix/results.json`; the immutable report remains in that run's directory.
 
-Standalone runs default to one worker for focused diagnosis. Use `pnpm test:workflows --jobs=2` for the same bounded parallel execution as certification, or `--suite=themes,selection --jobs=2` for selected owners. The accepted range is 1–4 workers; malformed or duplicate options fail before execution. `--jobs=1` provides the sequential comparison. Running fewer suites remains explicitly targeted coverage.
+Standalone runs default to one worker for focused diagnosis. Certification uses `--jobs=1` on macOS because GUI suites share native window activation and audio output; Linux and Windows use `--jobs=2`. Use `pnpm test:workflows --jobs=2` for bounded parallel execution on those platforms, or `--suite=themes,selection --jobs=2` for selected owners. The accepted range is 1–4 workers; malformed or duplicate options fail before execution. Running fewer suites remains explicitly targeted coverage.
+
+`node scripts/paths-qa.mjs --small-desktop` additionally constrains the visible path-editor window to 1024×647 after the hidden 1366×768 field measurement. This reproduces the smaller native-desktop geometry seen in macOS CI while retaining native input, file/export, keyboard and field-budget assertions. It emulates the geometry; it does not replace macOS certification.
 
 Each launcher uses the same isolated-profile, watchdog, process-tree cleanup and log implementation. Preferences/recovery phases share only their own isolated profile because restart persistence is their contract. A new standalone attempt clears old success reports and writes a fresh `run.json` state. Do not interpret a screenshot or a previous run's report as current success.
 

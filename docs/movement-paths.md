@@ -1,0 +1,15 @@
+# Performer travel paths
+
+Issue [#73](https://github.com/IanSzymanski/squidware/issues/73) adds one full-move cubic Bézier path per performer, alongside implicit/explicit straight lines. Point/handle manipulation, multiple timed submoves and curved spacing/stride analysis remain in #75, #74 and #76 respectively.
+
+Pause at an arrival after the opening and select one performer. Choose **Edit performer path** in the Inspector or palette. Choose Cubic Bézier and enter two control points in field yards. Numeric typing, steppers and keyboard navigation are supported. Start/end coordinates follow the two sets. Solid preview, dashed saved geometry, numbered controls and a ring at the sampled count distinguish states without color alone. The local-count slider previews the same evaluator used by playback and 3D. Apply creates one named undo transaction; Cancel, Escape and backdrop dismissal preserve the production.
+
+Control points must be finite and inside the field. Invalid/incomplete input hides the proposed field preview and blocks Apply. Revision, project session, active move and explicit selection must still match at Apply. Unrelated performers and endpoint pictures stay intact. Reopening the dialog retains segment identity and controls; choosing Straight line removes the override. Existing files retain their straight motion.
+
+Bézier parameter progresses linearly with counts or through the move's ease-in/out timing. This does not imply constant travel speed. Curves can loop back to the same endpoint; a loop is not a hold. Fully coincident points are stationary. Adjacent moves share picture endpoints, with no automatic tangent smoothing. Curved coordinate output reports curved distance and average step size; peak step size is unavailable. Exact vector geometry is used for incoming/outgoing overlays. Arrival-only SVG/PDF charts stay arrival charts.
+
+Spacing/stride analysis for a move containing a curve is explicitly unavailable in both the background worker and reference API until #76. Retry cannot make an unsupported check complete. Whole-move count edits retain control points and rescale the full segment duration. Splitting a curved move or changing a surviving curved move's predecessor is rejected atomically until detailed-path operations support it; remove the curves first. Ordinary endpoint moves keep absolute controls, while performer removal prunes its path.
+
+Saving any curve writes wire format v5; tempo maps and recording alignment remain independently optional and preserved. Removing all curves restores the least format version required by remaining timing metadata. The canonical editor remains schemaVersion 2 internally. See [format, precision and compatibility](../format/FORMAT.md#v5-curved-movement-extension) and [example](../format/examples/curved-v5.squid).
+
+Design guidance sections 1–5 apply. Existing Modal, FieldDrawing, tooltips, theme tokens, command registry and transaction/history behavior are reused. The dialog adds no permanent field row. Evidence and measured viewport limits are recorded in [validation evidence](evidence/paths/README.md).

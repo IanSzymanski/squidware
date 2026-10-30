@@ -1,3 +1,4 @@
+import { PathPanel } from './PathPanel';
 import { AudioAlignmentPanel } from './AudioAlignmentPanel';
 import { TempoPanel } from './TempoPanel';
 import { AudioPackagePanel } from './AudioPackagePanel';
@@ -32,6 +33,7 @@ import { NewProductionPanel } from './NewProductionPanel';
 export function EditorDialogs({ controller }: { controller: EditorController }) {
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, removeSet, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
+    {dialog === 'path' && <PathPanel controller={controller} />}
     {dialog === 'templates' && <TemplatesPanel controller={controller} />}
     {dialog === 'new' && <NewProductionPanel controller={controller} />}
     {dialog === 'package' && <AudioPackagePanel controller={controller} />}

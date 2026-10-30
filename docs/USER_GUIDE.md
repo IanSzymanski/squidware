@@ -254,3 +254,10 @@ The [verification record](VERIFICATION.md) distinguishes checks completed for th
 ## History and field drafts
 
 Open **History** beside Undo/Redo to review named actions and available redo actions. A drag, committed note, performer name, title or color session produces one action. Text and colors apply on blur or Enter; Escape cancels the draft. Notes use Shift+Enter for a new line. Undo/Redo restores the saved-state indicator when returning to or leaving the saved revision. Native text undo remains available while an input has focus. See the [history contract](history.md) for retention and transaction details.
+
+
+## Edit performer travel
+
+Pause at an arrival set after the opening, select one performer, and choose **Edit performer path** in the Inspector or Command palette. Choose Cubic Bézier and enter two control coordinates in field yards. The preview shows the saved path dashed, proposed path solid, and the sampled performer with a ring. Scrub Preview local count to inspect the move. Apply records one undo action; Cancel or Escape keeps the saved production. Reopen the editor to revise controls or choose Straight line to remove the curve.
+
+Curves use Bézier parameter timing: speed can vary even with Linear timing selected. Moves containing curves show spacing and stride checks as unavailable. Set positions remain the path endpoints. Curves save as format v5; older Squidware versions ask for an update. See [curve behavior and current operations](movement-paths.md).

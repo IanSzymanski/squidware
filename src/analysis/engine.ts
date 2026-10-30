@@ -46,6 +46,7 @@ export class TransitionAnalyzer {
   private cache = new Map<string, CachedMove>();
   private projectKey = '';
   async analyze(input: AnalysisInput, canceled = () => false, yieldTask = () => new Promise<void>(resolve => setTimeout(resolve, 0))): Promise<AnalysisResult | null> {
+    if (input.unsupportedPaths) throw new Error('Curved-path spacing and stride checks are unavailable. This move has not been checked.');
     const started = performance.now();
     if (![input.minimumSpacing, input.maximumStride, ...input.tracks.flatMap(t => [t.minimumSpacing, t.maximumStride])].every(n => Number.isFinite(n) && n >= PROJECT_LIMITS.analysisThreshold.min && n <= PROJECT_LIMITS.analysisThreshold.max)) throw new Error('Check thresholds must be between 0.1 and 5.');
     if (input.projectKey !== this.projectKey) { this.cache.clear(); this.projectKey = input.projectKey; }

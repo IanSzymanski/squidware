@@ -1,3 +1,4 @@
+import { editMovementPath, type PathEdit } from './pathEditing';
 import { validateAudioAnchors } from '../audioAlignment';
 import { validateTempoMap } from '../tempo';
 import type { TempoMap } from '../types';
@@ -36,6 +37,8 @@ import { templateReviewError, templateReviewResult } from './templateReview';
 import type { TemplateReview } from './templateReview';
 
 export interface CommandArguments {
+  'path.open': undefined;
+  'path.save': PathEdit;
   'templates.open': undefined;
   'templates.apply': TemplateReview;
   'audio.align-open': undefined;
@@ -183,6 +186,15 @@ export const commandRegistry = {
       c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === a.setId ? { ...set, positions: result.positions } : set) }));
       c.patch('ui', { dialog: null });
     } }),
+  'path.open': simple('path.open', 'Edit performer path', 'Preview a cubic travel path for one selected performer in the incoming move.',
+    s => canNavigate(s) && canEditPositions(s) && s.selection.activeIndex > 0 && s.selection.selectedIds.length === 1,
+    c => showDialog(c, 'path')),
+  'path.save': define({ id: 'path.save', name: 'Edit performer path', description: 'Validate and apply travel geometry as one undo action.', arguments: { moveId: 'reviewed move', performerId: 'selected performer', controls: 'two Bézier points, or null for straight travel', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch
+      && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'path' ? null : s.ui.dialog } }) && canEditPositions(s)
+      && s.selection.activeIndex > 0 && s.project.present.moves[s.selection.activeIndex - 1]?.id === a.moveId
+      && s.selection.selectedIds.length === 1 && s.selection.selectedIds[0] === a.performerId,
+    execute: (c, a) => { c.edit(p => editMovementPath(p, a)); c.patch('ui', { dialog: null }); } }),
   'audio.align-open': simple('audio.align-open', 'Align recording', 'Preview count-to-recording anchors with waveform and tap assistance.', canNavigate, c => showDialog(c, 'audio-alignment')),
   'audio.align-save': define({ id:'audio.align-save', name:'Align recording', description:'Validate recording anchors and offset as one undo action.', arguments:{anchors:'AudioAnchor[]',offset:'seconds',revision:'reviewed revision',epoch:'project session'},
     enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='audio-alignment'?null:s.ui.dialog}}),

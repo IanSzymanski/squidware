@@ -1,3 +1,4 @@
+import { hasCurvedPaths } from '../movementPaths';
 import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, Move, Project, SetPropertyUpdate } from '../types';
 
@@ -12,6 +13,7 @@ export function reconnectSets(project: Project, sets: DrillSet[], newTiming = ne
     const old = incoming.get(set.id);
     if (old) {
       if (old.fromSetId === sets[index].id) return old;
+      if (hasCurvedPaths(old)) throw new Error('This operation changes a curved move’s starting set. Remove its curved paths first.');
       // Declarations describe this exact move, not a new predecessor's travel.
       const { marchingDirections: _directions, ...rewired } = old;
       return { ...rewired, fromSetId: sets[index].id };

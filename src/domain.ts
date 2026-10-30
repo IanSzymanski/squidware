@@ -1,3 +1,4 @@
+import { sampleMovement, movementLength, hasCurvedPaths } from './movementPaths';
 import { compileTempo, secondsAt, countAt, moveTempoText } from './tempo';
 import { resolveAnalysisRules, spacingRuleText, strideRuleText } from './analysis/rules';
 import { affinePoint } from './transforms';
@@ -24,7 +25,6 @@ export function uid(): string {
 }
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-const lerp = (a: number, b: number, progress: number) => a + (b - a) * progress;
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 function inverseSmoothstep(progress: number): number {
@@ -242,7 +242,7 @@ export function sampleTimeline(project: Project, count: number): Omit<TimelineSa
   throw new Error('Unable to sample an invalid show timeline.');
 }
 
-/** Validated v2 moves currently support one full-count line per performer. */
+/** Ordered picture endpoints; all travel geometry is evaluated by sampleMovement. */
 export function moveEndpoints(project: Project, moveIndex: number, performerId: string): { from: Point; to: Point } | undefined {
   const move = project.moves[moveIndex];
   const fromSet = project.sets[moveIndex];
@@ -258,10 +258,9 @@ export function sampleProject(project: Project, count: number): TimelineSample {
   if (!project.sets.length) return { ...timing, positions: {} };
   if (timing.setIndex === 0) return { ...timing, positions: Object.fromEntries(Object.entries(project.sets[0].positions).map(([id, point]) => [id, { ...point }])) };
   const move = project.moves[timing.setIndex - 1];
-  const positionProgress = move.transition === 'ease' ? smoothstep(timing.progress) : timing.progress;
   return { ...timing, positions: Object.fromEntries(project.performers.map(performer => {
     const { from, to } = moveEndpoints(project, timing.setIndex - 1, performer.id)!;
-    return [performer.id, { x: lerp(from.x, to.x, positionProgress), y: lerp(from.y, to.y, positionProgress) }];
+    return [performer.id, sampleMovement(from, to, move.paths[performer.id], timing.progress, move.transition)];
   })) };
 }
 
@@ -296,6 +295,7 @@ export function analyzeTransition(project: Project, setIndex: number, base?: Par
   if (!Number.isInteger(setIndex) || setIndex < 1 || setIndex >= project.sets.length) return [];
   const destination = project.sets[setIndex];
   const move = project.moves[setIndex - 1];
+  if (hasCurvedPaths(move)) throw new Error('Curved-path spacing and stride checks are unavailable. This move has not been checked.');
   const previous = project.sets[setIndex - 1];
   const issues: TransitionIssue[] = [];
   const startCount = setStartCount(project, setIndex - 1);
@@ -442,8 +442,10 @@ export function performerMoveOutput(project: Project, index: number, performerId
   const move = project.moves[index - 1];
   if (!endpoints || !move || move.counts <= 0) throw new Error('Move output requires a valid incoming move.');
   const dx = endpoints.to.x - endpoints.from.x; const dy = endpoints.to.y - endpoints.from.y;
-  const distanceYards = Math.hypot(dx, dy);
+  const path = move.paths[performerId];
+  const distanceYards = movementLength(endpoints.from, endpoints.to, path);
   if (distanceYards <= EPSILON) return { kind: 'hold', counts: move.counts, arrival, direction: 'Hold', distanceYards, averageStepsPerFive: null, peakStepsPerFive: null, description: `Hold for ${move.counts} ${move.counts === 1 ? 'count' : 'counts'}` };
+  if (path?.segments[0]?.kind === 'cubic') return { kind: 'move', counts: move.counts, arrival, direction: 'Curved path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `Curved travel: ${distanceYards.toFixed(3)} yards in ${move.counts} counts. Bézier parameter timing; speed varies. Peak step size and curved spacing analysis are unavailable.` };
   const direction = 'Toward ' + [Math.abs(dx) > distanceYards * 1e-9 ? dx > 0 ? 'Side 2' : 'Side 1' : '', Math.abs(dy) > distanceYards * 1e-9 ? dy > 0 ? 'front sideline' : 'back sideline' : ''].filter(Boolean).join(' and ');
   const averageStepsPerFive = 5 * move.counts / distanceYards;
   // Smoothstep has a peak derivative of 1.5, so its largest step is 1.5 × average.

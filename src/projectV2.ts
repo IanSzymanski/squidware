@@ -1,3 +1,4 @@
+import { hasCurvedPaths } from './movementPaths';
 import { validateAudioAnchors } from './audioAlignment';
 import { compileTempo, validateTempoMap } from './tempo';
 import { PROJECT_LIMITS, validateLegacyProject } from './projectValidation';
@@ -7,8 +8,8 @@ import { validateRehearsal } from './rehearsal';
 import { validateMeter } from './meter';
 import { compileScore, validateScore } from './score';
 import type { GeometryValidation } from './projectValidation';
-import type { DrillSet, LegacyDrillSet, LegacyProject, Move, OpeningTiming, Project, LinePathSegment } from './types';
-export type { Move, OpeningTiming, LinePathSegment, PerformerPath } from './types';
+import type { DrillSet, LegacyDrillSet, LegacyProject, Move, OpeningTiming, Project, PathSegment } from './types';
+export type { Move, OpeningTiming, LinePathSegment, CubicPathSegment, PathSegment, PerformerPath } from './types';
 export type PictureSet = DrillSet;
 export type ProjectV2 = Project;
 
@@ -41,10 +42,10 @@ function timing(value: unknown, path: string): OpeningTiming {
   };
 }
 function versionError(version: unknown): never {
-  if (typeof version === 'number' && Number.isInteger(version) && version > 4) {
-    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3 and 4.`);
+  if (typeof version === 'number' && Number.isInteger(version) && version > 5) {
+    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3, 4 and 5.`);
   }
-  return invalid('schemaVersion', 'must be 1, 2, 3 or 4. Open a supported Squidware project (.squid) file.');
+  return invalid('schemaVersion', 'must be 1, 2, 3, 4 or 5. Open a supported Squidware project (.squid) file.');
 }
 function assertSize(content: string): void {
   if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
@@ -81,7 +82,7 @@ export function migrateProjectV1(input: unknown): ProjectV2 {
 export function validateProjectV2(input: unknown, geometry: GeometryValidation = {}): ProjectV2 {
   const data = object(input, 'root');
   if (data.schemaVersion === 1) invalid('schemaVersion', 'must be 2 for v2 validation. Use migrateProjectV1 or parseProjectV2 to migrate a v1 file.');
-  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4) versionError(data.schemaVersion);
+  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5) versionError(data.schemaVersion);
   if (!Array.isArray(data.sets) || data.sets.length < 1 || data.sets.length > PROJECT_LIMITS.sets) {
     invalid('sets', `must contain 1 to ${PROJECT_LIMITS.sets} items.`);
   }
@@ -119,6 +120,10 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
       return { id, name, performerIds: ids };
     });
   })();
+  function control(value: unknown, path: string) {
+    const point = object(value, path);
+    return { x: numeric(point.x, `${path}.x`, 0, base.field.width), y: numeric(point.y, `${path}.y`, 0, base.field.height) };
+  }
   const seenMoves = new Set<string>();
   const moves: Move[] = data.moves.map((value, index) => {
     const path = `moves[${index}]`;
@@ -143,12 +148,18 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
       const performerPath = `${path}.paths.${performer.id}`;
       const raw = object(rawPaths[performer.id], performerPath);
       if (!Array.isArray(raw.segments) || raw.segments.length !== 1) {
-        invalid(`${performerPath}.segments`, 'must contain one supported line segment. Multiple segments require a newer path implementation.');
+        invalid(`${performerPath}.segments`, 'must contain one full-move line or cubic segment. Holds and submoves require a newer path implementation.');
       }
       const segmentPath = `${performerPath}.segments[0]`;
       const segment = object(raw.segments[0], segmentPath);
-      if (segment.kind !== 'line') invalid(`${segmentPath}.kind`, 'is unsupported. Update Squidware before opening projects with curved, hold or other path segments.');
-      const line: LinePathSegment = {
+      if (segment.kind !== 'line' && segment.kind !== 'cubic') invalid(`${segmentPath}.kind`, 'is unsupported. Update Squidware before opening projects with hold or other path segments.');
+      const line: PathSegment = segment.kind === 'cubic' ? {
+        id: identifier(segment.id, `${segmentPath}.id`), kind: 'cubic',
+        startCount: numeric(segment.startCount, `${segmentPath}.startCount`, 0, 0, true),
+        endCount: numeric(segment.endCount, `${segmentPath}.endCount`, counts, counts, true),
+        control1: control(segment.control1, `${segmentPath}.control1`),
+        control2: control(segment.control2, `${segmentPath}.control2`),
+      } : {
         id: identifier(segment.id, `${segmentPath}.id`), kind: 'line',
         startCount: numeric(segment.startCount, `${segmentPath}.startCount`, 0, 0, true),
         endCount: numeric(segment.endCount, `${segmentPath}.endCount`, counts, counts, true),
@@ -168,7 +179,7 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
   return project;
 }
 
-/** Reads either supported wire version and always returns a canonical v2 object. */
+/** Reads supported wire versions and always returns a canonical v2 object. */
 export function parseProjectV2(content: string): ProjectV2 {
   assertSize(content);
   let input: unknown;
@@ -178,7 +189,11 @@ export function parseProjectV2(content: string): ProjectV2 {
   if ((data.schemaVersion === 1 || data.schemaVersion === 2) && data.tempoMap !== undefined) invalid('tempoMap', 'requires schema version 3 so older applications cannot discard timing.');
   if ([1, 2, 3].includes(data.schemaVersion as number) && data.audioAnchors !== undefined) invalid('audioAnchors', 'requires schema version 4 so older applications cannot discard alignment.');
   if (data.schemaVersion === 1) return migrateProjectV1(data);
-  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4) return validateProjectV2(data);
+  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5) {
+    const checked = validateProjectV2(data);
+    if (data.schemaVersion !== 5 && checked.moves.some(hasCurvedPaths)) invalid('moves.paths', 'cubic paths require schema version 5 so older applications cannot discard geometry.');
+    return checked;
+  }
   return versionError(data.schemaVersion);
 }
 
@@ -186,16 +201,17 @@ export function serializeProjectV2(project: ProjectV2): string {
   const checked = validateProjectV2(project);
   const mapped = !!checked.tempoMap && !!(checked.tempoMap.regions.length || checked.tempoMap.holds.length);
   const { tempoMap, audioAnchors, ...plain } = checked;
-  const content = `${JSON.stringify(audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
+  const content = `${JSON.stringify(checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
   assertSize(content);
   return content;
 }
 
 /** Transitional oracle for compatibility checks; not a file downgrade command.
- * Only the supported single-line paths can reach this adapter through validation.
+ * Curves and advanced timing are explicitly refused; this is never a downgrade.
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
+  if (checked.moves.some(hasCurvedPaths)) throw Error('Curved paths cannot be downgraded to legacy data.');
   if (checked.audioAnchors?.length) throw Error('Audio alignment cannot be downgraded to legacy data.');
   if (checked.tempoMap && (checked.tempoMap.regions.length || checked.tempoMap.holds.length)) throw Error('Tempo maps cannot be downgraded to fixed-tempo legacy data.');
   const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, rehearsal: _rehearsal, analysisRules: _analysisRules, meter: _meter, score: _score, tempoMap: _tempoMap, audioAnchors: _audioAnchors, ...common } = checked;

@@ -1,0 +1,31 @@
+{
+  "source": {
+    "revision": "45e30e01a389927550dc6abdaa669f7b59856bee",
+    "tree": "2dff0c95213283947981170be3d1c7d3b5496f77",
+    "dirty": true,
+    "contentHash": "ee9be39883a78f680fbdce557496682053721389f16c65f88e05bb317ce1aa0d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "csvRows": 6,
+  "curvedArrival": {
+    "Set": "Arrival",
+    "Arrival count": "16",
+    "Move counts": "16",
+    "Tempo": "120",
+    "Label": "A1",
+    "Name": "",
+    "Section": "Brass",
+    "X (yards)": "30",
+    "Y (yards)": "20",
+    "Coordinate": "Side 1: on the 30-yard line; on back hash",
+    "Notes": "Arrive on count 16.\nHold the interval.",
+    "Coordinate precision": "Quarter steps",
+    "Travel (yards)": "34.308",
+    "Average step size (steps/5 yd)": "2.332",
+    "Peak step size (steps/5 yd)": "",
+    "Direction": "Curved path"
+  },
+  "pdfPages": 2,
+  "pdfTextAndWordBounds": "passed",
+  "pdfSha256": "a1204ade50c5bd6c33d4d2711b5d91d9a5f2b36450ab9282f9765f596e424d55"
+}
