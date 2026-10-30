@@ -87,7 +87,7 @@ Unknown informational properties are accepted and discarded at every canonicaliz
 
 In v1, each picture includes `counts`, `tempo` and `transition`. The opening count must be zero; all later counts are positive move durations. Migration first validates the entire v1 input. It retains project/entity IDs, roster order, positions, names, notes, timing, easing and audio offset; removes timing from pictures; creates adjacent moves named `move-v1-1`, `move-v1-2`, etc.; initializes their paths to `{}`; and preserves opening tempo/easing in `openingTiming`. Migration is deterministic and does not mutate input. Opening a legacy file changes it only in memory; explicit save writes v2. V2 move/segment identities cannot be losslessly represented in v1, so there is no supported downgrade command.
 
-Versions greater than 3 fail with an instruction to update Squidware before opening or saving. Other invalid versions, broken JSON and unsupported paths produce actionable errors. Validation never overwrites the original file. Canonical v2 serialization rebuilds supported objects, emits compact JSON plus a trailing newline and enforces the byte limit. Geometry, timing, migration, round trips and schema examples are CI fixtures. A future format change must update this contract, schemas and compatibility evidence together.
+Versions greater than 5 fail with an instruction to update Squidware before opening or saving. Other invalid versions, broken JSON and unsupported paths produce actionable errors. Validation never overwrites the original file. Canonical v2 serialization rebuilds supported objects, emits compact JSON plus a trailing newline and enforces the byte limit. Geometry, timing, migration, round trips and schema examples are CI fixtures. A future format change must update this contract, schemas and compatibility evidence together.
 
 ## V3 tempo-map extension
 
@@ -104,3 +104,24 @@ V4 retains the v2 picture/move fields, permits an optional v3 `tempoMap`, and re
 Nominal time includes written BPM ramps and fermatas. Interpolate nominal elapsed seconds linearly between successive anchors, then extrapolate the last interval's scale beyond the final anchor. Fermatas scale with their interval; arrival means the beginning of the hold. Add the global offset for recording time. Every transport and export uses the aligned compilation. Counts and geometry stay unchanged. Anchors refer to absolute counts through structural edits; edits that strand them or violate bounds fail atomically.
 
 See [v4 JSON Schema](squid-v4.schema.json), [example](examples/aligned-v4.squid) and [complete alignment semantics](../docs/audio-alignment.md). Raw versions 1–3 containing `audioAnchors` are rejected. Canonical internal snapshots remain v2. Serialization chooses v4 for nonempty anchors, otherwise v3 for a nonempty tempo map, otherwise v2. Native saves, recovery and the existing v1 portable audio container all use the same codec. Plain projects contain no recording bytes or paths.
+
+
+## V5 curved movement extension
+
+V5 retains the canonical picture/move model, permits the v3 tempo map and v4 audio anchors independently, and adds a single full-move cubic Bézier segment to the existing line segment union. A curve is:
+
+```json
+{"segments":[{"id":"curve-a","kind":"cubic","startCount":0,"endCount":16,"control1":{"x":10,"y":30},"control2":{"x":30,"y":30}}]}
+```
+
+Endpoint positions come from the two picture sets, never duplicated on the segment. The two control points are absolute field yards, finite and inside the field (X 0–100, Y 0–53⅓). The convex-hull property therefore keeps the complete curve inside the field. Changing an endpoint picture retains the controls and ensures position continuity; tangent continuity between adjacent moves is not imposed. IDs stay with the move, performer and segment when edited. Exactly one segment covers `[0, move.counts]`; multiple segments, holds and partial-count paths remain unsupported.
+
+Let t be clamped local count divided by move counts. For linear timing, u=t; for eased timing, u=t²(3−2t). Evaluate the cubic from the picture start, control1, control2 and picture end using de Casteljau at u. This is **Bézier parameter timing**, not constant distance speed. Endpoints are exact; coincident endpoints can form a loop, and coincident controls/endpoints can form a stationary curve. Each consumer uses the same count sampler; no frame/time-dependent curve state exists. Repeated save/reload reproduces double-precision samples exactly in the reference engine; cross-implementation comparison tolerance is 1e−9 yards.
+
+Travel length uses adaptive de Casteljau subdivision with chord/control-polygon bounds, a total 0.001-yard bound gap and a depth cap of 20. The midpoint estimate differs from true length by at most 0.0005 yard when the budget converges (field-bounded cubic fixtures converge well before the cap). Average step size uses this length. Curved peak step size is blank/unavailable rather than inferred from the endpoint chord. Existing SVG/PDF charts show arrival positions; coordinate CSV/PDF movement descriptions identify curved travel and length. Neighbor overlays retain exact cubic vector paths. Editor playback and 3D receive positions from `sampleProject`; the separate performer viewer is not implemented yet.
+
+Moves with curves explicitly report spacing/stride analysis unavailable until #76, including worker and reference analysis. They must not report a chord-based clearance result. Numeric Apply validates the whole candidate and records one named undo action; Cancel/Escape changes no project or history. The editor requires one explicitly selected performer, an arrival, paused playback and no other active input. Apply rechecks revision, project session, active move and selection.
+
+Whole-move count changes retain controls and segment ID and update endCount. Splitting a move containing curves and set operations that change a surviving curved move’s predecessor fail atomically; remove its curves first. Deleting a move or its destination removes that move as usual. Detailed subdivision/reversal/copy policy belongs to #77. Removing a performer prunes its paths. Choosing Straight line explicitly removes the custom path.
+
+Writers emit v5 whenever a cubic exists. V1–v4 wire files containing cubics are rejected, protecting older readers that cannot interpret curves. Removing all curves restores the least required version (v4 for alignment, v3 for a nonempty tempo map, otherwise v2). Legacy motion and straight-line arithmetic remain unchanged. V5 without curves is accepted and canonicalizes to the least required version on save. See [the v5 example](examples/curved-v5.squid) and [numeric editor guide](../docs/movement-paths.md).

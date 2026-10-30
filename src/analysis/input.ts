@@ -10,6 +10,7 @@ export interface AnalysisInput extends AnalysisRules {
   projectKey: string; moveId: string; modelKey: string;
   counts: number; tempo: number; transition: 'linear' | 'ease'; startCount: number;
   tracks: Track[];
+  unsupportedPaths?: boolean;
 }
 export interface AnalysisStats {
   mode: 'full' | 'incremental' | 'cached'; changedPerformers: number;
@@ -28,5 +29,5 @@ export function transitionInput(project: Project, index: number, epoch: number, 
     modelKey: JSON.stringify([project.schemaVersion, project.field, move.fromSetId, move.toSetId, move.paths, project.analysisRules, move.marchingDirections]),
     counts: move.counts, tempo: move.tempo, transition: move.transition, startCount: setStartCount(project, index - 1),
     minimumSpacing: Math.max(PROJECT_LIMITS.analysisThreshold.min, ...tracks.map(t => t.minimumSpacing)), maximumStride: Math.max(PROJECT_LIMITS.analysisThreshold.min, ...tracks.map(t => t.maximumStride)),
-    tracks };
+    tracks, ...(Object.values(move.paths).some(p => p.segments[0]?.kind === 'cubic') ? { unsupportedPaths: true } : {}) };
 }

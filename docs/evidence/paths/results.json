@@ -1,0 +1,72 @@
+{
+  "checks": [
+    "native selection, numeric preview, known cubic midpoint, invalid controls and Escape leave history untouched",
+    "one undo/redo transaction, shared scrub geometry, exact vector neighbor curve and explicit unavailable analysis",
+    "native coordinate CSV and PDF exports use curved move descriptions",
+    "native v5 save/reopen, supported themes and narrow 150% view retain reachable keyboard Apply"
+  ],
+  "viewports": [
+    {
+      "name": "paths-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "paths-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "paths-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 456.390625
+    },
+    {
+      "name": "paths-applied.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "paths-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "paths-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "paths-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "paths-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "dialogHeight": 456
+    }
+  ],
+  "source": {
+    "revision": "45e30e01a389927550dc6abdaa669f7b59856bee",
+    "tree": "2dff0c95213283947981170be3d1c7d3b5496f77",
+    "dirty": true,
+    "contentHash": "ee9be39883a78f680fbdce557496682053721389f16c65f88e05bb317ce1aa0d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

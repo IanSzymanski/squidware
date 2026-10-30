@@ -121,7 +121,7 @@ The desktop app runs without an account or external service. Automatic recovery 
 | Local recovery | Automatic drill recovery copies; keep the package separately for its recording. |
 | PDF / CSV / SVG | Field charts and performer coordinate sheets, coordinate data, or the current field chart. |
 
-The public [`.squid` format contract](format/FORMAT.md) includes v1/v2/v3 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Ordinary saves use schema v2; nonempty tempo maps use schema v3 so older apps cannot discard timing. V1/v2 projects still open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
+The public [`.squid` format contract](format/FORMAT.md) includes v1–v5 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Ordinary saves use schema v2, tempo maps v3, recording alignment v4, and [curved performer paths](docs/movement-paths.md) v5. Older apps reject newer versions instead of discarding geometry or timing. V1–v4 projects still open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
 
 ## Development and verification
 

@@ -1,0 +1,13 @@
+{
+  "host": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "scenario": "500 performers, 128 sets, all moves cubic, in-memory sampler; warmup 200 frames",
+  "samples": 2000,
+  "meanMs": 0.2899637419999999,
+  "p95Ms": 0.4471240000000307,
+  "maxMs": 10.594992999999988,
+  "limits": "Engine microbenchmark only; no UI/rendering or physical-device claim. Full curved maximum may exceed 10 MiB wire budget."
+}

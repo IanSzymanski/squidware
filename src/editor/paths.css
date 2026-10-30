@@ -1,0 +1,14 @@
+.modal.path-panel { display: flex; flex-direction: column; overflow: hidden; max-height: calc(var(--viewport-height, 100dvh) - 24px); }
+.path-panel .modal-header, .path-panel .modal-actions { flex-shrink: 0; }
+.path-panel .modal-actions { flex-wrap: wrap; }
+.path-fields { overflow: auto; min-height: 0; padding: 2px 4px; }
+.path-panel input, .path-panel select { min-width: 0; width: 100%; }
+.path-panel .path-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.path-panel .path-preview { width: 100%; max-height: 300px; background: var(--surface-muted); }
+.path-original, .path-proposed, .path-polygon path { fill: none; stroke: #b9e3f4; stroke-width: .45; }
+.path-original { stroke-dasharray: 1.2 1; opacity: .7; }
+.path-proposed { stroke: var(--field-accent); stroke-width: .65; }
+.path-polygon path { stroke-dasharray: .4 .6; stroke-width: .2; }
+.path-polygon circle { fill: #141d1a; stroke: #b9e3f4; stroke-width: .3; }
+.path-polygon text { fill: #edf0f5; stroke: #141d1a; stroke-width: .5; paint-order: stroke; font-size: 2.5px; }
+@media (max-width: 700px) { .path-panel .path-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

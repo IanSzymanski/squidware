@@ -18,7 +18,7 @@ describe('neighboring set review', () => {
     const before = structuredClone(project);
     const overlays = neighborOverlays(project, 1, { ...options, selectedIds: [person.id] });
     expect(overlays.map(overlay => overlay.direction)).toEqual(['previous', 'next']);
-    expect(overlays[0].paths[0]).toEqual({ performerId: person.id, from: { x: 20, y: 10 }, to: { x: 40, y: 30 } });
+    expect(overlays[0].paths[0]).toMatchObject({ performerId: person.id, from: { x: 20, y: 10 }, to: { x: 40, y: 30 } });
     for (const [index, overlay] of overlays.entries()) {
       const path = overlay.paths[0];
       expect(path.from).toEqual(sampleProject(project, setStartCount(project, index)).positions[person.id]);

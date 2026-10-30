@@ -31,6 +31,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   }
   if (id === 'history.undo') return 'There are no earlier edits to undo.';
   if (id === 'history.redo') return 'There are no undone edits to restore.';
+  if (id === 'path.open') return 'Pause at an arrival set and select exactly one performer. Finish other input first.';
   if (id === 'set.split-open') {
     if (state.project.present.sets.length >= PROJECT_LIMITS.sets) return 'The production has reached its set limit.';
     return 'Choose a transition with at least two counts.';

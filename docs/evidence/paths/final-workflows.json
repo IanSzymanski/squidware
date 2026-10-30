@@ -1,0 +1,83 @@
+{
+  "runId": "2026-10-30T18-47-31-440Z-348351f3",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "45e30e01a389927550dc6abdaa669f7b59856bee",
+    "tree": "2dff0c95213283947981170be3d1c7d3b5496f77",
+    "dirty": true,
+    "contentHash": "ee9be39883a78f680fbdce557496682053721389f16c65f88e05bb317ce1aa0d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "paths",
+    "smoke",
+    "print"
+  ],
+  "checks": [
+    {
+      "name": "paths",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 11563,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T18-47-31-440Z-348351f3/paths.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T18-47-31-440Z-348351f3/paths"
+    },
+    {
+      "name": "smoke",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 1383,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T18-47-31-440Z-348351f3/smoke.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T18-47-31-440Z-348351f3/smoke"
+    },
+    {
+      "name": "print",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 9277,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T18-47-31-440Z-348351f3/print.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T18-47-31-440Z-348351f3/print"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-30T18:47:05.507Z",
+    "source": {
+      "revision": "45e30e01a389927550dc6abdaa669f7b59856bee",
+      "tree": "2dff0c95213283947981170be3d1c7d3b5496f77",
+      "dirty": true,
+      "contentHash": "ee9be39883a78f680fbdce557496682053721389f16c65f88e05bb317ce1aa0d",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "758d0cda694bab7e0b1c90c2adecbe0c6c1f3c190cee1c63b7ed18938707fed8"
+  }
+}

@@ -1,0 +1,10 @@
+Could not get FontBBox from font descriptor because None cannot be parsed as 4 floats
+Could not get FontBBox from font descriptor because None cannot be parsed as 4 floats
+Could not get FontBBox from font descriptor because None cannot be parsed as 4 floats
+PASS charts-letter: 130 pages, 62593 visible character boxes, complete text
+PASS coordinates-a4: 19 pages, 37470 visible character boxes, complete text
+PASS dense-a4: 1 pages, 4054 visible character boxes, complete text
+PASS coordinates-whole: 1 pages, 884 visible character boxes, complete text
+PASS coordinates-half: 1 pages, 975 visible character boxes, complete text
+PASS coordinates-quarter: 1 pages, 986 visible character boxes, complete text
+PASS tempo-map-letter: 6 pages, 2325 visible character boxes, complete text
