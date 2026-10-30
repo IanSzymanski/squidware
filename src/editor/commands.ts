@@ -1,3 +1,5 @@
+import { validateTempoMap } from '../tempo';
+import type { TempoMap } from '../types';
 import { projectMeter, validateMeter } from '../meter';
 import { PROJECT_LIMITS, sampleTimeline, setStartCount, totalCounts, transformPositions, uid, validateSetUpdate } from '../domain';
 import type { SetPropertyUpdate, FormationKind, FormationOptions, Performer, Point, Project, Section } from '../types';
@@ -31,6 +33,8 @@ import type { Meter, ScoreMap } from '../types';
 import { splitTransition, splitTransitionError, type SplitTransitionRequest } from './splitTransition';
 
 export interface CommandArguments {
+  'tempo.open': undefined;
+  'tempo.save': { map: TempoMap; revision: number; epoch: number };
   'set.split-open': undefined;
   'set.split': SplitTransitionRequest & { revision: number; epoch: number };
   'score.open': undefined;
@@ -160,6 +164,10 @@ const canOpenSplit = (s: EditorState) => {
 };
 
 export const commandRegistry = {
+  'tempo.open': simple('tempo.open', 'Tempo map', 'Preview fixed tempo ranges, linear BPM ramps and timed fermatas.', canNavigate, c => showDialog(c, 'tempo')),
+  'tempo.save': define({ id:'tempo.save', name:'Edit tempo map', description:'Validate and apply the timing map as one undo action.', arguments:{map:'TempoMap',revision:'reviewed revision',epoch:'project session'},
+    enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='tempo'?null:s.ui.dialog}}),
+    execute:(c,a)=>{const p=c.getState().project.present,map=validateTempoMap(a.map,totalCounts(p));c.edit(project=>{const {tempoMap:_map,...plain}=project;return map.regions.length||map.holds.length?{...plain,tempoMap:map}:plain;});c.patch('playback',{playing:false});c.patch('ui',{dialog:null});} }),
   'set.split-open': simple('set.split-open', 'Split transition', 'Preview a picture at an interior count of the incoming move. From the opening set, split the first move.', canOpenSplit, c => showDialog(c, 'set-split')),
   'set.split': define({ id: 'set.split', name: 'Split transition', description: 'Insert the sampled picture and divide the move as one undo action.', arguments: { moveId: 'reviewed move', count: 'interior whole count', allowEasingChange: 'explicit easing review', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'set-split' ? null : s.ui.dialog } }),

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { sampleProject, setStartCount } from '../domain';
+import { countToSeconds, sampleProject, setStartCount } from '../domain';
 import type { Point, Project } from '../types';
 import { FieldDrawing } from '../components/Field2D';
 import { fieldViewTransform } from '../components/fieldOrientation';
@@ -44,7 +44,7 @@ export function SplitTransitionPanel({ controller: c }: { controller: EditorCont
     <p id="split-count-policy" className="microcopy">Whole counts inside the {move.counts}-count move. Both parts need at least one count. Boundaries and fractional counts cannot create a set.</p>
     {invalid && <p className="field-error" role="alert">{invalid}</p>}
     {proposed && <>
-      <p className="split-summary" role="status">{splitCount} + {move.counts - splitCount} counts · {move.tempo} BPM in both parts · {(move.counts * 60 / move.tempo).toFixed(3)} seconds total, unchanged. New picture at show count {start + splitCount}.</p>
+      <p className="split-summary" role="status">{splitCount} + {move.counts - splitCount} counts · {move.tempo} base BPM in both parts · {(countToSeconds(project,start+move.counts)-countToSeconds(project,start)).toFixed(3)} seconds total, unchanged. New picture at show count {start + splitCount}.</p>
       {move.transition === 'ease' ? <div className="split-warning" role="note"><strong>Easing changes between pictures.</strong><p>The new picture matches the original eased position. Each part will use constant speed, with a speed change at the split. The original ease in / out cannot be preserved by these two moves.</p><p>Largest position change: {deviation!.yards.toFixed(3)} yd, at move count {deviation!.count.toFixed(2)}. Total counts, tempo and duration stay the same.</p><HelpButton title="Show largest motion change" description="Compare the original and proposed positions at the count with the largest displacement." className="button subtle" onClick={() => setComparison(deviation!.count)}>Show largest change</HelpButton></div>
         : <p className="microcopy">Constant-speed movement is preserved across the whole transition.</p>}
       <div className="split-review-controls"><label className="form-label">Compare at move count {Number(compareCount.toFixed(2))}<input aria-label="Compare at move count" type="range" min={0} max={move.counts} step={.01} value={compareCount} onChange={e => setComparison(Number(e.target.value))} /></label><HelpButton title="Show split picture" description="Return the comparison to the sampled picture that will become the new set." className="button subtle" onClick={() => setComparison(null)}>Show split picture</HelpButton></div>

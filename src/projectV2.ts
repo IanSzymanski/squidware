@@ -1,3 +1,4 @@
+import { validateTempoMap } from './tempo';
 import { PROJECT_LIMITS, validateLegacyProject } from './projectValidation';
 import { validateSnapSettings } from './snapping';
 import { validateAnalysisRules, validateMarchingDirections } from './analysis/rules';
@@ -39,10 +40,10 @@ function timing(value: unknown, path: string): OpeningTiming {
   };
 }
 function versionError(version: unknown): never {
-  if (typeof version === 'number' && Number.isInteger(version) && version > 2) {
-    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1 and 2.`);
+  if (typeof version === 'number' && Number.isInteger(version) && version > 3) {
+    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2 and 3.`);
   }
-  return invalid('schemaVersion', 'must be 1 or 2. Open a supported Squidware project (.squid) file.');
+  return invalid('schemaVersion', 'must be 1, 2 or 3. Open a supported Squidware project (.squid) file.');
 }
 function assertSize(content: string): void {
   if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
@@ -79,7 +80,7 @@ export function migrateProjectV1(input: unknown): ProjectV2 {
 export function validateProjectV2(input: unknown, geometry: GeometryValidation = {}): ProjectV2 {
   const data = object(input, 'root');
   if (data.schemaVersion === 1) invalid('schemaVersion', 'must be 2 for v2 validation. Use migrateProjectV1 or parseProjectV2 to migrate a v1 file.');
-  if (data.schemaVersion !== 2) versionError(data.schemaVersion);
+  if (data.schemaVersion !== 2 && data.schemaVersion !== 3) versionError(data.schemaVersion);
   if (!Array.isArray(data.sets) || data.sets.length < 1 || data.sets.length > PROJECT_LIMITS.sets) {
     invalid('sets', `must contain 1 to ${PROJECT_LIMITS.sets} items.`);
   }
@@ -157,6 +158,8 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
   });
   const { schemaVersion: _version, sets: checkedSets, ...common } = base;
   const project: Project = { schemaVersion: 2, ...common, ...(data.score === undefined ? {} : { score: validateScore(data.score) }), ...(data.meter === undefined ? {} : { meter: validateMeter(data.meter) }), ...(data.analysisRules === undefined ? {} : { analysisRules: validateAnalysisRules(data.analysisRules, new Set(base.sections.map(s => s.id))) }), ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map(picture), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
+  if (data.tempoMap !== undefined) project.tempoMap = validateTempoMap(data.tempoMap, moves.reduce((n,m)=>n+m.counts,0));
+  if (data.schemaVersion === 3 && !project.tempoMap) invalid('tempoMap', 'is required in schema version 3.');
   if (project.score) compileScore(project);
   return project;
 }
@@ -168,13 +171,17 @@ export function parseProjectV2(content: string): ProjectV2 {
   try { input = JSON.parse(content.replace(/^\uFEFF/, '')); }
   catch { throw new Error('This is not valid JSON. Open a Squidware project (.squid) file.'); }
   const data = object(input, 'root');
+  if ((data.schemaVersion === 1 || data.schemaVersion === 2) && data.tempoMap !== undefined) invalid('tempoMap', 'requires schema version 3 so older applications cannot discard timing.');
   if (data.schemaVersion === 1) return migrateProjectV1(data);
-  if (data.schemaVersion === 2) return validateProjectV2(data);
+  if (data.schemaVersion === 2 || data.schemaVersion === 3) return validateProjectV2(data);
   return versionError(data.schemaVersion);
 }
 
 export function serializeProjectV2(project: ProjectV2): string {
-  const content = `${JSON.stringify(validateProjectV2(project))}\n`;
+  const checked = validateProjectV2(project);
+  const mapped = !!checked.tempoMap && !!(checked.tempoMap.regions.length || checked.tempoMap.holds.length);
+  const { tempoMap, ...plain } = checked;
+  const content = `${JSON.stringify(mapped ? { ...checked, schemaVersion: 3 } : plain)}\n`;
   assertSize(content);
   return content;
 }
@@ -184,6 +191,7 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
-  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, rehearsal: _rehearsal, analysisRules: _analysisRules, meter: _meter, score: _score, ...common } = checked;
+  if (checked.tempoMap && (checked.tempoMap.regions.length || checked.tempoMap.holds.length)) throw Error('Tempo maps cannot be downgraded to fixed-tempo legacy data.');
+  const { schemaVersion: _version, moves, openingTiming, sets, snapping: _snapping, selectionGroups: _groups, rehearsal: _rehearsal, analysisRules: _analysisRules, meter: _meter, score: _score, tempoMap: _tempoMap, ...common } = checked;
   return { schemaVersion: 1, ...common, sets: legacySets(sets, moves, openingTiming) };
 }

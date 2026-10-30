@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 3 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 4 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -570,4 +570,17 @@ test('the fixed v1 bundle fixture imports identical Linux-authored bytes on ever
   h.dialog({ filePaths: [transferred] }); const opened = await h.invoke('open-project');
   assert.deepEqual(JSON.parse(opened.content), { ...JSON.parse(project), audioOffsetSeconds: 2 });
   assert.deepEqual(Buffer.from(opened.audio.bytes), packageWav());
+});
+
+test('schema-v3 tempo maps survive native saves, recovery and audio packages without a silent v2 downgrade', async t => {
+  const h=await harness(t),wire=await fs.readFile(path.join(root,'format/examples/tempo-v3.squid'),'utf8');
+  const filename=path.join(h.directory,'tempo.squid');h.dialog({filePath:filename});await h.invoke('save-project',wire,'Tempo');
+  h.dialog({filePaths:[filename]});const opened=await h.invoke('open-project');assert.equal(JSON.parse(opened.content).schemaVersion,3);
+  const {parseProjectV2}=require('../electron/project-codec.cjs'),canonical=parseProjectV2(opened.content);
+  assert.deepEqual(canonical.tempoMap,JSON.parse(wire).tempoMap);assert.equal(canonical.schemaVersion,2);
+  const session=await h.invoke('begin-recovery');const copy=await h.invoke('write-recovery',session.session,1,1,canonical);
+  const recovered=await h.invoke('read-recovery',session.session,copy.version.id);assert.deepEqual(recovered.project.tempoMap,canonical.tempoMap);
+  const audio=await h.invoke('stage-audio','recording.wav',new Uint8Array(packageWav())),pack=path.join(h.directory,'tempo.squidpack');
+  h.dialog({filePath:pack,response:1});await h.invoke('export-package',wire,'Tempo',audio.token,'bundle');h.dialog({filePaths:[pack]});const imported=await h.invoke('open-project');assert.deepEqual(parseProjectV2(imported.content).tempoMap,canonical.tempoMap);
+  const bad=JSON.parse(wire);bad.tempoMap.holds.push({...bad.tempoMap.holds[0]});await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Tempo'),/distinct/);assert.equal(await fs.readFile(filename,'utf8'),wire);
 });

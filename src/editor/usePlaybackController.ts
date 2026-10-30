@@ -1,3 +1,4 @@
+import { tempoAt, holdAt } from '../tempo';
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { countToSeconds, sampleTimeline, secondsToCount, totalCounts } from '../domain';
@@ -50,7 +51,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
         // or handover. Ordinary frame/timer quantization does not requeue beats.
         if (clockDifference(predicted, sample.seconds, end - start, plan.loop) < .05 && plan.clicks === transport.metronome) return;
       }
-      const secondsPerCount = spans.find(s => sample.seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? spans.at(-1)?.secondsPerCount ?? .5;
+      const secondsPerCount = 60 / tempoAt(project, countAt(spans, sample.seconds));
       const meter = scoreSpanAt(score, countAt(spans,sample.seconds)).meter;
       const counts = transport.countInBars * meter.numerator;
       // Startup confirmation may arrive later than one control tick. Preserve
@@ -80,7 +81,8 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
         }
         store.setValue('playback', 'playing', sample.playing);
         const leadEnd = clock.countInEndTime;
-        const status = leadEnd !== null ? `Count-in · ${Math.max(1, Math.ceil((leadEnd - now()) * store.getState().playback.speed / (plan?.countIn?.secondsPerCount ?? .5)))} remaining`
+        const hold = holdAt(project, sample.seconds);
+        const status = leadEnd === null && hold ? `Fermata · count ${hold.count} · ${hold.remaining.toFixed(1)}s remaining` : leadEnd !== null ? `Count-in · ${Math.max(1, Math.ceil((leadEnd - now()) * store.getState().playback.speed / (plan?.countIn?.secondsPerCount ?? .5)))} remaining`
           : audioUrl ? clockStatusText[sample.status] : '';
         store.setValue('playback', 'clockStatus', unavailable && (store.getState().playback.metronome || leadEnd !== null) ? 'Metronome unavailable · check the audio output' : status);
       } finally { writing = false; }
@@ -94,7 +96,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     function update(transport: ReturnType<typeof store.getState>['playback'], seek: boolean, starting: boolean) {
       if (transport.playing) void ctx?.resume().catch(() => { unavailable = true; });
       const seconds = countToSeconds(project, transport.count);
-      const countSeconds = spans.find(s => seconds < s.seconds + s.counts * s.secondsPerCount)?.secondsPerCount ?? .5;
+      const countSeconds = 60 / tempoAt(project, transport.count);
       const delay = starting && transport.countInBars ? transport.countInBars * scoreSpanAt(score,transport.count).meter.numerator * countSeconds / transport.speed + .06 : 0;
       if (starting) pendingStartCount = Number.isInteger(transport.count) ? transport.count : null;
       if (!transport.playing) pendingStartCount = null;

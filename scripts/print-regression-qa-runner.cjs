@@ -15,7 +15,7 @@ app.whenReady().then(async()=>{try{
   window.webContents.reload();await wait('!!window.__printQA?.editor','editor');
   for(const entry of cases){const project=JSON.parse(await fs.readFile(entry.fixture,'utf8'));destination=path.join(output,entry.name+'.pdf');
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('ui','dialog',null);${editor}.setValue('preferences','value',{...${editor}.getState().preferences.value,paperSize:${JSON.stringify(entry.paper)},coordinatePrecision:${JSON.stringify(entry.coordinatePrecision ?? 'quarter')}});${editor}.setValue('ui','printMode',${JSON.stringify(entry.mode)});${editor}.setValue('ui','printing',true)`);
-    await wait(`document.querySelectorAll('#print-output .print-page').length===${entry.mode==='charts'?project.sets.length:project.performers.length}`,'print DOM');
+    await wait(`document.querySelectorAll('#print-output .print-page').length===${entry.mode==='charts'?project.sets.length+(entry.extraPrintPages??0):project.performers.length+(entry.extraPrintPages??0)}`,'print DOM');
     // Wait for fonts and layout, then exercise the actual sender-checked native PDF handler.
     await evaluate('document.fonts.ready');await pause(150);
     const dom=await evaluate("Array.from(document.querySelectorAll('#print-output .print-page')).map(page=>({charts:page.querySelectorAll('svg').length,rows:page.querySelectorAll('tbody tr').length}))");

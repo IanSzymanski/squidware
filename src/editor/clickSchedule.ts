@@ -2,7 +2,11 @@ import { scoreAccent, type ScoreSpan } from '../score';
 import { clickAccent } from '../meter';
 import type { Meter, Project } from '../types';
 
-export interface TempoSpan { count: number; seconds: number; counts: number; secondsPerCount: number }
+import { compileTempo } from '../tempo';
+import type { TempoSpan } from '../tempo';
+export { countAt, secondsAt } from '../tempo';
+import { countAt, secondsAt } from '../tempo';
+export type { TempoSpan } from '../tempo';
 export interface ClickPlan {
   spans: TempoSpan[]; meter: Meter; scoreSpans?: ScoreSpan[]; anchorTime: number; seconds: number; speed: number;
   start: number; end: number; loop: boolean; clicks: boolean;
@@ -14,20 +18,7 @@ export interface ClickPlan {
 }
 export interface ScheduledClick { time: number; count: number; accent: 'bar' | 'group' | 'beat'; phase: 'show' | 'count-in' }
 export function tempoSpans(project: Project): TempoSpan[] {
-  let count = 0, seconds = 0;
-  return project.moves.map(move => {
-    const span = { count, seconds, counts: move.counts, secondsPerCount: 60 / move.tempo };
-    count += move.counts; seconds += move.counts * span.secondsPerCount;
-    return span;
-  });
-}
-export function countAt(spans: TempoSpan[], seconds: number): number {
-  const span = spans.find(s => seconds < s.seconds + s.counts * s.secondsPerCount) ?? spans.at(-1);
-  return span ? span.count + (seconds - span.seconds) / span.secondsPerCount : 0;
-}
-export function secondsAt(spans: TempoSpan[], count: number): number {
-  const span = spans.find(s => count < s.count + s.counts) ?? spans.at(-1);
-  return span ? span.seconds + (count - span.count) * span.secondsPerCount : 0;
+  return compileTempo(project).spans;
 }
 /** Compare phase across a loop edge without mistaking a few milliseconds of
  * device skew for an entire range of drift and dropping its boundary click. */

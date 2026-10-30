@@ -1,12 +1,19 @@
 'use strict';
 const { waitFor: waitUntil } = require('./testing/renderer.cjs');
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--playback-manifest=')).slice('--playback-manifest='.length));
 const { root, output, profile, fixture } = manifest;
 app.setPath('userData', profile);
 let window; const checks = []; const profiles = {};
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+// Exercise slow native preference acknowledgments instead of relying on the
+// local filesystem completing every setup write before render profiling.
+const preferenceReplyDelayMs = 300;
+const handle = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, handler) => handle(channel, channel === 'squidware:save-preferences' ? async (...args) => {
+  const result = await handler(...args); await pause(preferenceReplyDelayMs); return result;
+} : handler);
 BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
 app.on('browser-window-created', (_event, created) => { window = created; window.webContents.setBackgroundThrottling(false); });
@@ -53,7 +60,17 @@ function instrument() {
     }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
 const counts = () => evaluate('({...window.__playbackQA.renders})');
+const settleFrames = () => evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
 async function measureRenders(name, action) {
+  // Setup changes (zoom, snapping, first selection) persist asynchronously.
+  // Include their effects and native replies before taking the baseline, so
+  // a save acknowledgment cannot masquerade as a scrub/drag-induced render.
+  // Do not spend setup frames advancing an already-running rehearsal into a
+  // different set: set-boundary navigation legitimately redraws the shell.
+  const playing = await evaluate(state+'.playback.playing');
+  if (!playing) await settleFrames();
+  await wait(`${state}.preferences.status==='saved'`, 'setup preferences saved before '+name);
+  if (!playing) await settleFrames();
   const before = await counts(); await action(); await pause(80); const after = await counts();
   const diff = Object.fromEntries(new Set([...Object.keys(before), ...Object.keys(after)]).values().map(key => [key, (after[key] || 0) - (before[key] || 0)]));
   profiles[name] = diff; return diff;
@@ -125,7 +142,7 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelectorAll('.field-performer[aria-pressed=true]').length"), 1);
     assert.deepEqual(await evaluate('window.__playbackQA.errors'), []);
     pass('move boundaries, preview locks, direct set recovery and selection remain synchronized');
-    await fs.writeFile(path.join(output,'results.json'),JSON.stringify({...manifest,checks,profiles,platform:process.platform,electron:process.versions.electron,note:'Production React committed-work counts; profiling adds overhead. No representative-hardware or assistive-technology qualification.'},null,2));
+    await fs.writeFile(path.join(output,'results.json'),JSON.stringify({...manifest,checks,profiles,preferenceReplyDelayMs,platform:process.platform,electron:process.versions.electron,note:'Production React committed-work counts with delayed native preference-save acknowledgments; profiling adds overhead. No representative-hardware or assistive-technology qualification.'},null,2));
      app.exit(0);
   } catch(error) {console.error(error);console.error({profiles,playback:await evaluate(`${state}.playback`).catch(()=>null)});app.exit(1);}
 });

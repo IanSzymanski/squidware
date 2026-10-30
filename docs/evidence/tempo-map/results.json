@@ -1,0 +1,325 @@
+{
+  "checks": [
+    "preview/cancel, overlap validation, analytic duration, unchanged geometry and one named undo/redo",
+    "native .squid save/reopen retains schema v3 and the exact map",
+    "silent clock and actual audio-thread clicks agree across both ramps, both holds and a move boundary",
+    "recording time continues while field geometry holds through a renderer stall; metronome keeps analytic beat times",
+    "pause/resume retains partial fermata progress; scrubbing and count stepping use arrival-time semantics",
+    "count-in uses the instantaneous ramp tempo rather than a move base or region start BPM",
+    "recorded rehearsal ranges loop across ramps, holds and the move boundary using the shared map",
+    "native CSV contains mapped arrival timing and native PDF export completes",
+    "dark/light/high contrast and 150% narrow layout retain named inputs, preview, validation and reachable footer actions"
+  ],
+  "measurements": [
+    {
+      "speed": 1.5,
+      "clicks": [
+        {
+          "type": "click",
+          "time": 1.1442014737684965,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 1.1442176870748297
+        },
+        {
+          "type": "click",
+          "time": 1.4251628488560333,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 1.4251700680272108
+        },
+        {
+          "type": "click",
+          "time": 1.6793233283342328,
+          "count": 3,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 1.679342403628118
+        },
+        {
+          "type": "click",
+          "time": 1.9113536669732456,
+          "count": 4,
+          "accent": "bar",
+          "phase": "show",
+          "renderTime": 1.911360544217687
+        },
+        {
+          "type": "click",
+          "time": 2.7248008874360092,
+          "count": 5,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 2.7248072562358274
+        },
+        {
+          "type": "click",
+          "time": 2.9224221465126012,
+          "count": 6,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 2.9224263038548752
+        },
+        {
+          "type": "click",
+          "time": 3.106403137144472,
+          "count": 7,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 3.106417233560091
+        },
+        {
+          "type": "click",
+          "time": 3.2785058601779946,
+          "count": 8,
+          "accent": "bar",
+          "phase": "show",
+          "renderTime": 3.2785260770975055
+        },
+        {
+          "type": "click",
+          "time": 3.8506085832115176,
+          "count": 9,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 3.850612244897959
+        },
+        {
+          "type": "click",
+          "time": 4.0345895738433875,
+          "count": 10,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 4.034603174603174
+        },
+        {
+          "type": "click",
+          "time": 4.2322108329199795,
+          "count": 11,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 4.232222222222222
+        },
+        {
+          "type": "click",
+          "time": 4.4456580533827434,
+          "count": 12,
+          "accent": "bar",
+          "phase": "show",
+          "renderTime": 4.445668934240363
+        },
+        {
+          "type": "click",
+          "time": 4.677688392021756,
+          "count": 13,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 4.677709750566893
+        },
+        {
+          "type": "click",
+          "time": 4.931848871499955,
+          "count": 14,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 4.931859410430839
+        },
+        {
+          "type": "click",
+          "time": 5.212810246587492,
+          "count": 15,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 5.212811791383221
+        }
+      ],
+      "maximumError": 8.881784197001252e-16
+    },
+    {
+      "speed": 1,
+      "clicks": [
+        {
+          "type": "click",
+          "time": 6.2691172537366455,
+          "count": 1,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 6.269138321995465
+        },
+        {
+          "type": "click",
+          "time": 6.690559316367951,
+          "count": 2,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 6.6905668934240365
+        },
+        {
+          "type": "click",
+          "time": 7.07180003558525,
+          "count": 3,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 7.0718140589569165
+        },
+        {
+          "type": "click",
+          "time": 7.419845543543769,
+          "count": 4,
+          "accent": "bar",
+          "phase": "show",
+          "renderTime": 7.419863945578231
+        },
+        {
+          "type": "click",
+          "time": 8.640016374237915,
+          "count": 5,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 8.640022675736962
+        },
+        {
+          "type": "click",
+          "time": 8.936448262852803,
+          "count": 6,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 8.936462585034015
+        },
+        {
+          "type": "click",
+          "time": 9.212419748800608,
+          "count": 7,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 9.212426303854874
+        },
+        {
+          "type": "click",
+          "time": 9.470573833350892,
+          "count": 8,
+          "accent": "bar",
+          "phase": "show",
+          "renderTime": 9.470589569160998
+        },
+        {
+          "type": "click",
+          "time": 10.328727917901176,
+          "count": 9,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 10.32873015873016
+        },
+        {
+          "type": "click",
+          "time": 10.604699403848983,
+          "count": 10,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 10.60471655328798
+        },
+        {
+          "type": "click",
+          "time": 10.90113129246387,
+          "count": 11,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 10.901133786848073
+        },
+        {
+          "type": "click",
+          "time": 11.221302123158015,
+          "count": 12,
+          "accent": "bar",
+          "phase": "show",
+          "renderTime": 11.221315192743765
+        },
+        {
+          "type": "click",
+          "time": 11.569347631116536,
+          "count": 13,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 11.56936507936508
+        },
+        {
+          "type": "click",
+          "time": 11.950588350333835,
+          "count": 14,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 11.950589569160998
+        },
+        {
+          "type": "click",
+          "time": 12.372030412965138,
+          "count": 15,
+          "accent": "beat",
+          "phase": "show",
+          "renderTime": 12.37204081632653
+        }
+      ],
+      "maximumError": 1.7763568394002505e-15
+    }
+  ],
+  "viewports": [
+    {
+      "name": "tempo-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "tempo-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "tempo-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "tempo-fermata.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "tempo-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "tempo-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "tempo-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "tempo-enlarged.png",
+      "width": 1024,
+      "height": 720,
+      "fieldHeight": 270
+    }
+  ],
+  "source": {
+    "revision": "be220729303434b6a3673e5cb7dd81a657185bed",
+    "tree": "ad9a171446cfe9972105b2cc982bcc48c7c734a4",
+    "dirty": true,
+    "contentHash": "dc2ee1fc23ed0358a3901be8777d99cf98ba5f5d2a3ac764633812d8014d6d99",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "note": "Production renderer/preload/main, real media and AudioWorklet. Native dialogs controlled; pointer/key/text input actual native events. PDF contents independently inspected by the print owner."
+}

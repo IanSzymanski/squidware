@@ -1,6 +1,8 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1 and 2**; saves always write canonical **v2**. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1, 2 and 3**. Ordinary saves write **v2**; nonempty tempo maps write **v3** so older applications cannot silently discard timing. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+
+Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
 Start with [basic-v2.squid](examples/basic-v2.squid), [v2 JSON Schema](squid-v2.schema.json), the [legacy example](examples/basic-v1.squid), and [v1 JSON Schema](squid-v1.schema.json). The checked-in [maximum example](examples/maximum-v2.squid) contains 500 performers across 128 pictures and 127 moves, with deterministic UUIDs. Regenerate these files with `pnpm format:generate`; `pnpm format:check` detects drift and validates examples with both an independent JSON Schema validator and the actual application codec. Schema IDs use repository URLs; for an immutable contract, pin the repository commit or a published release tag instead of following `main`.
 
@@ -85,4 +87,12 @@ Unknown informational properties are accepted and discarded at every canonicaliz
 
 In v1, each picture includes `counts`, `tempo` and `transition`. The opening count must be zero; all later counts are positive move durations. Migration first validates the entire v1 input. It retains project/entity IDs, roster order, positions, names, notes, timing, easing and audio offset; removes timing from pictures; creates adjacent moves named `move-v1-1`, `move-v1-2`, etc.; initializes their paths to `{}`; and preserves opening tempo/easing in `openingTiming`. Migration is deterministic and does not mutate input. Opening a legacy file changes it only in memory; explicit save writes v2. V2 move/segment identities cannot be losslessly represented in v1, so there is no supported downgrade command.
 
-Versions greater than 2 fail with an instruction to update Squidware before opening or saving. Other invalid versions, broken JSON and unsupported paths produce actionable errors. Validation never overwrites the original file. Canonical v2 serialization rebuilds supported objects, emits compact JSON plus a trailing newline and enforces the byte limit. Geometry, timing, migration, round trips and schema examples are CI fixtures. A future format change must update this contract, schemas and compatibility evidence together.
+Versions greater than 3 fail with an instruction to update Squidware before opening or saving. Other invalid versions, broken JSON and unsupported paths produce actionable errors. Validation never overwrites the original file. Canonical v2 serialization rebuilds supported objects, emits compact JSON plus a trailing newline and enforces the byte limit. Geometry, timing, migration, round trips and schema examples are CI fixtures. A future format change must update this contract, schemas and compatibility evidence together.
+
+## V3 tempo-map extension
+
+V3 retains the complete v2 picture/move structure and adds required `tempoMap: {version: 1, regions, holds}`. Regions are `{startCount, endCount, startTempo, endTempo}`; holds are `{count, seconds}`. Both arrays have at most 256 entries. Counts are whole absolute show counts. BPM is finite 20–400; hold duration is finite 0.001–600 seconds. Regions have positive length, fit the current show and cannot overlap; holds use distinct counts strictly before the end. Adjacent regions are permitted. Arrays canonicalize in count order.
+
+Ramps are linear BPM over counts; gaps retain base move tempos. Arrival at a held count is the start of its pause. Count/time conversion is monotonic; every second inside a hold returns the same count. Seeking chooses its earliest arrival. See [full timing/transport semantics](../docs/tempo-map.md).
+
+Raw v1/v2 files with `tempoMap` are rejected. The codec reads v3 into its existing canonical internal v2 picture/move model while retaining the map, and serializes nonempty maps as wire v3. Empty maps are removed on save, restoring v2 output. There is no mapped-timing legacy downgrade. Native open/save, recovery and audio packages retain the map through the shared codec.
