@@ -1,3 +1,4 @@
+import { AudioAlignmentPanel } from './AudioAlignmentPanel';
 import { TempoPanel } from './TempoPanel';
 import { AudioPackagePanel } from './AudioPackagePanel';
 import { ScorePanel } from './ScorePanel';
@@ -30,6 +31,7 @@ export function EditorDialogs({ controller }: { controller: EditorController }) 
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, dirty, removeSet, replaceProduction, saveProject, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
     {dialog === 'package' && <AudioPackagePanel controller={controller} />}
+    {dialog === 'audio-alignment' && <AudioAlignmentPanel controller={controller} />}
     {dialog === 'tempo' && <TempoPanel controller={controller} />}
     {dialog === 'score' && <ScorePanel controller={controller} />}
     {dialog === 'metronome' && <MetronomePanel controller={controller} />}

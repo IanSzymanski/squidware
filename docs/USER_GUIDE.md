@@ -30,7 +30,7 @@ Recovery has its own status. **Recovery copy saved** means the automatic copy wa
 
 The project file includes cast, sections, all sets and positions, counts, tempo, easing, notes, field settings, and the audio offset. Audio data and undo history are not included. History lists named actions for Undo/Redo. It keeps up to 80 actions or 16 MiB of estimated history, with the latest action always retained even if larger. Older actions may expire, and opening a project starts a new history. Save named files for lasting versions.
 
-Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2 for ordinary projects and version 3 for a nonempty tempo map. Older apps reject unsupported versions instead of discarding mapped timing. Unsupported newer versions display an update instruction.
+Projects save in format version 2, which stores formation pictures separately from movement timing. Existing version 1 projects migrate automatically when opened, preserving their coordinates and playback. Saving writes version 2 for ordinary projects and version 3 for a nonempty tempo map, or version 4 for recording anchors. Older apps reject unsupported versions instead of discarding mapped timing. Unsupported newer versions display an update instruction.
 
 Project files are limited to 10 MiB of UTF-8 data. Valid recovery from older versions' browser storage is migrated before its old key is removed. Unreadable originals are kept, with a notice in **Recovery copies**. If recovery is unavailable, save a project file, check disk space or permissions, and use **Retry / refresh copies**. Editing remains available.
 
@@ -143,6 +143,8 @@ The displayed count is the cumulative show count. Written tempo can differ betwe
 ### Attach a rehearsal track
 
 Choose **Attach audio** and select WAV, MP3, OGG, M4A or FLAC audio the system can decode. The timeline displays a waveform preview. Use the speaker control to mute or unmute the attached track.
+
+Use **Align recording** in the Sheet, Timeline view tools or Command palette for variable-tempo recordings. Enter Count/Recording-seconds rows, review drift, then Apply as one undo action. Expand waveform assistance to preview the recording, select set arrivals and tap anchors with Enter/Space. Cancel leaves the saved timing unchanged. See [recording alignment](audio-alignment.md).
 
 Set **Audio sync offset** in Production settings:
 

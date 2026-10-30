@@ -34,7 +34,7 @@ Use the [compact set list](docs/set-list.md) to search by number or name, reorde
 
 ## Rehearse and review
 
-Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in.
+Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in. Use [recording anchors](docs/audio-alignment.md) to align set arrivals and individual counts to variable-tempo recordings, with waveform/tap assistance and an undoable preview.
 
 ![Squidware's live 3D preview of the Orbital motion set, with section-colored performer markers, perspective camera controls and the shared show timeline in the Rehearse layout](docs/images/rehearsal-3d.png)
 
@@ -151,7 +151,7 @@ To build for the current host, run `pnpm dist --publish never`; Windows also has
 
 ## Scope and roadmap
 
-Squidware currently supports standard 100 × 53⅓-yard college/high-school fields, straight travel between sets, and constant-speed or eased movement. The 3D figures are rehearsal markers. Curved individual paths, audio-alignment anchors, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
+Squidware currently supports standard 100 × 53⅓-yard college/high-school fields, straight travel between sets, and constant-speed or eased movement. The 3D figures are rehearsal markers. Curved individual paths, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
 
 Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
 

@@ -1,3 +1,4 @@
+import { validateAudioAnchors } from '../audioAlignment';
 import { validateTempoMap } from '../tempo';
 import type { TempoMap } from '../types';
 import { projectMeter, validateMeter } from '../meter';
@@ -33,6 +34,8 @@ import type { Meter, ScoreMap } from '../types';
 import { splitTransition, splitTransitionError, type SplitTransitionRequest } from './splitTransition';
 
 export interface CommandArguments {
+  'audio.align-open': undefined;
+  'audio.align-save': { anchors: import('../types').AudioAnchor[]; offset: number; revision: number; epoch: number };
   'tempo.open': undefined;
   'tempo.save': { map: TempoMap; revision: number; epoch: number };
   'set.split-open': undefined;
@@ -164,6 +167,10 @@ const canOpenSplit = (s: EditorState) => {
 };
 
 export const commandRegistry = {
+  'audio.align-open': simple('audio.align-open', 'Align recording', 'Preview count-to-recording anchors with waveform and tap assistance.', canNavigate, c => showDialog(c, 'audio-alignment')),
+  'audio.align-save': define({ id:'audio.align-save', name:'Align recording', description:'Validate recording anchors and offset as one undo action.', arguments:{anchors:'AudioAnchor[]',offset:'seconds',revision:'reviewed revision',epoch:'project session'},
+    enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='audio-alignment'?null:s.ui.dialog}}),
+    execute:(c,a)=>{const anchors=validateAudioAnchors(a.anchors,totalCounts(c.getState().project.present));c.edit(p=>{const {audioAnchors:_anchors,...plain}=p;return {...plain,audioOffsetSeconds:a.offset,...(anchors.length?{audioAnchors:anchors}:{})};});c.patch('playback',{playing:false});c.patch('ui',{dialog:null});} }),
   'tempo.open': simple('tempo.open', 'Tempo map', 'Preview fixed tempo ranges, linear BPM ramps and timed fermatas.', canNavigate, c => showDialog(c, 'tempo')),
   'tempo.save': define({ id:'tempo.save', name:'Edit tempo map', description:'Validate and apply the timing map as one undo action.', arguments:{map:'TempoMap',revision:'reviewed revision',epoch:'project session'},
     enabled:(s,a)=>!!a && a.revision===s.project.revision && a.epoch===s.ui.projectEpoch && canNavigate({...s,ui:{...s.ui,dialog:s.ui.dialog==='tempo'?null:s.ui.dialog}}),

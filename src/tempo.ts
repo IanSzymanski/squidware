@@ -1,3 +1,4 @@
+import { validateAudioAnchors } from './audioAlignment';
 import type { Project, TempoMap } from './types';
 import { PROJECT_LIMITS } from './projectValidation';
 
@@ -57,6 +58,8 @@ export function compileTempo(project: Project): CompiledTempo {
   const cuts = new Set([0, totalCounts]); let count = 0;
   const moves = project.moves.map(m => { const start = count; count += m.counts; cuts.add(count); return { ...m, start }; });
   map.regions.forEach(r => { cuts.add(r.startCount); cuts.add(r.endCount); }); map.holds.forEach(h => cuts.add(h.count));
+  const anchors = validateAudioAnchors(project.audioAnchors ?? [], totalCounts);
+  anchors.forEach(a => cuts.add(a.count));
   const sorted = [...cuts].sort((a, b) => a - b), spans: TempoSpan[] = []; let seconds = 0;
   for (let i = 0; i < sorted.length - 1; i++) {
     const start = sorted[i], end = sorted[i + 1], move = moves.find(m => start < m.start + m.counts)!;
@@ -67,7 +70,22 @@ export function compileTempo(project: Project): CompiledTempo {
     const span = { count: start, seconds, counts: end - start, secondsPerCount: 60 / tempo, tempo, endTempo: bpm(end) };
     spans.push(span); seconds += spanSeconds(span);
   }
-  const result = { spans, totalCounts, totalSeconds: seconds }; cache.set(project, result); return result;
+  // Each cut includes anchor counts, so no span crosses a warp boundary.
+  // Scale nominal elapsed time, including fermatas, between successive anchors.
+  const knots = [{ count: 0, seconds: 0 }, ...anchors].map(a => ({ ...a, nominal: secondsAt(spans, a.count) }));
+  const scales = knots.slice(1).map((k, i) => (k.seconds - knots[i].seconds) / (k.nominal - knots[i].nominal));
+  if (scales.some(scale => !Number.isFinite(scale) || scale < .05 || scale > 20)) throw Error('Audio alignment intervals must be between 0.05× and 20× their written duration. Check the counts and recording times.');
+  const aligned = anchors.length ? spans.map(span => {
+    const index = Math.max(0, knots.findIndex(k => k.count > span.count) - 1);
+    const segment = span.count >= knots.at(-1)!.count ? knots.length - 1 : index;
+    const knot = knots[segment], scale = scales[Math.min(segment, scales.length - 1)];
+    return { ...span, seconds: knot.seconds + (span.seconds - knot.nominal) * scale,
+      secondsPerCount: span.secondsPerCount * scale,
+      ...(span.tempo === undefined ? {} : { tempo: span.tempo / scale, endTempo: (span.endTempo ?? span.tempo) / scale }),
+      ...(span.holdSeconds === undefined ? {} : { holdSeconds: span.holdSeconds * scale }) };
+  }) : spans;
+  const result = { spans: aligned, totalCounts, totalSeconds: aligned.length ? aligned.at(-1)!.seconds + spanSeconds(aligned.at(-1)!) : 0 };
+  cache.set(project, result); return result;
 }
 export function secondsAt(spans: TempoSpan[], count: number): number {
   const hold = spans.find(s => s.holdSeconds !== undefined && s.count === count);

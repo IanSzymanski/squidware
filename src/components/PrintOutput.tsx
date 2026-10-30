@@ -6,7 +6,7 @@ import { resolvePassage } from '../rehearsal';
 import { FieldDrawing } from './Field2D';
 
 export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat }: { project: Project; mode: 'charts' | 'coordinates'; paper?: 'letter' | 'a4'; coordinateFormat?: CoordinateOptions }) {
-  const timing=project.tempoMap?compileTempo(project):null;
+  const timing=project.tempoMap || project.audioAnchors?.length ? compileTempo(project) : null;
   const pages=timing?Array.from({length:Math.ceil(timing.spans.length/20)},(_,i)=>timing.spans.slice(i*20,(i+1)*20)):[];
   return <div id="print-output" data-paper={paper}>
     {mode === 'charts' ? project.sets.map((set, index) => <section className="print-page" key={set.id}>
@@ -29,7 +29,7 @@ export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat 
     </section>)}
     {pages.map((spans,page)=><section className="print-page" key={`tempo-${page}`}>
       <header><div><span>SQUIDWARE / TEMPO MAP</span><h1>{project.title}</h1><p>{timing!.totalCounts} counts · {timing!.totalSeconds.toFixed(3)} seconds · page {page+1} of {pages.length}</p></div></header>
-      <p>Ranges use absolute show counts. BPM ramps are linear over counts. Fermatas hold positions after that count’s click; recording time continues. Offset: {project.audioOffsetSeconds} seconds.</p>
+      <p>Ranges use absolute show counts. BPM ramps are linear over counts. Fermatas hold positions after that count’s click; recording time continues. Offset: {project.audioOffsetSeconds} seconds. {project.audioAnchors?.length ? "Recording alignment applied: interval durations, BPM and fermatas below include the accepted anchors. Add the offset to Start seconds for recording time." : ""}</p>
       <table><thead><tr><th>Show counts</th><th>BPM / fermata</th><th>Start seconds</th><th>Duration seconds</th></tr></thead><tbody>{spans.map((s,i)=><tr key={i}><td>{s.counts?`${s.count}–${s.count+s.counts}`:s.count}</td><td>{s.holdSeconds!==undefined?`Hold ${s.holdSeconds}s`:`${s.tempo!.toFixed(3)} → ${s.endTempo!.toFixed(3)} BPM`}</td><td>{s.seconds.toFixed(6)}</td><td>{spanSeconds(s).toFixed(6)}</td></tr>)}</tbody></table>
       <footer>Arrival at a held count is the beginning of its fermata. Rehearsal speed scales the entire timing map. • Squidware</footer>
     </section>)}
