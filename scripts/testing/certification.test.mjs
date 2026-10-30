@@ -8,12 +8,21 @@ test('local certification covers the combined hosted layers, including PDFs and 
   const local = certificationPlan('all');
   assert.deepEqual(local, [...source, ...desktop.slice(1)]);
   assert.ok(local.findIndex(step => step.name === 'build') < local.findIndex(step => step.name === 'workflows'));
-  assert.deepEqual(desktop.find(step => step.name === 'workflows').args, ['scripts/run-desktop-regressions.mjs', '--jobs=2']);
+  assert.deepEqual(desktop.find(step => step.name === 'workflows').args, ['scripts/run-desktop-regressions.mjs', process.platform === 'darwin' ? '--jobs=1' : '--jobs=2']);
   for (const owner of ['source', 'contracts', 'native', 'workflows', 'pdf-inspection', 'package', 'packaged-startup']) assert.ok(local.some(step => step.name === owner));
   assert.equal(certificationLayer([]), 'all');
   assert.throws(() => certificationLayer(['--layer=desktop', '--layer=source']), /Use pnpm/);
   assert.throws(() => certificationLayer(['--layer=typo']), /Use pnpm/);
   assert.throws(() => certificationLayer(['--unknown']), /Use pnpm/);
+});
+
+test('macOS certification isolates the native desktop and audio output without changing coverage', () => {
+  const plans = ['darwin', 'linux', 'win32'].map(platform => certificationPlan('desktop', { platform }));
+  for (const [index, plan] of plans.entries()) {
+    assert.deepEqual(plan.find(step => step.name === 'workflows').args,
+      ['scripts/run-desktop-regressions.mjs', index === 0 ? '--jobs=1' : '--jobs=2']);
+    assert.deepEqual(plan.filter(step => step.name !== 'workflows'), plans[0].filter(step => step.name !== 'workflows'));
+  }
 });
 
 test('Linux sandbox setup is explicit and occurs before native application launch', () => {

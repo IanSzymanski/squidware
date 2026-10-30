@@ -10,4 +10,4 @@ await esbuild.build({ stdin: { contents: `
   export {createPerformanceFixture} from './src/performanceFixtures';
   export function fixture() { return ${await readFile(path.join(root, 'format/examples/basic-v2.squid'), 'utf8')}; }
 `, resolveDir: root, loader: 'ts' }, bundle: true, platform: 'node', format: 'cjs', outfile: bundle, logLevel: 'silent' });
-await qa.run('paths-qa-runner.cjs', 'paths-manifest', { bundle });
+await qa.run('paths-qa-runner.cjs', 'paths-manifest', { bundle, smallDesktop: process.argv.includes('--small-desktop') });

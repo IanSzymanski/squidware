@@ -71,10 +71,15 @@ app.whenReady().then(async () => {
   const p=fixture();
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(p)}});${editor}.dispatch('workspace.show',{workspace:'design'});${editor}.dispatch('set.select',{index:1})`); await frames();
   assert.equal(await evaluate(`document.querySelector(${JSON.stringify(button('Edit performer path'))}).getAttribute('aria-disabled')`),'true');
+  // Measure the fixed viewport while hidden. macOS constrains a shown window
+  // to its physical desktop, which can be smaller than this review viewport.
+  await capture('paths-before.png');
+  assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);
+  assert.ok(viewports.at(-1).fieldHeight>=470,JSON.stringify(viewports.at(-1)));
   BrowserWindow.prototype.show=showWindow;window.show();window.focus();await settleNativeViewport(window,'visible paths');
+  if (manifest.smallDesktop) { window.setContentSize(1024,647);await settleNativeViewport(window,'constrained visible paths'); }
   await click('[data-performer-id="a"]');
   assert.deepEqual(await evaluate(state+'.selection.selectedIds'),['a']);
-  await capture('paths-before.png');assert.ok(viewports.at(-1).fieldHeight>=470,JSON.stringify(viewports.at(-1)));
   await openPath();await fillCurve();await capture('paths-preview.png');
   assert.match(await evaluate("document.querySelector('[aria-label=\"Path preview position\"]').textContent"),/X 20.000, Y 26.250/);
   assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);

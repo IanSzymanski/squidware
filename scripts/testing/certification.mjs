@@ -27,7 +27,9 @@ export function certificationPlan(layer, { platform = process.platform, configur
   ];
   if (platform === 'linux' && configureSandbox) steps.push(...sandbox('node_modules/electron/dist/chrome-sandbox'));
   steps.push(
-    { name: 'workflows', tool: 'node', args: ['scripts/run-desktop-regressions.mjs', '--jobs=2'], display: true },
+    // macOS suites share one native desktop and audio output. Concurrent visible
+    // Electron apps compete for activation and can stall playback clocks.
+    { name: 'workflows', tool: 'node', args: ['scripts/run-desktop-regressions.mjs', platform === 'darwin' ? '--jobs=1' : '--jobs=2'], display: true },
     { name: 'pdf-inspection', tool: 'python', args: ['scripts/verify-print.py'], printOutput: true },
     { name: 'package', tool: 'pnpm', args: ['exec', 'electron-builder', '--dir', '--publish', 'never'] },
   );
