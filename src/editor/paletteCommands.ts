@@ -63,6 +63,7 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   add('coordinates.preview', {});
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
   add('tempo.open', undefined);
+  add('audio.align-open', undefined);
   add('transform.preview', {});
   add('view.select', { view: '2d' }, 'Open 2D field', 'view-2d');
   add('view.select', { view: '3d' }, 'Open 3D preview', 'view-3d');

@@ -1,6 +1,6 @@
 # Schema v2 decision and integration contract
 
-This records the canonical project format for issue #5. Creation, sampling, editing, analysis, exports, recovery and native open/save consume v2. Opening supported v1 content migrates it in memory; ordinary saves write v2. Nonempty tempo maps use the [schema-v3 wire extension](schema-v3.md) while retaining the same internal picture/move model. Both native file handlers and the renderer use the same codec, bundled for Electron by `scripts/build-project-codec.mjs`. Issue #47 owns the public machine-readable specification and external compatibility package.
+This records the canonical project format for issue #5. Creation, sampling, editing, analysis, exports, recovery and native open/save consume v2. Opening supported v1 content migrates it in memory; ordinary saves write v2. Nonempty tempo maps use the [schema-v3 wire extension](schema-v3.md) and recording anchors use [schema v4](audio-alignment.md#persistence-and-compatibility), while retaining the same internal picture/move model. Both native file handlers and the renderer use the same codec, bundled for Electron by `scripts/build-project-codec.mjs`. Issue #47 owns the public machine-readable specification and external compatibility package.
 
 ## Pictures and moves
 

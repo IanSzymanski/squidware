@@ -1,7 +1,7 @@
 import { compileScore, scoreLabel, scorePosition, scoreTicks } from '../score';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AudioLines, Flag, LocateFixed, Maximize2, SlidersHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
-import { setStartCount, setTiming } from '../domain';
+import { countToSeconds, secondsToCount, setStartCount, setTiming } from '../domain';
 import { Tooltip } from '../components/Tooltip';
 import { HelpButton } from './ControlHelp';
 import { Button } from './EditorControls';
@@ -56,7 +56,7 @@ export function TimelineTracks({ controller }: { controller: EditorController })
         {arrivals.map(a => <option key={a.set.id} value={a.index}>Set{String(a.index + 1).padStart(3, '0')} · {a.set.name} · {fmt(a.count)}</option>)}
       </select></Tooltip>
       <Tooltip name="Pan timeline" description="Move the visible count window without moving the playhead. Use arrow keys while focused. Panning turns follow off." disabledReason="Zoom in to pan the timeline."><input aria-label="Pan timeline" type="range" min={0} max={Math.max(0, duration - span)} step="any" value={view.start} disabled={view.zoom <= 1} onChange={e => { setFollow(false); setStart(Number(e.target.value)); }} /></Tooltip>
-      <HelpButton command="score.open" title="Score map" className="button subtle" onClick={()=>controller.dispatch('score.open')}>Score map</HelpButton><HelpButton command="tempo.open" title="Tempo map" className="button subtle" onClick={()=>controller.dispatch('tempo.open')}>Tempo map</HelpButton><label className="microcopy">Ruler<select aria-label="Timeline ruler" value={musicalRuler?'measures':'counts'} onChange={e=>setMusicalRuler(e.target.value==='measures')}><option value="measures">Measures</option><option value="counts">Show counts</option></select></label>
+      <HelpButton command="score.open" title="Score map" className="button subtle" onClick={()=>controller.dispatch('score.open')}>Score map</HelpButton><HelpButton command="tempo.open" title="Tempo map" className="button subtle" onClick={()=>controller.dispatch('tempo.open')}>Tempo map</HelpButton><HelpButton command="audio.align-open" title="Align recording" className="button subtle" onClick={()=>controller.dispatch('audio.align-open')}>Align recording</HelpButton><label className="microcopy">Ruler<select aria-label="Timeline ruler" value={musicalRuler?'measures':'counts'} onChange={e=>setMusicalRuler(e.target.value==='measures')}><option value="measures">Measures</option><option value="counts">Show counts</option></select></label>
       <span className="timeline-window">{fmt(view.start)}–{fmt(Math.min(duration, view.start + span))}</span>
     </div>}
     <div className="timeline-tracks">
@@ -78,7 +78,9 @@ export function TimelineTracks({ controller }: { controller: EditorController })
           {/* Musical labels share the ruler so the field retains its height. */}
           <div className="timeline-music-lanes" />
           {audioName && <div className={`audio-track ${waveform.length ? 'has-audio' : ''}`}><span className="audio-clock-status" role="status">{clockStatus}</span>{waveform.length ? waveform.map((value, i) => {
-            const at = i / waveform.length * duration;
+            const time = (i + .5) / waveform.length * controller.portableAudio.audioDuration - project.audioOffsetSeconds;
+            const at = secondsToCount(project, time);
+            if (time < 0 || time > countToSeconds(project, duration)) return null;
             return at >= view.start && at <= view.start + span ? <i key={i} style={{ left: `${percent(at)}%`, height: `${Math.max(2, value * 95)}%` }} /> : null;
           }) : <span>{audioLoading ? 'Loading audio…' : 'Audio attached'}</span>}</div>}
           {count >= view.start && count <= view.start + span && <div className="playhead" style={{ left: `${percent(count)}%` }}><i /></div>}

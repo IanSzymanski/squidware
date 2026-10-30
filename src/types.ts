@@ -43,6 +43,7 @@ export interface TempoMap {
   regions: { startCount: number; endCount: number; startTempo: number; endTempo: number }[];
   holds: { count: number; seconds: number }[];
 }
+export interface AudioAnchor { count: number; seconds: number }
 export type MarchingDirection = 'forward' | 'backward' | 'sideways';
 export interface AnalysisThresholds { minimumSpacing: number; maximumStride: number }
 export type AnalysisOverrides = Partial<AnalysisThresholds>;
@@ -65,6 +66,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   meter?: Meter;
   score?: ScoreMap;
   tempoMap?: TempoMap;
+  audioAnchors?: AudioAnchor[];
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;

@@ -266,7 +266,7 @@ export function sampleProject(project: Project, count: number): TimelineSample {
 }
 
 export function countToSeconds(project: Project, count: number): number {
-  if (project.tempoMap) return secondsAt(compileTempo(project).spans, clamp(Number.isFinite(count) ? count : 0, 0, totalCounts(project)));
+  if (project.tempoMap || project.audioAnchors?.length) return secondsAt(compileTempo(project).spans, clamp(Number.isFinite(count) ? count : 0, 0, totalCounts(project)));
   let remaining = clamp(Number.isFinite(count) ? count : 0, 0, totalCounts(project));
   let seconds = 0;
   for (const set of project.moves) {
@@ -279,7 +279,7 @@ export function countToSeconds(project: Project, count: number): number {
 }
 
 export function secondsToCount(project: Project, seconds: number): number {
-  if (project.tempoMap) return clamp(countAt(compileTempo(project).spans, Math.max(0, Number.isFinite(seconds) ? seconds : 0)), 0, totalCounts(project));
+  if (project.tempoMap || project.audioAnchors?.length) return clamp(countAt(compileTempo(project).spans, Math.max(0, Number.isFinite(seconds) ? seconds : 0)), 0, totalCounts(project));
   let remaining = Math.max(0, Number.isFinite(seconds) ? seconds : 0);
   let count = 0;
   for (const set of project.moves) {
@@ -462,11 +462,11 @@ export function exportCoordinatesCsv(project: Project, options: CoordinateOption
     const move = performerMoveOutput(checked, index, performer.id, options);
     rows.push([set.name, setStartCount(checked, index), move.counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), move.arrival, set.notes, coordinatePrecisionLabel(options), Number(move.distanceYards.toFixed(3)), move.averageStepsPerFive === null ? '' : Number(move.averageStepsPerFive.toFixed(3)), move.peakStepsPerFive === null ? '' : Number(move.peakStepsPerFive.toFixed(3)), move.direction]);
   }));
-  if (checked.tempoMap) {
-    rows[0][3] = 'Base tempo'; rows[0].push('Timing map', 'Arrival seconds', 'Incoming seconds');
+  if (checked.tempoMap || checked.audioAnchors?.length) {
+    rows[0][3] = 'Base tempo'; rows[0].push('Timing map', 'Arrival seconds', 'Incoming seconds', 'Recording arrival seconds');
     for (let i=1;i<rows.length;i++) {
       const index=Math.floor((i-1)/checked.performers.length), arrival=countToSeconds(checked,setStartCount(checked,index));
-      rows[i].push(moveTempoText(checked,index),Number(arrival.toFixed(6)),Number((arrival-countToSeconds(checked,setStartCount(checked,Math.max(0,index-1)))).toFixed(6)));
+      rows[i].push(moveTempoText(checked,index),Number(arrival.toFixed(6)),Number((arrival-countToSeconds(checked,setStartCount(checked,Math.max(0,index-1)))).toFixed(6)),Number((arrival+checked.audioOffsetSeconds).toFixed(6)));
     }
   }
   return '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';

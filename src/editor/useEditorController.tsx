@@ -154,7 +154,7 @@ export function useEditorController() {
   function applyFormation() { if (dispatch('formation.apply')) notify('Formation applied to the selection.'); }
   function loadProject(next: Project) {
     draftTracker.current.clear();
-    patchAudio({ audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '' });
+    patchAudio({ audioDuration: 0, audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '' });
     dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
   }
   function replaceProduction(next: Project, cast = false) {
@@ -246,7 +246,7 @@ export function useEditorController() {
       if (generation !== audioDecodeGeneration.current) return;
       const blob = new Blob([new Uint8Array(bytes)], { type: native?.type || (attachment as File).type });
       setAudioUrl(URL.createObjectURL(blob)); setAudioName(attachment.name); setWaveform(peaks);
-      patchAudio({ audioToken: native?.token || '', audioSize: bytes.length, audioReferenceAvailable: native?.referenceAvailable || false, audioWarning: '' });
+      patchAudio({ audioDuration: buffer.duration, audioToken: native?.token || '', audioSize: bytes.length, audioReferenceAvailable: native?.referenceAvailable || false, audioWarning: '' });
       notify('Audio attached. Export a portable package to transfer it with this production.');
     } catch (error) {
       if (generation === audioDecodeGeneration.current) {

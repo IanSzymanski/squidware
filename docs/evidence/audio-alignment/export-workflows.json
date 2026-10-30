@@ -1,0 +1,73 @@
+{
+  "runId": "2026-10-30T16-32-59-877Z-7d205878",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "e21d6289eeb0ac04e9c822a0d318fb9adc39cab3",
+    "tree": "45766c1508508bcb52021a101624d21643cc79a5",
+    "dirty": true,
+    "contentHash": "b35aa8d837801d63efa64df58a2c46832f6bc8b5af43c837a21988355bf31aa6",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "audio-alignment",
+    "print"
+  ],
+  "checks": [
+    {
+      "name": "audio-alignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 30683,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T16-32-59-877Z-7d205878/audio-alignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T16-32-59-877Z-7d205878/audio-alignment"
+    },
+    {
+      "name": "print",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 7244,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T16-32-59-877Z-7d205878/print.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T16-32-59-877Z-7d205878/print"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-30T16:32:39.064Z",
+    "source": {
+      "revision": "e21d6289eeb0ac04e9c822a0d318fb9adc39cab3",
+      "tree": "45766c1508508bcb52021a101624d21643cc79a5",
+      "dirty": true,
+      "contentHash": "b35aa8d837801d63efa64df58a2c46832f6bc8b5af43c837a21988355bf31aa6",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "4827cbc5b3d2e641fd0ff54e038e7e2c018b0ab1b4b6d1f5ee66fc788835ce0e"
+  }
+}

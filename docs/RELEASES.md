@@ -1,8 +1,8 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 13 of 15 issues completed. Portable audio [#71](https://github.com/IanSzymanski/squidware/issues/71) landed through [#155](https://github.com/IanSzymanski/squidware/pull/155). Continue with [#52 — tempo maps and fermatas](https://github.com/IanSzymanski/squidware/issues/52), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 14 of 15 issues completed. Tempo maps [#52](https://github.com/IanSzymanski/squidware/issues/52) landed through [#157](https://github.com/IanSzymanski/squidware/pull/157). Continue with [#53 — recording alignment](https://github.com/IanSzymanski/squidware/issues/53), respecting the maintained queue and hard prerequisites.
 
-**Main certification:** [PR #153 certification](https://github.com/IanSzymanski/squidware/actions/runs/40790853888) passed source checks, all desktop suites and package verification on Windows/macOS/Linux before merge. It includes the field-gesture lifecycle repair for the macOS pan timeout observed after #152. v0.7 remains unpublished with 2 unfinished issues; publication still requires successful exact-source main CI.
+**Main certification:** [PR #153 certification](https://github.com/IanSzymanski/squidware/actions/runs/40790853888) passed source checks, all desktop suites and package verification on Windows/macOS/Linux before merge. It includes the field-gesture lifecycle repair for the macOS pan timeout observed after #152. v0.7 remains unpublished with 1 unfinished issue; publication still requires successful exact-source main CI.
 
 **Validation policy:** Maintainer decision (2026-10-22): human review, participant sessions, first-time discovery checks, subjective listening and physical/representative school-hardware qualification are not completion or release gates. Automated software tests, rendered-output review, cross-platform CI, package verification and signing requirements remain applicable. Historical references to human/hardware gates are superseded; no waived check is claimed to have passed. See [the validation policy](VALIDATION_POLICY.md). #3 is complete on its delivered local measurement scope; #64 retains software-based platform/coverage review.
 
@@ -75,7 +75,7 @@ Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, por
 - [x] [#44 · Audit A45 Store per-section and per-direction analysis rules in the project](https://github.com/IanSzymanski/squidware/issues/44)
 - [x] [#45 · Audit A32 Add show-wide problems with count navigation and live field overlays](https://github.com/IanSzymanski/squidware/issues/45)
 - [x] [#51 · Audit A51 Add measures, meter, rehearsal marks and pickup counts](https://github.com/IanSzymanski/squidware/issues/51)
-- [ ] [#52 · Audit A52 Support tempo changes, ramps and fermatas within a move](https://github.com/IanSzymanski/squidware/issues/52)
+- [x] [#52 · Audit A52 Support tempo changes, ramps and fermatas within a move](https://github.com/IanSzymanski/squidware/issues/52)
 - [ ] [#53 · Audit A53 Align the tempo map to audio using per-set/count anchors](https://github.com/IanSzymanski/squidware/issues/53)
 - [x] [#71 · Roadmap Package or reference audio portably when saving and reopening productions](https://github.com/IanSzymanski/squidware/issues/71)
 - [x] [#86 · Roadmap Add rehearsal annotations, bookmarks, count ranges and sectional playback](https://github.com/IanSzymanski/squidware/issues/86)

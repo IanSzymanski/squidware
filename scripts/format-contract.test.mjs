@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { formatTools, smallExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=4;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=5;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -88,4 +88,15 @@ test('v3 tempo maps retain timing; structural and semantic invalid events cannot
   for(const tempoMap of [null,{...p.tempoMap,version:2},{...p.tempoMap,holds:[{count:8,seconds:0}]},{...p.tempoMap,regions:[{...p.tempoMap.regions[0],endTempo:401}]},{...p.tempoMap,holds:Array(257).fill({count:8,seconds:1})}]){const bad={...p,tempoMap};assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)));}
   for(const tempoMap of [{...p.tempoMap,regions:[p.tempoMap.regions[0],{startCount:8,endCount:24,startTempo:100,endTempo:100}]},{...p.tempoMap,holds:[{count:8,seconds:1},{count:8,seconds:2}]},{...p.tempoMap,holds:[{count:24,seconds:1}]}]){const bad={...p,tempoMap};assert.ok(check(bad));assert.throws(()=>tools.parseProject(JSON.stringify(bad)));}
   assert.throws(()=>tools.parseProject(JSON.stringify({...p,schemaVersion:2})),/requires schema version 3/);
+});
+
+
+test('v4 alignment survives independent schema and canonical validation with monotonic timing',()=>{
+ const p={...smallExample(),schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:18}]};
+ assert.ok(check(p));const canonical=tools.parseProject(JSON.stringify(p));assert.deepEqual(canonical.audioAnchors,p.audioAnchors);
+ assert.equal(JSON.parse(tools.serializeProject(canonical)).schemaVersion,4);
+ assert.equal(tools.countToSeconds(canonical,8),5);assert.equal(tools.countToSeconds(canonical,24),18);
+ for(const audioAnchors of [null,[],[{count:0,seconds:1}],[{count:8,seconds:0}],Array(257).fill({count:8,seconds:5})]){assert.equal(check({...p,audioAnchors}),false);assert.throws(()=>tools.parseProject(JSON.stringify({...p,audioAnchors})));}
+ for(const audioAnchors of [[{count:8,seconds:5},{count:8,seconds:6}],[{count:8,seconds:5},{count:24,seconds:4}],[{count:25,seconds:10}],[{count:8,seconds:.000001}]]){assert.ok(check({...p,audioAnchors}));assert.throws(()=>tools.parseProject(JSON.stringify({...p,audioAnchors})));}
+ for(const schemaVersion of [1,2,3])assert.throws(()=>tools.parseProject(JSON.stringify({...p,schemaVersion})),/requires schema version 4/);
 });
