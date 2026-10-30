@@ -1,0 +1,92 @@
+{
+  "checks": [
+    "manual/missing-audio preview and cancel; contradictory times blocked; one native undo/redo preserves counts and geometry",
+    "schema-v4 native save/reopen preserves metadata without embedding audio; recording can be relinked",
+    "real media seeks, playback at two speeds, pause/resume and rehearsal loops use the same independently specified mapping",
+    "native CSV records independently specified aligned arrivals and recording times; PDF timing appendix exports",
+    "native set-arrival choice, waveform keyboard slider and tap/Enter append reviewed times without committing",
+    "supported themes and narrow 150% layout retain validation, keyboard-reachable Apply and Escape cancellation"
+  ],
+  "measurements": [
+    {
+      "count": 4.019536,
+      "seconds": 2.926404,
+      "rate": 0.75
+    },
+    {
+      "count": 4.074438,
+      "seconds": 2.947131,
+      "rate": 1.5
+    }
+  ],
+  "viewports": [
+    {
+      "name": "alignment-empty.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "alignment-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "alignment-manual.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "alignment-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "alignment-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 454
+    },
+    {
+      "name": "alignment-waveform.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 427
+    },
+    {
+      "name": "alignment-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 427
+    },
+    {
+      "name": "alignment-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 427
+    },
+    {
+      "name": "alignment-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 427
+    },
+    {
+      "name": "alignment-enlarged.png",
+      "width": 1024,
+      "height": 720,
+      "fieldHeight": 270
+    }
+  ],
+  "source": {
+    "revision": "e21d6289eeb0ac04e9c822a0d318fb9adc39cab3",
+    "tree": "45766c1508508bcb52021a101624d21643cc79a5",
+    "dirty": true,
+    "contentHash": "b35aa8d837801d63efa64df58a2c46832f6bc8b5af43c837a21988355bf31aa6",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "note": "Known variable-tempo WAV pulses at independently specified count times. Production media/native input, controlled OS file dialogs. Linux software host only."
+}

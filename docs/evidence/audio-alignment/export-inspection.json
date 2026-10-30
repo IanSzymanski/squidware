@@ -1,0 +1,28 @@
+{
+  "csvRows": 192,
+  "verifiedArrivals": [
+    {
+      "count": 8,
+      "alignedSeconds": 4.5,
+      "incomingSeconds": 4.5,
+      "recordingSeconds": 4.9
+    },
+    {
+      "count": 16,
+      "alignedSeconds": 10.5,
+      "incomingSeconds": 6,
+      "recordingSeconds": 10.9
+    }
+  ],
+  "pdfPages": 5,
+  "pdfTextAndWordBounds": "passed",
+  "pdfSha256": "670433a41ae1c8ab651cece19aa94a2389b16eda2ce510a4f0ebf1f250b8de57",
+  "source": {
+    "revision": "e21d6289eeb0ac04e9c822a0d318fb9adc39cab3",
+    "tree": "45766c1508508bcb52021a101624d21643cc79a5",
+    "dirty": true,
+    "contentHash": "b35aa8d837801d63efa64df58a2c46832f6bc8b5af43c837a21988355bf31aa6",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "pdfSource": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T16-32-59-877Z-7d205878/audio-alignment/files-SvrQXq/aligned.pdf"
+}

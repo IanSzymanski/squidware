@@ -1,6 +1,6 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1, 2 and 3**. Ordinary saves write **v2**; nonempty tempo maps write **v3** so older applications cannot silently discard timing. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1, 2, 3 and 4**. Ordinary saves write **v2**; nonempty tempo maps write **v3** and recording anchors write **v4** so older applications cannot silently discard timing. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
 
 Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
@@ -96,3 +96,11 @@ V3 retains the complete v2 picture/move structure and adds required `tempoMap: {
 Ramps are linear BPM over counts; gaps retain base move tempos. Arrival at a held count is the start of its pause. Count/time conversion is monotonic; every second inside a hold returns the same count. Seeking chooses its earliest arrival. See [full timing/transport semantics](../docs/tempo-map.md).
 
 Raw v1/v2 files with `tempoMap` are rejected. The codec reads v3 into its existing canonical internal v2 picture/move model while retaining the map, and serializes nonempty maps as wire v3. Empty maps are removed on save, restoring v2 output. There is no mapped-timing legacy downgrade. Native open/save, recovery and audio packages retain the map through the shared codec.
+
+## v4 recording alignment
+
+V4 retains the v2 picture/move fields, permits an optional v3 `tempoMap`, and requires a nonempty `audioAnchors` array of at most 256 `{count, seconds}` objects. `count` is a whole absolute show count in `[1,totalCounts]`; `seconds` is finite in `(0,86400]`, excluding `audioOffsetSeconds`. The implicit count-zero anchor is `(0,0)`. Anchors canonicalize by count and must have distinct counts and strictly increasing times. Each interval must be 0.05–20 times its nominal duration. The canonical codec enforces these semantic constraints beyond JSON Schema.
+
+Nominal time includes written BPM ramps and fermatas. Interpolate nominal elapsed seconds linearly between successive anchors, then extrapolate the last interval's scale beyond the final anchor. Fermatas scale with their interval; arrival means the beginning of the hold. Add the global offset for recording time. Every transport and export uses the aligned compilation. Counts and geometry stay unchanged. Anchors refer to absolute counts through structural edits; edits that strand them or violate bounds fail atomically.
+
+See [v4 JSON Schema](squid-v4.schema.json), [example](examples/aligned-v4.squid) and [complete alignment semantics](../docs/audio-alignment.md). Raw versions 1–3 containing `audioAnchors` are rejected. Canonical internal snapshots remain v2. Serialization chooses v4 for nonempty anchors, otherwise v3 for a nonempty tempo map, otherwise v2. Native saves, recovery and the existing v1 portable audio container all use the same codec. Plain projects contain no recording bytes or paths.

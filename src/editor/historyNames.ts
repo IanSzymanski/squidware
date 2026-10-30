@@ -13,6 +13,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
   const selection = ids.length === 1 ? project.performers.find(p => p.id === ids[0])?.label ?? '1 performer' : `${ids.length} performers`;
   let name: string;
   switch (id) {
+    case 'audio.align-save': name = 'Align recording'; break;
     case 'tempo.save': name = 'Edit tempo map'; break;
     case 'set.split': name = `Split transition · count ${a.count}`; break;
     case 'score.save': name = 'Edit musical score map'; break;
