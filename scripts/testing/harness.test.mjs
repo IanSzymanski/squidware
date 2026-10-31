@@ -97,7 +97,7 @@ test('native dropdown selection uses real typeahead for numeric labels without H
   let selected = '1.5', buffer = '';
   const listeners = new Map();
   const events = [], options = [{ value: '1', label: '100%' }, { value: '1.1', label: '110%' }, { value: '1.25', label: '125%' }, { value: '1.5', label: '150%' }];
-  const control = { tagName: 'SELECT', disabled: false, options, get value() { return selected; }, set value(_) { throw new Error('Do not replace native selection with a DOM setter.'); }, focus() { context.document.activeElement = this; buffer = ''; },
+  const control = { tagName: 'SELECT', disabled: false, options, get value() { return selected; }, set value(_) { throw new Error('Do not replace native selection with a DOM setter.'); }, blur() { context.document.activeElement = null; buffer = ''; }, focus() { if (context.document.activeElement !== this) buffer = ''; context.document.activeElement = this; },
     addEventListener: (type, listener) => listeners.set(type, listener), removeEventListener: type => listeners.delete(type) };
   const context = { document: { querySelector: () => control, activeElement: null } };
   const window = { webContents: {
@@ -120,7 +120,7 @@ test('native dropdown waits for queued key releases even when its value already 
   let queued;
   const ready = new Promise(resolve => { queued = resolve; });
   const control = { tagName: 'SELECT', disabled: false, options: [{ value: '8', label: 'Set 2' }, { value: '16', label: 'Set 3' }], value: '8',
-    focus() { context.document.activeElement = this; }, addEventListener: (type, listener) => listeners.set(type, listener), removeEventListener: type => listeners.delete(type) };
+    blur() { context.document.activeElement = null; }, focus() { context.document.activeElement = this; }, addEventListener: (type, listener) => listeners.set(type, listener), removeEventListener: type => listeners.delete(type) };
   const context = { document: { querySelector: () => control, activeElement: null } };
   const window = { webContents: {
     executeJavaScript: async source => vm.runInNewContext(source, context),

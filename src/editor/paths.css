@@ -19,3 +19,6 @@
 .schedule-timing .form-label { margin-bottom: 4px; }
 .schedule-actions { margin: 8px 0; }
 @media (max-width: 600px) { .schedule-timing { grid-template-columns: repeat(2, minmax(0, 1fr)); } .schedule-timing > :first-child { grid-column: 1 / -1; } }
+.path-copy-list { margin: 8px 0; padding-left: 24px; font-size: 12px; }
+.path-copy-list li { padding: 6px 0; }
+.path-operations-panel input[type=checkbox] { width: auto; }

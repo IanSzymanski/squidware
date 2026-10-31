@@ -39,6 +39,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 
 | Suite | Owns | Avoid duplicating |
 | --- | --- | --- |
+| `path-operations` | Reviewed count rescale/reverse, contiguous session clipboard, explicit destination/frame/easing, atomic error/Cancel/undo, native persistence/exports, themes and enlarged keyboard Apply | Numeric geometry/maximum schedules and stale-context rejection owned by source tests; generic file races remain with editor. |
 | `movement-schedule` | Native interval kinds/counts/waypoints/controls, overlap/Cancel, independent schedules and live hold playback, undo, v6 files, coordinate exports, themes and enlarged keyboard Apply | Analytic boundaries, schema/byte limits and maximum schedules owned by source/contract/native tests; audio synchronization remains with audio-clock. |
 | `paths` | Explicit single selection, native numeric cubic preview, invalid controls/Cancel, shared scrub and vector overlays, one undo, native v5 files and coordinate exports, themes and enlarged keyboard Apply | Analytic/path precision, unsupported operations and full-size sampling owned by source tests; generic file races remain with editor. |
 | `templates` | Anonymous setups, dot/parametric previews, count/stale/boundary errors, native pointer/keyboard placement, undo/save, library IO/disclosure, themes/scale and process restart | Codec/size matrices and native storage fault injection owned by source/native tests. |
@@ -81,7 +82,7 @@ Run a selected owner with `pnpm test:workflows --suite=editor,field`. Unknown or
 
 Standalone runs default to one worker for focused diagnosis. Certification uses `--jobs=1` on macOS because GUI suites share native window activation and audio output; Linux and Windows use `--jobs=2`. Use `pnpm test:workflows --jobs=2` for bounded parallel execution on those platforms, or `--suite=themes,selection --jobs=2` for selected owners. The accepted range is 1–4 workers; malformed or duplicate options fail before execution. Running fewer suites remains explicitly targeted coverage.
 
-`node scripts/paths-qa.mjs --small-desktop` additionally constrains the visible path-editor window to 1024×647 after the hidden 1366×768 field measurement. This reproduces the smaller native-desktop geometry seen in macOS CI while retaining native input, file/export, keyboard and field-budget assertions. It emulates the geometry; it does not replace macOS certification.
+`node scripts/paths-qa.mjs --small-desktop` additionally constrains the visible path-editor window to 1024×647 after the hidden 1366×768 field measurement. This reproduces the smaller native-desktop geometry seen in macOS CI while retaining native input, file/export, keyboard and field-budget assertions. The same `--small-desktop` option is available on `scripts/path-operations-qa.mjs` and `scripts/timeline-qa.mjs` for native input checks at 1024×647. It emulates the geometry; it does not replace macOS certification.
 
 Each launcher uses the same isolated-profile, watchdog, process-tree cleanup and log implementation. Preferences/recovery phases share only their own isolated profile because restart persistence is their contract. A new standalone attempt clears old success reports and writes a fresh `run.json` state. Do not interpret a screenshot or a previous run's report as current success.
 

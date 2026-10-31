@@ -42,9 +42,9 @@ describe('reviewed movement schedules', () => {
     store.setValue('ui', 'dialog', null); store.setValue('selection', 'selectedIds', []); expect(store.dispatch('schedule.open')).toBe(false);
     store.setValue('selection', 'selectedIds', ['a','b']); expect(commandRegistry['schedule.open'].enabled(store.getState(), undefined)).toBe(false);
   });
-  it('protects schedules from unsupported resize/split/rewire while allowing tempo edits and explicit removal', () => {
+  it('supports interval rescaling while guarding split/rewire and allowing tempo edits and removal', () => {
     const { p, store, request } = setup();
-    expect(() => updateSetProperties(p, 1, { counts: 20 })).toThrow(/timed paths/);
+    expect(updateSetProperties(p, 1, { counts: 20 }).moves[0].paths.a.segments[0].startCount).toBe(2.5);
     expect(() => splitTransition(p, { moveId: request.moveId, count: 8 })).toThrow(/custom paths/);
     expect(() => moveSetTo(p, p.sets[2].id, 1)).toThrow(/detailed move/);
     expect(updateSetProperties(p, 1, { tempo: 144 }).moves[0].paths).toEqual(p.moves[0].paths);
