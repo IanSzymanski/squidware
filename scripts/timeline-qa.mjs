@@ -15,4 +15,4 @@ await esbuild.build({ stdin: { contents: `
     return migrateProjectV1(p);
   }
 `, resolveDir: root, loader: 'ts' }, bundle: true, platform: 'node', format: 'cjs', outfile: bundle, logLevel: 'silent' });
-await qa.run('timeline-qa-runner.cjs', 'timeline-manifest', { bundle });
+await qa.run('timeline-qa-runner.cjs', 'timeline-manifest', { bundle, smallDesktop: process.argv.includes('--small-desktop') });

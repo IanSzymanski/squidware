@@ -1,0 +1,85 @@
+{
+  "checks": [
+    "opening-set count rescale, invalid preview/Cancel, one undo, selected-endpoint reversal and double reverse preserve detailed paths and unrelated performers",
+    "contiguous segment copy is session-only; explicit A1→A2 paste reviews coordinate rotation/easing and rejects travel cuts/incompatible frames atomically",
+    "native persistence/export, project-isolated clipboard, three themes and enlarged keyboard Apply preserve operation results"
+  ],
+  "viewports": [
+    {
+      "name": "operations-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "operations-resize.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 623
+    },
+    {
+      "name": "operations-invalid.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 447.390625
+    },
+    {
+      "name": "operations-reverse.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 623
+    },
+    {
+      "name": "operations-paste.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 623
+    },
+    {
+      "name": "operations-applied.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327
+    },
+    {
+      "name": "operations-dark.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 623
+    },
+    {
+      "name": "operations-light.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 623
+    },
+    {
+      "name": "operations-high-contrast.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "dialogHeight": 623
+    },
+    {
+      "name": "operations-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "dialogHeight": 456
+    }
+  ],
+  "source": {
+    "revision": "691f3808aced90c803cc958f734fa2dbca2a1a2a",
+    "tree": "37e4221a277e7dc3301ee3bd12db6ca60f7edec2",
+    "dirty": true,
+    "contentHash": "1872b3747bbce0ff04423e71885378bda322a18a3978562bf962799adc7566b2",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

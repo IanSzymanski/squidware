@@ -54,6 +54,9 @@ async function selectNativeOption(window, selector, value, { timeoutMs = 15000 }
     for (const character of label) {
       prefix += character;
       if (options.filter(option => option.label.trim().toLowerCase().startsWith(prefix.toLowerCase())).length === 1) {
+        // Starting a second typeahead on the same focused select otherwise appends
+        // to Chromium’s previous search prefix. A real blur/focus starts a new session.
+        control.blur();
         control.focus();
         const probe = { released: 0 };
         probe.listener = () => { probe.released++; };

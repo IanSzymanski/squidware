@@ -1,0 +1,55 @@
+{
+  "checks": [
+    "native picker intentionally visits all 128 set arrivals at useful zoom, including opening and final sets",
+    "keyboard pan leaves count untouched, disables follow, and re-enabling follow returns to the playhead",
+    "pointer and keyboard steps preserve fractional position, agree with local/show readouts and clamp at both ends",
+    "ordinary typing does not step counts, and follow keeps the running clock visible",
+    "all themes and enlarged narrow layout retain controls; navigation leaves saved geometry, timing and history untouched"
+  ],
+  "viewports": [
+    {
+      "name": "timeline-fit-dark.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 327,
+      "timelineHeight": 117
+    },
+    {
+      "name": "timeline-zoom-dark.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 247,
+      "timelineHeight": 197
+    },
+    {
+      "name": "timeline-light.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 220,
+      "timelineHeight": 224
+    },
+    {
+      "name": "timeline-high-contrast.png",
+      "width": 1024,
+      "height": 647,
+      "fieldHeight": 220,
+      "timelineHeight": 224
+    },
+    {
+      "name": "timeline-enlarged.png",
+      "width": 819,
+      "height": 576,
+      "fieldHeight": 180,
+      "timelineHeight": 286.20001220703125
+    }
+  ],
+  "source": {
+    "revision": "691f3808aced90c803cc958f734fa2dbca2a1a2a",
+    "tree": "37e4221a277e7dc3301ee3bd12db6ca60f7edec2",
+    "dirty": true,
+    "contentHash": "1872b3747bbce0ff04423e71885378bda322a18a3978562bf962799adc7566b2",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "sandboxDisabled": false
+}

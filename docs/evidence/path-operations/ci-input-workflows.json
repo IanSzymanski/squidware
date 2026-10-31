@@ -1,0 +1,83 @@
+{
+  "runId": "2026-10-31T03-47-40-368Z-1d5c447a",
+  "state": "completed",
+  "concurrency": 1,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "691f3808aced90c803cc958f734fa2dbca2a1a2a",
+    "tree": "37e4221a277e7dc3301ee3bd12db6ca60f7edec2",
+    "dirty": true,
+    "contentHash": "1872b3747bbce0ff04423e71885378bda322a18a3978562bf962799adc7566b2",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "path-operations",
+    "timeline",
+    "commands"
+  ],
+  "checks": [
+    {
+      "name": "path-operations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10772,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T03-47-40-368Z-1d5c447a/path-operations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T03-47-40-368Z-1d5c447a/path-operations"
+    },
+    {
+      "name": "timeline",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 11652,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T03-47-40-368Z-1d5c447a/timeline.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T03-47-40-368Z-1d5c447a/timeline"
+    },
+    {
+      "name": "commands",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 24212,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T03-47-40-368Z-1d5c447a/commands.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T03-47-40-368Z-1d5c447a/commands"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-31T03:47:27.918Z",
+    "source": {
+      "revision": "691f3808aced90c803cc958f734fa2dbca2a1a2a",
+      "tree": "37e4221a277e7dc3301ee3bd12db6ca60f7edec2",
+      "dirty": true,
+      "contentHash": "1872b3747bbce0ff04423e71885378bda322a18a3978562bf962799adc7566b2",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "4cf6e34d498e98b27c19bbd7f29b323ddefbc8201e784d64e788c21b32484f53"
+  }
+}
