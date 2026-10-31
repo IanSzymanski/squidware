@@ -84,6 +84,8 @@ Standalone runs default to one worker for focused diagnosis. Certification uses 
 
 `node scripts/paths-qa.mjs --small-desktop` additionally constrains the visible path-editor window to 1024×647 after the hidden 1366×768 field measurement. This reproduces the smaller native-desktop geometry seen in macOS CI while retaining native input, file/export, keyboard and field-budget assertions. The same `--small-desktop` option is available on `scripts/path-operations-qa.mjs` and `scripts/timeline-qa.mjs` for native input checks at 1024×647. It emulates the geometry; it does not replace macOS certification.
 
+`selectNativeOption` requires an attached `webContents.debugger`. It sends acknowledged Chromium key/text events, then checks the selected value; DOM key-release names are not a reliable barrier for Unicode option labels. File-operation tests must observe their own operation starting (for example a fresh native confirmation) before waiting for idle, which may also describe the moment before queued input is handled.
+
 Each launcher uses the same isolated-profile, watchdog, process-tree cleanup and log implementation. Preferences/recovery phases share only their own isolated profile because restart persistence is their contract. A new standalone attempt clears old success reports and writes a fresh `run.json` state. Do not interpret a screenshot or a previous run's report as current success.
 
 Print inspection reads this run's output rather than a shared old `.qa/print` folder:

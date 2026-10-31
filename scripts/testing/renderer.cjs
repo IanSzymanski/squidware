@@ -58,37 +58,37 @@ async function selectNativeOption(window, selector, value, { timeoutMs = 15000 }
         // to Chromium’s previous search prefix. A real blur/focus starts a new session.
         control.blur();
         control.focus();
-        const probe = { released: 0, keys: [...prefix].map(key => key.toLowerCase()) };
-        // Earlier input (for example Return after typing a name) can release
-        // after this listener attaches. Count only this sequence, in order.
-        probe.listener = event => {
-          if (event.key?.toLowerCase() === probe.keys[probe.released]) probe.released++;
-        };
-        control.__squidwareSelectProbe = probe;
-        control.addEventListener('keyup', probe.listener, true);
         return { prefix, label };
       }
     }
     throw new Error('Ambiguous native option label: ' + label);
   })()`);
+  let active = true;
   try {
-    for (const character of choice.prefix) {
-      for (const type of ['keyDown', 'char', 'keyUp']) window.webContents.sendInputEvent({ type, keyCode: character });
-    }
-    // The value can already match, or match an early ambiguous prefix. Do not
-    // let queued typeahead characters spill into the next focused input.
-    await waitFor(() => window.webContents.executeJavaScript(`(() => {
-      const control = document.querySelector(${query});
-      return control?.__squidwareSelectProbe?.released === ${choice.prefix.length} && control.value === ${JSON.stringify(String(value))};
-    })()`), `native option ${choice.label} in ${selector}`, { timeoutMs });
+    // CDP acknowledges each native event after dispatch. Electron's keyCode
+    // mapping does not round-trip arbitrary label characters (for example ×)
+    // through DOM keyup.key, so a release counter cannot be the input barrier.
+    const input = (async () => {
+      for (const character of choice.prefix) {
+        for (const type of ['keyDown', 'char', 'keyUp']) {
+          if (!active) return;
+          await window.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
+            type, key: character, ...(type === 'char' ? { text: character } : {}),
+          });
+        }
+      }
+    })();
+    // Wait for the complete dispatch even when the value matches initially or
+    // after an early ambiguous prefix. Never retype the sequence on a retry.
+    await waitFor(async () => {
+      await input;
+      return active && window.webContents.executeJavaScript(`document.querySelector(${query})?.value === ${JSON.stringify(String(value))}`);
+    }, `native option ${choice.label} in ${selector}`, { timeoutMs });
   } catch (error) {
-    const observed = await window.webContents.executeJavaScript(`({ value: document.querySelector(${query})?.value, focused: document.activeElement?.outerHTML, probe: document.querySelector(${query})?.__squidwareSelectProbe && {released: document.querySelector(${query}).__squidwareSelectProbe.released, keys: document.querySelector(${query}).__squidwareSelectProbe.keys} })`).catch(() => null);
+    const observed = await window.webContents.executeJavaScript(`({ value: document.querySelector(${query})?.value, focused: document.activeElement?.outerHTML })`).catch(() => null);
     throw new Error(`${error.message}; observed ${JSON.stringify(observed)}`, { cause: error });
   } finally {
-    await window.webContents.executeJavaScript(`(() => {
-      const control = document.querySelector(${query}), probe = control?.__squidwareSelectProbe;
-      if (probe) { control.removeEventListener('keyup', probe.listener, true); delete control.__squidwareSelectProbe; }
-    })()`).catch(() => {});
+    active = false;
   }
 }
 
