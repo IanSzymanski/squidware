@@ -1,0 +1,90 @@
+{
+  "checks": [
+    "explicit single selection, native interval/control/waypoint input, implicit gaps, overlapping validation and Escape preserve production/history",
+    "independent A/B schedules, one transaction each, atomic undo/redo, analytic boundary scrubs and live stationary A while B/show clock advance",
+    "v6 native save/reopen, CSV/PDF, safe path-editor routing, themes and narrow 150% keyboard apply retain identities and independent timing"
+  ],
+  "viewports": [
+    {
+      "name": "schedule-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "schedule-intervals.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-applied.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "schedule-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "dialogHeight": 456
+    }
+  ],
+  "liveHold": {
+    "before": {
+      "count": 6.531541950113379,
+      "a": "translate(20 25)",
+      "b": "translate(25.063083900226758 12.531541950113379)"
+    },
+    "after": {
+      "count": 7.251360544217688,
+      "a": "translate(20 25)",
+      "b": "translate(26.502721088435376 13.251360544217688)"
+    }
+  },
+  "source": {
+    "revision": "365c11d635a1c018e2391c5272adea0c878b04c0",
+    "tree": "ec5360c5d248c386505bf226e019c4c6cfb9212b",
+    "dirty": true,
+    "contentHash": "e468f940561d23747433ff2df9df350e0868b8e56db33e5ab41889238dc65c9f",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

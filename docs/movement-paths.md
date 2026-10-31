@@ -1,6 +1,6 @@
 # Performer travel paths
 
-Issue [#73](https://github.com/IanSzymanski/squidware/issues/73) adds one full-move cubic Bézier path per performer, alongside implicit/explicit straight lines. Point/handle manipulation, multiple timed submoves and curved spacing/stride analysis remain in #75, #74 and #76 respectively.
+Issue [#73](https://github.com/IanSzymanski/squidware/issues/73) adds one full-move cubic Bézier path per performer, alongside implicit/explicit straight lines. Independent holds and submoves are now described in [movement schedules](movement-schedules.md). Field handle manipulation and detailed spacing/stride analysis remain in #75 and #76.
 
 Pause at an arrival after the opening and select one performer. Choose **Edit performer path** in the Inspector or palette. Choose Cubic Bézier and enter two control points in field yards. Numeric typing, steppers and keyboard navigation are supported. Start/end coordinates follow the two sets. Solid preview, dashed saved geometry, numbered controls and a ring at the sampled count distinguish states without color alone. The local-count slider previews the same evaluator used by playback and 3D. Apply creates one named undo transaction; Cancel, Escape and backdrop dismissal preserve the production.
 
@@ -13,3 +13,8 @@ Spacing/stride analysis for a move containing a curve is explicitly unavailable 
 Saving any curve writes wire format v5; tempo maps and recording alignment remain independently optional and preserved. Removing all curves restores the least format version required by remaining timing metadata. The canonical editor remains schemaVersion 2 internally. See [format, precision and compatibility](../format/FORMAT.md#v5-curved-movement-extension) and [example](../format/examples/curved-v5.squid).
 
 Design guidance sections 1–5 apply. Existing Modal, FieldDrawing, tooltips, theme tokens, command registry and transaction/history behavior are reused. The dialog adds no permanent field row. Evidence and measured viewport limits are recorded in [validation evidence](evidence/paths/README.md).
+
+
+## Independent timing and intermediate arrivals
+
+Choose **Edit movement timing** to add holds and independently timed straight/curved submoves. Existing timed paths automatically open that editor from Edit performer path, preventing the simple curve editor from replacing a schedule. The shared evaluator now also resolves intermediate destinations and movement holds; format v6 protects them on save. See [schedule behavior](movement-schedules.md).

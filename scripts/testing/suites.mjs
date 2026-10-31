@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  { name: 'movement-schedule', title: 'Independent holds/submoves, numeric intervals, v6 files and shared count sampling', script: 'movement-schedule-qa.mjs', timeoutMs: 240000 },
   { name: 'paths', title: 'Cubic travel previews, native v5 files, guarded editing and shared samples', script: 'paths-qa.mjs', timeoutMs: 210000 },
   { name: 'templates', title: 'Personal templates, native import/export, guarded previews and persistence', script: 'templates-qa.mjs', timeoutMs: 300000 },
   { name: 'smoke', title: 'Sandbox and native bridge', timeoutMs: 60000 },

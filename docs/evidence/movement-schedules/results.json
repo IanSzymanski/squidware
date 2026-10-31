@@ -1,0 +1,82 @@
+{
+  "checks": [
+    "explicit single selection, native interval/control/waypoint input, implicit gaps, overlapping validation and Escape preserve production/history",
+    "independent A/B schedules, one transaction each, atomic undo/redo, analytic boundary scrubs and live stationary A while B/show clock advance",
+    "v6 native save/reopen, CSV/PDF, safe path-editor routing, themes and narrow 150% keyboard apply retain identities and independent timing"
+  ],
+  "viewports": [
+    {
+      "name": "schedule-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "schedule-intervals.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-applied.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "schedule-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "schedule-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297,
+      "dialogHeight": 456
+    }
+  ],
+  "liveHold": {
+    "before": 6.508321995464852,
+    "after": 7.280385487528346
+  },
+  "source": {
+    "revision": "365c11d635a1c018e2391c5272adea0c878b04c0",
+    "tree": "ec5360c5d248c386505bf226e019c4c6cfb9212b",
+    "dirty": true,
+    "contentHash": "dd3dd0e6ad7335cf97381a04ded70e7f1a6cdfe74e28b8ae5f13b00cbe4c5c5d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

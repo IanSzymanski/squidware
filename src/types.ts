@@ -51,9 +51,10 @@ export type AnalysisOverrides = Partial<AnalysisThresholds>;
 export type DirectionRules = Partial<Record<MarchingDirection, AnalysisOverrides>>;
 export interface SectionAnalysisRules extends AnalysisOverrides { sectionId: string; directions?: DirectionRules }
 export interface ProjectAnalysisRules { defaults: AnalysisThresholds; directions?: DirectionRules; sections?: SectionAnalysisRules[] }
-export interface LinePathSegment { id: string; kind: 'line'; startCount: number; endCount: number }
-export interface CubicPathSegment { id: string; kind: 'cubic'; startCount: number; endCount: number; control1: Point; control2: Point }
-export type PathSegment = LinePathSegment | CubicPathSegment;
+export interface LinePathSegment { id: string; kind: 'line'; startCount: number; endCount: number; to?: Point }
+export interface CubicPathSegment { id: string; kind: 'cubic'; startCount: number; endCount: number; control1: Point; control2: Point; to?: Point }
+export interface HoldPathSegment { id: string; kind: 'hold'; startCount: number; endCount: number }
+export type PathSegment = LinePathSegment | CubicPathSegment | HoldPathSegment;
 export interface PerformerPath { segments: PathSegment[] }
 export interface Move extends OpeningTiming {
   id: string; fromSetId: string; toSetId: string; counts: number;

@@ -136,9 +136,14 @@ describe('schema v2 rejects ambiguous or unsupported productions', () => {
   it('rejects unsupported segment kinds and partitions rather than erasing motion intent', () => {
     const project = fixture();
     const segment = { id: 'segment', kind: 'line' as const, startCount: 0, endCount: 16 };
-    for (const segments of [[], [segment, { ...segment, id: 'second' }], [{ ...segment, startCount: 1 }], [{ ...segment, endCount: 15 }]]) {
+    for (const segments of [[], [segment, { ...segment, id: 'second' }]]) {
       project.moves[0].paths.a = { segments };
       expect(() => serializeProjectV2(project)).toThrow(/segments/);
+    }
+    for (const segments of [[{ ...segment, startCount: 1 }], [{ ...segment, endCount: 15 }]]) {
+      const partial = fixture(); partial.moves[0].paths.a = { segments };
+      expect(() => parseProjectV2(JSON.stringify(partial))).toThrow(/schema version 6/);
+      expect(JSON.parse(serializeProjectV2(partial)).schemaVersion).toBe(6);
     }
     const input = { ...project, moves: [{ ...project.moves[0], paths: { a: { segments: [{ ...segment, kind: 'curve' }] } } }, project.moves[1]] };
     expect(() => validateProjectV2(input)).toThrow(/Update Squidware/);
@@ -154,9 +159,9 @@ describe('schema v2 rejects ambiguous or unsupported productions', () => {
     expect(() => parseProjectV2('{broken')).toThrow(/not valid JSON/);
     expect(() => parseProjectV2('null')).toThrow(/root/);
     for (const schemaVersion of [0, -1, '2', 2.5, null]) {
-      expect(() => parseProjectV2(JSON.stringify({ schemaVersion }))).toThrow(/must be 1, 2, 3, 4 or 5/);
+      expect(() => parseProjectV2(JSON.stringify({ schemaVersion }))).toThrow(/must be 1, 2, 3, 4, 5 or 6/);
     }
-    expect(() => parseProjectV2(JSON.stringify({ schemaVersion: 6 }))).toThrow(/version 6.*Update Squidware/);
+    expect(() => parseProjectV2(JSON.stringify({ schemaVersion: 7 }))).toThrow(/version 7.*Update Squidware/);
     expect(() => parseProjectV2(v1Text.replace('"counts":16', '"counts":0'))).toThrow(/sets\[1\].counts/);
     expect(() => validateProjectV2(validateLegacyProject(JSON.parse(v1Text)))).toThrow(/Use migrateProjectV1/);
   });

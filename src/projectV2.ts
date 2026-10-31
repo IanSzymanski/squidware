@@ -1,4 +1,4 @@
-import { hasCurvedPaths } from './movementPaths';
+import { hasCurvedPaths, hasScheduledPaths } from './movementPaths';
 import { validateAudioAnchors } from './audioAlignment';
 import { compileTempo, validateTempoMap } from './tempo';
 import { PROJECT_LIMITS, validateLegacyProject } from './projectValidation';
@@ -9,7 +9,7 @@ import { validateMeter } from './meter';
 import { compileScore, validateScore } from './score';
 import type { GeometryValidation } from './projectValidation';
 import type { DrillSet, LegacyDrillSet, LegacyProject, Move, OpeningTiming, Project, PathSegment } from './types';
-export type { Move, OpeningTiming, LinePathSegment, CubicPathSegment, PathSegment, PerformerPath } from './types';
+export type { Move, OpeningTiming, LinePathSegment, CubicPathSegment, HoldPathSegment, PathSegment, PerformerPath } from './types';
 export type PictureSet = DrillSet;
 export type ProjectV2 = Project;
 
@@ -42,10 +42,10 @@ function timing(value: unknown, path: string): OpeningTiming {
   };
 }
 function versionError(version: unknown): never {
-  if (typeof version === 'number' && Number.isInteger(version) && version > 5) {
-    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3, 4 and 5.`);
+  if (typeof version === 'number' && Number.isInteger(version) && version > 6) {
+    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3, 4, 5 and 6.`);
   }
-  return invalid('schemaVersion', 'must be 1, 2, 3, 4 or 5. Open a supported Squidware project (.squid) file.');
+  return invalid('schemaVersion', 'must be 1, 2, 3, 4, 5 or 6. Open a supported Squidware project (.squid) file.');
 }
 function assertSize(content: string): void {
   if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
@@ -82,7 +82,7 @@ export function migrateProjectV1(input: unknown): ProjectV2 {
 export function validateProjectV2(input: unknown, geometry: GeometryValidation = {}): ProjectV2 {
   const data = object(input, 'root');
   if (data.schemaVersion === 1) invalid('schemaVersion', 'must be 2 for v2 validation. Use migrateProjectV1 or parseProjectV2 to migrate a v1 file.');
-  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5) versionError(data.schemaVersion);
+  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5 && data.schemaVersion !== 6) versionError(data.schemaVersion);
   if (!Array.isArray(data.sets) || data.sets.length < 1 || data.sets.length > PROJECT_LIMITS.sets) {
     invalid('sets', `must contain 1 to ${PROJECT_LIMITS.sets} items.`);
   }
@@ -147,24 +147,41 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
     const paths = Object.fromEntries(base.performers.filter(performer => Object.hasOwn(rawPaths, performer.id)).map(performer => {
       const performerPath = `${path}.paths.${performer.id}`;
       const raw = object(rawPaths[performer.id], performerPath);
-      if (!Array.isArray(raw.segments) || raw.segments.length !== 1) {
-        invalid(`${performerPath}.segments`, 'must contain one full-move line or cubic segment. Holds and submoves require a newer path implementation.');
+      if (!Array.isArray(raw.segments) || raw.segments.length < 1 || raw.segments.length > PROJECT_LIMITS.pathSegments) {
+        invalid(`${performerPath}.segments`, `must contain 1 to ${PROJECT_LIMITS.pathSegments} intervals.`);
       }
-      const segmentPath = `${performerPath}.segments[0]`;
-      const segment = object(raw.segments[0], segmentPath);
-      if (segment.kind !== 'line' && segment.kind !== 'cubic') invalid(`${segmentPath}.kind`, 'is unsupported. Update Squidware before opening projects with hold or other path segments.');
-      const line: PathSegment = segment.kind === 'cubic' ? {
-        id: identifier(segment.id, `${segmentPath}.id`), kind: 'cubic',
-        startCount: numeric(segment.startCount, `${segmentPath}.startCount`, 0, 0, true),
-        endCount: numeric(segment.endCount, `${segmentPath}.endCount`, counts, counts, true),
-        control1: control(segment.control1, `${segmentPath}.control1`),
-        control2: control(segment.control2, `${segmentPath}.control2`),
-      } : {
-        id: identifier(segment.id, `${segmentPath}.id`), kind: 'line',
-        startCount: numeric(segment.startCount, `${segmentPath}.startCount`, 0, 0, true),
-        endCount: numeric(segment.endCount, `${segmentPath}.endCount`, counts, counts, true),
-      };
-      return [performer.id, { segments: [line] }];
+      const seenSegments = new Set<string>();
+      let previousEnd = 0;
+      const segments: PathSegment[] = raw.segments.map((value, i) => {
+        const segmentPath = `${performerPath}.segments[${i}]`, segment = object(value, segmentPath);
+        const id = identifier(segment.id, `${segmentPath}.id`);
+        if (seenSegments.has(id)) invalid(`${segmentPath}.id`, 'duplicates an interval ID.');
+        seenSegments.add(id);
+        const startCount = numeric(segment.startCount, `${segmentPath}.startCount`, 0, counts);
+        const endCount = numeric(segment.endCount, `${segmentPath}.endCount`, 0, counts);
+        if (endCount <= startCount) invalid(segmentPath, 'arrival/end count must be greater than departure/start count.');
+        if (startCount < previousEnd) invalid(segmentPath, 'overlaps the preceding interval or is out of count order.');
+        previousEnd = endCount;
+        const timing = { id, startCount, endCount };
+        if (segment.kind === 'hold') {
+          if (['to', 'control1', 'control2'].some(key => Object.hasOwn(segment, key))) invalid(segmentPath, 'a hold inherits the preceding position and cannot contain travel geometry.');
+          return { ...timing, kind: 'hold' };
+        }
+        if (segment.kind !== 'line' && segment.kind !== 'cubic') invalid(`${segmentPath}.kind`, 'is unsupported. Update Squidware before opening other path segment kinds.');
+        const target = segment.to === undefined ? {} : { to: control(segment.to, `${segmentPath}.to`) };
+        return segment.kind === 'cubic' ? { ...timing, ...target, kind: 'cubic',
+          control1: control(segment.control1, `${segmentPath}.control1`), control2: control(segment.control2, `${segmentPath}.control2`) }
+          : { ...timing, ...target, kind: 'line' };
+      });
+      const lastTravel = segments.reduce((last, segment, i) => segment.kind !== 'hold' ? i : last, -1);
+      segments.forEach((segment, i) => {
+        if (segment.kind === 'hold') return;
+        if (i === lastTravel && segment.to !== undefined) invalid(`${performerPath}.segments[${i}].to`, 'the last travel uses the destination picture; omit its duplicated endpoint.');
+        if (i !== lastTravel && segment.to === undefined) invalid(`${performerPath}.segments[${i}].to`, 'is required for an intermediate travel arrival.');
+      });
+      const from = base.sets[index].positions[performer.id], to = base.sets[index + 1].positions[performer.id];
+      if (lastTravel < 0 && (from.x !== to.x || from.y !== to.y)) invalid(performerPath, 'a hold-only schedule requires identical endpoint picture positions.');
+      return [performer.id, { segments }];
     }));
     return { id: moveId, fromSetId, toSetId, counts, ...moveTiming, paths, ...(move.marchingDirections === undefined ? {} : { marchingDirections: validateMarchingDirections(move.marchingDirections, performerIds, `${path}.marchingDirections`) }) };
   });
@@ -189,9 +206,10 @@ export function parseProjectV2(content: string): ProjectV2 {
   if ((data.schemaVersion === 1 || data.schemaVersion === 2) && data.tempoMap !== undefined) invalid('tempoMap', 'requires schema version 3 so older applications cannot discard timing.');
   if ([1, 2, 3].includes(data.schemaVersion as number) && data.audioAnchors !== undefined) invalid('audioAnchors', 'requires schema version 4 so older applications cannot discard alignment.');
   if (data.schemaVersion === 1) return migrateProjectV1(data);
-  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5) {
+  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5 || data.schemaVersion === 6) {
     const checked = validateProjectV2(data);
-    if (data.schemaVersion !== 5 && checked.moves.some(hasCurvedPaths)) invalid('moves.paths', 'cubic paths require schema version 5 so older applications cannot discard geometry.');
+    if (data.schemaVersion !== 6 && checked.moves.some(hasScheduledPaths)) invalid('moves.paths', 'timed intervals require schema version 6 so older applications cannot discard movement.');
+    if (Number(data.schemaVersion) < 5 && checked.moves.some(hasCurvedPaths)) invalid('moves.paths', 'cubic paths require schema version 5 so older applications cannot discard geometry.');
     return checked;
   }
   return versionError(data.schemaVersion);
@@ -201,7 +219,7 @@ export function serializeProjectV2(project: ProjectV2): string {
   const checked = validateProjectV2(project);
   const mapped = !!checked.tempoMap && !!(checked.tempoMap.regions.length || checked.tempoMap.holds.length);
   const { tempoMap, audioAnchors, ...plain } = checked;
-  const content = `${JSON.stringify(checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
+  const content = `${JSON.stringify(checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
   assertSize(content);
   return content;
 }
@@ -211,6 +229,7 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
+  if (checked.moves.some(hasScheduledPaths)) throw Error('Timed paths cannot be downgraded to legacy data.');
   if (checked.moves.some(hasCurvedPaths)) throw Error('Curved paths cannot be downgraded to legacy data.');
   if (checked.audioAnchors?.length) throw Error('Audio alignment cannot be downgraded to legacy data.');
   if (checked.tempoMap && (checked.tempoMap.regions.length || checked.tempoMap.holds.length)) throw Error('Tempo maps cannot be downgraded to fixed-tempo legacy data.');

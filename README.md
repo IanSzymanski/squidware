@@ -121,7 +121,7 @@ The desktop app runs without an account or external service. Automatic recovery 
 | Local recovery | Automatic drill recovery copies; keep the package separately for its recording. |
 | PDF / CSV / SVG | Field charts and performer coordinate sheets, coordinate data, or the current field chart. |
 
-The public [`.squid` format contract](format/FORMAT.md) includes v1–v5 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Ordinary saves use schema v2, tempo maps v3, recording alignment v4, and [curved performer paths](docs/movement-paths.md) v5. Older apps reject newer versions instead of discarding geometry or timing. V1–v4 projects still open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
+The public [`.squid` format contract](format/FORMAT.md) includes v1–v6 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Ordinary saves use schema v2, tempo maps v3, recording alignment v4, [curved performer paths](docs/movement-paths.md) v5, and [independent holds/submoves](docs/movement-schedules.md) v6. Older apps reject newer versions instead of discarding geometry or timing. V1–v5 projects still open. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
 
 ## Development and verification
 
@@ -151,7 +151,7 @@ To build for the current host, run `pnpm dist --publish never`; Windows also has
 
 ## Scope and roadmap
 
-Squidware currently supports standard 100 × 53⅓-yard college/high-school fields, straight travel between sets, and constant-speed or eased movement. The 3D figures are rehearsal markers. Curved individual paths, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
+Squidware supports standard 100 × 53⅓-yard college/high-school fields, straight/cubic performer paths, and independently timed holds and submoves. Linear or eased timing applies within each travel interval; curved parameter speed can vary. The 3D figures are rehearsal markers. Detailed spacing/stride analysis for custom paths, field path handles, advanced path operations, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
 
 Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
 

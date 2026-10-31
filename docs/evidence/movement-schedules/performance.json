@@ -1,0 +1,41 @@
+{
+  "host": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "scenario": "32 mixed line/cubic/hold intervals per performer in first move of 128-set show",
+  "results": [
+    {
+      "performers": 2,
+      "sets": 128,
+      "intervalsPerPerformer": 32,
+      "samples": 2000,
+      "sampleMeanMs": 0.0037385235000002128,
+      "sampleP95Ms": 0.006621999999993022,
+      "validationMeanMs": 1.2753925999999978,
+      "wireBytes": 64831
+    },
+    {
+      "performers": 64,
+      "sets": 128,
+      "intervalsPerPerformer": 32,
+      "samples": 2000,
+      "sampleMeanMs": 0.024474578000000007,
+      "sampleP95Ms": 0.032621000000006006,
+      "validationMeanMs": 4.793110899999999,
+      "wireBytes": 744557
+    },
+    {
+      "performers": 500,
+      "sets": 128,
+      "intervalsPerPerformer": 32,
+      "samples": 2000,
+      "sampleMeanMs": 0.2520853585000004,
+      "sampleP95Ms": 0.3647809999999936,
+      "validationMeanMs": 30.064642099999958,
+      "wireBytes": 5531137
+    }
+  ],
+  "limits": "V8 engine/codec microbenchmark, not UI rendering or hardware qualification."
+}

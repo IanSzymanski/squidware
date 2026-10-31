@@ -54,8 +54,8 @@ describe('reviewed path transactions', () => {
     const p = editMovementPath(project, edit), segment = p.moves[0].paths[id].segments[0];
     const resized = updateSetProperties(p, 1, { counts: 64 });
     expect(resized.moves[0].paths[id].segments[0]).toEqual({ ...segment, endCount: 64 });
-    expect(() => splitTransition(p, { moveId: edit.moveId, count: 8 })).toThrow(/Remove curved/);
-    expect(() => moveSetTo(p, p.sets[2].id, 1)).toThrow(/curved move/);
+    expect(() => splitTransition(p, { moveId: edit.moveId, count: 8 })).toThrow(/Remove custom/);
+    expect(() => moveSetTo(p, p.sets[2].id, 1)).toThrow(/detailed move/);
     expect(p.sets).toEqual(project.sets);
   });
 });

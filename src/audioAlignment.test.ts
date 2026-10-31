@@ -64,7 +64,7 @@ it('rejects contradictory, unsafe and outside-show anchors, malformed rows and o
   expect(parseAudioAnchorText('8\t5.4\n16\t9.4', .4, 32)).toEqual(fixture().audioAnchors.slice(0, 2));
   expect(parseAudioAnchorText(audioAnchorText(fixture().audioAnchors, .4), .4, 32)).toEqual(fixture().audioAnchors);
   for (const schemaVersion of [1, 2, 3]) expect(() => parseProject(JSON.stringify({ ...fixture(), schemaVersion }))).toThrow(/requires schema version 4/);
-  expect(() => parseProject(JSON.stringify({ ...fixture(), schemaVersion: 6 }))).toThrow(/Update Squidware/);
+  expect(() => parseProject(JSON.stringify({ ...fixture(), schemaVersion: 7 }))).toThrow(/Update Squidware/);
   expect(() => projectV2AsLegacy(fixture())).toThrow(/cannot be downgraded/);
 });
 it('commits offset and anchors in one named action, rejects stale edits and truncation, and retains portable metadata', () => {

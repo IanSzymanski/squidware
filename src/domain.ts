@@ -1,4 +1,4 @@
-import { sampleMovement, movementLength, hasCurvedPaths } from './movementPaths';
+import { sampleMovement, movementLength, hasDetailedPaths, isScheduledPath, movementSchedule } from './movementPaths';
 import { compileTempo, secondsAt, countAt, moveTempoText } from './tempo';
 import { resolveAnalysisRules, spacingRuleText, strideRuleText } from './analysis/rules';
 import { affinePoint } from './transforms';
@@ -260,7 +260,7 @@ export function sampleProject(project: Project, count: number): TimelineSample {
   const move = project.moves[timing.setIndex - 1];
   return { ...timing, positions: Object.fromEntries(project.performers.map(performer => {
     const { from, to } = moveEndpoints(project, timing.setIndex - 1, performer.id)!;
-    return [performer.id, sampleMovement(from, to, move.paths[performer.id], timing.progress, move.transition)];
+    return [performer.id, sampleMovement(from, to, move.paths[performer.id], timing.localCount, move.counts, move.transition)];
   })) };
 }
 
@@ -295,7 +295,7 @@ export function analyzeTransition(project: Project, setIndex: number, base?: Par
   if (!Number.isInteger(setIndex) || setIndex < 1 || setIndex >= project.sets.length) return [];
   const destination = project.sets[setIndex];
   const move = project.moves[setIndex - 1];
-  if (hasCurvedPaths(move)) throw new Error('Curved-path spacing and stride checks are unavailable. This move has not been checked.');
+  if (hasDetailedPaths(move)) throw new Error('Detailed-path spacing and stride checks are unavailable. This move has not been checked.');
   const previous = project.sets[setIndex - 1];
   const issues: TransitionIssue[] = [];
   const startCount = setStartCount(project, setIndex - 1);
@@ -445,6 +445,7 @@ export function performerMoveOutput(project: Project, index: number, performerId
   const path = move.paths[performerId];
   const distanceYards = movementLength(endpoints.from, endpoints.to, path);
   if (distanceYards <= EPSILON) return { kind: 'hold', counts: move.counts, arrival, direction: 'Hold', distanceYards, averageStepsPerFive: null, peakStepsPerFive: null, description: `Hold for ${move.counts} ${move.counts === 1 ? 'count' : 'counts'}` };
+  if (isScheduledPath(path, move.counts)) return { kind: 'move', counts: move.counts, arrival, direction: 'Timed path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `${movementSchedule(path!, move.counts)}. Travel ${distanceYards.toFixed(3)} yd. Counts are local to this move. Peak step size and detailed-path checks are unavailable.` };
   if (path?.segments[0]?.kind === 'cubic') return { kind: 'move', counts: move.counts, arrival, direction: 'Curved path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `Curved travel: ${distanceYards.toFixed(3)} yards in ${move.counts} counts. Bézier parameter timing; speed varies. Peak step size and curved spacing analysis are unavailable.` };
   const direction = 'Toward ' + [Math.abs(dx) > distanceYards * 1e-9 ? dx > 0 ? 'Side 2' : 'Side 1' : '', Math.abs(dy) > distanceYards * 1e-9 ? dy > 0 ? 'front sideline' : 'back sideline' : ''].filter(Boolean).join(' and ');
   const averageStepsPerFive = 5 * move.counts / distanceYards;

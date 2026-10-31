@@ -37,7 +37,14 @@ export function formatSchema(version, limits) {
     definitions.picture = {...object(picture),not:{anyOf:['counts','tempo','transition'].map(key=>({required:[key]}))}};
     definitions.segment = object({id:ref('id'),kind:{const:'line'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true)});
     if (version >= 5) definitions.segment = { oneOf: [definitions.segment, object({id:ref('id'),kind:{const:'cubic'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true),control1:ref('point'),control2:ref('point')})] };
-    definitions.path = object({segments:array(ref('segment'),1,1)});
+    if (version >= 6) {
+      const interval = { id: ref('id'), startCount: number(0,limits.counts.max), endCount: { type:'number',exclusiveMinimum:0,maximum:limits.counts.max } };
+      const travel = { ...interval, kind: { const:'line' }, to: ref('point') };
+      const cubic = { ...interval, kind: { const:'cubic' }, to: ref('point'), control1: ref('point'), control2: ref('point') };
+      definitions.segment = { oneOf: [object(travel,Object.keys(travel).filter(k=>k!=='to')),object(cubic,Object.keys(cubic).filter(k=>k!=='to')),
+        { ...object({ ...interval, kind: { const:'hold' } }), not: { anyOf: ['to','control1','control2'].map(key=>({required:[key]})) } }] };
+    }
+    definitions.path = object({segments:array(ref('segment'),1,version>=6?limits.pathSegments:1)});
     definitions.move = object({id:ref('id'),fromSetId:ref('id'),toSetId:ref('id'),counts:number(limits.counts.min,limits.counts.max,true),...timing,paths:{type:'object',maxProperties:limits.performers,propertyNames:ref('id'),additionalProperties:ref('path')}});
     definitions.selectionGroup = object({ id: ref('id'), name: { ...text(limits.text.groupName), pattern: '^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$' }, performerIds: { ...array(ref('id'), 0, limits.performers), uniqueItems: true } });
     const analysisThreshold = number(limits.analysisThreshold.min, limits.analysisThreshold.max);
@@ -82,12 +89,26 @@ export function smallExample() {
     selectionGroups:[{id:'lead-pair',name:'Lead pair',performerIds:['a','b']},{id:'solo',name:'Solo',performerIds:['a']}],
     openingTiming:{tempo:120,transition:'linear'},audioOffsetSeconds:-1.25};
 }
+export function scheduledExample() {
+  const p = smallExample();
+  p.schemaVersion = 6;
+  p.moves[0].paths = {
+    a: { segments: [
+      { id:'travel-a',kind:'line',startCount:2,endCount:6,to:{x:20,y:25} },
+      { id:'hold-a',kind:'hold',startCount:6,endCount:8 },
+      { id:'curve-a',kind:'cubic',startCount:8,endCount:12,control1:{x:20,y:35},control2:{x:30,y:35} },
+    ] },
+    b: { segments: [{ id:'travel-b',kind:'line',startCount:4,endCount:14 }] },
+  };
+  p.tempoMap = { version:1,regions:[],holds:[{count:5,seconds:1}] };
+  return p;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
   const files = new Map([['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
-    ['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
+    ['format/squid-v6.schema.json',JSON.stringify(formatSchema(6,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scheduled-v6.squid',JSON.stringify(scheduledExample(),null,2)+'\n'],['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);
 }

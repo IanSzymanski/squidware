@@ -50,7 +50,7 @@ describe('tempo map analytic timing',()=>{
 describe('tempo map validation and persistence',()=>{
   it('writes mapped productions as v3, reads them as canonical editor snapshots and keeps ordinary saves v2',()=>{
     const p=mapped(),wire=serializeProject(p);expect(JSON.parse(wire).schemaVersion).toBe(3);expect(parseProject(wire)).toEqual(p);expect(JSON.parse(serializeProject(fixture())).schemaVersion).toBe(2);
-    expect(()=>parseProject(JSON.stringify({...p,schemaVersion:2}))).toThrow(/requires schema version 3/);expect(()=>projectV2AsLegacy(p)).toThrow(/cannot be downgraded/);expect(()=>parseProject(JSON.stringify({schemaVersion:6}))).toThrow(/Update Squidware/);
+    expect(()=>parseProject(JSON.stringify({...p,schemaVersion:2}))).toThrow(/requires schema version 3/);expect(()=>projectV2AsLegacy(p)).toThrow(/cannot be downgraded/);expect(()=>parseProject(JSON.stringify({schemaVersion:7}))).toThrow(/Update Squidware/);
   });
   it('rejects overlap, duplicates, nonfinite/blank/oversized events and anchors outside the current show',()=>{
     const bad:unknown[]=[null,{...ramp,version:2},{...ramp,regions:[{...ramp.regions[0],endCount:0}]},{...ramp,regions:[ramp.regions[0],{...ramp.regions[1],startCount:15}]},{...ramp,regions:[{...ramp.regions[0],startTempo:0}]},{...ramp,holds:[{count:32,seconds:1}]},{...ramp,holds:[{count:1.5,seconds:1}]},{...ramp,holds:[{count:4,seconds:NaN}]},{...ramp,holds:[{count:4,seconds:601}]},{...ramp,holds:[{count:4,seconds:0}]},{...ramp,holds:[{count:4,seconds:1},{count:4,seconds:2}]},{...ramp,regions:Array(257).fill(ramp.regions[0])}];

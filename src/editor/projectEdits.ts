@@ -1,4 +1,4 @@
-import { hasCurvedPaths } from '../movementPaths';
+import { hasDetailedPaths, hasScheduledPaths } from '../movementPaths';
 import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, Move, Project, SetPropertyUpdate } from '../types';
 
@@ -13,7 +13,7 @@ export function reconnectSets(project: Project, sets: DrillSet[], newTiming = ne
     const old = incoming.get(set.id);
     if (old) {
       if (old.fromSetId === sets[index].id) return old;
-      if (hasCurvedPaths(old)) throw new Error('This operation changes a curved move’s starting set. Remove its curved paths first.');
+      if (hasDetailedPaths(old)) throw new Error('This operation changes a detailed move’s starting set. Remove its custom paths first.');
       // Declarations describe this exact move, not a new predecessor's travel.
       const { marchingDirections: _directions, ...rewired } = old;
       return { ...rewired, fromSetId: sets[index].id };
@@ -37,6 +37,8 @@ export function moveSetTo(project: Project, id: string, target: number): Project
 export function updateSetProperties(project: Project, index: number, update: SetPropertyUpdate): Project {
   validateSetUpdate(update, index);
   const { counts, tempo, transition, name, notes } = update;
+  const incoming = project.moves[index - 1];
+  if (incoming && counts !== undefined && counts !== incoming.counts && hasScheduledPaths(incoming)) throw new Error('Remove timed paths before resizing this move. Detailed-path resizing is not supported yet.');
   const sets = name === undefined && notes === undefined ? project.sets : project.sets.map((set, i) => i === index
     ? { ...set, ...(name === undefined ? {} : { name }), ...(notes === undefined ? {} : { notes }) } : set);
   if (index === 0) return { ...project, sets, openingTiming: { ...project.openingTiming,

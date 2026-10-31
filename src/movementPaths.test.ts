@@ -19,12 +19,12 @@ const fixture = () => {
 
 describe('shared cubic performer travel', () => {
   it('agrees with analytic cubic positions, clamps boundaries and applies easing exactly once', () => {
-    expect(sampleMovement(from, to, path, .25)).toEqual({ x: 1.25, y: 4.5 });
-    expect(sampleMovement(from, to, path, .5)).toEqual({ x: 4, y: 6 });
-    expect(sampleMovement(from, to, path, -1)).toEqual(from);
-    expect(sampleMovement(from, to, path, 2)).toEqual(to);
-    expect(sampleMovement(from, to, path, NaN)).toEqual(from);
-    expect(sampleMovement(from, to, path, .25, 'ease')).toEqual(sampleMovement(from, to, path, .15625));
+    expect(sampleMovement(from, to, path, 4, 16)).toEqual({ x: 1.25, y: 4.5 });
+    expect(sampleMovement(from, to, path, 8, 16)).toEqual({ x: 4, y: 6 });
+    expect(sampleMovement(from, to, path, -1, 16)).toEqual(from);
+    expect(sampleMovement(from, to, path, 32, 16)).toEqual(to);
+    expect(sampleMovement(from, to, path, NaN, 16)).toEqual(from);
+    expect(sampleMovement(from, to, path, 4, 16, 'ease')).toEqual(sampleMovement(from, to, path, 2.5, 16));
     expect(movementSvg(from, to, path)).toBe('M 0 0 C 0 8 8 8 8 0');
     // This cubic has analytic length 16 (the standard symmetric arch).
     expect(movementLength(from, to, path)).toBeCloseTo(16, 3);
@@ -32,12 +32,12 @@ describe('shared cubic performer travel', () => {
   it('handles a line-equivalent cubic, stationary curve and a loop without mistaking matching endpoints for a hold', () => {
     const line: PerformerPath = { segments: [{ ...path.segments[0], kind: 'cubic', control1: { x: 8 / 3, y: 0 }, control2: { x: 16 / 3, y: 0 } }] };
     for (const t of [0, .001, .25, .5, .9, 1]) {
-      expect(sampleMovement(from, to, line, t).x).toBeCloseTo(8 * t, 12);
-      expect(sampleMovement(from, to, undefined, t).x).toBe(8 * t);
+      expect(sampleMovement(from, to, line, t * 16, 16).x).toBeCloseTo(8 * t, 12);
+      expect(sampleMovement(from, to, undefined, t * 16, 16).x).toBe(8 * t);
     }
     const stationary: PerformerPath = { segments: [{ ...path.segments[0], kind: 'cubic', control1: from, control2: from }] };
     expect(movementLength(from, from, stationary)).toBe(0);
-    expect(sampleMovement(from, from, stationary, .5)).toEqual(from);
+    expect(sampleMovement(from, from, stationary, 8, 16)).toEqual(from);
     expect(movementLength(from, from, path)).toBeGreaterThan(8);
     const { p, id } = fixture(); p.sets[1].positions[id] = from;
     expect(performerMoveOutput(p, 1, id).kind).toBe('move');
@@ -66,7 +66,7 @@ describe('shared cubic performer travel', () => {
     expect(() => analyzeTransition(p, 1)).toThrow(/has not been checked/);
     await expect(new TransitionAnalyzer().analyze(transitionInput(p, 1, 0)!)).rejects.toThrow(/has not been checked/);
   });
-  it('rejects malformed controls, unsupported partitions and out-of-field geometry before saving', () => {
+  it('rejects malformed controls, duplicate intervals and out-of-field geometry before saving', () => {
     const { p, id } = fixture();
     for (const point of [{ x: NaN, y: 1 }, { x: Infinity, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 54 }]) {
       const bad = structuredClone(p); const s = bad.moves[0].paths[id].segments[0];
@@ -74,7 +74,7 @@ describe('shared cubic performer travel', () => {
       expect(() => validateProject(bad)).toThrow(/control1/);
     }
     const bad = structuredClone(p); bad.moves[0].paths[id].segments.push(path.segments[0]);
-    expect(() => validateProject(bad)).toThrow(/one full-move/);
+    expect(() => validateProject(bad)).toThrow(/duplicates/);
   });
   it('samples a maximum roster across all 128 sets with bounded finite geometry', () => {
     const p = createPerformanceFixture('maximum');

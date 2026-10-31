@@ -1,0 +1,59 @@
+{
+  "source": {
+    "revision": "365c11d635a1c018e2391c5272adea0c878b04c0",
+    "tree": "ec5360c5d248c386505bf226e019c4c6cfb9212b",
+    "dirty": true,
+    "contentHash": "dd3dd0e6ad7335cf97381a04ded70e7f1a6cdfe74e28b8ae5f13b00cbe4c5c5d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "csvRows": 6,
+  "arrivals": [
+    {
+      "Set": "Arrival",
+      "Arrival count": "16",
+      "Move counts": "16",
+      "Base tempo": "60",
+      "Label": "A1",
+      "Name": "",
+      "Section": "Brass",
+      "X (yards)": "30",
+      "Y (yards)": "20",
+      "Coordinate": "Side 1: on the 30-yard line; on back hash",
+      "Notes": "Arrive on count 16.\nHold the interval.",
+      "Coordinate precision": "Quarter steps",
+      "Travel (yards)": "41.489",
+      "Average step size (steps/5 yd)": "1.928",
+      "Peak step size (steps/5 yd)": "",
+      "Direction": "Timed path",
+      "Timing map": "Base 60 BPM \u00b7 Hold 5: 1s",
+      "Arrival seconds": "17",
+      "Incoming seconds": "17",
+      "Recording arrival seconds": "15.75"
+    },
+    {
+      "Set": "Arrival",
+      "Arrival count": "16",
+      "Move counts": "16",
+      "Base tempo": "60",
+      "Label": "A2",
+      "Name": "Example performer",
+      "Section": "Brass",
+      "X (yards)": "40",
+      "Y (yards)": "20",
+      "Coordinate": "Side 1: on the 40-yard line; on back hash",
+      "Notes": "Arrive on count 16.\nHold the interval.",
+      "Coordinate precision": "Quarter steps",
+      "Travel (yards)": "22.361",
+      "Average step size (steps/5 yd)": "3.578",
+      "Peak step size (steps/5 yd)": "",
+      "Direction": "Timed path",
+      "Timing map": "Base 60 BPM \u00b7 Hold 5: 1s",
+      "Arrival seconds": "17",
+      "Incoming seconds": "17",
+      "Recording arrival seconds": "15.75"
+    }
+  ],
+  "pdfPages": 3,
+  "pdfDescriptionsAndWordBounds": "passed",
+  "pdfSha256": "75a5c2e9ae27d3e9a1e845aa9798476439c259452919ab6000aad3da6a29af30"
+}

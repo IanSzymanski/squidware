@@ -1,8 +1,8 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1, 2, 3 and 4**. Ordinary saves write **v2**; nonempty tempo maps write **v3** and recording anchors write **v4** so older applications cannot silently discard timing. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–6**. Ordinary saves write **v2**; nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, and independent movement intervals **v6**, so older applications cannot silently discard timing or geometry. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
 
-Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
+Independent movement is specified by [the v6 schema](squid-v6.schema.json) and [schedule example](examples/scheduled-v6.squid); full-move curves use [the v5 schema](squid-v5.schema.json). Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
 Start with [basic-v2.squid](examples/basic-v2.squid), [v2 JSON Schema](squid-v2.schema.json), the [legacy example](examples/basic-v1.squid), and [v1 JSON Schema](squid-v1.schema.json). The checked-in [maximum example](examples/maximum-v2.squid) contains 500 performers across 128 pictures and 127 moves, with deterministic UUIDs. Regenerate these files with `pnpm format:generate`; `pnpm format:check` detects drift and validates examples with both an independent JSON Schema validator and the actual application codec. Schema IDs use repository URLs; for an immutable contract, pin the repository commit or a published release tag instead of following `main`.
 
@@ -51,7 +51,7 @@ Picture objects cannot contain `counts`, `tempo` or `transition`; those values b
 
 A move is `{id, fromSetId, toSetId, counts, tempo, transition, paths}`. Move i must connect picture i to picture i+1, in array order. There are no skipped/reversed/dangling endpoints. `counts` is an integer from 1 to 1024, `tempo` is a finite BPM value from 20 to 400 (fractional tempos are supported), and `transition` is `linear` or `ease`.
 
-`paths` is a sparse performer-ID map. Omitted entries use the straight line between that performer's positions in the two endpoint pictures. An explicit path currently supports exactly one segment:
+`paths` is a sparse performer-ID map. Omitted entries use the straight line between that performer's positions in the two endpoint pictures. In the v2 contract, an explicit path supports exactly one segment:
 
 ```json
 {"segments":[{"id":"segment-a","kind":"line","startCount":0,"endCount":16}]}
@@ -87,7 +87,7 @@ Unknown informational properties are accepted and discarded at every canonicaliz
 
 In v1, each picture includes `counts`, `tempo` and `transition`. The opening count must be zero; all later counts are positive move durations. Migration first validates the entire v1 input. It retains project/entity IDs, roster order, positions, names, notes, timing, easing and audio offset; removes timing from pictures; creates adjacent moves named `move-v1-1`, `move-v1-2`, etc.; initializes their paths to `{}`; and preserves opening tempo/easing in `openingTiming`. Migration is deterministic and does not mutate input. Opening a legacy file changes it only in memory; explicit save writes v2. V2 move/segment identities cannot be losslessly represented in v1, so there is no supported downgrade command.
 
-Versions greater than 5 fail with an instruction to update Squidware before opening or saving. Other invalid versions, broken JSON and unsupported paths produce actionable errors. Validation never overwrites the original file. Canonical v2 serialization rebuilds supported objects, emits compact JSON plus a trailing newline and enforces the byte limit. Geometry, timing, migration, round trips and schema examples are CI fixtures. A future format change must update this contract, schemas and compatibility evidence together.
+Versions greater than 6 fail with an instruction to update Squidware before opening or saving. Other invalid versions, broken JSON and unsupported paths produce actionable errors. Validation never overwrites the original file. Canonical v2 serialization rebuilds supported objects, emits compact JSON plus a trailing newline and enforces the byte limit. Geometry, timing, migration, round trips and schema examples are CI fixtures. A future format change must update this contract, schemas and compatibility evidence together.
 
 ## V3 tempo-map extension
 
@@ -125,3 +125,25 @@ Moves with curves explicitly report spacing/stride analysis unavailable until #7
 Whole-move count changes retain controls and segment ID and update endCount. Splitting a move containing curves and set operations that change a surviving curved move’s predecessor fail atomically; remove its curves first. Deleting a move or its destination removes that move as usual. Detailed subdivision/reversal/copy policy belongs to #77. Removing a performer prunes its paths. Choosing Straight line explicitly removes the custom path.
 
 Writers emit v5 whenever a cubic exists. V1–v4 wire files containing cubics are rejected, protecting older readers that cannot interpret curves. Removing all curves restores the least required version (v4 for alignment, v3 for a nonempty tempo map, otherwise v2). Legacy motion and straight-line arithmetic remain unchanged. V5 without curves is accepted and canonicalizes to the least required version on save. See [the v5 example](examples/curved-v5.squid) and [numeric editor guide](../docs/movement-paths.md).
+
+## V6 independent movement intervals
+
+V6 extends v5 with per-performer schedules of 1–32 ordered segments. `startCount` and `endCount` are finite local written counts within `[0, move.counts]`, may be fractional, and require `endCount > startCount`. Each start must be at or after the preceding end. Interval IDs are unique within each performer path. The reader rejects overlaps/order errors; it does not sort or clip them.
+
+```json
+{"segments":[
+  {"id":"travel-a","kind":"line","startCount":2,"endCount":6,"to":{"x":20,"y":25}},
+  {"id":"hold-a","kind":"hold","startCount":6,"endCount":8},
+  {"id":"curve-a","kind":"cubic","startCount":8,"endCount":12,"control1":{"x":20,"y":35},"control2":{"x":30,"y":35}}
+]}
+```
+
+Start at the performer's previous-picture position. Before departure and in every gap, hold the preceding arrival. Each travel begins at that point; nonfinal travel requires a field-bounded absolute `to` waypoint. The last travel omits `to` and arrives at the next picture's position, keeping that position through remaining counts. An explicit hold has no geometry and inherits the preceding point. A hold-only schedule requires identical endpoint pictures. Zero-distance travels, stationary cubics and loops are allowed. Adjacent intervals are position-continuous by construction; derivative continuity is not enforced.
+
+For a travel interval `[a,b]` at local count c, t=(c−a)/(b−a). Apply the move's linear or smoothstep timing inside this interval and evaluate the same line/cubic math as v5. At departure return the preceding position, at arrival the exact target; at shared boundaries either side yields that same position. The legacy full-move line fast path preserves its historical floating-point arithmetic. Musical fermatas still operate on shared count/time conversion and do not become movement intervals. The [two-performer example](examples/scheduled-v6.squid) combines independent schedules with a musical fermata.
+
+All coordinates/controls remain finite and inside the existing field bounds. A hold cannot include `to`, `control1` or `control2`. A final travel cannot duplicate the next picture via `to`. Semantic validation checks these rules, count bounds against the owning move, ID uniqueness and the existing UTF-8 file budget after structural schema validation. Unknown informational properties are still discarded; arbitrary properties are not extension storage or alternate geometry semantics.
+
+Geometry/output consumers share the complete travel endpoint chain. Holds/gaps have zero distance. Cubic length estimates share the existing total 0.001-yard bound-gap budget across all travels. CSV/PDF descriptions identify local hold/travel windows and total distance; peak step size is unavailable. Detailed analysis explicitly remains unsupported pending #76. No viewer implementation or advanced path-operation support is implied.
+
+V6 retains independently optional v3 tempo maps and v4 recording anchors. Writers choose v6 for any multi-interval, partial-count, hold or intermediate-waypoint path; otherwise they choose the least required prior version. The parser rejects scheduled geometry in v2–v5 move data rather than replacing it with a whole-move line. Legacy v1 files still migrate to implicit whole-move straight travel. Versions greater than 6 require updating Squidware. The [schedule editor and operation policies](../docs/movement-schedules.md) describe undo, removal, endpoint edits and unsupported resize/split/rewire operations.

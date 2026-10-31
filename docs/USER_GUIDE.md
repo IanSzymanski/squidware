@@ -261,3 +261,10 @@ Open **History** beside Undo/Redo to review named actions and available redo act
 Pause at an arrival set after the opening, select one performer, and choose **Edit performer path** in the Inspector or Command palette. Choose Cubic Bézier and enter two control coordinates in field yards. The preview shows the saved path dashed, proposed path solid, and the sampled performer with a ring. Scrub Preview local count to inspect the move. Apply records one undo action; Cancel or Escape keeps the saved production. Reopen the editor to revise controls or choose Straight line to remove the curve.
 
 Curves use Bézier parameter timing: speed can vary even with Linear timing selected. Moves containing curves show spacing and stride checks as unavailable. Set positions remain the path endpoints. Curves save as format v5; older Squidware versions ask for an update. See [curve behavior and current operations](movement-paths.md).
+
+
+## Independent performer timing
+
+Select one performer at an arrival and choose **Edit movement timing**. Set departure/arrival counts for straight or cubic travel, or choose Hold position with start/end counts. Add intervals in count order; intermediate travel arrivals expose X/Y destinations. The last travel always arrives at the next set's dot. Before departure, in gaps and after the last arrival, hold the preceding position. Musical fermatas remain separate and stop the shared show count; performer holds leave other performers and the recording moving.
+
+Preview local count to compare the selected performer with the rest of the cast. Apply commits one named undo action; Cancel or Escape keeps the production. Enter activates the focused Apply button. A saved schedule opens in this editor through Edit performer path as well. Timed intervals use format v6. Detailed spacing/stride analysis and advanced resize/split/rewire operations remain unavailable; see [the interval contract and limits](movement-schedules.md).

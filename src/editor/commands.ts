@@ -1,3 +1,5 @@
+import { isScheduledPath } from '../movementPaths';
+import { editMovementSchedule, type ScheduleEdit } from './movementScheduleEditing';
 import { editMovementPath, type PathEdit } from './pathEditing';
 import { validateAudioAnchors } from '../audioAlignment';
 import { validateTempoMap } from '../tempo';
@@ -37,6 +39,8 @@ import { templateReviewError, templateReviewResult } from './templateReview';
 import type { TemplateReview } from './templateReview';
 
 export interface CommandArguments {
+  'schedule.open': undefined;
+  'schedule.save': ScheduleEdit;
   'path.open': undefined;
   'path.save': PathEdit;
   'templates.open': undefined;
@@ -130,6 +134,13 @@ const simple = <I extends CommandId>(id: I, name: string, description: string, e
 const always = () => true;
 const idle = (s: EditorState) => !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName;
 const canNavigate = (s: EditorState) => idle(s) && !s.ui.selectionPreview && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
+const canEditMovement = (s: EditorState) => canNavigate(s) && canEditPositions(s) && s.selection.activeIndex > 0
+  && s.selection.selectedIds.length === 1 && s.project.present.performers.some(p => p.id === s.selection.selectedIds[0]);
+function canSaveMovement(s: EditorState, a: Pick<ScheduleEdit, 'revision' | 'epoch' | 'moveId' | 'performerId'>, dialog: Dialog): boolean {
+  return !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch
+    && canEditMovement({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === dialog ? null : s.ui.dialog } })
+    && s.project.present.moves[s.selection.activeIndex - 1]?.id === a.moveId && s.selection.selectedIds[0] === a.performerId;
+}
 const fieldView = (s: EditorState) => idle(s) && s.ui.workspace === 'design' && s.ui.view === '2d';
 export const canChangeLayout = (s: EditorState) => !s.ui.selectionPreview && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
@@ -186,14 +197,14 @@ export const commandRegistry = {
       c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === a.setId ? { ...set, positions: result.positions } : set) }));
       c.patch('ui', { dialog: null });
     } }),
-  'path.open': simple('path.open', 'Edit performer path', 'Preview a cubic travel path for one selected performer in the incoming move.',
-    s => canNavigate(s) && canEditPositions(s) && s.selection.activeIndex > 0 && s.selection.selectedIds.length === 1,
-    c => showDialog(c, 'path')),
+  'schedule.open': simple('schedule.open', 'Edit movement timing', 'Preview independent holds, departures, arrivals and intermediate destinations for one selected performer.', canEditMovement, c => showDialog(c, 'movement-schedule')),
+  'schedule.save': define({ id: 'schedule.save', name: 'Edit movement timing', description: 'Validate and apply a performer schedule as one undo action.', arguments: { moveId: 'reviewed move', performerId: 'selected performer', path: 'ordered travel/hold intervals, or null', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => canSaveMovement(s, a, 'movement-schedule'),
+    execute: (c, a) => { c.edit(p => editMovementSchedule(p, a)); c.patch('ui', { dialog: null }); } }),
+  'path.open': simple('path.open', 'Edit performer path', 'Preview travel geometry for one selected performer in the incoming move.', canEditMovement,
+    c => { const s = c.getState(), move = s.project.present.moves[s.selection.activeIndex - 1]; showDialog(c, isScheduledPath(move.paths[s.selection.selectedIds[0]], move.counts) ? 'movement-schedule' : 'path'); }),
   'path.save': define({ id: 'path.save', name: 'Edit performer path', description: 'Validate and apply travel geometry as one undo action.', arguments: { moveId: 'reviewed move', performerId: 'selected performer', controls: 'two Bézier points, or null for straight travel', revision: 'reviewed revision', epoch: 'project session' },
-    enabled: (s, a) => !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch
-      && canNavigate({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'path' ? null : s.ui.dialog } }) && canEditPositions(s)
-      && s.selection.activeIndex > 0 && s.project.present.moves[s.selection.activeIndex - 1]?.id === a.moveId
-      && s.selection.selectedIds.length === 1 && s.selection.selectedIds[0] === a.performerId,
+    enabled: (s, a) => canSaveMovement(s, a, 'path') && !isScheduledPath(s.project.present.moves[s.selection.activeIndex - 1].paths[a.performerId], s.project.present.moves[s.selection.activeIndex - 1].counts),
     execute: (c, a) => { c.edit(p => editMovementPath(p, a)); c.patch('ui', { dialog: null }); } }),
   'audio.align-open': simple('audio.align-open', 'Align recording', 'Preview count-to-recording anchors with waveform and tap assistance.', canNavigate, c => showDialog(c, 'audio-alignment')),
   'audio.align-save': define({ id:'audio.align-save', name:'Align recording', description:'Validate recording anchors and offset as one undo action.', arguments:{anchors:'AudioAnchor[]',offset:'seconds',revision:'reviewed revision',epoch:'project session'},
