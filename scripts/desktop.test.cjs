@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 6 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 7 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -618,4 +618,16 @@ test('native v5 open/save preserves curved geometry and failed control validatio
  await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Curve'),/control1/);
  assert.equal(await fs.readFile(filename,'utf8'),content);
  assert.equal(h.saveDialogCount(),0);
+});
+
+test('native v6 schedules round-trip and an overlapping interval cannot overwrite the saved production',async t=>{
+ const h=await harness(t),filename=path.join(h.directory,'schedule.squid');
+ const content=await fs.readFile(path.join(root,'format/examples/scheduled-v6.squid'),'utf8');
+ await fs.writeFile(filename,content);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,content);
+ assert.equal(await h.invoke('save-project',content,'Schedule'),filename);
+ assert.equal(await fs.readFile(filename,'utf8'),content);
+ const bad=JSON.parse(content);bad.moves[0].paths.a.segments[1].startCount=5;
+ await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Schedule'),/overlaps/);
+ assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
 });

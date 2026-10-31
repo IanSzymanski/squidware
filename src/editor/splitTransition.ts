@@ -1,4 +1,4 @@
-import { hasCurvedPaths } from '../movementPaths';
+import { hasDetailedPaths } from '../movementPaths';
 import { PROJECT_LIMITS, sampleProject, setStartCount, uid } from '../domain';
 import type { Move, Project, RehearsalAnchor } from '../types';
 
@@ -9,7 +9,7 @@ export interface SplitTransitionRequest {
 export function splitTransitionError(project: Project, moveId: string, count: number): string | null {
   const move = project.moves.find(move => move.id === moveId);
   if (!move) return 'Choose an existing transition.';
-  if (hasCurvedPaths(move)) return 'Remove curved paths before splitting this transition. Curved splits require detailed-path operations.';
+  if (hasDetailedPaths(move)) return 'Remove custom paths before splitting this transition. Detailed splits require path operations.';
   if (project.sets.length >= PROJECT_LIMITS.sets) return `A production can contain at most ${PROJECT_LIMITS.sets} sets.`;
   if (!Number.isInteger(count) || count < 1 || count >= move.counts)
     return move.counts < 2 ? 'This transition needs at least two counts to split.' : `Choose a whole count from 1 to ${move.counts - 1}, inside this transition.`;

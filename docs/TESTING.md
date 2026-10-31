@@ -39,6 +39,7 @@ Release certification deliberately runs the same desktop matrix at the exact req
 
 | Suite | Owns | Avoid duplicating |
 | --- | --- | --- |
+| `movement-schedule` | Native interval kinds/counts/waypoints/controls, overlap/Cancel, independent schedules and live hold playback, undo, v6 files, coordinate exports, themes and enlarged keyboard Apply | Analytic boundaries, schema/byte limits and maximum schedules owned by source/contract/native tests; audio synchronization remains with audio-clock. |
 | `paths` | Explicit single selection, native numeric cubic preview, invalid controls/Cancel, shared scrub and vector overlays, one undo, native v5 files and coordinate exports, themes and enlarged keyboard Apply | Analytic/path precision, unsupported operations and full-size sampling owned by source tests; generic file races remain with editor. |
 | `templates` | Anonymous setups, dot/parametric previews, count/stale/boundary errors, native pointer/keyboard placement, undo/save, library IO/disclosure, themes/scale and process restart | Codec/size matrices and native storage fault injection owned by source/native tests. |
 | `smoke` | Sandbox, isolated bridge and recovery-worker round trip | Detailed editing and filesystem cases. |

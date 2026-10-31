@@ -1,0 +1,113 @@
+{
+  "runId": "2026-10-30T19-45-36-086Z-2fc8d1d3",
+  "state": "completed",
+  "concurrency": 1,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "365c11d635a1c018e2391c5272adea0c878b04c0",
+    "tree": "ec5360c5d248c386505bf226e019c4c6cfb9212b",
+    "dirty": true,
+    "contentHash": "dd3dd0e6ad7335cf97381a04ded70e7f1a6cdfe74e28b8ae5f13b00cbe4c5c5d",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "movement-schedule",
+    "editor",
+    "commands",
+    "print",
+    "smoke",
+    "analysis"
+  ],
+  "checks": [
+    {
+      "name": "movement-schedule",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 13775,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/movement-schedule.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/movement-schedule"
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 166517,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/editor.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/editor"
+    },
+    {
+      "name": "commands",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 24504,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/commands.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/commands"
+    },
+    {
+      "name": "print",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 5551,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/print.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/print"
+    },
+    {
+      "name": "smoke",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 711,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/smoke.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/smoke"
+    },
+    {
+      "name": "analysis",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 19393,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/analysis.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-30T19-45-36-086Z-2fc8d1d3/analysis"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-30T19:45:06.675Z",
+    "source": {
+      "revision": "365c11d635a1c018e2391c5272adea0c878b04c0",
+      "tree": "ec5360c5d248c386505bf226e019c4c6cfb9212b",
+      "dirty": true,
+      "contentHash": "dd3dd0e6ad7335cf97381a04ded70e7f1a6cdfe74e28b8ae5f13b00cbe4c5c5d",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "ea4cd084bbeea64c318f2c86ec205e86fce9939754d7f500248d6b84f8ede506"
+  }
+}

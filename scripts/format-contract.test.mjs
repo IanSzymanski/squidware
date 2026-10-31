@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { formatTools, smallExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=6;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=7;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -115,4 +115,20 @@ test('v5 cubic geometry passes independent schema and codec without permitting a
   const bad={...input,schemaVersion:version,...(version===3?{tempoMap:{version:1,regions:[],holds:[]}}:{}),...(version===4?{audioAnchors:[{count:8,seconds:5}]}:{})};
   assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/schema version 5/);
  }
+});
+
+test('v6 schedules preserve independent windows, gap holds and intermediate arrivals through schema and codec',async()=>{
+ const raw=JSON.parse(await readFile(new URL('../format/examples/scheduled-v6.squid',import.meta.url),'utf8'));
+ assert.ok(check(raw));const p=tools.parseProject(JSON.stringify(raw));assert.deepEqual(tools.parseProject(tools.serializeProject(p)),p);
+ assert.equal(JSON.parse(tools.serializeProject(p)).schemaVersion,6);
+ assert.deepEqual(tools.sampleProject(p,7).positions.a,{x:20,y:25});
+ assert.deepEqual(tools.sampleProject(p,7).positions.b,{x:26,y:13});
+ for(const mutate of [p=>p.moves[0].paths.a.segments[0].startCount=-1,p=>p.moves[0].paths.a.segments[0].to.x=101,p=>p.moves[0].paths.a.segments[1].to={x:20,y:25}]){
+  const bad=structuredClone(raw);mutate(bad);assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)));
+ }
+ const overlap=structuredClone(raw);overlap.moves[0].paths.a.segments[1].startCount=5;
+ assert.ok(check(overlap),'interval ordering is a semantic constraint');assert.throws(()=>tools.parseProject(JSON.stringify(overlap)),/overlaps/);
+ const missing=structuredClone(raw);delete missing.moves[0].paths.a.segments[0].to;
+ assert.ok(check(missing));assert.throws(()=>tools.parseProject(JSON.stringify(missing)),/intermediate travel/);
+ const old={...raw,schemaVersion:5};assert.equal(check(old),false);assert.throws(()=>tools.parseProject(JSON.stringify(old)),/schema version 6/);
 });

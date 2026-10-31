@@ -81,7 +81,7 @@ describe('project templates and storage', () => {
   });
 
   it.each([
-    ['unsupported schema', (p: Project) => ({ ...p, schemaVersion: 6 }), /schema version 6/],
+    ['unsupported schema', (p: Project) => ({ ...p, schemaVersion: 7 }), /schema version 7/],
     ['duplicate performer IDs', (p: Project) => ({ ...p, performers: [p.performers[0], p.performers[0]] }), /duplicate ID/],
     ['duplicate set IDs', (p: Project) => ({ ...p, sets: [p.sets[0], { ...p.sets[1], id: p.sets[0].id }] }), /duplicate ID/],
     ['reserved IDs', (p: Project) => ({ ...p, id: '__proto__' }), /reserved key/],

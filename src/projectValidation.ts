@@ -2,6 +2,7 @@ import type { LegacyDrillSet, LegacyProject, Performer, Point, Section } from '.
 
 export const PROJECT_LIMITS = {
   performers: 500,
+  pathSegments: 32,
   sets: 128,
   sections: 64,
   selectionGroups: 64,
