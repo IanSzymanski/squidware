@@ -1,0 +1,44 @@
+{
+  "suite": "path-operations",
+  "state": "passed",
+  "results": [
+    {
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10156,
+      "logFile": "/workspace/squidware/.qa/path-operations-final/desktop.log"
+    }
+  ],
+  "scope": "targeted",
+  "source": {
+    "revision": "f222789f2a24e326013533ce99450c74adf0d04c",
+    "tree": "33af0c8fada5b2bb5cc342373d2e04b1edc46810",
+    "dirty": true,
+    "contentHash": "07a414e3c375d98212462c31ffe7eb99287a51b429259db4ac93a31eef2d1684",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-31T03:31:23.674Z",
+    "source": {
+      "revision": "f222789f2a24e326013533ce99450c74adf0d04c",
+      "tree": "33af0c8fada5b2bb5cc342373d2e04b1edc46810",
+      "dirty": true,
+      "contentHash": "07a414e3c375d98212462c31ffe7eb99287a51b429259db4ac93a31eef2d1684",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "4cf6e34d498e98b27c19bbd7f29b323ddefbc8201e784d64e788c21b32484f53"
+  }
+}

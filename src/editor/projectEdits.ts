@@ -1,4 +1,5 @@
-import { hasDetailedPaths, hasScheduledPaths } from '../movementPaths';
+import { rescalePaths } from '../movementPathOperations';
+import { hasDetailedPaths } from '../movementPaths';
 import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, Move, Project, SetPropertyUpdate } from '../types';
 
@@ -37,8 +38,6 @@ export function moveSetTo(project: Project, id: string, target: number): Project
 export function updateSetProperties(project: Project, index: number, update: SetPropertyUpdate): Project {
   validateSetUpdate(update, index);
   const { counts, tempo, transition, name, notes } = update;
-  const incoming = project.moves[index - 1];
-  if (incoming && counts !== undefined && counts !== incoming.counts && hasScheduledPaths(incoming)) throw new Error('Remove timed paths before resizing this move. Detailed-path resizing is not supported yet.');
   const sets = name === undefined && notes === undefined ? project.sets : project.sets.map((set, i) => i === index
     ? { ...set, ...(name === undefined ? {} : { name }), ...(notes === undefined ? {} : { notes }) } : set);
   if (index === 0) return { ...project, sets, openingTiming: { ...project.openingTiming,
@@ -47,9 +46,8 @@ export function updateSetProperties(project: Project, index: number, update: Set
   const moves = project.moves.map((move, i) => i !== index - 1 ? move : {
     ...move, ...(counts === undefined ? {} : { counts }), ...(tempo === undefined ? {} : { tempo }),
     ...(transition === undefined ? {} : { transition }),
-    // Supported explicit lines partition the entire move; resizing keeps segment identities.
-    paths: counts === undefined || counts === move.counts ? move.paths : Object.fromEntries(Object.entries(move.paths).map(([id, path]) =>
-      [id, { segments: path.segments.map(segment => ({ ...segment, endCount: counts })) }])),
+    // Uniform count rescaling retains every interval, hold, control and ID.
+    paths: counts === undefined || counts === move.counts ? move.paths : rescalePaths(move.paths, move.counts, counts),
   });
   return { ...project, sets, moves };
 }

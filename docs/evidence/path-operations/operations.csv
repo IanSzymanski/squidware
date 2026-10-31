@@ -1,0 +1,9 @@
+﻿"Set","Arrival count","Move counts","Base tempo","Label","Name","Section","X (yards)","Y (yards)","Coordinate","Notes","Coordinate precision","Travel (yards)","Average step size (steps/5 yd)","Peak step size (steps/5 yd)","Direction","Timing map","Arrival seconds","Incoming seconds","Recording arrival seconds"
+"Opening","0","0","120","A1","","Brass","10","10","Side 1: on the 10-yard line; 16 steps in front of back sideline","Count zero — opening picture.","Quarter steps","0","","","Opening position","120 BPM","0","0","-1.25"
+"Opening","0","0","120","A2","Example performer","Brass","20","10","Side 1: on the 20-yard line; 16 steps in front of back sideline","Count zero — opening picture.","Quarter steps","0","","","Opening position","120 BPM","0","0","-1.25"
+"Arrival","16","16","120","A1","","Brass","30","20","Side 1: on the 30-yard line; on back hash","Arrive on count 16.
+Hold the interval.","Quarter steps","41.489","1.928","","Timed path","Base 120 BPM · Hold 5: 1s","9","9","7.75"
+"Arrival","16","16","120","A2","Example performer","Brass","40","20","Side 1: on the 40-yard line; on back hash","Arrive on count 16.
+Hold the interval.","Quarter steps","22.361","3.578","","Timed path","Base 120 BPM · Hold 5: 1s","9","9","7.75"
+"Finish","24","8","60","A1","","Brass","50","30","On the 50-yard line; 5.25 steps behind front hash","","Quarter steps","22.361","1.789","1.193","Toward Side 2 and front sideline","60 BPM","17","8","15.75"
+"Finish","24","8","60","A2","Example performer","Brass","60","30","Side 2: on the 40-yard line; 5.25 steps behind front hash","","Quarter steps","46.922","0.852","","Curved path","60 BPM","17","8","15.75"
