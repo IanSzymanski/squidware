@@ -1,0 +1,83 @@
+{
+  "runId": "2026-10-31T22-21-36-175Z-27cf1405",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "5b8e564104a1bc1f99ca7b41832c1c45a92f65f7",
+    "tree": "cbb909b2cc64d0132e436cb80ce0072d58130be8",
+    "dirty": true,
+    "contentHash": "35e466386bec92c8b4cb1790af695db692c11e8b07a5130a1550305c338f4f18",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "tempo-map",
+    "audio-clock",
+    "metronome"
+  ],
+  "checks": [
+    {
+      "name": "tempo-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 20455,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T22-21-36-175Z-27cf1405/tempo-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T22-21-36-175Z-27cf1405/tempo-map"
+    },
+    {
+      "name": "audio-clock",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 20913,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T22-21-36-175Z-27cf1405/audio-clock.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T22-21-36-175Z-27cf1405/audio-clock"
+    },
+    {
+      "name": "metronome",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 21710,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T22-21-36-175Z-27cf1405/metronome.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T22-21-36-175Z-27cf1405/metronome"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-31T22:21:17.032Z",
+    "source": {
+      "revision": "5b8e564104a1bc1f99ca7b41832c1c45a92f65f7",
+      "tree": "cbb909b2cc64d0132e436cb80ce0072d58130be8",
+      "dirty": true,
+      "contentHash": "35e466386bec92c8b4cb1790af695db692c11e8b07a5130a1550305c338f4f18",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "4cf6e34d498e98b27c19bbd7f29b323ddefbc8201e784d64e788c21b32484f53"
+  }
+}
