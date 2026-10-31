@@ -1,0 +1,37 @@
+{
+  "source": {
+    "revision": "f222789f2a24e326013533ce99450c74adf0d04c",
+    "tree": "33af0c8fada5b2bb5cc342373d2e04b1edc46810",
+    "dirty": true,
+    "contentHash": "160faeded4fd3f6e338797e602e9e90b43dbb4ce0dab25f008af18993243a2e1",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "csvRows": 6,
+  "pastedDestination": {
+    "Set": "Finish",
+    "Arrival count": "24",
+    "Move counts": "8",
+    "Base tempo": "60",
+    "Label": "A2",
+    "Name": "Example performer",
+    "Section": "Brass",
+    "X (yards)": "60",
+    "Y (yards)": "30",
+    "Coordinate": "Side 2: on the 40-yard line; 5.25 steps behind front hash",
+    "Notes": "",
+    "Coordinate precision": "Quarter steps",
+    "Travel (yards)": "46.922",
+    "Average step size (steps/5 yd)": "0.852",
+    "Peak step size (steps/5 yd)": "",
+    "Direction": "Curved path",
+    "Timing map": "60 BPM",
+    "Arrival seconds": "17",
+    "Incoming seconds": "8",
+    "Recording arrival seconds": "15.75"
+  },
+  "independentCurveYards": 46.92181616067971,
+  "pdfPages": 3,
+  "checkedWordBoxes": 454,
+  "pdfDescriptionsAndWordBounds": "passed",
+  "pdfSha256": "009ba771ae6859e077c2d811385142c9e524bb82769208d7c472985fd9abcda7"
+}

@@ -1,0 +1,83 @@
+{
+  "runId": "2026-10-31T21-54-15-088Z-b8154795",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "5e5289e782670c3543ebdf184a234cadd06eca96",
+    "tree": "2711aed6dedaee71a7de5d2a67fbcde1c1fc29bc",
+    "dirty": true,
+    "contentHash": "10fcf9a695ade454c5194023c1a674639564c918ad5d0b1ccfe6e1fadbb1ac66",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "audio-package",
+    "audio-clock",
+    "templates"
+  ],
+  "checks": [
+    {
+      "name": "audio-package",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 6348,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-54-15-088Z-b8154795/audio-package.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-54-15-088Z-b8154795/audio-package"
+    },
+    {
+      "name": "audio-clock",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 20916,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-54-15-088Z-b8154795/audio-clock.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-54-15-088Z-b8154795/audio-clock"
+    },
+    {
+      "name": "templates",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 8968,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-54-15-088Z-b8154795/templates.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-54-15-088Z-b8154795/templates"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-31T21:54:06.074Z",
+    "source": {
+      "revision": "5e5289e782670c3543ebdf184a234cadd06eca96",
+      "tree": "2711aed6dedaee71a7de5d2a67fbcde1c1fc29bc",
+      "dirty": true,
+      "contentHash": "10fcf9a695ade454c5194023c1a674639564c918ad5d0b1ccfe6e1fadbb1ac66",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "4cf6e34d498e98b27c19bbd7f29b323ddefbc8201e784d64e788c21b32484f53"
+  }
+}

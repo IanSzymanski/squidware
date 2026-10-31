@@ -1,3 +1,5 @@
+import { copyIntervals } from '../movementPathOperations';
+import { pathOperationPlan, type PathOperationRequest, type PathCopyRequest, type PathReviewContext } from './pathOperationReview';
 import { isScheduledPath } from '../movementPaths';
 import { editMovementSchedule, type ScheduleEdit } from './movementScheduleEditing';
 import { editMovementPath, type PathEdit } from './pathEditing';
@@ -39,6 +41,9 @@ import { templateReviewError, templateReviewResult } from './templateReview';
 import type { TemplateReview } from './templateReview';
 
 export interface CommandArguments {
+  'path.operations-open': undefined;
+  'path.operation-apply': PathOperationRequest;
+  'path.copy-intervals': PathCopyRequest;
   'schedule.open': undefined;
   'schedule.save': ScheduleEdit;
   'path.open': undefined;
@@ -179,6 +184,14 @@ function applySetCreation(c: CommandContext, index: number, kind: SetCreationKin
   c.patch('ui', { dialog: null });
 }
 
+const canReviewPaths = (s: EditorState) => canNavigate(s) && canEditPositions(s) && s.project.present.moves.length > 0;
+function pathReviewCurrent(s: EditorState, a: PathReviewContext): boolean {
+  return !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch
+    && canReviewPaths({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === 'path-operations' ? null : s.ui.dialog } })
+    && s.project.present.sets[s.selection.activeIndex]?.id === a.activeSetId
+    && s.project.present.moves[Math.max(0,s.selection.activeIndex-1)]?.id === a.moveId
+    && JSON.stringify(s.selection.selectedIds) === JSON.stringify(a.ids);
+}
 const canOpenSplit = (s: EditorState) => {
   const move = s.project.present.moves[Math.max(0, s.selection.activeIndex - 1)];
   return canNavigate(s) && !!move && !splitTransitionError(s.project.present, move.id, 1);
@@ -197,6 +210,12 @@ export const commandRegistry = {
       c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === a.setId ? { ...set, positions: result.positions } : set) }));
       c.patch('ui', { dialog: null });
     } }),
+  'path.operations-open': simple('path.operations-open', 'Move operations', 'Preview move count rescaling, selected-path reversal and interval copy/paste.', canReviewPaths, c => showDialog(c, 'path-operations')),
+  'path.operation-apply': define({ id: 'path.operation-apply', name: 'Apply move operation', description: 'Recheck context and apply the complete move operation as one undo action.', arguments: { moveId: 'reviewed move', activeSetId: 'reviewed picture', ids: 'explicit selection', revision: 'reviewed revision', epoch: 'project session', operation: 'resize | reverse | paste' },
+    enabled: (s,a) => pathReviewCurrent(s,a), execute: (c,a) => { c.edit(p => pathOperationPlan(p,a,c.getState().ui.movementClipboard).project);selectSet(c,c.getState().selection.activeIndex);c.patch('ui',{dialog:null}); } }),
+  'path.copy-intervals': define({ id: 'path.copy-intervals', name: 'Copy movement intervals', description: 'Copy a contiguous selected range to this production’s session clipboard without changing history.', arguments: { moveId:'reviewed move',activeSetId:'reviewed picture',ids:'explicit selection',revision:'reviewed revision',epoch:'project session',performerId:'source performer',segmentIds:'contiguous intervals',wholeMove:'include outer holds' },
+    enabled: (s,a) => pathReviewCurrent(s,a) && a.ids.length === 1 && a.ids[0] === a.performerId,
+    execute: (c,a) => { const p=c.getState().project.present,index=p.moves.findIndex(m=>m.id===a.moveId),clipboard=copyIntervals(p,index,a.performerId,a.segmentIds,a.wholeMove,uid(),a.epoch);c.patch('ui',{movementClipboard:clipboard,dialog:null,toast:`Copied ${clipboard.intervals.length} intervals from ${clipboard.sourceLabel}`}); } }),
   'schedule.open': simple('schedule.open', 'Edit movement timing', 'Preview independent holds, departures, arrivals and intermediate destinations for one selected performer.', canEditMovement, c => showDialog(c, 'movement-schedule')),
   'schedule.save': define({ id: 'schedule.save', name: 'Edit movement timing', description: 'Validate and apply a performer schedule as one undo action.', arguments: { moveId: 'reviewed move', performerId: 'selected performer', path: 'ordered travel/hold intervals, or null', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => canSaveMovement(s, a, 'movement-schedule'),

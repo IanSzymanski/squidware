@@ -13,6 +13,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
   const selection = ids.length === 1 ? project.performers.find(p => p.id === ids[0])?.label ?? '1 performer' : `${ids.length} performers`;
   let name: string;
   switch (id) {
+    case 'path.operation-apply': name = `${(a.operation as { kind: string }).kind === 'resize' ? 'Resize move' : (a.operation as { kind: string }).kind === 'reverse' ? 'Reverse selected paths' : 'Paste movement intervals'} — ${picture}`; break;
     case 'schedule.save': name = `Edit movement timing · ${project.performers.find(p => p.id === a.performerId)?.label ?? 'performer'} — ${picture}`; break;
     case 'path.save': name = `Edit travel path · ${project.performers.find(p => p.id === a.performerId)?.label ?? 'performer'} — ${picture}`; break;
     case 'templates.apply': name = `Apply saved formation · ${(a.template as { name?: string })?.name ?? 'Template'} · ${ids.length} performers — ${picture}`; break;

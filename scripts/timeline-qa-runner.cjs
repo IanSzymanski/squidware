@@ -27,7 +27,7 @@ function instrument() {
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
 async function click(label) {
-  const point = await evaluate(`(()=>{const e=document.querySelector('[aria-label='+${JSON.stringify(JSON.stringify(label))}+']'); if(!e) throw Error('Missing '+${JSON.stringify(label)}); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+  const point = await evaluate(`(()=>{const e=document.querySelector('[aria-label='+${JSON.stringify(JSON.stringify(label))}+']'); if(!e) throw Error('Missing '+${JSON.stringify(label)}); e.scrollIntoView({block:'nearest',inline:'nearest'}); const r=e.getBoundingClientRect(); const x=r.x+r.width/2,y=r.y+r.height/2; if(x<0||y<0||x>=innerWidth||y>=innerHeight||!e.contains(document.elementFromPoint(x,y))) throw Error('Unreachable native click: '+${JSON.stringify(label)}+' '+JSON.stringify({x,y,width:innerWidth,height:innerHeight})); return {x,y};})()`);
   for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, ...(type === 'mouseMoved' ? {} : { button: 'left', clickCount: 1 }) });
   await frames();
 }
@@ -40,7 +40,7 @@ async function capture(name) {
 app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'window'); await wait("!!document.querySelector('.set-card')", 'renderer');
-    window.show(); window.focus(); window.setContentSize(1366, 768);
+    window.show(); window.focus(); window.setContentSize(manifest.smallDesktop ? 1024 : 1366, manifest.smallDesktop ? 647 : 768); await settleNativeViewport(window, 'visible timeline');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'store and preferences');
@@ -99,7 +99,7 @@ app.whenReady().then(async () => {
     await key(window, 'Escape'); await evaluate('document.activeElement?.blur()');
     await click('Fit show timeline'); await click('Zoom timeline in'); await click('Zoom timeline in');
     await evaluate(`${editor}.dispatch('playback.scrub',{count:0}); ${editor}.setValue('playback','speed',1.5)`);
-    await click('Play show'); await wait(`${state}.playback.count>2`, 'playback advancement');
+    await click('Play show'); await wait(`${state}.playback.playing`, 'native Play starts playback'); await wait(`${state}.playback.count>2`, 'playback advancement');
     assert.equal(await evaluate("!!document.querySelector('.playhead')"), true); await click('Pause playback');
     pass('ordinary typing does not step counts, and follow keeps the running clock visible');
     for (const theme of ['light','high-contrast']) {
@@ -117,5 +117,5 @@ app.whenReady().then(async () => {
     assert.deepEqual(await evaluate('window.__timelineQA.errors'), []);
     pass('all themes and enlarged narrow layout retain controls; navigation leaves saved geometry, timing and history untouched');
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,viewports,source:manifest.source,scope:'targeted',sandboxDisabled:process.argv.includes('--no-sandbox')},null,2)); app.exit(0);
-  } catch (error) { console.error(error); await fs.writeFile(path.join(output,'failure.txt'),error.stack); app.exit(1); }
+  } catch (error) { console.error(error); console.error(await evaluate(`({playback:${state}.playback,pendingDraft:${state}.ui.pendingDraft,toast:${state}.ui.toast,viewport:{width:innerWidth,height:innerHeight},active:document.activeElement?.outerHTML})`).catch(()=>null)); await capturePage(window,output,'failure.png').catch(()=>{}); await fs.writeFile(path.join(output,'failure.txt'),error.stack); app.exit(1); }
 });

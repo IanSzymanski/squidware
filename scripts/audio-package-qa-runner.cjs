@@ -48,7 +48,12 @@ async function open(filename) {
 async function showPackage() { await evaluate(`${store}.dispatch('dialog.open',{dialog:'package'})`); await wait("!!document.querySelector('[aria-label=\"Audio storage\"]')",'package preview'); }
 async function exportPackage(mode, filename) {
   await showPackage(); await selectNativeOption(window,button('Audio storage'),mode); savePath=filename;
-  await pressButton('Export package…'); await wait(`${state}.fileSession.fileOperation===null`, 'export completed');
+  // Idle also describes the moment before the queued Return starts exporting.
+  // Observe this invocation's native review before waiting for completion.
+  lastReview = undefined;
+  await pressButton('Export package…');
+  await waitFor(() => !!lastReview, 'fresh native package export review');
+  await wait(`${state}.fileSession.fileOperation===null`, 'export completed');
 }
 app.whenReady().then(async () => {
   try {

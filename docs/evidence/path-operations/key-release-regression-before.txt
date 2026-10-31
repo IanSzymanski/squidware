@@ -1,0 +1,24 @@
+✖ native dropdown waits for its queued key releases and ignores unrelated or duplicate releases (15004.278162ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15112.103818
+
+✖ failing tests:
+
+test at scripts/testing/harness.test.mjs:118:1
+✖ native dropdown waits for its queued key releases and ignores unrelated or duplicate releases (15004.278162ms)
+  Error: Timed out: native option Set 2 in select; observed {"value":"8"}
+      at Object.selectNativeOption (/workspace/squidware/scripts/testing/renderer.cjs:82:11)
+      at async TestContext.<anonymous> (file:///workspace/squidware/scripts/testing/harness.test.mjs:145:3)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    [cause]: Error: Timed out: native option Set 2 in select
+        at Timeout.<anonymous> (/workspace/squidware/scripts/testing/renderer.cjs:10:88)
+        at listOnTimeout (node:internal/timers:635:17)
+        at process.processTimers (node:internal/timers:571:7)
+  }

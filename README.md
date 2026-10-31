@@ -151,7 +151,7 @@ To build for the current host, run `pnpm dist --publish never`; Windows also has
 
 ## Scope and roadmap
 
-Squidware supports standard 100 × 53⅓-yard college/high-school fields, straight/cubic performer paths, and independently timed holds and submoves. Linear or eased timing applies within each travel interval; curved parameter speed can vary. The 3D figures are rehearsal markers. Detailed spacing/stride analysis for custom paths, field path handles, advanced path operations, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
+Squidware supports standard 100 × 53⅓-yard college/high-school fields, straight/cubic performer paths, and independently timed holds and submoves. Linear or eased timing applies within each travel interval; curved parameter speed can vary. The 3D figures are rehearsal markers. [Detailed movement operations](docs/path-operations.md) support count rescaling, selected-path reversal and reviewed interval copy/paste. Detailed spacing/stride analysis for custom paths, field path handles, detailed split/rewire operations, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
 
 Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
 

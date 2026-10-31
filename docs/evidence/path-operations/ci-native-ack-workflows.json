@@ -1,0 +1,423 @@
+{
+  "runId": "2026-10-31T21-44-38-478Z-b4ce7a8e",
+  "state": "completed",
+  "concurrency": 2,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "5e5289e782670c3543ebdf184a234cadd06eca96",
+    "tree": "2711aed6dedaee71a7de5d2a67fbcde1c1fc29bc",
+    "dirty": true,
+    "contentHash": "39c537a94878617e6dea572744e9ad5ec52afcc0cbf190b77a49407bf34bc6d8",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "full-desktop",
+  "selected": [
+    "audio-clock",
+    "templates",
+    "path-operations",
+    "movement-schedule",
+    "paths",
+    "smoke",
+    "editor",
+    "accessibility",
+    "field",
+    "formation-assignment",
+    "spacing",
+    "coordinate-entry",
+    "cast",
+    "selection",
+    "workspace",
+    "tooltips",
+    "tooltips-fallback",
+    "themes",
+    "commands",
+    "preferences",
+    "thumbnails",
+    "playback",
+    "audio-package",
+    "metronome",
+    "timeline",
+    "rehearsal",
+    "tempo-map",
+    "audio-alignment",
+    "score-map",
+    "production-sheet",
+    "set-creation",
+    "set-list",
+    "split-transition",
+    "analysis-rules",
+    "analysis",
+    "recovery",
+    "print"
+  ],
+  "checks": [
+    {
+      "name": "audio-clock",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 22652,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/audio-clock.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/audio-clock"
+    },
+    {
+      "name": "templates",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 11740,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/templates.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/templates"
+    },
+    {
+      "name": "path-operations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 13415,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/path-operations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/path-operations"
+    },
+    {
+      "name": "movement-schedule",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 13364,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/movement-schedule.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/movement-schedule"
+    },
+    {
+      "name": "paths",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10590,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/paths.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/paths"
+    },
+    {
+      "name": "smoke",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 903,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/smoke.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/smoke"
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 163446,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/editor.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/editor"
+    },
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 27864,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/accessibility.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/accessibility"
+    },
+    {
+      "name": "field",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 43403,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/field.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/field"
+    },
+    {
+      "name": "formation-assignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 17968,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/formation-assignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/formation-assignment"
+    },
+    {
+      "name": "spacing",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 54021,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/spacing.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/spacing"
+    },
+    {
+      "name": "coordinate-entry",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 24459,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/coordinate-entry.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/coordinate-entry"
+    },
+    {
+      "name": "cast",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 21327,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/cast.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/cast"
+    },
+    {
+      "name": "selection",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 25301,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/selection.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/selection"
+    },
+    {
+      "name": "workspace",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 42902,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/workspace.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/workspace"
+    },
+    {
+      "name": "tooltips",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 23433,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/tooltips.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/tooltips"
+    },
+    {
+      "name": "tooltips-fallback",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 6108,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/tooltips-fallback.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/tooltips-fallback"
+    },
+    {
+      "name": "themes",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 84579,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/themes.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/themes"
+    },
+    {
+      "name": "commands",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 26273,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/commands.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/commands"
+    },
+    {
+      "name": "preferences",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 17816,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/preferences.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/preferences"
+    },
+    {
+      "name": "thumbnails",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 9258,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/thumbnails.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/thumbnails"
+    },
+    {
+      "name": "playback",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 32673,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/playback.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/playback"
+    },
+    {
+      "name": "audio-package",
+      "status": "failed",
+      "exitCode": 1,
+      "signal": null,
+      "elapsedMs": 3284,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/audio-package.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/audio-package"
+    },
+    {
+      "name": "metronome",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 22496,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/metronome.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/metronome"
+    },
+    {
+      "name": "timeline",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 12838,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/timeline.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/timeline"
+    },
+    {
+      "name": "rehearsal",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 11541,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/rehearsal.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/rehearsal"
+    },
+    {
+      "name": "tempo-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 20489,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/tempo-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/tempo-map"
+    },
+    {
+      "name": "audio-alignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 30410,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/audio-alignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/audio-alignment"
+    },
+    {
+      "name": "score-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 44095,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/score-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/score-map"
+    },
+    {
+      "name": "production-sheet",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 18396,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/production-sheet.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/production-sheet"
+    },
+    {
+      "name": "set-creation",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 14613,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/set-creation.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/set-creation"
+    },
+    {
+      "name": "set-list",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 60903,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/set-list.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/set-list"
+    },
+    {
+      "name": "split-transition",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 89230,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/split-transition.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/split-transition"
+    },
+    {
+      "name": "analysis-rules",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 7634,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/analysis-rules.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/analysis-rules"
+    },
+    {
+      "name": "analysis",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 20080,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/analysis.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/analysis"
+    },
+    {
+      "name": "recovery",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 11463,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/recovery.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/recovery"
+    },
+    {
+      "name": "print",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 7285,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/print.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-10-31T21-44-38-478Z-b4ce7a8e/print"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-10-31T21:44:13.262Z",
+    "source": {
+      "revision": "5e5289e782670c3543ebdf184a234cadd06eca96",
+      "tree": "2711aed6dedaee71a7de5d2a67fbcde1c1fc29bc",
+      "dirty": true,
+      "contentHash": "39c537a94878617e6dea572744e9ad5ec52afcc0cbf190b77a49407bf34bc6d8",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "4cf6e34d498e98b27c19bbd7f29b323ddefbc8201e784d64e788c21b32484f53"
+  }
+}
