@@ -115,7 +115,7 @@ test('native dropdown selection uses real typeahead for numeric labels without H
   assert.equal(listeners.size, 0);
   assert.equal(control.__squidwareSelectProbe, undefined);
 });
-test('native dropdown waits for queued key releases even when its value already matches', async () => {
+test('native dropdown waits for its queued key releases and ignores unrelated or duplicate releases', async () => {
   const listeners = new Map(), events = [];
   let queued;
   const ready = new Promise(resolve => { queued = resolve; });
@@ -133,10 +133,15 @@ test('native dropdown waits for queued key releases even when its value already 
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(complete, false, 'Matching selection alone must not complete typeahead');
   const releases = events.filter(event => event.type === 'keyUp');
+  // A preceding numeric/text edit can still have a native Return release queued.
+  listeners.get('keyup')({ key: 'Enter', target: control });
+  listeners.get('keyup')({ key: 'Shift', target: control });
   for (const event of releases.slice(0, -1)) listeners.get('keyup')({ key: event.keyCode, target: control });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(complete, false, 'The final release must arrive before focus can change');
   listeners.get('keyup')({ key: releases.at(-1).keyCode, target: control });
+  listeners.get('keyup')({ key: releases.at(-1).keyCode, target: control });
+  listeners.get('keyup')({ key: 'Enter', target: control });
   await selection;
   assert.equal(complete, true); assert.equal(listeners.size, 0); assert.equal(control.__squidwareSelectProbe, undefined);
 });

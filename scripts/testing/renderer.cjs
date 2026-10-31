@@ -58,8 +58,12 @@ async function selectNativeOption(window, selector, value, { timeoutMs = 15000 }
         // to Chromium’s previous search prefix. A real blur/focus starts a new session.
         control.blur();
         control.focus();
-        const probe = { released: 0 };
-        probe.listener = () => { probe.released++; };
+        const probe = { released: 0, keys: [...prefix].map(key => key.toLowerCase()) };
+        // Earlier input (for example Return after typing a name) can release
+        // after this listener attaches. Count only this sequence, in order.
+        probe.listener = event => {
+          if (event.key?.toLowerCase() === probe.keys[probe.released]) probe.released++;
+        };
         control.__squidwareSelectProbe = probe;
         control.addEventListener('keyup', probe.listener, true);
         return { prefix, label };
@@ -78,7 +82,7 @@ async function selectNativeOption(window, selector, value, { timeoutMs = 15000 }
       return control?.__squidwareSelectProbe?.released === ${choice.prefix.length} && control.value === ${JSON.stringify(String(value))};
     })()`), `native option ${choice.label} in ${selector}`, { timeoutMs });
   } catch (error) {
-    const observed = await window.webContents.executeJavaScript(`({ value: document.querySelector(${query})?.value, focused: document.activeElement?.outerHTML })`).catch(() => null);
+    const observed = await window.webContents.executeJavaScript(`({ value: document.querySelector(${query})?.value, focused: document.activeElement?.outerHTML, probe: document.querySelector(${query})?.__squidwareSelectProbe && {released: document.querySelector(${query}).__squidwareSelectProbe.released, keys: document.querySelector(${query}).__squidwareSelectProbe.keys} })`).catch(() => null);
     throw new Error(`${error.message}; observed ${JSON.stringify(observed)}`, { cause: error });
   } finally {
     await window.webContents.executeJavaScript(`(() => {
