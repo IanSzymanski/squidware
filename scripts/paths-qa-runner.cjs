@@ -92,7 +92,7 @@ app.whenReady().then(async () => {
   await openPath();await fillCurve();await click(apply);await wait(`${state}.ui.dialog===null`,'applied');
   const curved=await present();assert.equal(curved.moves[0].paths.a.segments[0].kind,'cubic');assert.deepEqual(curved.sets,p.sets);
   assert.equal(await evaluate(state+'.project.past.length'),1);
-  await wait("document.querySelector('[data-analysis-status=error]')?.textContent.includes('has not been checked')",'curved analysis unavailable');
+  await wait("!!document.querySelector('[data-analysis-status=ready]')",'bounded curved analysis ready');
   await evaluate(`${editor}.dispatch('history.undo')`);assert.deepEqual(await present(),p);
   await evaluate(`${editor}.dispatch('history.redo')`);assert.deepEqual(await present(),curved);
   await evaluate(`${editor}.dispatch('playback.scrub',{count:8})`);await frames();
@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
   await evaluate(`${editor}.dispatch('set.select',{index:1});${editor}.dispatch('display.paths')`);await frames();
   assert.equal(await evaluate("document.querySelector('[data-neighbor-path]').getAttribute('d')"),'M 10 10 C 10 30 30 30 30 20');
   await capture('paths-applied.png');
-  pass('one undo/redo transaction, shared scrub geometry, exact vector neighbor curve and explicit unavailable analysis');
+  pass('one undo/redo transaction, shared scrub geometry, exact vector neighbor curve and bounded background analysis');
   await evaluate(`${editor}.dispatch('file.save')`);await wait(`${state}.fileSession.savedRevision===${state}.project.revision`,'native save');
   assert.equal(JSON.parse(await fs.readFile(savedFile,'utf8')).schemaVersion,5);
   assert.deepEqual(parseProject(await fs.readFile(savedFile,'utf8')),curved);

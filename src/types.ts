@@ -79,7 +79,11 @@ export type SetPropertyUpdate = Partial<Pick<DrillSet, 'name' | 'notes'> & Pick<
 export type FormationKind = 'line' | 'arc' | 'circle' | 'block' | 'curve';
 export type FormationAssignment = 'position' | 'roster';
 export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number; assignment?: FormationAssignment }
-export interface TransitionIssue { type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number }
+export interface TransitionIssue {
+  type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number;
+  certainty?: 'confirmed' | 'possible'; countRange?: [number, number];
+  measurement?: { lower: number; upper: number; tolerance: number; unit: 'yd' | 'yd/count'; converged: boolean };
+}
 export interface TimelineSample { positions: Record<string, Point>; setIndex: number; progress: number; localCount: number }
 export interface RecoveryVersion {
   id: string; createdAt: number; revision: number; source: 'automatic' | 'legacy';

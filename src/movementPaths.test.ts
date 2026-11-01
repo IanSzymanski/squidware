@@ -63,8 +63,7 @@ describe('shared cubic performer travel', () => {
     expect(output.peakStepsPerFive).toBeNull();
     expect(exportCoordinatesCsv(p)).toContain('Curved path');
     expect(neighborOverlays(p, 1, { previous: true, next: false, selectedIds: [id], sectionFilter: 'all', preview: false })[0].paths[0].svg).toBe(movementSvg(from, to, path));
-    expect(() => analyzeTransition(p, 1)).toThrow(/has not been checked/);
-    await expect(new TransitionAnalyzer().analyze(transitionInput(p, 1, 0)!)).rejects.toThrow(/has not been checked/);
+    expect((await new TransitionAnalyzer().analyze(transitionInput(p, 1, 0)!))!.issues).toEqual(analyzeTransition(p, 1));
   });
   it('rejects malformed controls, duplicate intervals and out-of-field geometry before saving', () => {
     const { p, id } = fixture();

@@ -1,0 +1,1476 @@
+{
+  "checks": [
+    "worker/reference bounds detect the curved crossing; native finding seeks, full vector overlays and live playback share exact geometry",
+    "native control edit clears stale flags/overlays, recomputes one track incrementally and retains findings through undo/redo and native save/reopen",
+    "fast fractional submoves report peak stride and between-count crossings; tangent uncertainty is explicit in three themes and enlarged native keyboard review",
+    "500 performers and 128 pictures complete in real workers while native set input and renderer frames continue"
+  ],
+  "metrics": {
+    "crossing": [
+      {
+        "type": "stride",
+        "performerIds": [
+          "a"
+        ],
+        "severity": "danger",
+        "atCount": 0,
+        "certainty": "confirmed",
+        "countRange": [
+          0,
+          1.0370899315981341
+        ],
+        "measurement": {
+          "lower": 7.499999925,
+          "upper": 7.500000075,
+          "tolerance": 0.001,
+          "unit": "yd/count",
+          "converged": true
+        },
+        "message": "A1: peak stride bounded 7.499–7.501 yd/count. Limit 2 yd/count (minimum 2.5 steps per 5 yd); Brass · direction unknown."
+      },
+      {
+        "type": "collision",
+        "performerIds": [
+          "a",
+          "b"
+        ],
+        "severity": "danger",
+        "atCount": 4,
+        "certainty": "confirmed",
+        "countRange": [
+          3.9333333453518375,
+          4.066666654648162
+        ],
+        "measurement": {
+          "lower": 0,
+          "upper": 1.8027756377319947e-7,
+          "tolerance": 0.001,
+          "unit": "yd",
+          "converged": true
+        },
+        "message": "A1 / A2: minimum spacing bounded 0.000–0.001 yd. Minimum 1 yd (Brass · direction unknown)."
+      }
+    ],
+    "fast": [
+      {
+        "type": "stride",
+        "performerIds": [
+          "a"
+        ],
+        "severity": "danger",
+        "atCount": 0.11499999999999999,
+        "certainty": "confirmed",
+        "countRange": [
+          0.11499999999999999,
+          0.11500244140624999
+        ],
+        "measurement": {
+          "lower": 11999.999880000001,
+          "upper": 12000.00032116568,
+          "tolerance": 0.001,
+          "unit": "yd/count",
+          "converged": true
+        },
+        "message": "A1: peak stride bounded 11999.999–12000.001 yd/count. Limit 2 yd/count (minimum 2.5 steps per 5 yd); Brass · direction unknown."
+      },
+      {
+        "type": "collision",
+        "performerIds": [
+          "a",
+          "b"
+        ],
+        "severity": "danger",
+        "atCount": 0.11499999999999999,
+        "certainty": "confirmed",
+        "countRange": [
+          0.11497916667622789,
+          0.1150208333237721
+        ],
+        "measurement": {
+          "lower": 0,
+          "upper": 4.5893907903343027e-7,
+          "tolerance": 0.001,
+          "unit": "yd",
+          "converged": true
+        },
+        "message": "A1 / A2: minimum spacing bounded 0.000–0.001 yd. Minimum 1 yd (Brass · direction unknown)."
+      }
+    ],
+    "possible": [
+      {
+        "type": "collision",
+        "performerIds": [
+          "a",
+          "b"
+        ],
+        "severity": "warning",
+        "atCount": 4,
+        "certainty": "possible",
+        "countRange": [
+          3.9990234375,
+          4.0009765625
+        ],
+        "measurement": {
+          "lower": 0.9999999899999787,
+          "upper": 1.0000000100000213,
+          "tolerance": 0.001,
+          "unit": "yd",
+          "converged": true
+        },
+        "message": "A1 / A2: possible minimum spacing bounded 0.999–1.001 yd. Minimum 1 yd (Brass · direction unknown)."
+      }
+    ],
+    "maximum": {
+      "frames": 431,
+      "maxFrameGap": 180.90000000037253,
+      "responses": [
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 25835,
+            "elapsedMs": 425.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 38.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 35.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 36.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 44.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 34.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 43.79999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.899999998509884
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 33.600000001490116
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 49
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.100000001490116
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 37.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 35.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.80000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.80000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.79999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 38.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 34.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.70000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 33.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 39.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.70000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 35.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 7411,
+            "elapsedMs": 41.29999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33.69999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 53.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 35.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 38.70000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.899999998509884
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 60.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.69999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.80000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 38.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 38.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.20000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 31.899999998509884
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 36
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.70000000111759
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.69999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 35.100000001490116
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.399999998509884
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 7411,
+            "elapsedMs": 40.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.29999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 33.80000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.59999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 36.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 31.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 31.899999998509884
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 38.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.19999999925494
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 31.699999999254942
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.29999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 31.899999998509884
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 31.699999999254942
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 34.30000000074506
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 31.800000000745058
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 31.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 4477,
+            "elapsedMs": 40.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 31.90000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.79999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.40000000037253
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 35
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 7411,
+            "elapsedMs": 41.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.5
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 40.79999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.600000001490116
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.09999999962747
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 6377,
+            "elapsedMs": 32.29999999888241
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 33
+          },
+          "issues": 2563
+        },
+        {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 3839,
+            "elapsedMs": 32.59999999962747
+          },
+          "issues": 2563
+        }
+      ]
+    }
+  },
+  "viewports": [
+    {
+      "name": "detailed-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-confirmed.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-selected.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-pending.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-fast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-unresolved.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "detailed-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 181.6666717529297
+    },
+    {
+      "name": "detailed-maximum.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    }
+  ],
+  "source": {
+    "revision": "54bdb0301d128e94f926b2bc5f601442ab21a658",
+    "tree": "0de0c87df380805d5246ddae2ca7536fa2894db9",
+    "dirty": true,
+    "contentHash": "60ad607988be8fe27052be12e9aeb6d97dcb554272ef7cc41cb23b7613b5e976",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}
