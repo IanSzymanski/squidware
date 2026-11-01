@@ -25,7 +25,23 @@ function instrument(){
 async function click(selector){const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled)throw Error('Unavailable control');const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);window.webContents.sendInputEvent({type:'mouseDown',...p,button:'left',clickCount:1});window.webContents.sendInputEvent({type:'mouseUp',...p,button:'left',clickCount:1});}
 async function press(label){await wait(`!!([...document.querySelectorAll('.modal button')].find(n=>n.textContent.trim()===${JSON.stringify(label)})||document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]'))`,'visible '+label);await evaluate(`([...document.querySelectorAll('.modal button')].find(n=>n.textContent.trim()===${JSON.stringify(label)})||document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]')).focus()`);await key(window,'Return');}
 async function type(label,text){await evaluate(`(()=>{const n=document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]');n.focus();n.select();})()`);await window.webContents.insertText(text);}
-async function toggle(){await evaluate('document.activeElement?.blur()');await key(window,'Space');}
+async function toggle(){
+ const playing=await evaluate(`!${state}.playback.playing`);
+ await evaluate('document.activeElement?.blur()');await key(window,'Space');
+ // Native input delivery and the decoder seek are asynchronous. Observe the
+ // requested state before measuring a pause or sending the next Space.
+ await wait(`${state}.playback.playing===${playing}&&${media}.paused===${!playing}&&!${media}.seeking`,'native '+(playing?'play':'pause'));
+}
+const transportSnapshot=()=>evaluate(`({wallSeconds:performance.now()/1000,playback:${state}.playback,media:{seconds:${media}.currentTime,duration:${media}.duration,paused:${media}.paused,seeking:${media}.seeking,ended:${media}.ended,readyState:${media}.readyState,rate:${media}.playbackRate,error:${media}.error?.code},context:{state:${qa}.context?.state,seconds:${qa}.context?.currentTime},visibility:document.visibilityState})`);
+async function alignedEnd(speed){
+ const progress=[];let lastSecond=-1;
+ try{await waitFor(async()=>{
+  const sample=await transportSnapshot(),second=Math.floor(sample.wallSeconds);
+  if(second!==lastSecond){progress.push(sample);lastSecond=second;}
+  return !sample.playback.playing&&sample.playback.count===16;
+ },'aligned end',{timeoutMs:25000,failure:()=>failure});}
+ finally{measurements.push({kind:'aligned end',speed,progress});await fs.writeFile(path.join(output,'results-transport.json'),JSON.stringify(measurements,null,2));}
+}
 async function capture(name){await evaluate(`${store}.setValue('ui','toast','');document.activeElement?.blur()`);await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0});await wait("!document.querySelector('[role=tooltip]')",'help hidden');await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height})`));}
 async function openAlignment(){await evaluate(`${store}.dispatch('audio.align-open')`);await wait("!!document.querySelector('[aria-label=\"Audio anchors\"]')",'alignment editor');}
 
@@ -47,11 +63,11 @@ app.whenReady().then(async()=>{try{
  const wire=await fs.readFile(saved,'utf8');assert.equal(JSON.parse(wire).schemaVersion,4);assert.deepEqual(parseProject(wire),aligned);assert.equal(wire.includes('data:audio'),false);
  openPath=saved;const epoch=await evaluate(state+'.ui.projectEpoch');await key(window,'O',[process.platform==='darwin'?'meta':'control']);await wait(`${state}.ui.projectEpoch!==${epoch}&&${state}.fileSession.fileOperation===null`,'native reopen');assert.deepEqual(await evaluate(state+'.project.present'),aligned);assert.equal(await evaluate(state+'.fileSession.audioUrl'),'');
  openPath=recording;await click('[aria-label="Attach audio"]');await wait(`${state}.fileSession.audioToken&&!${state}.fileSession.audioLoading&&${media}.readyState>=3`,'recording relinked');pass('schema-v4 native save/reopen preserves metadata without embedding audio; recording can be relinked');
- for(const count of [4,8,12,16]){await evaluate(`${store}.dispatch('playback.scrub',{count:${count}})`);await wait(`Math.abs(${media}.currentTime-${at(count)+.4})<.025`,'aligned scrub '+count);}
+ for(const count of [4,8,12,16]){await evaluate(`${store}.dispatch('playback.scrub',{count:${count}})`);await wait(`!${media}.seeking&&Math.abs(${media}.currentTime-${at(count)+.4})<.025`,'aligned scrub '+count);}
  for(const speed of [.75,1.5]){
-  await evaluate(`${store}.setValue('playback','speed',${speed});${store}.dispatch('playback.scrub',{count:0})`);await toggle();await wait(`${state}.playback.count>4&&${state}.playback.count<7`,'live count');
+  await evaluate(`${store}.setValue('playback','speed',${speed});${store}.dispatch('playback.scrub',{count:0})`);await wait(`!${media}.seeking&&Math.abs(${media}.currentTime-.4)<.025`,'recording start settled');await toggle();await wait(`${state}.playback.count>4&&${state}.playback.count<7`,'live count');
   const reading=await evaluate(`({count:${state}.playback.count,seconds:${media}.currentTime,rate:${media}.playbackRate})`);assert.equal(reading.rate,speed);assert.ok(Math.abs(reading.seconds-(at(reading.count)+.4))<.12,JSON.stringify(reading));measurements.push(reading);
-  await toggle();const paused=await evaluate(media+'.currentTime');await pause(100);assert.ok(Math.abs(await evaluate(media+'.currentTime')-paused)<.03);await toggle();await wait(`!${state}.playback.playing&&${state}.playback.count===16`,'aligned end');
+  await toggle();const paused=await evaluate(media+'.currentTime');await pause(100);assert.ok(Math.abs(await evaluate(media+'.currentTime')-paused)<.03);await toggle();await alignedEnd(speed);
  }
  const passage={id:'aligned-loop',name:'Variable recording interval',notes:'',start:{kind:'set',setId:aligned.sets[1].id},end:{kind:'move',moveId:aligned.moves[1].id,fromSetId:aligned.moves[1].fromSetId,toSetId:aligned.moves[1].toSetId,count:4},focus:{kind:'all'}};
  await evaluate(`${store}.dispatch('rehearsal.save',{passage:${JSON.stringify(passage)}});${store}.dispatch('rehearsal.activate',{id:'aligned-loop'});${store}.setValue('playback','loop',true)`);await toggle();await wait(`${state}.playback.count>11`,'range near end');await wait(`${state}.playback.count<9`,'anchored loop rewound');await toggle();await evaluate(`${store}.dispatch('rehearsal.clear');${store}.setValue('playback','loop',false)`);pass('real media seeks, playback at two speeds, pause/resume and rehearsal loops use the same independently specified mapping');
@@ -86,4 +102,4 @@ app.whenReady().then(async()=>{try{
  await type('Audio anchors',anchors+'\n14,9.4');for(let i=0;i<18;i++){await key(window,'Tab');if(await evaluate("document.activeElement?.getAttribute('aria-label')==='Apply audio alignment'"))break;}
  const focus=await evaluate("(()=>{const n=document.activeElement,r=n.getBoundingClientRect();return {name:n.getAttribute('aria-label'),top:r.top,bottom:r.bottom,height:innerHeight};})()");assert.equal(focus.name,'Apply audio alignment');assert.ok(focus.top>=0&&focus.bottom<=focus.height);await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'Escape cancels');pass('supported themes and narrow 150% layout retain validation, keyboard-reachable Apply and Escape cancellation');
  assert.deepEqual(await evaluate(qa+'.errors'),[]);await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,measurements,viewports,source:manifest.source,note:'Known variable-tempo WAV pulses at independently specified count times. Production media/native input, controlled OS file dialogs. Linux software host only.'},null,2));app.exit(0);
-}catch(error){console.error(error);console.error(await evaluate(`({playback:${state}.playback,toast:${state}.ui.toast,dialog:${state}.ui.dialog,errors:${qa}.errors,alignment:{draft:document.querySelector('.score-fields textarea')?.value,nextCount:document.querySelector('.score-settings input[type=number]')?.value,seconds:document.querySelector('.score-fields audio')?.currentTime}})`).catch(()=>null));await capturePage(window,output,'failure.png').catch(()=>{});await fs.writeFile(path.join(output,'failure.txt'),error.stack);app.exit(1);}});
+}catch(error){console.error(error);console.error(await transportSnapshot().catch(()=>null));console.error(await evaluate(`({playback:${state}.playback,toast:${state}.ui.toast,dialog:${state}.ui.dialog,errors:${qa}.errors,alignment:{draft:document.querySelector('.score-fields textarea')?.value,nextCount:document.querySelector('.score-settings input[type=number]')?.value,seconds:document.querySelector('.score-fields audio')?.currentTime}})`).catch(()=>null));await capturePage(window,output,'failure.png').catch(()=>{});await fs.writeFile(path.join(output,'failure.txt'),error.stack);app.exit(1);}});

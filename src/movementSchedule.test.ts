@@ -86,8 +86,7 @@ describe('independent performer movement schedules', () => {
     expect(exportCoordinatesCsv(p)).toContain('Timed path');
     const input = transitionInput(p, 1, 0)!;
     expect(input.tracks[0].path).toEqual(p.moves[0].paths.a);
-    expect(() => analyzeTransition(p, 1)).toThrow(/has not been checked/);
-    await expect(new TransitionAnalyzer().analyze(input)).rejects.toThrow(/has not been checked/);
+    expect((await new TransitionAnalyzer().analyze(input))!.issues).toEqual(analyzeTransition(p, 1));
   });
   it('rejects overlapping, unordered, empty, discontinuous and out-of-range intervals without canonicalizing intent away', () => {
     const mutations: ((path: PerformerPath) => void)[] = [

@@ -38,7 +38,7 @@ Destination window endpoints come from the saved path's shared sampler. Endpoint
 
 The window may replace complete destination travel intervals. Cutting through a travel is rejected; choose interval boundaries, a hold/gap or the whole move. A boundary hold can split, with its original ID retained on the prefix or sole suffix and a fresh ID on a second suffix. Outside intervals retain geometry/IDs. Pasted intervals receive fresh IDs that remain stable between preview and Apply. Source data, destination endpoint pictures, other performers and destination easing remain fixed. Replacement loss is explicit before Apply.
 
-The canonical validator enforces positive finite ordered/nonoverlapping windows, valid endpoint chains, scoped unique IDs, at most 32 intervals per performer path and the 10 MiB file budget. Any failure leaves production/history unchanged. Undo, save/reopen, overlays and coordinate exports retain the accepted geometry; detailed spacing/stride analysis remains explicitly unavailable pending #76.
+The canonical validator enforces positive finite ordered/nonoverlapping windows, valid endpoint chains, scoped unique IDs, at most 32 intervals per performer path and the 10 MiB file budget. Any failure leaves production/history unchanged. Undo, save/reopen, overlays and coordinate exports retain the accepted geometry; [detailed spacing/stride checks](detailed-path-analysis.md) now recompute conservative bounds after geometry or timing edits.
 
 ## Compatibility and boundaries
 

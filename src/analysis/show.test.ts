@@ -110,4 +110,17 @@ describe('show-wide result ownership',()=>{
     for(const atCount of [-1,17,Infinity])expect(store.dispatch('analysis.problem-review',{epoch:0,moveId:'m0',atCount,ids:['p0']})).toBe(false);
     service.dispose();
   });
+  it('invalidates detailed control, interval and count edits and rejects their old worker replies',async()=>{
+    const p=fixture();p.moves[0].paths.p0={segments:[{id:'curve',kind:'cubic',startCount:1,endCount:7,control1:{x:12,y:22},control2:{x:20,y:22}}]};
+    const {store,service,workers,drain}=setup(p);await drain();const before=service.getSnapshot(),oldMessage=workers[0].messages.at(-1)!;
+    store.dispatch('set.select',{index:1});store.setValue('selection','selectedIds',['p0']);let state=store.getState();
+    const path=structuredClone(p.moves[0].paths.p0);if(path.segments[0].kind==='cubic')path.segments[0].control1.y=25;
+    expect(store.dispatch('schedule.save',{moveId:p.moves[0].id,performerId:'p0',path,revision:state.project.revision,epoch:state.ui.projectEpoch})).toBe(true);
+    expect(service.getSnapshot().moves[0].status).toBe('pending');expect(service.getSnapshot().moves[0].issues).toEqual([]);
+    workers[0].reply({revision:oldMessage.revision,result:{issues:before.moves[0].issues,stats:{mode:'cached',changedPerformers:0,possiblePairs:0,exactPairs:0,elapsedMs:0}}});expect(service.getSnapshot().moves[0].status).toBe('pending');await drain();
+    path.segments[0].endCount=6;state=store.getState();expect(store.dispatch('schedule.save',{moveId:p.moves[0].id,performerId:'p0',path,revision:state.project.revision,epoch:state.ui.projectEpoch})).toBe(true);expect(service.getSnapshot().moves[0].status).toBe('pending');await drain();
+    store.dispatch('set.update',{index:1,update:{counts:16}});expect(service.getSnapshot().moves.every(m=>m.status==='pending')).toBe(true);await drain();
+    for(const m of service.getSnapshot().moves)expect(m.issues).toEqual(analyzeTransition(store.getState().project.present,m.index));service.dispose();
+  });
+
 });

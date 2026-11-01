@@ -16,3 +16,5 @@
 .problem-ring { fill: none; stroke: var(--error); stroke-width: 3px; vector-effect: non-scaling-stroke; }
 .problem-preview .problem-path { stroke: var(--warning); stroke-dasharray: 3 5; }
 .problem-preview .problem-ring { stroke: var(--warning); }
+
+.problem-bound { font-variant-numeric: tabular-nums; font-size: 11px; }

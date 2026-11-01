@@ -1,0 +1,177 @@
+{
+  "source": {
+    "revision": "54bdb0301d128e94f926b2bc5f601442ab21a658",
+    "tree": "0de0c87df380805d5246ddae2ca7536fa2894db9",
+    "dirty": true,
+    "contentHash": "e2f9d9c0049773ab69b9acf90d8f84f278bd140e8bb5380a3ecce2a1a16d87c7",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "hardware": {
+    "os": "Linux",
+    "release": "6.18.57",
+    "architecture": "x64",
+    "cpuModel": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpus": 3,
+    "totalMemoryBytes": 10452459520,
+    "node": "24.19.0",
+    "representativeSchoolLaptop": false,
+    "note": "Host measurements only; school-laptop qualification requires a separate run."
+  },
+  "generatedAt": "2026-11-01T00:21:45.530Z",
+  "fixtures": [
+    {
+      "performers": 2,
+      "sets": 128,
+      "intervals": 32,
+      "utf8Bytes": 65881,
+      "sha256": "ce035764f761c83ce00b6be97eb0e49d8a8b5152d51ed5a631a0cd2eb75179d9",
+      "metrics": {
+        "full": {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 2,
+            "possiblePairs": 1,
+            "exactPairs": 1,
+            "elapsedMs": 38.47293000000002
+          },
+          "issues": 3,
+          "yields": 5,
+          "longestBlockMs": 10.05382400000002,
+          "completionTailMs": 2.99466799999999,
+          "heapMB": 16.282684326171875
+        },
+        "cached": {
+          "stats": {
+            "mode": "cached",
+            "changedPerformers": 0,
+            "possiblePairs": 1,
+            "exactPairs": 0,
+            "elapsedMs": 0.4401720000000182
+          },
+          "issues": 3,
+          "yields": 1,
+          "longestBlockMs": 0.29666400000002113,
+          "completionTailMs": 0.19715800000000172,
+          "heapMB": 16.36315155029297
+        },
+        "localized": {
+          "stats": {
+            "mode": "incremental",
+            "changedPerformers": 1,
+            "possiblePairs": 1,
+            "exactPairs": 1,
+            "elapsedMs": 3.245376999999962
+          },
+          "issues": 3,
+          "yields": 1,
+          "longestBlockMs": 3.153816000000006,
+          "completionTailMs": 3.153816000000006,
+          "heapMB": 22.21643829345703
+        }
+      }
+    },
+    {
+      "performers": 64,
+      "sets": 128,
+      "intervals": 32,
+      "utf8Bytes": 775209,
+      "sha256": "8095371445d5782a5b0ab8c43a87a8292937bcb1b945596e29776b846f38bc78",
+      "metrics": {
+        "full": {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 64,
+            "possiblePairs": 2016,
+            "exactPairs": 2016,
+            "elapsedMs": 372.631615
+          },
+          "issues": 2080,
+          "yields": 50,
+          "longestBlockMs": 9.73913600000003,
+          "completionTailMs": 5.551240000000007,
+          "heapMB": 42.264732360839844
+        },
+        "cached": {
+          "stats": {
+            "mode": "cached",
+            "changedPerformers": 0,
+            "possiblePairs": 2016,
+            "exactPairs": 0,
+            "elapsedMs": 7.309170999999992
+          },
+          "issues": 2080,
+          "yields": 1,
+          "longestBlockMs": 5.013346999999953,
+          "completionTailMs": 5.013346999999953,
+          "heapMB": 45.595069885253906
+        },
+        "localized": {
+          "stats": {
+            "mode": "incremental",
+            "changedPerformers": 1,
+            "possiblePairs": 2016,
+            "exactPairs": 63,
+            "elapsedMs": 9.388961999999992
+          },
+          "issues": 2080,
+          "yields": 1,
+          "longestBlockMs": 6.790211999999997,
+          "completionTailMs": 6.790211999999997,
+          "heapMB": 55.31922149658203
+        }
+      }
+    },
+    {
+      "performers": 500,
+      "sets": 128,
+      "intervals": 32,
+      "utf8Bytes": 5764287,
+      "sha256": "899ecdd8e3c5d4486168d85acebe8cb50e459c3c8b438186cf7939acc5670cf2",
+      "metrics": {
+        "full": {
+          "stats": {
+            "mode": "full",
+            "changedPerformers": 500,
+            "possiblePairs": 124750,
+            "exactPairs": 124750,
+            "elapsedMs": 3119.211873
+          },
+          "issues": 125250,
+          "yields": 451,
+          "longestBlockMs": 75.8255720000002,
+          "completionTailMs": 75.8255720000002,
+          "heapMB": 273.9752197265625
+        },
+        "cached": {
+          "stats": {
+            "mode": "cached",
+            "changedPerformers": 0,
+            "possiblePairs": 124750,
+            "exactPairs": 0,
+            "elapsedMs": 136.13759400000072
+          },
+          "issues": 125250,
+          "yields": 1,
+          "longestBlockMs": 107.06205500000033,
+          "completionTailMs": 107.06205500000033,
+          "heapMB": 284.9953155517578
+        },
+        "localized": {
+          "stats": {
+            "mode": "incremental",
+            "changedPerformers": 1,
+            "possiblePairs": 124750,
+            "exactPairs": 499,
+            "elapsedMs": 246.22916799999985
+          },
+          "issues": 125250,
+          "yields": 4,
+          "longestBlockMs": 91.8606719999998,
+          "completionTailMs": 85.28402199999982,
+          "heapMB": 257.4351577758789
+        }
+      }
+    }
+  ],
+  "interpretation": "One compute observation per phase on this host, not a statistical or hardware upper bound. 128 pictures; first move has 32 coincident cubic intervals per performer, so every broad-phase pair conflicts and zero-distance pruning applies. Cooperative callbacks are measured but timer delays are suppressed here; actual worker/renderer evidence is separate. Numeric adversaries can reach the refinement budget and remain explicitly uncertain."
+}

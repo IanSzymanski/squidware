@@ -1,0 +1,25 @@
+{
+  "source": {
+    "revision": "54bdb0301d128e94f926b2bc5f601442ab21a658",
+    "tree": "0de0c87df380805d5246ddae2ca7536fa2894db9",
+    "dirty": true,
+    "contentHash": "85a5f98e0967dbe7631d3fc58bf179b7247fb534708d0f11b4f3f856d638ca3e",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "checks": [
+    {
+      "case": "paths",
+      "pages": 2,
+      "wordBoxes": 343,
+      "bounds": "passed",
+      "sha256": "0bec3901684212d5b4d43b8af3688734a7b8849d5f7514bf7725dd650c72d6e2"
+    },
+    {
+      "case": "movement-schedule",
+      "pages": 3,
+      "wordBoxes": 464,
+      "bounds": "passed",
+      "sha256": "ba9f115c119290eaaf71e1c0c68f50f6171bf66967be571f65107cef4106a0e6"
+    }
+  ]
+}
