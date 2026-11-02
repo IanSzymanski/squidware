@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
-const {settleNativeViewport}=require('./testing/renderer.cjs');
+const {settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
 // Assignment choices/paths belong here; the editor owner retains shape handles,
 // draft validation and the existing file-dialog race matrix.
 module.exports=async function({project,editor,state,evaluate,wait,key,capture:takeScreenshot,window,pass,saved,Menu}) {
@@ -67,7 +67,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'redistribution applied');
   applied=await evaluate(`${state}.project.present`);assert.deepEqual(applied.sets[0].positions[member],{x:5,y:5});
   // Copy control uses native keyboard selection; source remains unchanged.
-  await evaluate("document.querySelector('.live-formation select').focus()");await key('Down');await key('Return');
+  await selectNativeOption(window,'.live-formation select',project.sets[1].id,{accepted:()=>evaluate(`!!${state}.ui.formationPreview && ${state}.ui.formationPreview.setId===${JSON.stringify(project.sets[1].id)} && ${state}.selection.activeIndex===1`)});
   await wait(`!!${state}.ui.formationPreview && ${state}.selection.activeIndex===1`,'copy to next set');
   assert.deepEqual(await evaluate(`${state}.project.present`),applied);await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'copy applied');
   let copied=await evaluate(`${state}.project.present`);assert.deepEqual(copied.sets[0],applied.sets[0]);assert.notEqual(copied.sets[1].liveFormations[0].id,id);

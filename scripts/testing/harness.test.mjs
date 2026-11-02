@@ -137,6 +137,26 @@ test('native dropdown waits for final dispatch acknowledgement even when its val
   release(); await selection;
   assert.equal(complete, true); assert.equal(events.length, 'Set 2'.length * 3);
 });
+test('an action dropdown observes acceptance after a full character and stops before its new focus receives the remaining prefix', async () => {
+  const events = []; let copied = false, queued, release;
+  const ready = new Promise(resolve => { queued = resolve; }), acknowledged = new Promise(resolve => { release = resolve; });
+  const control = { tagName: 'SELECT', disabled: false, options: [{ value: 'a', label: 'Tidal arc' }, { value: 'b', label: 'The prism' }], value: '',
+    blur() {}, focus() { context.document.activeElement = this; } };
+  const context = { document: { querySelector: () => copied ? null : control, activeElement: null } };
+  const window = { webContents: {
+    executeJavaScript: async source => vm.runInNewContext(source, context),
+    debugger: { async sendCommand(method, event) {
+      events.push(event); if (event.type === 'char') { copied = true; context.document.activeElement = { outerHTML: '<button>Apply</button>' }; }
+      if (event.type === 'keyUp') { queued(); await acknowledged; }
+    } },
+  } };
+  let complete = false;
+  const selection = renderer.selectNativeOption(window, 'select', 'a', { accepted: async () => copied }).then(() => { complete = true; });
+  await ready; await new Promise(resolve => setImmediate(resolve)); assert.equal(complete, false);
+  release(); await selection;
+  assert.deepEqual(events.map(event => [event.type,event.key]), [['keyDown','T'],['char','T'],['keyUp','T']]);
+  assert.equal(complete, true);
+});
 test('a stalled native dropdown dispatch times out once and sends no remaining events after cancellation', async () => {
   let release;
   const pending = new Promise(resolve => { release = resolve; }), events = [];

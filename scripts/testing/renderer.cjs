@@ -41,7 +41,7 @@ async function key(window, keyCode, modifiers = [], settleMs = 5) {
 }
 
 /** Native typeahead avoids OS select popups and platform-specific Home/End keys. */
-async function selectNativeOption(window, selector, value, { timeoutMs = 15000 } = {}) {
+async function selectNativeOption(window, selector, value, { timeoutMs = 15000, accepted } = {}) {
   const query = JSON.stringify(selector);
   const choice = await window.webContents.executeJavaScript(`(() => {
     const control = document.querySelector(${query});
@@ -76,13 +76,17 @@ async function selectNativeOption(window, selector, value, { timeoutMs = 15000 }
             type, key: character, ...(type === 'char' ? { text: character } : {}),
           });
         }
+        // Action selects can unmount and move focus on an early matching prefix.
+        // Finish that character's native dispatch, then stop before typing into
+        // the newly focused preview. The caller observes the resulting action.
+        if (accepted && await accepted()) return;
       }
     })();
     // Wait for the complete dispatch even when the value matches initially or
     // after an early ambiguous prefix. Never retype the sequence on a retry.
     await waitFor(async () => {
       await input;
-      return active && window.webContents.executeJavaScript(`document.querySelector(${query})?.value === ${JSON.stringify(String(value))}`);
+      return active && (accepted ? accepted() : window.webContents.executeJavaScript(`document.querySelector(${query})?.value === ${JSON.stringify(String(value))}`));
     }, `native option ${choice.label} in ${selector}`, { timeoutMs });
   } catch (error) {
     const observed = await window.webContents.executeJavaScript(`({ value: document.querySelector(${query})?.value, focused: document.activeElement?.outerHTML })`).catch(() => null);
