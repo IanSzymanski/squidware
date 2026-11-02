@@ -17,8 +17,15 @@ const wait = (expression, label) => waitFor(() => evaluate(expression), label, {
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 function instrument() {
   const qa = window.__audioQA = { editor: null, seeks: [], plays: 0, rejectPlay: false, errors: [] };
-  const Context = window.AudioContext;
-  window.AudioContext = class extends Context { constructor(...args) { super(...args); qa.context = this; } };
+  const WorkletNode = window.AudioWorkletNode;
+  window.AudioWorkletNode = class extends WorkletNode {
+    constructor(context, name, options) {
+      super(context, name, options);
+      // Waveform decoding uses a separate, short-lived AudioContext. Observe
+      // the real transport context attached to its metronome node instead.
+      if (name === 'squidware-metronome') qa.context = context;
+    }
+  };
   const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'currentTime');
   Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', { ...descriptor, set(value) { qa.seeks.push(value); return descriptor.set.call(this, value); } });
   const play = HTMLMediaElement.prototype.play;

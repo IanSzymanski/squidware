@@ -45,8 +45,9 @@ macOS passed tempo-map, then exposed two further fixed-delay assumptions:
   play-attempt counter. The existing 20-second wait bounds a stalled context.
   Native Space delivery/pausing is acknowledged before further measurements.
 
-AudioContext instrumentation retains the native implementation and only records
-the active context. Snapshots include context/wall time and context state to
+The playback worklet instrumentation retains the native implementation and
+records its context, excluding the separate waveform-decoding contexts that
+close after attachment. Snapshots include context/wall time and context state to
 distinguish a delayed virtual output from a transport that fails to advance.
 All 64 related clock/map/beat unit tests and 84 native tests pass locally.
 Hosted validation of these remaining checks is pending.
