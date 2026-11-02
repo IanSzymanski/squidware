@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {app,dialog}=require('electron');
 const fs=require('node:fs/promises'),path=require('node:path');
-const {capturePage,key,waitFor,pause,settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
+const {capturePage,key,waitFor,waitForProgress,pause,settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
 const manifest=require(process.argv.find(a=>a.startsWith('--audio-alignment-manifest=')).slice('--audio-alignment-manifest='.length));
 const {root,output,profile,bundle,recording,files}=manifest,{fixture,parseProject,serializeProject,countToSeconds}=require(bundle);
 app.disableHardwareAcceleration();app.setPath('userData',profile);
@@ -35,11 +35,15 @@ async function toggle(){
 const transportSnapshot=()=>evaluate(`({wallSeconds:performance.now()/1000,playback:${state}.playback,media:{seconds:${media}.currentTime,duration:${media}.duration,paused:${media}.paused,seeking:${media}.seeking,ended:${media}.ended,readyState:${media}.readyState,rate:${media}.playbackRate,error:${media}.error?.code},context:{state:${qa}.context?.state,seconds:${qa}.context?.currentTime},visibility:document.visibilityState})`);
 async function alignedEnd(speed){
  const progress=[];let lastSecond=-1;
- try{await waitFor(async()=>{
-  const sample=await transportSnapshot(),second=Math.floor(sample.wallSeconds);
-  if(second!==lastSecond){progress.push(sample);lastSecond=second;}
-  return !sample.playback.playing&&sample.playback.count===16;
- },'aligned end',{timeoutMs:25000,failure:()=>failure});}
+ try{await waitForProgress(async()=>{
+  const sample=await transportSnapshot(),second=Math.floor(sample.wallSeconds),done=!sample.playback.playing&&sample.playback.count===16;
+  if(second!==lastSecond||done){progress.push(sample);lastSecond=second;}
+  const error=sample.media.error?'Recording error '+sample.media.error
+   :sample.playback.clockStatus.includes('silent playback')?'Recording fell back to silent playback'
+   :!sample.playback.playing&&!done?'Playback stopped before count 16':null;
+  return {done,progress:sample.media.seconds,error};
+ },'aligned end',{idleTimeoutMs:10000,timeoutMs:60000,failure:()=>failure});}
+ catch(error){error.transport=await transportSnapshot().catch(()=>null);throw error;}
  finally{measurements.push({kind:'aligned end',speed,progress});await fs.writeFile(path.join(output,'results-transport.json'),JSON.stringify(measurements,null,2));}
 }
 async function capture(name){await evaluate(`${store}.setValue('ui','toast','');document.activeElement?.blur()`);await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0});await wait("!document.querySelector('[role=tooltip]')",'help hidden');await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height})`));}

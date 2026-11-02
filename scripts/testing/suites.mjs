@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  { name: 'path-authoring', title: 'Field travel handles, drawn strokes, count ticks and reviewed interval replacement', script: 'path-authoring-qa.mjs', timeoutMs: 270000 },
   { name: 'detailed-analysis', title: 'Conservative detailed path bounds, worker invalidation, native finding review and maximum show', script: 'detailed-analysis-qa.mjs', timeoutMs: 270000 },
   { name: 'path-operations', title: 'Detailed resize/reverse, selected interval clipboard and reviewed identity/frame mapping', script: 'path-operations-qa.mjs', timeoutMs: 240000 },
   { name: 'movement-schedule', title: 'Independent holds/submoves, numeric intervals, v6 files and shared count sampling', script: 'movement-schedule-qa.mjs', timeoutMs: 240000 },

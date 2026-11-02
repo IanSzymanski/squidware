@@ -1,0 +1,120 @@
+{
+  "checks": [
+    "native handle drag, drag Escape rollback, keyboard nudge, numeric equivalence, zoom and dialog cancel",
+    "numeric S route replaces one interval, holds/endpoints stay fixed, one undo/redo, native save/reopen",
+    "held and fractional count ticks use shared playback samples; applied field scrub reproduces the fitted path",
+    "native freehand capture, attachment rejection, explicit capture reversal and canceled fit",
+    "native field-space strokes at 1x/2x agree within 0.35 yd including pixel quantization; Escape exits capture then dialog",
+    "dark/light/high-contrast and 150% UI scale preserve reachable capture and Apply/Cancel controls",
+    "2/64/500 performer render cost recorded with bounded selected-path ticks and handles"
+  ],
+  "viewports": [
+    {
+      "name": "authoring-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485
+    },
+    {
+      "name": "authoring-handles-zoom.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-handles-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-drawn-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-attachment-error.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-light-1366.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-field-light-1366.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-high-contrast-1366.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-field-high-contrast-1366.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 485,
+      "dialogHeight": 744
+    },
+    {
+      "name": "authoring-dark-1024.png",
+      "width": 1024,
+      "height": 768,
+      "fieldHeight": 270,
+      "dialogHeight": 732
+    },
+    {
+      "name": "authoring-field-dark-1024.png",
+      "width": 1024,
+      "height": 768,
+      "fieldHeight": 270,
+      "dialogHeight": 732
+    }
+  ],
+  "timings": [
+    {
+      "performers": 2,
+      "openAndTwoFramesMs": 145.44536599999992,
+      "handles": 0,
+      "ticks": 33,
+      "numericEditAndTwoFramesMs": 476.57852199999616
+    },
+    {
+      "performers": 64,
+      "openAndTwoFramesMs": 155.37276099999872,
+      "handles": 0,
+      "ticks": 33,
+      "numericEditAndTwoFramesMs": 220.043952
+    },
+    {
+      "performers": 500,
+      "openAndTwoFramesMs": 676.0675079999928,
+      "handles": 0,
+      "ticks": 33,
+      "numericEditAndTwoFramesMs": 132.7896600000022
+    }
+  ],
+  "source": {
+    "revision": "f5c2ca5b954ddbc909d30d76a201d825265aea6e",
+    "tree": "88aa9a8628064d9fbcbebba54a60cbab2a13f3d2",
+    "dirty": true,
+    "contentHash": "3fd8e4fe51c2145f0d51167eddc2b84dcaea4d47da94d9af00af2bca79a4c56b",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

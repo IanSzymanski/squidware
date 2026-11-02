@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Tooltip } from '../components/Tooltip';
 import { Modal } from '../components/Modal';
-import { FieldDrawing } from '../components/Field2D';
+import { TravelCanvas } from './TravelCanvas';
+import { travelHandles } from './pathAuthoring';
 import { sampleProject, setStartCount, validateProject } from '../domain';
-import { movementSvg, movementLength } from '../movementPaths';
+import { movementLength } from '../movementPaths';
 import { HelpButton } from './ControlHelp';
 import { editMovementPath, type PathEdit } from './pathEditing';
 import type { EditorController } from './useEditorController';
@@ -20,7 +21,7 @@ export function PathPanel({ controller: c }: { controller: EditorController }) {
   const [values, setValues] = useState(() => segment?.kind === 'cubic'
     ? [segment.control1.x, segment.control1.y, segment.control2.x, segment.control2.y].map(String)
     : [from.x + (to.x - from.x) / 3, from.y + (to.y - from.y) / 3, from.x + (to.x - from.x) * 2 / 3, from.y + (to.y - from.y) * 2 / 3].map(String));
-  const [count, setCount] = useState(move.counts / 2), [submitError, setSubmitError] = useState('');
+  const [count, setCount] = useState(move.counts / 2), [submitError, setSubmitError] = useState(''), [gesture, setGesture] = useState(false);
   const controls = kind === 'cubic' ? { control1: { x: Number(values[0]), y: Number(values[1]) }, control2: { x: Number(values[2]), y: Number(values[3]) } } : null;
   const request: PathEdit = { moveId: move.id, performerId, controls, revision: initial.revision, epoch: initial.epoch };
   let error = '', candidate = project;
@@ -29,7 +30,8 @@ export function PathPanel({ controller: c }: { controller: EditorController }) {
     candidate = editMovementPath(project, request);
     validateProject(candidate);
   } catch (e) { error = (e as Error).message; }
-  const path = candidate.moves[initial.index].paths[performerId];
+  const rawPath = candidate.moves[initial.index].paths[performerId];
+  const path = rawPath ? { segments: rawPath.segments.map(s => ({ ...s, id: segment?.id ?? 'path-preview' })) } : undefined;
   const changed = kind === 'line' ? !!project.moves[initial.index].paths[performerId]
     : segment?.kind !== 'cubic' || JSON.stringify(controls) !== JSON.stringify({ control1: segment.control1, control2: segment.control2 });
   const state = c.store.getState();
@@ -37,7 +39,7 @@ export function PathPanel({ controller: c }: { controller: EditorController }) {
   useEffect(() => { c.setPendingDraft(changed, 'movement-path'); return () => c.setPendingDraft(false, 'movement-path'); }, [changed, c.setPendingDraft]);
   function close() { c.setPendingDraft(false, 'movement-path'); c.setDialog(null); }
   function apply() {
-    if (error || stale || !changed) return;
+    if (error || stale || !changed || gesture) return;
     c.setPendingDraft(false, 'movement-path');
     if (c.dispatch('path.save', request) !== true) { c.setPendingDraft(changed, 'movement-path'); setSubmitError(c.store.getState().ui.toast || 'Cancel and reopen to review the current move.'); }
   }
@@ -50,16 +52,13 @@ export function PathPanel({ controller: c }: { controller: EditorController }) {
     <p className="microcopy">Start ({from.x.toFixed(3)}, {from.y.toFixed(3)}) · End ({to.x.toFixed(3)}, {to.y.toFixed(3)}) yards. Control points stay inside the field. Bézier parameter advances with count{move.transition === 'ease' ? ' using ease in / out' : ' linearly'}; curved speed varies. Background checks use conservative curve bounds; review confirmed and possible findings in Problems.</p>
     {(error || stale || submitError) && <p className="field-error" role="alert">{stale ? 'The production or selection changed. Copy your draft, then cancel and reopen.' : error || submitError}</p>}
     {!error && <>
-      <svg className="path-preview" viewBox={`-7 -8 114 ${project.field.height + 16}`} role="img" aria-label="Travel path preview">
-        <FieldDrawing project={project} positions={preview} selectedIds={[performerId]} showLabels={false} />
-        <path className="path-original" d={movementSvg(from, to, move.paths[performerId])} />
-        <path className="path-proposed" d={movementSvg(from, to, path)} />
-        {controls && <g className="path-polygon"><path d={`M${from.x} ${from.y}L${controls.control1.x} ${controls.control1.y}L${controls.control2.x} ${controls.control2.y}L${to.x} ${to.y}`} />{[controls.control1, controls.control2].map((p, i) => <g key={i}><circle cx={p.x} cy={p.y} r="1" /><text x={p.x + 1.5} y={p.y - 1}>{i + 1}</text></g>)}</g>}
-      </svg>
+      <TravelCanvas project={project} positions={preview} performerId={performerId} from={from} to={to} path={path} original={move.paths[performerId]} counts={move.counts} transition={move.transition}
+        handles={travelHandles(from, to, path)} label="Travel path preview" onGesture={setGesture}
+        onHandle={(handle, point) => setValues(old => old.map((v, i) => i === (handle.kind === 'control1' ? 0 : 2) ? String(point.x) : i === (handle.kind === 'control1' ? 1 : 3) ? String(point.y) : v))} />
       <label className="form-label">Preview local count · {count.toFixed(2)}<input aria-label="Preview path count" type="range" min={0} max={move.counts} step={0.01} value={count} onChange={e => setCount(Number(e.target.value))} /></label>
-      <p role="status" aria-label="Path preview position">{person.label}: X {preview[performerId].x.toFixed(3)}, Y {preview[performerId].y.toFixed(3)} yd · travel {movementLength(from, to, path).toFixed(3)} yd. Dashed: saved path. Solid: preview. Ring: sampled position.</p>
+      <p role="status" aria-label="Path preview position">{person.label}: X {preview[performerId].x.toFixed(3)}, Y {preview[performerId].y.toFixed(3)} yd · travel {movementLength(from, to, path).toFixed(3)} yd. Dashed: saved path. Solid: preview. Ring: sampled position. Count dots use the playback evaluator.</p>
     </>}
-    <p className="microcopy">Apply records one undo action. Cancel or Escape leaves the production unchanged. Curves save in format v5. Splitting a curved move or changing its preceding set requires removing its curves first.</p>
-    </div><div className="modal-actions"><HelpButton title="Cancel path edit" className="button subtle" onClick={close}>Cancel</HelpButton><HelpButton title="Apply performer path" description="Save the reviewed travel geometry as one undo action." disabled={!changed || !!error || stale} disabledReason={error || (stale ? 'Cancel and reopen after the production changed.' : 'Change the travel geometry first.')} className="button primary" onClick={apply}>Apply path · one undo</HelpButton></div>
+    <p className="microcopy">Apply records one undo action. Cancel or Escape leaves the production unchanged. Curves save in format v5. For multi-interval drawing, use Draw performer path from the Inspector after canceling this editor. Splitting a curved move or changing its preceding set requires removing its curves first.</p>
+    </div><div className="modal-actions"><HelpButton title="Cancel path edit" className="button subtle" onClick={close}>Cancel</HelpButton><HelpButton title="Apply performer path" description="Save the reviewed travel geometry as one undo action." disabled={!changed || !!error || stale || gesture} disabledReason={error || (stale ? 'Cancel and reopen after the production changed.' : 'Change the travel geometry first.')} className="button primary" onClick={apply}>Apply path · one undo</HelpButton></div>
   </Modal>;
 }
