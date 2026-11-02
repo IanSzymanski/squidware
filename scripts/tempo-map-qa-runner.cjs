@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {app,dialog}=require('electron');
 const fs=require('node:fs/promises'),path=require('node:path');
-const {capturePage,key,waitFor,pause,settleNativeViewport}=require('./testing/renderer.cjs');
+const {capturePage,key,waitFor,waitForProgress,pause,settleNativeViewport}=require('./testing/renderer.cjs');
 const manifest=require(process.argv.find(a=>a.startsWith('--tempo-map-manifest=')).slice('--tempo-map-manifest='.length));
 const {root,output,profile,bundle,recording,files}=manifest,{fixture,parseProject,serializeProject,countToSeconds}=require(bundle);
 app.disableHardwareAcceleration();app.setPath('userData',profile);
@@ -25,7 +25,29 @@ function instrument(){
 async function click(selector){const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled)throw Error('Unavailable control');const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);window.webContents.sendInputEvent({type:'mouseDown',...p,button:'left',clickCount:1});window.webContents.sendInputEvent({type:'mouseUp',...p,button:'left',clickCount:1});}
 async function press(label){await wait(`!!([...document.querySelectorAll('.modal button')].find(n=>n.textContent.trim()===${JSON.stringify(label)})||document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]'))`,'visible '+label);await evaluate(`([...document.querySelectorAll('.modal button')].find(n=>n.textContent.trim()===${JSON.stringify(label)})||document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]')).focus()`);await key(window,'Return');}
 async function type(label,text){await evaluate(`(()=>{const n=document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]');n.focus();n.select();})()`);await window.webContents.insertText(text);}
-async function toggle(){await evaluate('document.activeElement?.blur()');await key(window,'Space');}
+async function toggle(){
+ const playing=await evaluate(`!${state}.playback.playing`);
+ await evaluate('document.activeElement?.blur()');await key(window,'Space');
+ await wait(`${state}.playback.playing===${playing}&&(!${state}.fileSession.audioToken||(${media}.paused===${!playing}&&!${media}.seeking))`,'native '+(playing?'play':'pause'));
+}
+const transportSnapshot=()=>evaluate(`({wallSeconds:performance.now()/1000,playback:${state}.playback,media:{seconds:${media}.currentTime,duration:${media}.duration,paused:${media}.paused,seeking:${media}.seeking,ended:${media}.ended,readyState:${media}.readyState,rate:${media}.playbackRate,error:${media}.error?.code},context:{state:${qa}.context?.state,seconds:${qa}.context?.currentTime},visibility:document.visibilityState})`);
+async function recordedEnd(){
+ const progress=[];let lastSecond=-1;
+ try{
+  // The media clock is authoritative; a virtual device need not run at wall
+  // speed. Require continued real media progress, fail a ten-second stall and
+  // retain an absolute cap. Never seek, retry playback or accept a silent tail.
+  await waitForProgress(async()=>{
+   const sample=await transportSnapshot(),second=Math.floor(sample.wallSeconds),done=!sample.playback.playing&&sample.playback.count===16;
+   if(second!==lastSecond||done){progress.push(sample);lastSecond=second;}
+   const error=sample.media.error?'Recording error '+sample.media.error
+    :sample.playback.clockStatus.includes('silent playback')?'Recording fell back to silent playback'
+    :!sample.playback.playing&&!done?'Playback stopped before count 16':null;
+   return {done,progress:sample.media.seconds,error};
+  },'recorded end',{idleTimeoutMs:10000,timeoutMs:60000,failure:()=>failure});
+ }catch(error){error.transport=await transportSnapshot().catch(()=>null);throw error;}
+ finally{measurements.push({kind:'recorded end',progress});await fs.writeFile(path.join(output,'results-transport.json'),JSON.stringify(measurements,null,2));}
+}
 async function capture(name){await evaluate(`${store}.setValue('ui','toast','');document.activeElement?.blur()`);await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0});await wait("!document.querySelector('[role=tooltip]')",'help hidden');await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height})`));}
 async function openTempo(){await evaluate(`${store}.dispatch('tempo.open')`);await wait("!!document.querySelector('[aria-label=\"Tempo ranges\"]')",'tempo editor');}
 function assertClicks(clicks,speed,plans,stops=[],mediaClock=false){
@@ -80,7 +102,7 @@ app.whenReady().then(async()=>{try{
  // The virtual audio device can advance more slowly than wall time under load.
  // Measure the renderer stall directly and require real media progress, while
  // retaining the exact held count, complete geometry and analytic beat checks.
- assert.ok(stallMs>=400,JSON.stringify(stall));assert.equal(after.count,4,JSON.stringify(stall));assert.ok(stall.mediaAdvance>0,JSON.stringify(stall));assert.deepEqual(after.geometry,before.geometry);measurements.push(stall);await capture('tempo-fermata.png');assert.ok(Math.abs(await evaluate("document.querySelector('.field-container').getBoundingClientRect().height")-attachedHeight)<1,'Fermata readout must not add field-height cost');await wait(`!${state}.playback.playing&&${state}.playback.count===16`,'recorded end');assertClicks(await evaluate(qa+'.clicks'),1,await evaluate(qa+'.plans'),await evaluate(qa+'.stops'),true);pass('recording time continues while field geometry holds through a renderer stall; metronome keeps analytic beat times');
+ assert.ok(stallMs>=400,JSON.stringify(stall));assert.equal(after.count,4,JSON.stringify(stall));assert.ok(stall.mediaAdvance>0,JSON.stringify(stall));assert.deepEqual(after.geometry,before.geometry);measurements.push(stall);await capture('tempo-fermata.png');assert.ok(Math.abs(await evaluate("document.querySelector('.field-container').getBoundingClientRect().height")-attachedHeight)<1,'Fermata readout must not add field-height cost');await recordedEnd();assertClicks(await evaluate(qa+'.clicks'),1,await evaluate(qa+'.plans'),await evaluate(qa+'.stops'),true);pass('recording time continues while field geometry holds through a renderer stall; metronome keeps analytic beat times');
  await evaluate(`${store}.dispatch('playback.scrub',{count:4})`);await toggle();await wait(`${media}.currentTime>${at(4)+original.audioOffsetSeconds+.2}`,'partway through hold');await toggle();const paused=await evaluate(media+'.currentTime');await pause(150);assert.ok(Math.abs(await evaluate(media+'.currentTime')-paused)<.03);await toggle();await pause(100);assert.equal(await evaluate(state+'.playback.count'),4);assert.ok(await evaluate(media+'.currentTime')>=paused);await toggle();
  await evaluate(`${store}.dispatch('playback.scrub',{count:8})`);await wait(`Math.abs(${media}.currentTime-${at(8)+original.audioOffsetSeconds})<.02`,'seek begins held count');await key(window,'.');await wait(`${state}.playback.count===9`,'count step skips hold');pass('pause/resume retains partial fermata progress; scrubbing and count stepping use arrival-time semantics');
  await evaluate(`${store}.dispatch('playback.scrub',{count:6});${store}.setValue('playback','countInBars',1);${qa}.plans=[]`);await toggle();await wait(`${qa}.plans.some(p=>p.countIn)`,'count-in plan');const lead=await evaluate(`${qa}.plans.find(p=>p.countIn).countIn`);assert.ok(Math.abs(lead.secondsPerCount-60/210)<1e-10);await toggle();await evaluate(`${store}.setValue('playback','countInBars',0)`);pass('count-in uses the instantaneous ramp tempo rather than a move base or region start BPM');
