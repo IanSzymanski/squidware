@@ -1,3 +1,4 @@
+import { reconcileLiveFormations } from '../liveFormations';
 import { createDemoProject, parseProject, sampleTimeline, setStartCount, totalCounts, validateProject, validateProjectEdit } from '../domain';
 import type { Project } from '../types';
 import { executeCommand } from './commands';
@@ -107,7 +108,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     edit: change => {
       if (active?.error) throw active.error;
       const activeId = state.project.present.sets[state.selection.activeIndex].id;
-      const next = change(state.project.present);
+      const next = reconcileLiveFormations(state.project.present, change(state.project.present));
       const changes = projectPatches(state.project.present, next);
       if (!changes.length) return;
       validateProjectEdit(state.project.present, next);

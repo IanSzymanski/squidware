@@ -112,6 +112,12 @@ The initial formation center is the selected performers' center. **Positional or
 
 Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 
+### Keep a formation editable
+
+In a formation preview, check **Keep editable on this set** and name it before **Apply**. The **Live formations** list reopens saved line, arc, circle, block and curve geometry after save/reload. **Edit** selects its members and previews changes through the same field handles and numeric inputs. **Members** adds/removes performers and redistributes the preview; **Redistribute members** closes vacant slots with the visible positional or Cast assignment. **Cancel** keeps the saved shape; Apply and Detach each have one undo action.
+
+Moving a dot individually detaches only that member and leaves a vacant slot. Other members do not move. **Detach selected** or **Detach all** removes membership while keeping the dots. Each performer can belong to one live formation per set; a conflicting preview explains which formation owns them and blocks Apply. **Copy … to set** previews the same members and slots on another picture; duplicate set creates independent formation IDs. New/hold/inserted pictures start with plain dots. Templates remain reusable, anonymous presets. See [live formation policies and file behavior](live-formations.md).
+
 ### Reuse setups and formations
 
 Open **Project menu → Templates** (also searchable in Commands), or **Saved formations** in the formation panel. **Save new template** captures an ensemble setup, the explicitly selected dot picture, or an adaptable shape. Give it a name and review the included data. Performer names and labels are excluded; section names are generic unless you check the inclusion option.

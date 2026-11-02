@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 7 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 8 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -629,5 +629,16 @@ test('native v6 schedules round-trip and an overlapping interval cannot overwrit
  assert.equal(await fs.readFile(filename,'utf8'),content);
  const bad=JSON.parse(content);bad.moves[0].paths.a.segments[1].startCount=5;
  await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Schedule'),/overlaps/);
+ assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
+});
+
+test('native v7 live formations round-trip; invalid ownership cannot overwrite a saved production',async t=>{
+ const h=await harness(t),filename=path.join(h.directory,'live.squid');
+ const content=await fs.readFile(path.join(root,'format/examples/live-v7.squid'),'utf8');
+ await fs.writeFile(filename,content);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,content);
+ assert.equal(await h.invoke('save-project',content,'Live'),filename);
+ const bad=JSON.parse(content);bad.sets[0].liveFormations[0].members[1].slot=0;
+ await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Live'),/same slot/);
  assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
 });

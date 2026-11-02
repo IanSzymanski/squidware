@@ -1,0 +1,83 @@
+{
+  "runId": "2026-11-02T21-47-24-377Z-6478ffbb",
+  "state": "completed",
+  "concurrency": 1,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "e866389f4373cda4b8e5a759c587908b4affaf93",
+    "tree": "f5cde9e417270bc899bc92d76a786ec15e4af19e",
+    "dirty": true,
+    "contentHash": "f13129e6d1209b9ee73bf72dbcc55cb9361aa17c37ed67400efc49a507d25512",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted",
+  "selected": [
+    "live-formations",
+    "formation-assignment",
+    "smoke"
+  ],
+  "checks": [
+    {
+      "name": "live-formations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 51606,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-02T21-47-24-377Z-6478ffbb/live-formations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-02T21-47-24-377Z-6478ffbb/live-formations"
+    },
+    {
+      "name": "formation-assignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 26146,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-02T21-47-24-377Z-6478ffbb/formation-assignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-02T21-47-24-377Z-6478ffbb/formation-assignment"
+    },
+    {
+      "name": "smoke",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 1622,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-02T21-47-24-377Z-6478ffbb/smoke.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-02T21-47-24-377Z-6478ffbb/smoke"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-11-02T21:46:57.845Z",
+    "source": {
+      "revision": "e866389f4373cda4b8e5a759c587908b4affaf93",
+      "tree": "f5cde9e417270bc899bc92d76a786ec15e4af19e",
+      "dirty": true,
+      "contentHash": "f13129e6d1209b9ee73bf72dbcc55cb9361aa17c37ed67400efc49a507d25512",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "2c79d14842760a8523a8c05757359309659f687455017bafaa0abf022c4af703"
+  }
+}

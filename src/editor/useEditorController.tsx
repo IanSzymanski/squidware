@@ -13,7 +13,7 @@ import type { Dialog } from './state';
 import { selectionMembership } from '../selection';
 import { filterCast } from './castSelection';
 import { createThumbnailRosterSelector, sectionMemberships } from './thumbnailRoster';
-import { previewFormation } from '../formationPreview';
+import { previewFormationSession } from './formationSession';
 import { usePlaybackController } from './usePlaybackController';
 import { useCommandController } from './useCommandController';
 import { createDraftTracker } from './drafts';
@@ -116,7 +116,7 @@ export function useEditorController() {
   const transformResult = useMemo(() => transformPreview ? previewExactTransform(activeSet.positions, transformPreview.ids, transformPreview.options, project.field) : null, [transformPreview, activeSet.positions, project.field]);
   const spacingResult = useMemo(() => spacingPreview ? previewSpacing(activeSet.positions, spacingPreview.ids, spacingPreview.options, project.field, project) : null, [spacingPreview, activeSet.positions, project.field, project.snapping]);
   function openTransform(operation: TransformOperation = 'rotate-scale', angle = 0, scale = 1) { dispatch('transform.preview', { operation, angle, scale }); }
-  const formationResult = useMemo(() => formationPreview ? previewFormation(activeSet.positions, formationPreview.ids, formationPreview.kind, formationPreview.options, project.field, formationPreview.order) : null, [formationPreview, activeSet.positions, project.field]);
+  const formationResult = useMemo(() => formationPreview ? previewFormationSession(project, formationPreview) : null, [formationPreview, project]);
   const coordinateResult = useMemo(() => coordinatePreview ? previewCoordinateEntry(activeSet.positions, coordinatePreview.ids, coordinatePreview.options, project) : null, [coordinatePreview, activeSet.positions, project.field, project.snapping]);
   const duration = useMemo(() => totalCounts(project), [project.moves]);
   const readOnly = !useEditorSelector(canEditPositions);

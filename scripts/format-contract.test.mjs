@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { formatTools, smallExample, generateContract } from './format-contract.mjs';
+import { formatTools, smallExample, liveExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6,7].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=7;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=8;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -131,4 +131,21 @@ test('v6 schedules preserve independent windows, gap holds and intermediate arri
  const missing=structuredClone(raw);delete missing.moves[0].paths.a.segments[0].to;
  assert.ok(check(missing));assert.throws(()=>tools.parseProject(JSON.stringify(missing)),/intermediate travel/);
  const old={...raw,schemaVersion:5};assert.equal(check(old),false);assert.throws(()=>tools.parseProject(JSON.stringify(old)),/schema version 6/);
+});
+
+test('v7 editable formations are portable and protected from older format readers',()=>{
+  const p=liveExample(); assert.ok(check(p));
+  assert.deepEqual(tools.parseProject(tools.serializeProject(p)).sets[0].liveFormations,p.sets[0].liveFormations);
+  for(const version of [1,2,3,4,5,6]) { const older={...p,schemaVersion:version}; assert.equal(check(older),false); assert.throws(()=>tools.parseProject(JSON.stringify(older)),/requires schema version 7/); }
+  for(const mutate of [f=>{f.slotCount=0},f=>{f.options.width=201},f=>{f.name=' '},f=>{f.members=[]},f=>{f.members[0].slot=-1}]) {
+    const bad=structuredClone(p); mutate(bad.sets[0].liveFormations[0]); assert.equal(check(bad),false); assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/live formation/i);
+  }
+  for(const mutate of [f=>{f.members[0].performerId='missing'},f=>{f.members[1].slot=0},f=>{f.options.center.x=14}]) {
+    const bad=structuredClone(p); mutate(bad.sets[0].liveFormations[0]); assert.ok(check(bad)); assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/live formation/i);
+  }
+});
+
+test('v7 writer omits empty optional anchors after alignment removal',()=>{
+  const p=liveExample();p.audioAnchors=[];
+  const wire=JSON.parse(tools.serializeProject(p));assert.equal(wire.schemaVersion,7);assert.ok(check(wire));assert.equal(wire.audioAnchors,undefined);
 });

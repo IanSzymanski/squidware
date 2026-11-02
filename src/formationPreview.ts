@@ -1,4 +1,4 @@
-import { generateFormation } from './domain';
+import { generateFormation } from './formationGeometry';
 import { formationAssignmentOrder } from './formationAssignment';
 import type { FormationKind, FormationOptions, Point, Project } from './types';
 import { affinePoint } from './transforms';
@@ -7,6 +7,7 @@ export interface FormationSession {
   revision: number; setId: string; ids: string[]; kind: FormationKind; options: FormationOptions;
   /** Frozen while moving/rotating dimensions; recompute only for an explicit reassignment. */
   order?: string[]; assignmentRotation?: number;
+  live?: { id: string; name: string; slotCount: number; slots: number[] };
 }
 export interface FormationResult {
   positions: Record<string, Point>; updates: Record<string, Point>; changed: boolean; error: string | null; travel: { total: number; maximum: number } | null;

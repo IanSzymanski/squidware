@@ -1,0 +1,192 @@
+{
+  "passed": [
+    "native checkbox/name creation, v7 save/reopen, keyboard Edit, endpoint drag and Escape retain saved geometry",
+    "arc bulge/block dimensions and columns use the same live preview; native membership checkbox previews redistribution; one undo restores each accepted edit",
+    "moving one dot detaches it without moving others; explicit redistribution preserves detached dots; copy previews, conflicts block Apply, and detach has undo",
+    "dark/light/high-contrast and enlarged narrow layout retain keyboard/numeric controls and field; final native save/reopen preserves slots and copied shape IDs",
+    "2, 64 and 500-member desktop previews and acceptance retain every performer with measured readiness"
+  ],
+  "metrics": {
+    "layouts": [
+      {
+        "theme": "dark",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "name": {
+          "left": 1121,
+          "right": 1344,
+          "top": 416.59375,
+          "bottom": 449.59375,
+          "width": 223,
+          "height": 33
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        }
+      },
+      {
+        "theme": "light",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "name": {
+          "left": 1121,
+          "right": 1344,
+          "top": 416.59375,
+          "bottom": 449.59375,
+          "width": 223,
+          "height": 33
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        }
+      },
+      {
+        "theme": "high-contrast",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "name": {
+          "left": 1121,
+          "right": 1344,
+          "top": 416.59375,
+          "bottom": 449.59375,
+          "width": 223,
+          "height": 33
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "width": 113.5,
+          "height": 34
+        }
+      },
+      {
+        "theme": "dark",
+        "width": 1120,
+        "scale": 1.25,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 292.5,
+          "right": 775,
+          "top": 247.25,
+          "bottom": 543.5,
+          "width": 482.5,
+          "height": 296.25
+        },
+        "name": {
+          "left": 813.5,
+          "right": 1095,
+          "top": 484.25,
+          "bottom": 525.5,
+          "width": 281.5,
+          "height": 41.25
+        },
+        "apply": {
+          "left": 813.5,
+          "right": 955.5,
+          "top": 330,
+          "bottom": 372.5,
+          "width": 142,
+          "height": 42.5
+        },
+        "cancel": {
+          "left": 963,
+          "right": 1105,
+          "top": 330,
+          "bottom": 372.5,
+          "width": 142,
+          "height": 42.5
+        }
+      }
+    ],
+    "responsiveness": [
+      {
+        "count": 2,
+        "previewReadyMs": 2007.199999999255
+      },
+      {
+        "count": 64,
+        "previewReadyMs": 556
+      },
+      {
+        "count": 500,
+        "previewReadyMs": 116.30000000074506
+      }
+    ]
+  },
+  "platform": "linux"
+}
