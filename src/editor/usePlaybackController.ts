@@ -32,8 +32,12 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       offset: project.audioOffsetSeconds, media, now });
     let raf = 0, writing = false, disposed = false, plan: ClickPlan | null = null;
     let pendingStartCount: number | null = null;
+    let clickSequence = 0;
     const current = () => !disposed && store.getState().project.present === project && store.getState().playback.rehearsalId === rehearsalId;
     function updateClicks(force = false) {
+      // Only explicit transport/configuration changes may replay a heard count.
+      // Device drift and buffering keep the same rendered-beat history.
+      if (force) clickSequence++;
       if (!current()) { audio?.update(null); return; }
       const transport = store.getState().playback, sample = clock.sample(), at = now();
       const leadEnd = clock.countInEndTime;
@@ -59,7 +63,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
       // their actual media-time mapping instead of inheriting that latency.
       const cue = leadEnd === null && pendingStartCount !== null ? { time: at + .01, count: pendingStartCount } : undefined;
       if (cue || leadEnd !== null && !media) pendingStartCount = null;
-      plan = { spans, meter, scoreSpans: score.spans, anchorTime: leadEnd ?? at, seconds: sample.seconds, speed: transport.speed,
+      plan = { sequence: clickSequence, spans, meter, scoreSpans: score.spans, anchorTime: leadEnd ?? at, seconds: sample.seconds, speed: transport.speed,
         // During a recording's lead-in, the audio thread emits only lead-in
         // clicks. Show clicks begin after media confirms its actual start.
         start, end, loop: transport.loop, clicks: transport.metronome && !(media && leadEnd !== null),
