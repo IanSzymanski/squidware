@@ -44,6 +44,7 @@ export interface CommandArguments {
   'path.operations-open': undefined;
   'path.operation-apply': PathOperationRequest;
   'path.copy-intervals': PathCopyRequest;
+  'path.draw-open': undefined;
   'schedule.open': undefined;
   'schedule.save': ScheduleEdit;
   'path.open': undefined;
@@ -216,9 +217,10 @@ export const commandRegistry = {
   'path.copy-intervals': define({ id: 'path.copy-intervals', name: 'Copy movement intervals', description: 'Copy a contiguous selected range to this production’s session clipboard without changing history.', arguments: { moveId:'reviewed move',activeSetId:'reviewed picture',ids:'explicit selection',revision:'reviewed revision',epoch:'project session',performerId:'source performer',segmentIds:'contiguous intervals',wholeMove:'include outer holds' },
     enabled: (s,a) => pathReviewCurrent(s,a) && a.ids.length === 1 && a.ids[0] === a.performerId,
     execute: (c,a) => { const p=c.getState().project.present,index=p.moves.findIndex(m=>m.id===a.moveId),clipboard=copyIntervals(p,index,a.performerId,a.segmentIds,a.wholeMove,uid(),a.epoch);c.patch('ui',{movementClipboard:clipboard,dialog:null,toast:`Copied ${clipboard.intervals.length} intervals from ${clipboard.sourceLabel}`}); } }),
+  'path.draw-open': simple('path.draw-open', 'Draw performer path', 'Draw or place anchors for one selected travel interval, then review handles and count ticks before Apply.', canEditMovement, c => showDialog(c, 'path-draw')),
   'schedule.open': simple('schedule.open', 'Edit movement timing', 'Preview independent holds, departures, arrivals and intermediate destinations for one selected performer.', canEditMovement, c => showDialog(c, 'movement-schedule')),
   'schedule.save': define({ id: 'schedule.save', name: 'Edit movement timing', description: 'Validate and apply a performer schedule as one undo action.', arguments: { moveId: 'reviewed move', performerId: 'selected performer', path: 'ordered travel/hold intervals, or null', revision: 'reviewed revision', epoch: 'project session' },
-    enabled: (s, a) => canSaveMovement(s, a, 'movement-schedule'),
+    enabled: (s, a) => canSaveMovement(s, a, 'movement-schedule') || canSaveMovement(s, a, 'path-draw'),
     execute: (c, a) => { c.edit(p => editMovementSchedule(p, a)); c.patch('ui', { dialog: null }); } }),
   'path.open': simple('path.open', 'Edit performer path', 'Preview travel geometry for one selected performer in the incoming move.', canEditMovement,
     c => { const s = c.getState(), move = s.project.present.moves[s.selection.activeIndex - 1]; showDialog(c, isScheduledPath(move.paths[s.selection.selectedIds[0]], move.counts) ? 'movement-schedule' : 'path'); }),

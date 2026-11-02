@@ -1,0 +1,17 @@
+{
+  "host": {
+    "platform": "linux",
+    "arch": "x64",
+    "node": "24.19.0",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "logicalCpus": 3
+  },
+  "capturePoints": 2048,
+  "intervals": 16,
+  "toleranceYards": 0.15,
+  "runs": 100,
+  "medianMs": 0.8171760000000177,
+  "p95Ms": 5.238016000000016,
+  "maximumMs": 29.582379000000003,
+  "scope": "Compute only, one selected interval; software host, no hardware or cross-platform claim"
+}

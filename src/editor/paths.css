@@ -22,3 +22,20 @@
 .path-copy-list { margin: 8px 0; padding-left: 24px; font-size: 12px; }
 .path-copy-list li { padding: 6px 0; }
 .path-operations-panel input[type=checkbox] { width: auto; }
+.travel-field { touch-action: none; user-select: none; display: block; min-height: 240px; }
+.travel-field:focus { outline: 2px solid var(--field-accent); outline-offset: 2px; }
+.travel-field.is-drawing { cursor: crosshair; }
+.travel-segment-hit { fill: none; stroke: transparent; stroke-width: 14px; vector-effect: non-scaling-stroke; cursor: pointer; }
+.path-proposed.is-selected { stroke-width: 3px; vector-effect: non-scaling-stroke; }
+.travel-handle { cursor: grab; }
+.travel-handle:active { cursor: grabbing; }
+.path-polygon .travel-handle-hit { fill: transparent; stroke: none; }
+.travel-handle.is-active > circle:not(.travel-handle-hit) { stroke: var(--field-accent); stroke-width: .5; }
+.travel-ticks circle, .travel-endpoints rect { fill: #141d1a; stroke: #edf0f5; stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.travel-ticks text, .travel-endpoints text { fill: #edf0f5; stroke: #141d1a; stroke-width: .6px; paint-order: stroke; }
+.travel-stroke { fill: none; stroke: #ffd681; stroke-width: 2px; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; }
+.travel-canvas .form-label { margin: 0; max-width: 140px; }
+.travel-tick-table { max-height: 160px; overflow: auto; font-size: 12px; font-variant-numeric: tabular-nums; }
+.travel-tick-table table { width: 100%; text-align: right; }
+.draw-travel { padding: 8px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; }
+.draw-anchors { max-height: 220px; overflow: auto; padding-left: 20px; }
