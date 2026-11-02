@@ -24,6 +24,29 @@ pause/resume, loops and native export assertions remain in place.
 Validation: production build and all 84 native tests passed, including the
 shared progress helper's idle/absolute deadline checks. Tempo-map, audio-clock,
 audio-alignment and metronome desktop workflows passed locally on the Linux
-software host. Hosted macOS confirmation remains pending. This changes only the
+software host. The following CI run confirmed tempo-map on macOS. This changes only the
 automated driver and diagnostics; rendered application/design review is not
 applicable, and no application behavior or playback speed is changed.
+
+## Remaining observed-clock checks
+
+CI run 210 passed source certification and Windows/Linux desktop certification.
+macOS passed tempo-map, then exposed two further fixed-delay assumptions:
+
+- Audio alignment was still playing at count 13.166833333333331 after its
+  25-second end wait. Its media was decoded and progressing at 0.75 speed, with
+  currentTime 8.775125, duration 16, and a running AudioContext. It now uses the
+  same 10-second media-stall deadline and 60-second absolute cap as tempo-map,
+  preserves the exact stopped count 16, and rejects recording errors, premature
+  stops and silent fallback. Final transport samples are retained as well.
+- The failed-recording fallback check read the same count after a 300 ms host
+  delay. It now observes 0.1 seconds of real AudioContext progress, settles two
+  renderer frames, and still requires strictly increasing count and an unchanged
+  play-attempt counter. The existing 20-second wait bounds a stalled context.
+  Native Space delivery/pausing is acknowledged before further measurements.
+
+AudioContext instrumentation retains the native implementation and only records
+the active context. Snapshots include context/wall time and context state to
+distinguish a delayed virtual output from a transport that fails to advance.
+All 64 related clock/map/beat unit tests and 84 native tests pass locally.
+Hosted validation of these remaining checks is pending.

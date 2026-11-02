@@ -17,6 +17,8 @@ const wait = (expression, label) => waitFor(() => evaluate(expression), label, {
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 function instrument() {
   const qa = window.__audioQA = { editor: null, seeks: [], plays: 0, rejectPlay: false, errors: [] };
+  const Context = window.AudioContext;
+  window.AudioContext = class extends Context { constructor(...args) { super(...args); qa.context = this; } };
   const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'currentTime');
   Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', { ...descriptor, set(value) { qa.seeks.push(value); return descriptor.set.call(this, value); } });
   const play = HTMLMediaElement.prototype.play;
@@ -39,11 +41,13 @@ async function attach(file) {
   await wait(`${state}.fileSession.audioUrl!==${JSON.stringify(before)} && !${state}.fileSession.audioLoading && ${audio}.readyState>=3`, 'decoded and playable recording');
 }
 async function toggle() {
+  const playing = await evaluate(`!${state}.playback.playing`);
   await evaluate('document.activeElement?.blur()'); await key(window, 'Space');
+  await wait(`${state}.playback.playing===${playing}${playing ? '' : ` && ${audio}.paused && !${audio}.seeking`}`, 'native ' + (playing ? 'play' : 'pause'));
 }
 async function settleFrames() { await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'); }
 async function snapshot() {
-  return evaluate(`({ count:${state}.playback.count, media:${audio}.currentTime, seeks:${qa}.seeks.length, plays:${qa}.plays, playing:${state}.playback.playing, status:${state}.playback.clockStatus, paused:${audio}.paused })`);
+  return evaluate(`({ count:${state}.playback.count, media:${audio}.currentTime, seeks:${qa}.seeks.length, plays:${qa}.plays, playing:${state}.playback.playing, status:${state}.playback.clockStatus, paused:${audio}.paused, wallSeconds:performance.now()/1000, contextSeconds:${qa}.context?.currentTime, contextState:${qa}.context?.state })`);
 }
 async function synchronized(project) {
   await settleFrames(); const s = await snapshot();
@@ -150,7 +154,16 @@ app.whenReady().then(async () => {
     pass('loop boundaries seek audio and field together once; non-looping playback stops at the exact final count');
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}}); ${editor}.dispatch('playback.scrub',{count:10}); ${qa}.rejectPlay=true`);
     await toggle(); await wait(`${state}.playback.clockStatus.includes('Audio unavailable')`, 'audio failure fallback');
-    const failed = await snapshot(); await pause(300); assert.ok((await snapshot()).count > failed.count); assert.equal((await snapshot()).plays, failed.plays);
+    const failed = await snapshot();
+    assert.ok(Number.isFinite(failed.contextSeconds), JSON.stringify(failed));
+    // Silent transport uses AudioContext time, which can advance coarsely on a
+    // virtual output. Observe that clock's progress, then let renderer frames
+    // publish it; 300 ms of host time alone does not establish either condition.
+    await wait(`${qa}.context.currentTime>${failed.contextSeconds + .1}`, 'failed recording fallback clock advances');
+    await settleFrames(); const fallback = await snapshot();
+    assert.ok(fallback.count > failed.count, JSON.stringify({ failed, fallback }));
+    assert.equal(fallback.plays, failed.plays, 'Failed playback must not retry itself');
+    measurements.push({ kind: 'failed recording fallback', before: failed, after: fallback });
     await capture('audio-failed.png');
     await toggle(); await evaluate(qa + '.rejectPlay=false'); await toggle();
     await wait(`${state}.playback.clockStatus==='Audio clock'`, 'explicit playback retry'); await synchronized(project); await toggle();
