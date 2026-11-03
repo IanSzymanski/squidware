@@ -1,0 +1,44 @@
+{
+  "suite": "bezier-formations",
+  "state": "passed",
+  "results": [
+    {
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 33409,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-03T17-19-48-758Z-f4272608/bezier-formations/desktop.log"
+    }
+  ],
+  "scope": "targeted",
+  "source": {
+    "revision": "92135067b1fef74d8540cf50bf94cbd4a1ba9f02",
+    "tree": "158b21202d10b77a4ccdabbc00d507c8ee8eeab4",
+    "dirty": true,
+    "contentHash": "b90358f02e268056774326fad0f2313779d084ec0fa605d63820ff96d3610ff0",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-11-03T17:19:21.522Z",
+    "source": {
+      "revision": "92135067b1fef74d8540cf50bf94cbd4a1ba9f02",
+      "tree": "158b21202d10b77a4ccdabbc00d507c8ee8eeab4",
+      "dirty": true,
+      "contentHash": "b90358f02e268056774326fad0f2313779d084ec0fa605d63820ff96d3610ff0",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "32a9abba20771a9cf9ca95ef17c2e8c7ff6a4737da623686fd13472c4a65e37d"
+  }
+}

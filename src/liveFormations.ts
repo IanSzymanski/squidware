@@ -1,3 +1,4 @@
+import { bezierFormationPoints, validateBezierFormation } from './bezierFormations';
 import { generateFormation } from './formationGeometry';
 import { PROJECT_LIMITS } from './projectValidation';
 import type { LiveFormation, Point, Project } from './types';
@@ -11,7 +12,7 @@ export function liveFormationName(value: unknown): string {
   return (value as string).trim();
 }
 export function liveFormationPoints(shape: LiveFormation, field: Project['field']): Record<string, Point> {
-  const points = generateFormation(shape.kind, shape.slotCount, shape.options);
+  const points = shape.bezier ? bezierFormationPoints(shape.bezier, shape.slotCount) : generateFormation(shape.kind, shape.slotCount, shape.options);
   return Object.fromEntries(shape.members.map(member => {
     const point = points[member.slot];
     if (!point || point.x < -1e-8 || point.y < -1e-8 || point.x > field.width + 1e-8 || point.y > field.height + 1e-8) fail('the preview crosses a field boundary. Move its center or reduce its dimensions.');
@@ -41,7 +42,9 @@ export function validateLiveFormations(value: unknown, positions: Record<string,
       if (slots.has(slot)) fail('two members occupy the same slot.');
       owners.add(performerId); slots.add(slot); return { performerId, slot };
     }).sort((a,b)=>a.slot-b.slot);
-    const shape: LiveFormation = { id: shapeId, name, kind: data.kind as LiveFormation['kind'], options, slotCount, members };
+    if (data.bezier !== undefined && data.kind !== 'curve') fail('Bézier geometry requires a curve formation.');
+    const bezier = data.bezier === undefined ? undefined : validateBezierFormation(data.bezier,field);
+    const shape: LiveFormation = { ...(bezier ? {bezier} : {}), id: shapeId, name, kind: data.kind as LiveFormation['kind'], options, slotCount, members };
     const generated = liveFormationPoints(shape,field);
     for (const [performerId,point] of Object.entries(generated)) if (Math.hypot(point.x-positions[performerId].x, point.y-positions[performerId].y) > 1e-6) fail('stored member positions disagree with the shape.');
     return shape;

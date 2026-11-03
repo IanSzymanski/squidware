@@ -65,6 +65,17 @@ async function selectNativeOption(window, selector, value, { timeoutMs = 15000, 
   })()`);
   let active = true;
   try {
+    // DOM focus is synchronous, but Chromium's input target and React's focus
+    // work can settle in a later renderer frame. A CDP dispatch acknowledgement
+    // alone does not establish that the first typeahead character had a target.
+    // Observe focus after layout before sending the sequence, without retrying
+    // keystrokes that might otherwise reach a different control.
+    await waitFor(() => window.webContents.executeJavaScript(`new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const control = document.querySelector(${query});
+        resolve(!!control && document.activeElement === control && document.hasFocus());
+      }));
+    })`), `native option ${choice.label} focus in ${selector}`, { timeoutMs });
     // CDP acknowledges each native event after dispatch. Electron's keyCode
     // mapping does not round-trip arbitrary label characters (for example ×)
     // through DOM keyup.key, so a release counter cannot be the input barrier.

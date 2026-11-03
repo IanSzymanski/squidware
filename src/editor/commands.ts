@@ -1,3 +1,5 @@
+import { bezierPreset, validateBezierFormation } from '../bezierFormations';
+import type { BezierFormation } from '../types';
 import { editSharedRoute, type RouteEdit } from './routeEditing';
 import { uniqueLiveName } from '../liveFormations';
 import { copyIntervals } from '../movementPathOperations';
@@ -118,6 +120,9 @@ export interface CommandArguments {
   'live.members': { ids: string[] }; 'live.redistribute': undefined;
   'live.copy': { id: string; targetSetId: string };
   'formation.preview': { kind?: FormationKind };
+  'formation.bezier': { wave: boolean };
+  'formation.bezier-select': { id: string };
+  'formation.bezier-update': { bezier: BezierFormation };
   'formation.update': { options: FormationOptions };
   'formation.apply': undefined; 'formation.cancel': undefined;
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
@@ -336,7 +341,7 @@ export const commandRegistry = {
   'live.configure': define({ id: 'live.configure', name: 'Keep formation editable', description: 'Save shape geometry and membership with this set.', arguments: { enabled: 'boolean?', name: 'string?' },
     enabled: s => formationSessionCurrent(s) && !s.ui.pendingDraft,
     execute: (c,a) => { const s=c.getState(), session=s.ui.formationPreview!, existing=s.project.present.sets[s.selection.activeIndex].liveFormations ?? [];
-      if (a.enabled === false) { if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
+      if (a.enabled === false) { if (session.bezier) throw Error('Bézier formations keep editable geometry. Cancel or detach the saved formation.'); if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
       const live=session.live ?? { id:uid(), name:uniqueLiveName(existing), slotCount:session.ids.length, slots:session.ids.map((_,i)=>i) };
       c.patch('ui',{formationPreview:{...session,live:{...live,...(a.name===undefined?{}:{name:a.name})}}});
     } }),
@@ -345,7 +350,7 @@ export const commandRegistry = {
     execute:(c,a)=>{ const s=c.getState(), set=s.project.present.sets[s.selection.activeIndex], f=set.liveFormations!.find(f=>f.id===a.id)!;
       const order=f.members.map(m=>m.performerId), ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
       c.patch('selection',{selectedIds:ids});
-      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
+      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
     } }),
   'live.members': define({ id:'live.members',name:'Change formation members',description:'Preview explicit membership and redistribution.',arguments:{ids:'performerId[]'},
     enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
@@ -366,7 +371,7 @@ export const commandRegistry = {
     enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id) && s.project.present.sets.some((set,i)=>set.id===a?.targetSetId && i!==s.selection.activeIndex),
     execute:(c,a)=>{const s=c.getState(), source=s.project.present.sets[s.selection.activeIndex].liveFormations!.find(f=>f.id===a.id)!, index=s.project.present.sets.findIndex(set=>set.id===a.targetSetId), target=s.project.present.sets[index];
       selectSet(c,index); const order=source.members.map(m=>m.performerId),ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
-      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
+      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
     } }),
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
@@ -380,6 +385,16 @@ export const commandRegistry = {
       const order = (previous?.live || previous?.kind === kind) && previous?.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
       c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
+  'formation.bezier': define({id:'formation.bezier',name:'Preview Bézier formation',description:'Shape an editable curve for at least two explicitly selected performers.',arguments:{wave:'boolean'},
+    enabled:s=>(editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length>=2,
+    execute:(c,a)=>{commandRegistry['formation.preview'].execute(c,{kind:'curve'}); const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
+      c.patch('ui',{formationPreview:{...session,bezier:bezierPreset(session.options.center,a.wave,s.project.present.field),live:session.live??{id:uid(),name:uniqueLiveName(existing,a.wave?'Bézier wave':'Bézier curve'),slotCount:session.ids.length,slots:session.ids.map((_,i)=>i)}}});} }),
+  'formation.bezier-select': define({id:'formation.bezier-select',name:'Select curve anchor',description:'Show this anchor in the Inspector without editing geometry.',arguments:{id:'anchorId'},
+    enabled:(s,a)=>formationSessionCurrent(s) && !s.ui.pendingDraft && !!s.ui.formationPreview?.bezier?.anchors.some(v=>v.id===a?.id),
+    execute:(c,a)=>c.patch('ui',{formationPreview:{...c.getState().ui.formationPreview!,bezierAnchorId:a.id}}) }),
+  'formation.bezier-update': define({id:'formation.bezier-update',name:'Adjust Bézier formation',description:'Preview anchor and tangent edits; Apply accepts the entire preview as one named undo transaction.',arguments:{bezier:'BezierFormation'},
+    enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.bezier && !s.ui.pendingDraft,
+    execute:(c,a)=>{const s=c.getState(); const bezier=validateBezierFormation(a.bezier,s.project.present.field);c.patch('ui',{formationPreview:{...s.ui.formationPreview!,bezier}});} }),
   'formation.update': define({ id: 'formation.update', name: 'Adjust formation preview', description: 'Update shape parameters without changing the project or history.', arguments: { options: 'FormationOptions' }, enabled: formationSessionCurrent,
     execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
       const options = { ...a.options, assignment: a.options.assignment ?? session.options.assignment ?? 'position' };

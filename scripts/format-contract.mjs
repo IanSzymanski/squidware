@@ -39,6 +39,10 @@ export function formatSchema(version, limits) {
       definitions.liveFormation = object({ id:ref('id'), name:{...text(limits.text.groupName),pattern:'^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$'}, kind:{enum:['line','arc','circle','block','curve']},
         options:object({center:ref('point'),width:number(.1,200),height:number(0,200),rotation:number(-3600,3600),columns:number(1,limits.performers,true),assignment:{enum:['position','roster']}}),
         slotCount:number(1,limits.performers,true),members:array(object({performerId:ref('id'),slot:number(0,limits.performers-1,true)}),1,limits.performers) });
+      if (version>=9) {
+        definitions.bezierAnchor=object({id:ref('id'),point:ref('point'),incoming:ref('point'),outgoing:ref('point'),mode:{enum:['corner','smooth','symmetric']}});
+        definitions.liveFormation.properties.bezier=object({anchors:array(ref('bezierAnchor'),2,33)});
+      } else definitions.liveFormation.not={required:['bezier']};
       definitions.picture.properties.liveFormations = array(ref('liveFormation'),0,limits.performers);
     }
     definitions.segment = object({id:ref('id'),kind:{const:'line'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true)});
@@ -128,11 +132,18 @@ export function routeExample() {
     {id:'return',kind:'cubic',control1:{x:70,y:45},control2:{x:30,y:45},to:{x:20,y:35}},
     {id:'seam',kind:'line',to:{x:20,y:15}}]}]};
 }
+export function bezierExample() {
+  const p=liveExample();p.schemaVersion=9;
+  const f=p.sets[0].liveFormations[0];f.kind='curve';f.name='Editable curve';
+  f.bezier={anchors:[{id:'start',point:{x:10,y:10},incoming:{x:10,y:10},outgoing:{x:12,y:18},mode:'corner'},
+    {id:'end',point:{x:20,y:10},incoming:{x:18,y:2},outgoing:{x:20,y:10},mode:'corner'}]};
+  return p;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
-  const files = new Map([['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
+  const files = new Map([['format/examples/bezier-v9.squid',JSON.stringify(bezierExample(),null,2)+'\n'],['format/squid-v9.schema.json',JSON.stringify(formatSchema(9,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
     ['format/squid-v6.schema.json',JSON.stringify(formatSchema(6,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scheduled-v6.squid',JSON.stringify(scheduledExample(),null,2)+'\n'],['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);

@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { PointerEvent } from 'react';
-import type { FormationOptions, Point, Project } from '../types';
+import type { BezierFormation, FormationOptions, Point, Project } from '../types';
 import { formationHandleValue, formationPoint } from '../formationPreview';
 import type { FormationHandle, FormationResult, FormationSession } from '../formationPreview';
 
 export interface FieldFormationPreview {
   session: FormationSession; result: FormationResult; original: Record<string, Point>; invalidInput: boolean;
+  onBezierSelect?: (id: string) => void;
+  onBezierUpdate?: (bezier: BezierFormation) => void;
   onUpdate: (options: FormationOptions) => void; onCancel: () => void; onApply: () => void;
 }
 

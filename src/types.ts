@@ -34,9 +34,12 @@ export interface LegacyProject {
 export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'> & { liveFormations?: LiveFormation[] };
 export interface LiveFormation {
   id: string; name: string; kind: FormationKind; options: Required<FormationOptions>;
+  bezier?: BezierFormation;
   /** Vacant slots remain in place until the writer explicitly redistributes. */
   slotCount: number; members: { performerId: string; slot: number }[];
 }
+export interface BezierAnchor { id: string; point: Point; incoming: Point; outgoing: Point; mode: 'corner' | 'smooth' | 'symmetric' }
+export interface BezierFormation { anchors: BezierAnchor[] }
 export interface OpeningTiming { tempo: number; transition: 'linear' | 'ease' }
 export interface Meter { numerator: number; denominator: number; grouping: number[] }
 export interface ScoreMap {

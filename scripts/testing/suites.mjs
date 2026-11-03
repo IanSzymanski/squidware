@@ -1,6 +1,7 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
   { name: 'shared-routes', title: 'Open/closed route capture, handles, direction, seam, undo and native v8 files', script: 'shared-routes-qa.mjs', timeoutMs: 240000 },
+  { name: 'bezier-formations', title: 'Bézier anchors, tangents, arc-length slots, cancel, undo and native v9 files', script: 'bezier-formations-qa.mjs', timeoutMs: 240000 },
   { name: 'live-formations', title: 'Persistent shape geometry, membership, detachment, copy, undo and native v7 files', script: 'live-formations-qa.mjs', timeoutMs: 210000 },
   { name: 'path-authoring', title: 'Field travel handles, drawn strokes, count ticks and reviewed interval replacement', script: 'path-authoring-qa.mjs', timeoutMs: 270000 },
   { name: 'detailed-analysis', title: 'Conservative detailed path bounds, worker invalidation, native finding review and maximum show', script: 'detailed-analysis-qa.mjs', timeoutMs: 270000 },
