@@ -42,7 +42,11 @@ export function formatSchema(version, limits) {
       if (version>=9) {
         definitions.bezierAnchor=object({id:ref('id'),point:ref('point'),incoming:ref('point'),outgoing:ref('point'),mode:{enum:['corner','smooth','symmetric']}});
         definitions.liveFormation.properties.bezier=object({anchors:array(ref('bezierAnchor'),2,33)});
-      } else definitions.liveFormation.not={required:['bezier']};
+      }
+      if(version>=10) {
+        definitions.scatterRegion=object({kind:{enum:['rectangle','ellipse','polygon']},vertices:array(ref('point'),2,32)});
+        definitions.liveFormation.properties.scatter=object({version:{const:1},seed:{...text(80),pattern:'^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$'},region:ref('scatterRegion'),minimumSpacing:number(.1,100),distribution:{enum:['uniform','clustered']},clusterStrength:number(0,1),points:array(ref('point'),1,limits.performers),pinnedSlots:{...array(number(0,limits.performers-1,true),0,limits.performers),uniqueItems:true}});
+      } else definitions.liveFormation.not={anyOf:[...(version<9?[{required:['bezier']}]:[]),{required:['scatter']}]};
       definitions.picture.properties.liveFormations = array(ref('liveFormation'),0,limits.performers);
     }
     definitions.segment = object({id:ref('id'),kind:{const:'line'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true)});
@@ -139,11 +143,16 @@ export function bezierExample() {
     {id:'end',point:{x:20,y:10},incoming:{x:18,y:2},outgoing:{x:20,y:10},mode:'corner'}]};
   return p;
 }
+export function scatterExample() {
+  const p=liveExample();p.schemaVersion=10;const f=p.sets[0].liveFormations[0];f.kind='block';f.name='Seeded scatter';
+  f.scatter={version:1,seed:'example',region:{kind:'rectangle',vertices:[{x:5,y:5},{x:25,y:20}]},minimumSpacing:2,distribution:'uniform',clusterStrength:.8,points:[{x:10,y:10},{x:20,y:10}],pinnedSlots:[0]};
+  return p;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
-  const files = new Map([['format/examples/bezier-v9.squid',JSON.stringify(bezierExample(),null,2)+'\n'],['format/squid-v9.schema.json',JSON.stringify(formatSchema(9,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
+  const files = new Map([['format/squid-v10.schema.json',JSON.stringify(formatSchema(10,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scatter-v10.squid',JSON.stringify(scatterExample(),null,2)+'\n'],['format/examples/bezier-v9.squid',JSON.stringify(bezierExample(),null,2)+'\n'],['format/squid-v9.schema.json',JSON.stringify(formatSchema(9,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
     ['format/squid-v6.schema.json',JSON.stringify(formatSchema(6,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scheduled-v6.squid',JSON.stringify(scheduledExample(),null,2)+'\n'],['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);

@@ -1,3 +1,4 @@
+import { validateScatterFormation } from './scatterFormations';
 import { bezierFormationPoints, validateBezierFormation } from './bezierFormations';
 import { generateFormation } from './formationGeometry';
 import { PROJECT_LIMITS } from './projectValidation';
@@ -12,7 +13,7 @@ export function liveFormationName(value: unknown): string {
   return (value as string).trim();
 }
 export function liveFormationPoints(shape: LiveFormation, field: Project['field']): Record<string, Point> {
-  const points = shape.bezier ? bezierFormationPoints(shape.bezier, shape.slotCount) : generateFormation(shape.kind, shape.slotCount, shape.options);
+  const points = shape.scatter ? shape.scatter.points : shape.bezier ? bezierFormationPoints(shape.bezier, shape.slotCount) : generateFormation(shape.kind, shape.slotCount, shape.options);
   return Object.fromEntries(shape.members.map(member => {
     const point = points[member.slot];
     if (!point || point.x < -1e-8 || point.y < -1e-8 || point.x > field.width + 1e-8 || point.y > field.height + 1e-8) fail('the preview crosses a field boundary. Move its center or reduce its dimensions.');
@@ -43,8 +44,11 @@ export function validateLiveFormations(value: unknown, positions: Record<string,
       owners.add(performerId); slots.add(slot); return { performerId, slot };
     }).sort((a,b)=>a.slot-b.slot);
     if (data.bezier !== undefined && data.kind !== 'curve') fail('Bézier geometry requires a curve formation.');
+    if (data.scatter !== undefined && (data.kind !== 'block' || data.bezier !== undefined)) fail('scatter geometry requires a block container without Bézier geometry.');
+    const scatter = data.scatter === undefined ? undefined : validateScatterFormation(data.scatter,slotCount,field);
+    if (scatter?.pinnedSlots.some(slot=>!members.some(m=>m.slot===slot))) fail('only occupied scatter slots may be pinned.');
     const bezier = data.bezier === undefined ? undefined : validateBezierFormation(data.bezier,field);
-    const shape: LiveFormation = { ...(bezier ? {bezier} : {}), id: shapeId, name, kind: data.kind as LiveFormation['kind'], options, slotCount, members };
+    const shape: LiveFormation = { ...(scatter ? {scatter} : {}), ...(bezier ? {bezier} : {}), id: shapeId, name, kind: data.kind as LiveFormation['kind'], options, slotCount, members };
     const generated = liveFormationPoints(shape,field);
     for (const [performerId,point] of Object.entries(generated)) if (Math.hypot(point.x-positions[performerId].x, point.y-positions[performerId].y) > 1e-6) fail('stored member positions disagree with the shape.');
     return shape;
@@ -72,7 +76,7 @@ export function reconcileLiveFormations(previous: Project, next: Project): Proje
         if (!keep) detached = true;
         return keep;
       });
-      return members.length ? [{...shape,members}] : [];
+      return members.length ? [{...shape,members,...(shape.scatter?{scatter:{...shape.scatter,pinnedSlots:shape.scatter.pinnedSlots.filter(slot=>members.some(m=>m.slot===slot))}}:{})}] : [];
     });
     if (!detached) return set;
     changed = true;

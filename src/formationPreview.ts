@@ -1,11 +1,12 @@
 import { generateFormation } from './formationGeometry';
 import { formationAssignmentOrder } from './formationAssignment';
-import type { BezierFormation, FormationKind, FormationOptions, Point, Project } from './types';
+import type { ScatterFormation, BezierFormation, FormationKind, FormationOptions, Point, Project } from './types';
 import { affinePoint } from './transforms';
 
 export interface FormationSession {
   revision: number; setId: string; ids: string[]; kind: FormationKind; options: FormationOptions;
   /** Frozen while moving/rotating dimensions; recompute only for an explicit reassignment. */
+  scatter?: ScatterFormation; scatterPending?: boolean; scatterError?: string; scatterShowTravel?: boolean; scatterVertex?: number; scatterSlot?: number;
   bezier?: BezierFormation; bezierAnchorId?: string;
   order?: string[]; assignmentRotation?: number;
   live?: { id: string; name: string; slotCount: number; slots: number[] };

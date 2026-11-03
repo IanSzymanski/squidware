@@ -557,8 +557,17 @@
         "members"
       ],
       "not": {
-        "required": [
-          "bezier"
+        "anyOf": [
+          {
+            "required": [
+              "bezier"
+            ]
+          },
+          {
+            "required": [
+              "scatter"
+            ]
+          }
         ]
       }
     },

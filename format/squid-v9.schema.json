@@ -574,7 +574,16 @@
         "options",
         "slotCount",
         "members"
-      ]
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "scatter"
+            ]
+          }
+        ]
+      }
     },
     "bezierAnchor": {
       "type": "object",

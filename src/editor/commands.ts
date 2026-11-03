@@ -1,3 +1,6 @@
+import { generateScatter, scatterPreset, scatterSeedHash, validateScatterFormation, validateScatterSettings } from '../scatterFormations';
+import type { ScatterFormation, ScatterSettings } from '../types';
+import { scatterMembers } from './scatterSession';
 import { bezierPreset, validateBezierFormation } from '../bezierFormations';
 import type { BezierFormation } from '../types';
 import { editSharedRoute, type RouteEdit } from './routeEditing';
@@ -120,6 +123,14 @@ export interface CommandArguments {
   'live.members': { ids: string[] }; 'live.redistribute': undefined;
   'live.copy': { id: string; targetSetId: string };
   'formation.preview': { kind?: FormationKind };
+  'formation.scatter': undefined;
+  'scatter.display': { travel: boolean };
+  'scatter.select': { vertex?: number; slot?: number };
+  'scatter.restore': { scatter: ScatterFormation; pending: boolean };
+  'scatter.update': { settings: ScatterSettings };
+  'scatter.regenerate': { reroll?: boolean };
+  'scatter.pin': { slot: number; pinned: boolean };
+  'scatter.point': { slot: number; point: Point };
   'formation.bezier': { wave: boolean };
   'formation.bezier-select': { id: string };
   'formation.bezier-update': { bezier: BezierFormation };
@@ -341,7 +352,7 @@ export const commandRegistry = {
   'live.configure': define({ id: 'live.configure', name: 'Keep formation editable', description: 'Save shape geometry and membership with this set.', arguments: { enabled: 'boolean?', name: 'string?' },
     enabled: s => formationSessionCurrent(s) && !s.ui.pendingDraft,
     execute: (c,a) => { const s=c.getState(), session=s.ui.formationPreview!, existing=s.project.present.sets[s.selection.activeIndex].liveFormations ?? [];
-      if (a.enabled === false) { if (session.bezier) throw Error('Bézier formations keep editable geometry. Cancel or detach the saved formation.'); if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
+      if (a.enabled === false) { if (session.bezier || session.scatter) throw Error('Curve and scatter formations keep editable geometry. Cancel or detach the saved formation.'); if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
       const live=session.live ?? { id:uid(), name:uniqueLiveName(existing), slotCount:session.ids.length, slots:session.ids.map((_,i)=>i) };
       c.patch('ui',{formationPreview:{...session,live:{...live,...(a.name===undefined?{}:{name:a.name})}}});
     } }),
@@ -350,7 +361,7 @@ export const commandRegistry = {
     execute:(c,a)=>{ const s=c.getState(), set=s.project.present.sets[s.selection.activeIndex], f=set.liveFormations!.find(f=>f.id===a.id)!;
       const order=f.members.map(m=>m.performerId), ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
       c.patch('selection',{selectedIds:ids});
-      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
+      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,scatter:f.scatter?structuredClone(f.scatter):undefined,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
     } }),
   'live.members': define({ id:'live.members',name:'Change formation members',description:'Preview explicit membership and redistribution.',arguments:{ids:'performerId[]'},
     enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
@@ -358,20 +369,20 @@ export const commandRegistry = {
       if (!Array.isArray(a.ids) || new Set(a.ids).size!==a.ids.length || a.ids.some(id=>!s.project.present.performers.some(p=>p.id===id))) throw Error('Choose unique performers in this cast.');
       const ids=s.project.present.performers.filter(p=>a.ids.includes(p.id)).map(p=>p.id), order=formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions,ids,session.kind,session.options);
       c.patch('ui',{formationPreview:null}); c.patch('selection',{selectedIds:ids});
-      c.patch('ui',{formationPreview:{...session,ids,order,live:{...session.live!,slotCount:Math.max(1,ids.length),slots:ids.map((_,i)=>i)}}});
+      c.patch('ui',{formationPreview:session.scatter?scatterMembers(session,ids,s.project.present.sets[s.selection.activeIndex].positions):{...session,ids,order,live:{...session.live!,slotCount:Math.max(1,ids.length),slots:ids.map((_,i)=>i)}}});
     } }),
   'live.redistribute': simple('live.redistribute','Redistribute members','Close vacant slots using the displayed assignment mode.',s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
     c=>{const s=c.getState(), session=s.ui.formationPreview!; commandRegistry['live.members'].execute(c,{ids:session.ids});}),
   'live.detach': define({id:'live.detach',name:'Detach live formation members',description:'Keep current dots and remove their shape membership. Undo restores membership.',arguments:{id:'formationId',ids:'performerId[]?'},
     enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id),
     execute:(c,a)=>{ const index=c.getState().selection.activeIndex;
-      c.edit(p=>({...p,sets:p.sets.map((set,i)=>{if(i!==index)return set; const shapes=set.liveFormations!.flatMap(f=>{if(f.id!==a.id)return [f];const members=a.ids?f.members.filter(m=>!a.ids!.includes(m.performerId)):[];return members.length?[{...f,members}]:[];});const {liveFormations:_old,...plain}=set;return shapes.length?{...plain,liveFormations:shapes}:plain;})}));
+      c.edit(p=>({...p,sets:p.sets.map((set,i)=>{if(i!==index)return set; const shapes=set.liveFormations!.flatMap(f=>{if(f.id!==a.id)return [f];const members=a.ids?f.members.filter(m=>!a.ids!.includes(m.performerId)):[];return members.length?[{...f,members,...(f.scatter?{scatter:{...f.scatter,pinnedSlots:f.scatter.pinnedSlots.filter(slot=>members.some(m=>m.slot===slot))}}:{})}]:[];});const {liveFormations:_old,...plain}=set;return shapes.length?{...plain,liveFormations:shapes}:plain;})}));
     } }),
   'live.copy': define({id:'live.copy',name:'Copy live formation to set',description:'Preview the same members and slots on another set. Conflicts must be resolved before applying.',arguments:{id:'formationId',targetSetId:'setId'},
     enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id) && s.project.present.sets.some((set,i)=>set.id===a?.targetSetId && i!==s.selection.activeIndex),
     execute:(c,a)=>{const s=c.getState(), source=s.project.present.sets[s.selection.activeIndex].liveFormations!.find(f=>f.id===a.id)!, index=s.project.present.sets.findIndex(set=>set.id===a.targetSetId), target=s.project.present.sets[index];
       selectSet(c,index); const order=source.members.map(m=>m.performerId),ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
-      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
+      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,scatter:source.scatter?structuredClone(source.scatter):undefined,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
     } }),
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
@@ -385,6 +396,45 @@ export const commandRegistry = {
       const order = (previous?.live || previous?.kind === kind) && previous?.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
       c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
+  'formation.scatter': define({id:'formation.scatter',name:'Preview scatter formation',description:'Generate a seeded arrangement for explicitly selected performers, then review and Apply or Cancel.',arguments:{},
+    enabled:s=>(editable(s)||formationSessionCurrent(s))&&!s.ui.pendingDraft&&!s.ui.dialog&&!s.project.transactionName&&s.selection.selectedIds.length>0,
+    execute:c=>{commandRegistry['formation.preview'].execute(c,{kind:'line'});const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
+      const live=session.live??{id:uid(),name:uniqueLiveName(existing,'Scatter'),slotCount:session.ids.length,slots:session.ids.map((_,i)=>i)};
+      const scatter=generateScatter(scatterPreset(session.options.center,s.project.present.field),live.slotCount,{},s.project.present.field);
+      c.patch('ui',{formationPreview:{...session,kind:'block',options:{...session.options,rotation:0,columns:500},scatter,live,bezier:undefined}});} }),
+  'scatter.display': define({id:'scatter.display',name:'Show scatter movement paths',description:'Hide travel paths and highlight rings for crowded casts while keeping movement checks and flag counts active.',arguments:{travel:'boolean'},
+    enabled:s=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft,
+    execute:(c,a)=>c.patch('ui',{formationPreview:{...c.getState().ui.formationPreview!,scatterShowTravel:a.travel}}) }),
+  'scatter.select': define({id:'scatter.select',name:'Select scatter control',description:'Select a region vertex or member for numeric editing.',arguments:{vertex:'integer?',slot:'integer?'},
+    enabled:s=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft,
+    execute:(c,a)=>{const session=c.getState().ui.formationPreview!;
+      if(a.vertex!==undefined&&(!Number.isInteger(a.vertex)||!session.scatter!.region.vertices[a.vertex]))throw Error('Choose an existing region vertex.');
+      if(a.slot!==undefined&&(!Number.isInteger(a.slot)||!session.live!.slots.includes(a.slot)))throw Error('Choose an existing member.');
+      c.patch('ui',{formationPreview:{...session,...(a.vertex===undefined?{}:{scatterVertex:a.vertex}),...(a.slot===undefined?{}:{scatterSlot:a.slot})}});} }),
+  'scatter.restore': define({id:'scatter.restore',name:'Restore scatter gesture',description:'Cancel a pointer gesture and restore its previous preview.',arguments:{scatter:'ScatterFormation',pending:'boolean'},
+    enabled:s=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft,
+    execute:(c,a)=>{const s=c.getState(),session=s.ui.formationPreview!;validateScatterSettings(a.scatter,s.project.present.field);
+      if(!a.pending)validateScatterFormation(a.scatter,session.live!.slotCount,s.project.present.field);
+      c.patch('ui',{formationPreview:{...session,scatter:a.scatter,scatterPending:a.pending,scatterError:undefined}});} }),
+  'scatter.update': define({id:'scatter.update',name:'Change scatter settings',description:'Preview region and settings changes. Regenerate explicitly before applying.',arguments:{settings:'ScatterSettings'},
+    enabled:s=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft,
+    execute:(c,a)=>{const s=c.getState(),session=s.ui.formationPreview!,settings=validateScatterSettings(a.settings,s.project.present.field);
+      c.patch('ui',{formationPreview:{...session,scatter:{...session.scatter!,...settings},scatterPending:true,scatterError:undefined}});} }),
+  'scatter.regenerate': define({id:'scatter.regenerate',name:'Regenerate scatter',description:'Generate all unpinned slots using the shown settings. Reroll chooses a new stored seed. Pins retain their positions.',arguments:{reroll:'boolean?'},
+    enabled:s=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft&&s.ui.formationPreview.ids.length>0,
+    execute:(c,a)=>{const s=c.getState(),session=s.ui.formationPreview!,old=session.scatter!,settings={...old,...(a.reroll?{seed:'seed-'+scatterSeedHash(old.seed+'-next')}: {})};
+      try {const scatter=generateScatter(settings,session.live!.slotCount,Object.fromEntries(old.pinnedSlots.map(slot=>[slot,old.points[slot]])),s.project.present.field);
+        c.patch('ui',{formationPreview:{...session,scatter,scatterPending:false,scatterError:undefined}});
+      } catch(error) {c.patch('ui',{formationPreview:{...session,scatterError:(error as Error).message}});throw error;} } }),
+  'scatter.pin': define({id:'scatter.pin',name:'Pin scatter member',description:'Keep this member at the shown position during regeneration. Pins participate in minimum spacing.',arguments:{slot:'integer',pinned:'boolean'},
+    enabled:(s,a)=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft&&!!s.ui.formationPreview.live?.slots.includes(a?.slot),
+    execute:(c,a)=>{const session=c.getState().ui.formationPreview!,scatter=session.scatter!;
+      c.patch('ui',{formationPreview:{...session,scatterError:undefined,scatter:{...scatter,pinnedSlots:[...new Set([...scatter.pinnedSlots.filter(slot=>slot!==a.slot),...(a.pinned?[a.slot]:[])])].sort((a,b)=>a-b)}}});} }),
+  'scatter.point': define({id:'scatter.point',name:'Override scatter dot',description:'Preview one dot inside the region while keeping minimum spacing and membership. A pinned dot keeps its new position on regeneration.',arguments:{slot:'integer',point:'Point'},
+    enabled:(s,a)=>formationSessionCurrent(s)&&!!s.ui.formationPreview?.scatter&&!s.ui.pendingDraft&&!s.ui.formationPreview.scatterPending&&!!s.ui.formationPreview.live?.slots.includes(a?.slot),
+    execute:(c,a)=>{const s=c.getState(),session=s.ui.formationPreview!,old=session.scatter!;
+      const scatter=validateScatterFormation({...old,points:old.points.map((p,i)=>i===a.slot?a.point:p)},session.live!.slotCount,s.project.present.field);
+      c.patch('ui',{formationPreview:{...session,scatter,scatterError:undefined}});} }),
   'formation.bezier': define({id:'formation.bezier',name:'Preview Bézier formation',description:'Shape an editable curve for at least two explicitly selected performers.',arguments:{wave:'boolean'},
     enabled:s=>(editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length>=2,
     execute:(c,a)=>{commandRegistry['formation.preview'].execute(c,{kind:'curve'}); const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
@@ -399,6 +449,7 @@ export const commandRegistry = {
     execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
       const options = { ...a.options, assignment: a.options.assignment ?? session.options.assignment ?? 'position' };
       const changedMode = options.assignment !== session.options.assignment;
+      if(session.scatter){c.patch('ui',{formationPreview:scatterMembers(session,session.ids,s.project.present.sets[s.selection.activeIndex].positions,options)});return;}
       const assignmentRotation = changedMode ? options.rotation : session.assignmentRotation ?? session.options.rotation;
       const reassign = changedMode || !session.order || (!session.live && session.kind === 'block' && options.columns !== session.options.columns);
       const order = reassign ? formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, { ...options, rotation: assignmentRotation }) : session.order;

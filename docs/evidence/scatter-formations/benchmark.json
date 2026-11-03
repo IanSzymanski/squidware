@@ -1,0 +1,31 @@
+{
+  "platform": "linux",
+  "node": "24.19.0",
+  "scope": "two-set production; rectangle 40×30 yd; uniform density; spacing 1 yd; five warmups; generation and geometry/project validation exclude rendering and asynchronous worker analysis",
+  "rows": [
+    {
+      "members": 2,
+      "runs": 100,
+      "generationP50Ms": 0.008283000000005813,
+      "generationP95Ms": 0.051156000000020185,
+      "previewP50Ms": 0.025156000000009726,
+      "previewP95Ms": 0.15920499999998583
+    },
+    {
+      "members": 64,
+      "runs": 100,
+      "generationP50Ms": 0.07901200000003428,
+      "generationP95Ms": 0.26288499999998294,
+      "previewP50Ms": 0.20965300000000298,
+      "previewP95Ms": 0.48707100000001446
+    },
+    {
+      "members": 500,
+      "runs": 100,
+      "generationP50Ms": 1.2331249999999727,
+      "generationP95Ms": 2.1291069999999763,
+      "previewP50Ms": 3.626278999999954,
+      "previewP95Ms": 6.121821999999952
+    }
+  ]
+}
