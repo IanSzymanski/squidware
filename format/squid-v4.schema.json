@@ -307,6 +307,11 @@
     "openingTiming",
     "audioAnchors"
   ],
+  "not": {
+    "required": [
+      "sharedRoutes"
+    ]
+  },
   "definitions": {
     "id": {
       "type": "string",

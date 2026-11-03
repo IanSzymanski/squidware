@@ -61,6 +61,9 @@ export interface CubicPathSegment { id: string; kind: 'cubic'; startCount: numbe
 export interface HoldPathSegment { id: string; kind: 'hold'; startCount: number; endCount: number }
 export type PathSegment = LinePathSegment | CubicPathSegment | HoldPathSegment;
 export interface PerformerPath { segments: PathSegment[] }
+/** Production-local geometry, independent of performer membership and timing. */
+export type RouteSegment = { id: string; to: Point } & ({ kind: 'line' } | { kind: 'cubic'; control1: Point; control2: Point });
+export interface SharedRoute { id: string; name: string; closed: boolean; start: Point; segments: RouteSegment[] }
 export interface Move extends OpeningTiming {
   id: string; fromSetId: string; toSetId: string; counts: number;
   paths: Record<string, PerformerPath>;
@@ -76,6 +79,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   score?: ScoreMap;
   tempoMap?: TempoMap;
   audioAnchors?: AudioAnchor[];
+  sharedRoutes?: SharedRoute[];
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;

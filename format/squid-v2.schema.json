@@ -209,6 +209,11 @@
     "moves",
     "openingTiming"
   ],
+  "not": {
+    "required": [
+      "sharedRoutes"
+    ]
+  },
   "definitions": {
     "id": {
       "type": "string",

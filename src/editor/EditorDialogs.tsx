@@ -1,3 +1,4 @@
+import { SharedRoutesPanel } from './SharedRoutesPanel';
 import { PathOperationsPanel } from './PathOperationsPanel';
 import { MovementSchedulePanel } from './MovementSchedulePanel';
 import { PathPanel } from './PathPanel';
@@ -35,6 +36,7 @@ import { NewProductionPanel } from './NewProductionPanel';
 export function EditorDialogs({ controller }: { controller: EditorController }) {
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, removeSet, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
+    {dialog === 'routes' && <SharedRoutesPanel controller={controller} />}
     {dialog === 'path-operations' && <PathOperationsPanel controller={controller} />}
     {dialog === 'path-draw' && <MovementSchedulePanel controller={controller} drawInitially />}
     {dialog === 'movement-schedule' && <MovementSchedulePanel controller={controller} />}

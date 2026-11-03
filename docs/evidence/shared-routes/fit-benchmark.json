@@ -1,0 +1,11 @@
+{
+  "platform": "linux",
+  "node": "24.19.0",
+  "capturedPoints": 2048,
+  "segments": 18,
+  "warmups": 5,
+  "runs": 100,
+  "fitAndCompileP50Ms": 0.9286690000000135,
+  "fitAndCompileP95Ms": 4.191586000000001,
+  "maximumMs": 17.00564
+}

@@ -1,0 +1,228 @@
+{
+  "passed": [
+    "native freehand S capture and fit, single undo/redo, unselected cast isolation and native v8 save/reopen",
+    "native keyboard and control drag previews, Escape rollback, numeric cancel/apply, and explicit direction reversal",
+    "closed numeric anchors add a seam, split/reverse/seam edits preserve closure, duplicate names block Apply, cancel preserves both routes",
+    "dark/light/high-contrast and enlarged narrow layouts retain controls; deletion confirmation and undo restore geometry; final native save/reopen retains route IDs and seam",
+    "2, 64 and 500-performer route previews report readiness while route geometry remains independent of cast size"
+  ],
+  "metrics": {
+    "layouts": [
+      {
+        "theme": "dark",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "modal": {
+          "left": 318,
+          "right": 1048,
+          "top": 12,
+          "bottom": 756,
+          "width": 730,
+          "height": 744
+        },
+        "apply": {
+          "left": 863.671875,
+          "right": 1023,
+          "top": 695,
+          "bottom": 731,
+          "width": 159.328125,
+          "height": 36
+        },
+        "cancel": {
+          "left": 787.3125,
+          "right": 854.671875,
+          "top": 695,
+          "bottom": 731,
+          "width": 67.359375,
+          "height": 36
+        },
+        "canvas": {
+          "left": 347,
+          "right": 1004,
+          "top": 229.1875,
+          "bottom": 529.1875,
+          "width": 657,
+          "height": 300
+        }
+      },
+      {
+        "theme": "light",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "modal": {
+          "left": 318,
+          "right": 1048,
+          "top": 12,
+          "bottom": 756,
+          "width": 730,
+          "height": 744
+        },
+        "apply": {
+          "left": 863.671875,
+          "right": 1023,
+          "top": 695,
+          "bottom": 731,
+          "width": 159.328125,
+          "height": 36
+        },
+        "cancel": {
+          "left": 787.3125,
+          "right": 854.671875,
+          "top": 695,
+          "bottom": 731,
+          "width": 67.359375,
+          "height": 36
+        },
+        "canvas": {
+          "left": 347,
+          "right": 1004,
+          "top": 229.1875,
+          "bottom": 529.1875,
+          "width": 657,
+          "height": 300
+        }
+      },
+      {
+        "theme": "high-contrast",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "width": 856,
+          "height": 485
+        },
+        "modal": {
+          "left": 318,
+          "right": 1048,
+          "top": 12,
+          "bottom": 756,
+          "width": 730,
+          "height": 744
+        },
+        "apply": {
+          "left": 863.671875,
+          "right": 1023,
+          "top": 695,
+          "bottom": 731,
+          "width": 159.328125,
+          "height": 36
+        },
+        "cancel": {
+          "left": 787.3125,
+          "right": 854.671875,
+          "top": 695,
+          "bottom": 731,
+          "width": 67.359375,
+          "height": 36
+        },
+        "canvas": {
+          "left": 347,
+          "right": 1004,
+          "top": 229.1875,
+          "bottom": 529.1875,
+          "width": 657,
+          "height": 300
+        }
+      },
+      {
+        "theme": "dark",
+        "width": 900,
+        "scale": 1.25,
+        "viewport": {
+          "width": 900,
+          "height": 768
+        },
+        "field": {
+          "left": 52.5,
+          "right": 583.75,
+          "top": 239.75,
+          "bottom": 543.5,
+          "width": 531.25,
+          "height": 303.75
+        },
+        "modal": {
+          "left": 20,
+          "right": 880,
+          "top": 15,
+          "bottom": 753,
+          "width": 860,
+          "height": 738
+        },
+        "apply": {
+          "left": 650.34375,
+          "right": 849,
+          "top": 677.5,
+          "bottom": 722,
+          "width": 198.65625,
+          "height": 44.5
+        },
+        "cancel": {
+          "left": 555.390625,
+          "right": 639.09375,
+          "top": 677.5,
+          "bottom": 722,
+          "width": 83.703125,
+          "height": 44.5
+        },
+        "canvas": {
+          "left": 56,
+          "right": 829,
+          "top": 190.25,
+          "bottom": 565.25,
+          "width": 773,
+          "height": 375
+        }
+      }
+    ],
+    "timings": [
+      {
+        "captureAndFitMs": 42821.999285,
+        "sourcePoints": 41
+      },
+      {
+        "performers": 2,
+        "previewReadyMs": 2029.2000000001863
+      },
+      {
+        "performers": 64,
+        "previewReadyMs": 36.199999999953434
+      },
+      {
+        "performers": 500,
+        "previewReadyMs": 207.69999999995343
+      }
+    ]
+  },
+  "platform": "linux"
+}

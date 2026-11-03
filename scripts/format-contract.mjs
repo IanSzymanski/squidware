@@ -77,13 +77,20 @@ export function formatSchema(version, limits) {
     definitions.picture = {...object({...picture,counts:number(0,limits.counts.max,true),...timing}),not:{required:['liveFormations']}};
     properties.sets = {...array(ref('picture'),1,limits.sets),items:[{allOf:[ref('picture'),{properties:{counts:{const:0}}}]}],additionalItems:{allOf:[ref('picture'),{properties:{counts:number(limits.counts.min,limits.counts.max,true)}}]}};
   }
+  if (version >= 8) {
+    const routeLine = {id:ref('id'),kind:{const:'line'},to:ref('point')};
+    const routeCubic = {...routeLine,kind:{const:'cubic'},control1:ref('point'),control2:ref('point')};
+    definitions.routeSegment = {oneOf:[{...object(routeLine),not:{anyOf:['control1','control2'].map(key=>({required:[key]}))}},object(routeCubic)]};
+    definitions.sharedRoute = object({id:ref('id'),name:{...text(limits.text.groupName),pattern:'^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$'},closed:{type:'boolean'},start:ref('point'),segments:array(ref('routeSegment'),1,limits.pathSegments)});
+    properties.sharedRoutes = array(ref('sharedRoute'),0,limits.sharedRoutes);
+  }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
     regions: array(object({ startCount: number(0,limits.counts.max*(limits.sets-1),true), endCount: number(1,limits.counts.max*(limits.sets-1),true), startTempo: number(limits.tempo.min,limits.tempo.max), endTempo: number(limits.tempo.min,limits.tempo.max) }),0,limits.tempoEvents),
     holds: array(object({ count: number(0,limits.counts.max*(limits.sets-1)-1,true), seconds: number(.001,limits.holdSeconds) }),0,limits.tempoEvents) });
   if (version >= 4) properties.audioAnchors = array(object({ count: number(1,limits.counts.max*(limits.sets-1),true), seconds: { type:'number',exclusiveMinimum:0,maximum:86400 } }),1,limits.tempoEvents);
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'sharedRoutes' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});
@@ -114,11 +121,18 @@ export function liveExample() {
   p.sets[0].liveFormations=[{id:'opening-line',name:'Opening line',kind:'line',options:{center:{x:15,y:10},width:10,height:0,rotation:0,columns:2,assignment:'roster'},slotCount:2,members:[{performerId:'a',slot:0},{performerId:'b',slot:1}]}];
   return p;
 }
+export function routeExample() {
+  return {...liveExample(),schemaVersion:8,sharedRoutes:[{id:'conveyor-outline',name:'Conveyor outline',closed:true,start:{x:20,y:15},segments:[
+    {id:'outbound',kind:'cubic',control1:{x:30,y:5},control2:{x:70,y:5},to:{x:80,y:15}},
+    {id:'turn',kind:'line',to:{x:80,y:35}},
+    {id:'return',kind:'cubic',control1:{x:70,y:45},control2:{x:30,y:45},to:{x:20,y:35}},
+    {id:'seam',kind:'line',to:{x:20,y:15}}]}]};
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
-  const files = new Map([['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
+  const files = new Map([['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
     ['format/squid-v6.schema.json',JSON.stringify(formatSchema(6,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scheduled-v6.squid',JSON.stringify(scheduledExample(),null,2)+'\n'],['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);
