@@ -98,7 +98,7 @@ test('native dropdown uses acknowledged typeahead for numeric and Unicode labels
   const events = [], options = [{ value: '1', label: '100%' }, { value: '1.1', label: '110%' }, { value: '1.25', label: '125%' }, { value: '1.5', label: '150%' }];
   const control = { tagName: 'SELECT', disabled: false, options, get value() { return selected; }, set value(_) { throw new Error('Do not replace native selection with a DOM setter.'); },
     blur() { context.document.activeElement = null; buffer = ''; }, focus() { if (context.document.activeElement !== this) buffer = ''; context.document.activeElement = this; } };
-  const context = { document: { querySelector: () => control, activeElement: null } };
+  const context = { requestAnimationFrame: callback => setImmediate(callback), document: { hasFocus: () => true, querySelector: () => control, activeElement: null } };
   const window = { webContents: {
     executeJavaScript: async source => vm.runInNewContext(source, context),
     debugger: { async sendCommand(method, event) {
@@ -125,7 +125,7 @@ test('native dropdown waits for final dispatch acknowledgement even when its val
   const ready = new Promise(resolve => { queued = resolve; }), acknowledged = new Promise(resolve => { release = resolve; });
   const control = { tagName: 'SELECT', disabled: false, options: [{ value: '8', label: 'Set 2' }, { value: '16', label: 'Set 3' }], value: '8',
     blur() { context.document.activeElement = null; }, focus() { context.document.activeElement = this; } };
-  const context = { document: { querySelector: () => control, activeElement: null } };
+  const context = { requestAnimationFrame: callback => setImmediate(callback), document: { hasFocus: () => true, querySelector: () => control, activeElement: null } };
   const window = { webContents: {
     executeJavaScript: async source => vm.runInNewContext(source, context),
     debugger: { async sendCommand(method, event) { events.push(event); if (event.type === 'keyUp' && event.key === '2') { queued(); await acknowledged; } } },
@@ -142,7 +142,7 @@ test('an action dropdown observes acceptance after a full character and stops be
   const ready = new Promise(resolve => { queued = resolve; }), acknowledged = new Promise(resolve => { release = resolve; });
   const control = { tagName: 'SELECT', disabled: false, options: [{ value: 'a', label: 'Tidal arc' }, { value: 'b', label: 'The prism' }], value: '',
     blur() {}, focus() { context.document.activeElement = this; } };
-  const context = { document: { querySelector: () => copied ? null : control, activeElement: null } };
+  const context = { requestAnimationFrame: callback => setImmediate(callback), document: { hasFocus: () => true, querySelector: () => copied ? null : control, activeElement: null } };
   const window = { webContents: {
     executeJavaScript: async source => vm.runInNewContext(source, context),
     debugger: { async sendCommand(method, event) {
@@ -160,8 +160,8 @@ test('an action dropdown observes acceptance after a full character and stops be
 test('a stalled native dropdown dispatch times out once and sends no remaining events after cancellation', async () => {
   let release;
   const pending = new Promise(resolve => { release = resolve; }), events = [];
-  const control = { tagName: 'SELECT', disabled: false, options: [{ value: '1', label: 'One' }], value: '1', blur() {}, focus() {} };
-  const context = { document: { querySelector: () => control, activeElement: null } };
+  const control = { tagName: 'SELECT', disabled: false, options: [{ value: '1', label: 'One' }], value: '1', blur() {}, focus() { context.document.activeElement = this; } };
+  const context = { requestAnimationFrame: callback => setImmediate(callback), document: { hasFocus: () => true, querySelector: () => control, activeElement: null } };
   const window = { webContents: {
     executeJavaScript: async source => vm.runInNewContext(source, context),
     debugger: { async sendCommand(method, event) { events.push(event); await pending; } },
@@ -169,6 +169,29 @@ test('a stalled native dropdown dispatch times out once and sends no remaining e
   await assert.rejects(renderer.selectNativeOption(window, 'select', '1', { timeoutMs: 30 }), /Timed out: native option/);
   assert.equal(events.length, 1); release(); await new Promise(resolve => setImmediate(resolve));
   assert.equal(events.length, 1, 'Timed-out input must not spill into a later control');
+});
+test('native dropdown waits for renderer focus settlement before sending the first character', async () => {
+  const frames = [], events = []; let selected = 'show', nativeFocus = false;
+  const control = { tagName: 'SELECT', disabled: false, options: [{ value:'show',label:'Ensemble setup' },{ value:'snapshot',label:'Selected dot picture' }],
+    get value() { return selected; }, blur() { context.document.activeElement = null; }, focus() { context.document.activeElement = this; } };
+  const context = { requestAnimationFrame: callback => frames.push(callback), document: { querySelector: () => control, activeElement: null, hasFocus: () => nativeFocus } };
+  const window = { webContents: {
+    executeJavaScript: async source => vm.runInNewContext(source, context),
+    debugger: { async sendCommand(_method,event) { assert.equal(nativeFocus,true);events.push(event);if(event.type==='char')selected='snapshot'; } },
+  } };
+  const selecting = renderer.selectNativeOption(window,'select','snapshot');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(context.document.activeElement,control);assert.deepEqual(events,[]);
+  frames.shift()();assert.deepEqual(events,[]);
+  nativeFocus=true;frames.shift()();await selecting;
+  assert.equal(selected,'snapshot');assert.deepEqual(events.map(event=>event.type),['keyDown','char','keyUp']);
+});
+test('native dropdown with unsettled focus times out without sending input', async () => {
+  const events = [], control = {tagName:'SELECT',disabled:false,options:[{value:'1',label:'One'}],value:'1',blur(){},focus(){context.document.activeElement=this;}};
+  const context = {requestAnimationFrame:callback=>setImmediate(callback),document:{querySelector:()=>control,activeElement:null,hasFocus:()=>false}};
+  const window = {webContents:{executeJavaScript:async source=>vm.runInNewContext(source,context),debugger:{async sendCommand(_method,event){events.push(event);}}}};
+  await assert.rejects(renderer.selectNativeOption(window,'select','1',{timeoutMs:30}),/Timed out: native option One focus/);
+  assert.deepEqual(events,[]);
 });
 test('renderer waits use observed state and time out even when a probe never resolves', async () => {
   let probes = 0;
