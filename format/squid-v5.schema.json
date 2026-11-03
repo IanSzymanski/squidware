@@ -440,6 +440,11 @@
             "required": [
               "transition"
             ]
+          },
+          {
+            "required": [
+              "liveFormations"
+            ]
           }
         ]
       }

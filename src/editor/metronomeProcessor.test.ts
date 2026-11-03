@@ -53,6 +53,44 @@ describe('actual click PCM from the production audio processor', () => {
     });
     expect(Math.max(...pcm.map(Math.abs))).toBeLessThan(.121);
   });
+  it.each([.46,.56])('keeps already rendered beats through media reanchors at %ss without losing queued future beats', reanchor => {
+    vi.stubGlobal('currentTime', 0);
+    const processor = new Worklet(), messages: { count: number; time: number }[] = [];
+    processor.port.postMessage = message => messages.push(message as { count: number; time: number });
+    processor.port.onmessage!({ data: { type: 'diagnostics', diagnostics: true } });
+    const continuous = { ...plan, sequence: 7, anchorTime: 0, loop: false };
+    processor.port.onmessage!({ data: { type: 'plan', plan: continuous } });
+    const boundary = Math.ceil(reanchor * 48000 / 128) * 128;
+    for (let frame = 0; frame < boundary; frame += 128) block(processor, frame);
+    const heardSecondBeat = messages.some(event => event.count === 2);
+    expect(heardSecondBeat).toBe(reanchor > .5);
+    // A buffering stop cancels lookahead; it must retain what actually sounded.
+    vi.stubGlobal('currentTime', boundary / 48000);
+    processor.port.onmessage!({ data: { type: 'plan', plan: null } });
+    processor.port.onmessage!({ data: { type: 'plan', plan: { ...continuous, anchorTime: boundary / 48000, seconds: .4 } } });
+    const pcm: { time: number; audible: boolean }[] = [];
+    for (let frame = boundary; frame < 85000; frame += 128) pcm.push({time:frame/48000,audible:block(processor,frame).some(value=>value!==0)});
+    expect(messages.map(event => event.count)).toEqual([0,1,2,3,4,5,6]);
+    if (heardSecondBeat) {
+      const duplicateTime = boundary / 48000 + .1;
+      expect(pcm.filter(b=>b.time>=duplicateTime && b.time<duplicateTime+.03).every(b=>!b.audible)).toBe(true);
+    }
+    expect(messages.find(event=>event.count===3)!.time).toBeCloseTo(boundary / 48000 + .35);
+    // An explicit seek/start is a new sequence and may sound the same count.
+    vi.stubGlobal('currentTime', 2);
+    processor.port.onmessage!({ data: { type: 'plan', plan: { ...continuous, sequence: 8, anchorTime: 2, seconds: .4 } } });
+    for (let frame = 96000; frame < 103000; frame += 128) block(processor, frame);
+    expect(messages.at(-1)!.count).toBe(2);
+  });
+  it('allows the same show counts on subsequent loop cycles within one sequence', () => {
+    vi.stubGlobal('currentTime', 0);
+    const processor = new Worklet(), counts: number[] = [];
+    processor.port.postMessage = message => counts.push((message as { count: number }).count);
+    processor.port.onmessage!({ data: { type: 'diagnostics', diagnostics: true } });
+    processor.port.onmessage!({ data: { type: 'plan', plan: { ...plan, sequence: 9, anchorTime: 0 } } });
+    for (let frame = 0; frame < 100000; frame += 128) block(processor, frame);
+    expect(counts).toEqual([0,1,2,3,4,5,0,1,2]);
+  });
   it('cancels an active click and every queued beat when a stop/seek replaces the plan', () => {
     vi.stubGlobal('currentTime', 0);
     const processor = new Worklet(); processor.port.onmessage!({ data: { type: 'plan', plan } });

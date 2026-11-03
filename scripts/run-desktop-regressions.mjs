@@ -41,7 +41,10 @@ if (argv.includes('--list')) {
     const output = path.join(outputRoot, suite.name);
     const command = suite.script ? process.execPath : require('electron');
     const args = suite.script ? [path.join(root, 'scripts', suite.script), `--output=${output}`, ...(suite.args ?? [])] : [root, '--smoke-test'];
-    const result = await runProcess(command, args, { cwd: root, timeoutMs: suite.timeoutMs, logFile: path.join(outputRoot, `${suite.name}.log`), live: concurrency === 1 });
+    // Concurrent native windows must not compete for focus on one X display.
+    // Keep each Linux suite and all its restart phases on its own display.
+    const isolateDisplay = process.platform === 'linux' && concurrency > 1;
+    const result = await runProcess(isolateDisplay ? 'xvfb-run' : command, isolateDisplay ? ['--auto-servernum', command, ...args] : args, { cwd: root, timeoutMs: suite.timeoutMs, logFile: path.join(outputRoot, `${suite.name}.log`), live: concurrency === 1 });
     if (concurrency > 1 && result.status !== 'passed') console.error(await fs.readFile(result.logFile, 'utf8').catch(error => `Could not read ${suite.name} log: ${error.message}`));
     console.log(`${suite.name}: ${result.status} (${(result.elapsedMs / 1000).toFixed(1)}s)`);
     return { ...result, output };

@@ -44,7 +44,7 @@ export function useCommandController() {
         const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];
         if (input && id !== 'palette.open' && !standardFile) return;
         if (event.repeat && !['playback.count-previous', 'playback.count-next'].includes(id)) return;
-        if ((event.code === 'Space' || event.key === ' ') && target.closest('button, a[href], [role="button"], .field-stage__svg')) return;
+        if ((event.code === 'Space' || event.key === ' ') && target.closest('button, summary, a[href], [role="button"], .field-stage__svg')) return;
         event.preventDefault();
         if (standardFile) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
         if (!store.dispatch(id) && id === 'palette.open') store.setValue('ui', 'toast', 'Finish or cancel the pending edit before opening commands.');
@@ -56,7 +56,7 @@ export function useCommandController() {
         const cancel = state.ui.formationPreview ? 'formation.cancel' : state.ui.spacingPreview ? 'spacing.cancel' : state.ui.coordinatePreview ? 'coordinates.cancel' : state.ui.transformPreview ? 'transform.cancel' : 'selection.clear';
         event.preventDefault(); store.dispatch(cancel); return;
       }
-      if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey && !target.closest('button, a[href], [role="button"]')) {
+      if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey && !target.closest('button, summary, a[href], [role="button"]')) {
         const apply = state.ui.selectionPreview ? 'selection.apply' : state.ui.formationPreview ? 'formation.apply' : state.ui.spacingPreview ? 'spacing.apply' : state.ui.coordinatePreview ? 'coordinates.apply' : state.ui.transformPreview ? 'transform.apply' : null;
         if (apply) { event.preventDefault(); store.dispatch(apply); return; }
       }

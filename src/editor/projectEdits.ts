@@ -88,6 +88,7 @@ export function createPicture(project: Project, index: number, kind: SetCreation
   const suffix = kind === 'duplicate' ? ' copy' : kind === 'hold' ? ' hold' : '';
   const picture: DrillSet = { id: uid(), name: suffix ? source.name.slice(0, PROJECT_LIMITS.text.setName - suffix.length) + suffix : `Set ${project.sets.length + 1}`,
     notes: kind === 'duplicate' ? source.notes : '',
+    ...(kind === 'duplicate' && source.liveFormations ? { liveFormations: source.liveFormations.map(shape => ({ ...structuredClone(shape), id: uid() })) } : {}),
     positions: kind === 'new' ? stagingPositions(project) : structuredClone(positionSource.positions) };
   const newTiming = new Map([[picture.id, timing]]);
   // Inserting a new opening picture gives the old opening its first incoming move.

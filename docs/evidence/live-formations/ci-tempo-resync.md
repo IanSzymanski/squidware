@@ -1,0 +1,11 @@
+# Tempo-map media resynchronization
+
+[CI run 215](https://github.com/IanSzymanski/squidware/actions/runs/41537717192) confirmed both corrected dropdown workflows. Linux and Windows completed desktop/package certification. macOS passed 39/40 desktop workflows, then reported an extra count-14 click during the tempo-map recording/renderer-stall test. The strict “No duplicated or reversed beats” assertion remains in place.
+
+The AudioWorklet replaced its scheduler on every media reanchor, clearing all queued events and losing the identity of beats it had already rendered. If the recording clock then lagged behind the audio clock by more than the drift threshold, the replacement schedule could put an already heard beat back in the future. A deterministic processor test reproduced `[0,1,2,2,3,4,5,6]` before the fix.
+
+Playback plans now carry a sequence number that changes on explicit transport/configuration edits. Timer/media drift and buffering reanchors retain it. For continuous non-looping playback, the worklet keeps the highest show count actually rendered, suppressing a new onset for any already heard count. It records history when sound begins, rather than when lookahead queues it, so canceled future beats remain eligible. A buffering stop clears the queue and retains that history. Explicit seeks/restarts reset it; rehearsal loop cycles continue to repeat their counts.
+
+The processor regression covers reanchoring before and after the second beat, a buffering stop, actual silent PCM where a duplicate would have sounded, preservation of future beats on their new anchor, replay after a new explicit sequence, and normal loop repetition. All 64 targeted processor/schedule/clock/tempo tests passed. Tempo-map failure timing now uses a `results-` filename so the existing CI artifact pattern retains plans, stops and rendered click diagnostics on a future failure.
+
+This is nonvisual playback behavior. The application uses the same media clock and analytic tempo map; native tempo-map, metronome, recording-clock and alignment workflows provide the integration checks. No beat-order assertion is weakened and no failure is retried. Final hosted verification is recorded by the checks on PR #165.

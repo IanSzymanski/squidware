@@ -34,7 +34,13 @@ export function formatSchema(version, limits) {
     sets:array(ref('picture'),1,limits.sets),audioOffsetSeconds:number(limits.audioOffsetSeconds.min,limits.audioOffsetSeconds.max),
   };
   if (version >= 2) {
-    definitions.picture = {...object(picture),not:{anyOf:['counts','tempo','transition'].map(key=>({required:[key]}))}};
+    definitions.picture = {...object(picture),not:{anyOf:['counts','tempo','transition',...(version<7?['liveFormations']:[])].map(key=>({required:[key]}))}};
+    if (version >= 7) {
+      definitions.liveFormation = object({ id:ref('id'), name:{...text(limits.text.groupName),pattern:'^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$'}, kind:{enum:['line','arc','circle','block','curve']},
+        options:object({center:ref('point'),width:number(.1,200),height:number(0,200),rotation:number(-3600,3600),columns:number(1,limits.performers,true),assignment:{enum:['position','roster']}}),
+        slotCount:number(1,limits.performers,true),members:array(object({performerId:ref('id'),slot:number(0,limits.performers-1,true)}),1,limits.performers) });
+      definitions.picture.properties.liveFormations = array(ref('liveFormation'),0,limits.performers);
+    }
     definitions.segment = object({id:ref('id'),kind:{const:'line'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true)});
     if (version >= 5) definitions.segment = { oneOf: [definitions.segment, object({id:ref('id'),kind:{const:'cubic'},startCount:{const:0},endCount:number(limits.counts.min,limits.counts.max,true),control1:ref('point'),control2:ref('point')})] };
     if (version >= 6) {
@@ -68,7 +74,7 @@ export function formatSchema(version, limits) {
     properties.snapping = object({ steps: { enum: [8,6,12] }, subdivision: { enum: [1,2,4] }, target: { enum: ['grid','markings'] }, group: { enum: ['anchor','individual'] } });
     properties.moves = array(ref('move'),0,limits.sets-1); properties.openingTiming = object(timing);
   } else {
-    definitions.picture = object({...picture,counts:number(0,limits.counts.max,true),...timing});
+    definitions.picture = {...object({...picture,counts:number(0,limits.counts.max,true),...timing}),not:{required:['liveFormations']}};
     properties.sets = {...array(ref('picture'),1,limits.sets),items:[{allOf:[ref('picture'),{properties:{counts:{const:0}}}]}],additionalItems:{allOf:[ref('picture'),{properties:{counts:number(limits.counts.min,limits.counts.max,true)}}]}};
   }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
@@ -103,11 +109,16 @@ export function scheduledExample() {
   p.tempoMap = { version:1,regions:[],holds:[{count:5,seconds:1}] };
   return p;
 }
+export function liveExample() {
+  const p=smallExample(); p.schemaVersion=7;
+  p.sets[0].liveFormations=[{id:'opening-line',name:'Opening line',kind:'line',options:{center:{x:15,y:10},width:10,height:0,rotation:0,columns:2,assignment:'roster'},slotCount:2,members:[{performerId:'a',slot:0},{performerId:'b',slot:1}]}];
+  return p;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
-  const files = new Map([['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
+  const files = new Map([['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
     ['format/squid-v6.schema.json',JSON.stringify(formatSchema(6,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scheduled-v6.squid',JSON.stringify(scheduledExample(),null,2)+'\n'],['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);

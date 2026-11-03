@@ -417,6 +417,11 @@
             "required": [
               "transition"
             ]
+          },
+          {
+            "required": [
+              "liveFormations"
+            ]
           }
         ]
       }

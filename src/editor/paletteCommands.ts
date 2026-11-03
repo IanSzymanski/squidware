@@ -17,7 +17,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'dialog.open' && args.dialog === 'remove-cast' && !state.selection.selectedIds.length) return 'Select performers to remove first.';
   if (id === 'dialog.open' && args.dialog === 'remove-set' && state.project.present.sets.length <= 1) return 'Keep at least one set in the production.';
   const previews = state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview;
-  if (previews && !/\.(apply|cancel)$/.test(id) && !['palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit'].includes(id)) return 'Apply or cancel the current preview first.';
+  if (previews && !/\.(apply|cancel)$/.test(id) && !['live.redistribute', 'palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit'].includes(id)) return 'Apply or cancel the current preview first.';
   if (['transform.preview', 'transform.mirror', 'formation.preview', 'spacing.preview', 'coordinates.preview'].includes(id)) {
     if (!canEditPositions(state)) return state.playback.playing ? 'Pause playback at a set before editing positions.' : !isAtActiveSet(state) ? 'Return to a set before editing positions.' : 'Finish or cancel the current preview first.';
     if (state.selection.selectedIds.length < (id === 'spacing.preview' ? 2 : 1)) return id === 'spacing.preview' ? 'Select at least two performers on this set.' : 'Select performers on this set first.';
@@ -72,6 +72,10 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   add('workspace.show', { workspace: 'production' }, 'Production sheet');
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
   for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);
+  for (const shape of state.project.present.sets[state.selection.activeIndex].liveFormations ?? []) {
+    add('live.edit',{id:shape.id},`Edit live formation: ${shape.name}`,`live-edit-${shape.id}`);
+    add('live.detach',{id:shape.id},`Detach live formation: ${shape.name}`,`live-detach-${shape.id}`);
+  }
   for (const preset of ['write', 'review', 'rehearse'] as const) add('layout.preset', { preset }, `${preset[0].toUpperCase()}${preset.slice(1)} workspace preset`, `layout-${preset}`);
   for (const [mode, name] of [['panel', 'Show Cast beside field'], ['table', 'Edit Cast table'], ['closed', 'Show Design workspace']] as const) add('cast.show', { mode }, name, `cast-${mode}`);
   for (const [dialog, name] of [['package', 'Export portable production with audio'], ['metronome', 'Metronome and count-in'], ['settings', 'Production settings'], ['snapping', 'Grid and snapping'], ['remove-cast', 'Remove selected performers'], ['remove-set', 'Delete current set']] as const) {

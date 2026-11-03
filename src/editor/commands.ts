@@ -1,3 +1,4 @@
+import { uniqueLiveName } from '../liveFormations';
 import { copyIntervals } from '../movementPathOperations';
 import { pathOperationPlan, type PathOperationRequest, type PathCopyRequest, type PathReviewContext } from './pathOperationReview';
 import { isScheduledPath } from '../movementPaths';
@@ -15,7 +16,7 @@ import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
-import { currentFormationResult, formationSessionCurrent } from './formationSession';
+import { currentFormationResult, formationSessionCurrent, formationProject } from './formationSession';
 import { formationAssignmentOrder, formationCenter } from '../formationAssignment';
 import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
 import { isNudgeKey, nudgeDelta, type NudgeRequest } from '../editIncrements';
@@ -109,6 +110,10 @@ export interface CommandArguments {
   'coordinates.preview': Partial<CoordinateEntryOptions>;
   'coordinates.update': { options: CoordinateEntryOptions };
   'coordinates.apply': undefined; 'coordinates.cancel': undefined;
+  'live.configure': { enabled?: boolean; name?: string };
+  'live.edit': { id: string }; 'live.detach': { id: string; ids?: string[] };
+  'live.members': { ids: string[] }; 'live.redistribute': undefined;
+  'live.copy': { id: string; targetSetId: string };
   'formation.preview': { kind?: FormationKind };
   'formation.update': { options: FormationOptions };
   'formation.apply': undefined; 'formation.cancel': undefined;
@@ -321,32 +326,67 @@ export const commandRegistry = {
       const updates = moveSelection(positions, [a.id], delta, project.field, project.snapping ?? DEFAULT_SNAPPING, s.ui.snap, a.id, { x: a.axis === 'x', y: a.axis === 'y' });
       c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...updates } } : set) }));
     } }),
+  'live.configure': define({ id: 'live.configure', name: 'Keep formation editable', description: 'Save shape geometry and membership with this set.', arguments: { enabled: 'boolean?', name: 'string?' },
+    enabled: s => formationSessionCurrent(s) && !s.ui.pendingDraft,
+    execute: (c,a) => { const s=c.getState(), session=s.ui.formationPreview!, existing=s.project.present.sets[s.selection.activeIndex].liveFormations ?? [];
+      if (a.enabled === false) { if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
+      const live=session.live ?? { id:uid(), name:uniqueLiveName(existing), slotCount:session.ids.length, slots:session.ids.map((_,i)=>i) };
+      c.patch('ui',{formationPreview:{...session,live:{...live,...(a.name===undefined?{}:{name:a.name})}}});
+    } }),
+  'live.edit': define({ id:'live.edit',name:'Edit live formation',description:'Reopen geometry and membership in a non-destructive preview.',arguments:{id:'formationId'},
+    enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id),
+    execute:(c,a)=>{ const s=c.getState(), set=s.project.present.sets[s.selection.activeIndex], f=set.liveFormations!.find(f=>f.id===a.id)!;
+      const order=f.members.map(m=>m.performerId), ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
+      c.patch('selection',{selectedIds:ids});
+      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
+    } }),
+  'live.members': define({ id:'live.members',name:'Change formation members',description:'Preview explicit membership and redistribution.',arguments:{ids:'performerId[]'},
+    enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
+    execute:(c,a)=>{ const s=c.getState(), session=s.ui.formationPreview!;
+      if (!Array.isArray(a.ids) || new Set(a.ids).size!==a.ids.length || a.ids.some(id=>!s.project.present.performers.some(p=>p.id===id))) throw Error('Choose unique performers in this cast.');
+      const ids=s.project.present.performers.filter(p=>a.ids.includes(p.id)).map(p=>p.id), order=formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions,ids,session.kind,session.options);
+      c.patch('ui',{formationPreview:null}); c.patch('selection',{selectedIds:ids});
+      c.patch('ui',{formationPreview:{...session,ids,order,live:{...session.live!,slotCount:Math.max(1,ids.length),slots:ids.map((_,i)=>i)}}});
+    } }),
+  'live.redistribute': simple('live.redistribute','Redistribute members','Close vacant slots using the displayed assignment mode.',s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
+    c=>{const s=c.getState(), session=s.ui.formationPreview!; commandRegistry['live.members'].execute(c,{ids:session.ids});}),
+  'live.detach': define({id:'live.detach',name:'Detach live formation members',description:'Keep current dots and remove their shape membership. Undo restores membership.',arguments:{id:'formationId',ids:'performerId[]?'},
+    enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id),
+    execute:(c,a)=>{ const index=c.getState().selection.activeIndex;
+      c.edit(p=>({...p,sets:p.sets.map((set,i)=>{if(i!==index)return set; const shapes=set.liveFormations!.flatMap(f=>{if(f.id!==a.id)return [f];const members=a.ids?f.members.filter(m=>!a.ids!.includes(m.performerId)):[];return members.length?[{...f,members}]:[];});const {liveFormations:_old,...plain}=set;return shapes.length?{...plain,liveFormations:shapes}:plain;})}));
+    } }),
+  'live.copy': define({id:'live.copy',name:'Copy live formation to set',description:'Preview the same members and slots on another set. Conflicts must be resolved before applying.',arguments:{id:'formationId',targetSetId:'setId'},
+    enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id) && s.project.present.sets.some((set,i)=>set.id===a?.targetSetId && i!==s.selection.activeIndex),
+    execute:(c,a)=>{const s=c.getState(), source=s.project.present.sets[s.selection.activeIndex].liveFormations!.find(f=>f.id===a.id)!, index=s.project.present.sets.findIndex(set=>set.id===a.targetSetId), target=s.project.present.sets[index];
+      selectSet(c,index); const order=source.members.map(m=>m.performerId),ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
+      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
+    } }),
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
       const s = c.getState(); const kind = a.kind ?? s.ui.formation;
       const ids = s.ui.formationPreview?.ids ?? s.project.present.performers.filter(p => s.selection.selectedIds.includes(p.id)).map(p => p.id);
       const positions = s.project.present.sets[s.selection.activeIndex].positions;
       const center = s.ui.formationPreview?.options.center ?? formationCenter(positions, ids);
-      const options: FormationOptions = { assignment: 'position', ...(s.ui.formationDrafts[kind] ?? { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns }), center };
+      const options: FormationOptions = { assignment: 'position', ...(s.ui.formationPreview?.live ? s.ui.formationPreview.options : s.ui.formationDrafts[kind] ?? { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns }), center };
       const previous = s.ui.formationPreview;
       const assignmentRotation = previous?.kind === kind ? previous.assignmentRotation ?? options.rotation : options.rotation;
-      const order = previous?.kind === kind && previous.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
-      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation } });
+      const order = (previous?.live || previous?.kind === kind) && previous?.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
+      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
   'formation.update': define({ id: 'formation.update', name: 'Adjust formation preview', description: 'Update shape parameters without changing the project or history.', arguments: { options: 'FormationOptions' }, enabled: formationSessionCurrent,
     execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
       const options = { ...a.options, assignment: a.options.assignment ?? session.options.assignment ?? 'position' };
       const changedMode = options.assignment !== session.options.assignment;
       const assignmentRotation = changedMode ? options.rotation : session.assignmentRotation ?? session.options.rotation;
-      const reassign = changedMode || !session.order || (session.kind === 'block' && options.columns !== session.options.columns);
+      const reassign = changedMode || !session.order || (!session.live && session.kind === 'block' && options.columns !== session.options.columns);
       const order = reassign ? formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, { ...options, rotation: assignmentRotation }) : session.order;
-      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options } });
+      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options } });
     } }),
   'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
     execute: c => c.patch('ui', { formationPreview: null }) }),
   'formation.apply': define({ id: 'formation.apply', name: 'Apply formation', description: 'Commit the visible formation as one undoable edit.', arguments: {}, enabled: s => { const result = currentFormationResult(s); return !s.ui.pendingDraft && !!result?.changed && !result.error; },
     execute: c => { const s = c.getState(); const session = s.ui.formationPreview!; const result = currentFormationResult(s)!;
-      c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === session.setId ? { ...set, positions: { ...set.positions, ...result.updates } } : set) }));
+      c.edit(p => formationProject(p,session,{...p.sets[s.selection.activeIndex].positions,...result.updates}));
       c.patch('ui', { formationPreview: null });
     } }),
   'transform.preview': define({ id: 'transform.preview', name: 'Preview exact transform', description: 'Preview rotation, scaling or a field mirror on the explicit selection.', arguments: { operation: 'rotate-scale | across-50 | front-back', angle: 'degrees?', scale: 'factor?' }, enabled: canIncrement,

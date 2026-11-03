@@ -8,6 +8,9 @@ export { countAt, secondsAt } from '../tempo';
 import { countAt, secondsAt } from '../tempo';
 export type { TempoSpan } from '../tempo';
 export interface ClickPlan {
+  /** Keep rendered-beat identity across media drift/buffering reanchors.
+   * Explicit transport edits start a new sequence; loop cycles may repeat. */
+  sequence?: number;
   spans: TempoSpan[]; meter: Meter; scoreSpans?: ScoreSpan[]; anchorTime: number; seconds: number; speed: number;
   start: number; end: number; loop: boolean; clicks: boolean;
   /** Before show time starts, counts are held and only these lead-in clicks run. */

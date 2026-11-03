@@ -31,7 +31,12 @@ export interface LegacyProject {
   sets: LegacyDrillSet[];
   audioOffsetSeconds: number;
 }
-export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'>;
+export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'> & { liveFormations?: LiveFormation[] };
+export interface LiveFormation {
+  id: string; name: string; kind: FormationKind; options: Required<FormationOptions>;
+  /** Vacant slots remain in place until the writer explicitly redistributes. */
+  slotCount: number; members: { performerId: string; slot: number }[];
+}
 export interface OpeningTiming { tempo: number; transition: 'linear' | 'ease' }
 export interface Meter { numerator: number; denominator: number; grouping: number[] }
 export interface ScoreMap {
