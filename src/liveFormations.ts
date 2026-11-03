@@ -1,3 +1,4 @@
+import { assertAssignmentMapping, pruneAssignmentConstraints, validateAssignmentConstraints } from './assignmentConstraints';
 import { validateScatterFormation } from './scatterFormations';
 import { bezierFormationPoints, validateBezierFormation } from './bezierFormations';
 import { generateFormation } from './formationGeometry';
@@ -21,7 +22,7 @@ export function liveFormationPoints(shape: LiveFormation, field: Project['field'
   }));
 }
 /** Slots and ownership are semantic constraints beyond the portable JSON schema. */
-export function validateLiveFormations(value: unknown, positions: Record<string, Point>, field: Project['field']): LiveFormation[] | undefined {
+export function validateLiveFormations(value: unknown, positions: Record<string, Point>, field: Project['field'],cast?:Project['performers'],sections?:string[]): LiveFormation[] | undefined {
   if (value === undefined) return undefined;
   if (!Array.isArray(value) || value.length > PROJECT_LIMITS.performers) fail('expected at most 500 formations per set.');
   const owners = new Set<string>(), ids = new Set<string>(), names = new Set<string>();
@@ -48,7 +49,10 @@ export function validateLiveFormations(value: unknown, positions: Record<string,
     const scatter = data.scatter === undefined ? undefined : validateScatterFormation(data.scatter,slotCount,field);
     if (scatter?.pinnedSlots.some(slot=>!members.some(m=>m.slot===slot))) fail('only occupied scatter slots may be pinned.');
     const bezier = data.bezier === undefined ? undefined : validateBezierFormation(data.bezier,field);
-    const shape: LiveFormation = { ...(scatter ? {scatter} : {}), ...(bezier ? {bezier} : {}), id: shapeId, name, kind: data.kind as LiveFormation['kind'], options, slotCount, members };
+    if(data.assignmentConstraints!==undefined&&!cast)fail('assignment constraints require cast context.');
+    const assignmentConstraints=data.assignmentConstraints===undefined?undefined:validateAssignmentConstraints(data.assignmentConstraints,members.map(m=>m.performerId),slotCount,sections??[]);
+    if(assignmentConstraints)assertAssignmentMapping(assignmentConstraints,members,cast!);
+    const shape: LiveFormation = { ...(assignmentConstraints?{assignmentConstraints}:{}), ...(scatter ? {scatter} : {}), ...(bezier ? {bezier} : {}), id: shapeId, name, kind: data.kind as LiveFormation['kind'], options, slotCount, members };
     const generated = liveFormationPoints(shape,field);
     for (const [performerId,point] of Object.entries(generated)) if (Math.hypot(point.x-positions[performerId].x, point.y-positions[performerId].y) > 1e-6) fail('stored member positions disagree with the shape.');
     return shape;
@@ -76,7 +80,7 @@ export function reconcileLiveFormations(previous: Project, next: Project): Proje
         if (!keep) detached = true;
         return keep;
       });
-      return members.length ? [{...shape,members,...(shape.scatter?{scatter:{...shape.scatter,pinnedSlots:shape.scatter.pinnedSlots.filter(slot=>members.some(m=>m.slot===slot))}}:{})}] : [];
+      return members.length ? [{...shape,members,...(shape.assignmentConstraints?{assignmentConstraints:pruneAssignmentConstraints(shape.assignmentConstraints,members)}:{}),...(shape.scatter?{scatter:{...shape.scatter,pinnedSlots:shape.scatter.pinnedSlots.filter(slot=>members.some(m=>m.slot===slot))}}:{})}] : [];
     });
     if (!detached) return set;
     changed = true;

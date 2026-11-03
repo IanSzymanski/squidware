@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, generateContract } from './format-contract.mjs';
+import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8','bezier-v9','scatter-v10']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8','bezier-v9','scatter-v10','assignment-v11']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=11;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=12;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -190,5 +190,18 @@ test('v10 scatter points/settings/pins survive canonical validation; older versi
  }
  for(const change of [s=>s.points[1]={...s.points[0]},s=>s.points[0]={x:0,y:0},s=>s.points.pop(),s=>s.pinnedSlots=[1,0,2]]){
    const bad=structuredClone(p);change(bad.sets[0].liveFormations[0].scatter);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/scatter/i);
+ }
+});
+
+test('v11 constraints retain hard identity rules and older versions cannot discard them',()=>{
+ const p=assignmentExample();assert.ok(check(p));const canonical=tools.parseProject(JSON.stringify(p));
+ const wire=JSON.parse(tools.serializeProject({...canonical,audioAnchors:[]}));assert.equal(wire.schemaVersion,11);assert.ok(check(wire));assert.equal(wire.audioAnchors,undefined);
+ assert.deepEqual(tools.parseProject(JSON.stringify(wire)),canonical);
+ for(const schemaVersion of [7,8,9,10]){const old={...p,schemaVersion};assert.equal(check(old),false);assert.throws(()=>tools.parseProject(JSON.stringify(old)),/requires schema version 11/);}
+ for(const change of [c=>c.unknownRoles='infer',c=>c.roleSlots[0].role='',c=>c.pins[0].slot=-1,c=>c.orderedGroups=[{id:'g',name:'Group',performerIds:['a'],slots:[0]}]]) {
+   const bad=structuredClone(p);change(bad.sets[0].liveFormations[0].assignmentConstraints);assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/assignment constraints/i);
+ }
+ for(const change of [c=>c.pins[0].slot=1,c=>c.sectionSlots[0].sectionId='missing',c=>c.roles.a='Flag',c=>c.forbidden.push({performerId:'a',slot:0}),c=>c.pins.push({...c.pins[0]})]) {
+   const bad=structuredClone(p);change(bad.sets[0].liveFormations[0].assignmentConstraints);assert.ok(check(bad));assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/assignment constraints/i);
  }
 });

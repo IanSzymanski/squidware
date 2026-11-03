@@ -212,6 +212,15 @@ function displayBound(value: number, upper: boolean): string {
   const scale = 10 ** (Math.floor(Math.log10(value)) - 5);
   return (round(value / scale) * scale).toExponential(5);
 }
+/** Reuse the analysis extrema bounds for assignment comparisons, including
+ * easing, holds and independently timed submoves. Infinity omits only rule
+ * boundary localization; numerical convergence retains the shared budget. */
+export function* peakStrideBounds(compiled:CompiledTrack):Generator<void,{lower:number;upper:number;converged:boolean}> {
+  const curves=compiled.parts.map(part=>({start:part.start,end:part.end,points:part.velocity??derivative(part.points,part.end-part.start)}));
+  if(!curves.length)return {lower:0,upper:0,converged:true};
+  const result=yield* extremum(curves,true,Infinity);
+  return {lower:result.lower,upper:result.upper,converged:result.converged};
+}
 export function* detailedStride(input: AnalysisInput, track: Track, compiled: CompiledTrack): Generator<void, TransitionIssue | undefined> {
   const result = yield* extremum(compiled.parts.map(c => ({ ...c, points: c.velocity ?? derivative(c.points, c.end - c.start) })), true, track.maximumStride);
   if (result.upper <= track.maximumStride) return;

@@ -159,9 +159,9 @@ describe('schema v2 rejects ambiguous or unsupported productions', () => {
     expect(() => parseProjectV2('{broken')).toThrow(/not valid JSON/);
     expect(() => parseProjectV2('null')).toThrow(/root/);
     for (const schemaVersion of [0, -1, '2', 2.5, null]) {
-      expect(() => parseProjectV2(JSON.stringify({ schemaVersion }))).toThrow(/must be 1, 2, 3, 4, 5, 6, 7, 8, 9 or 10/);
+      expect(() => parseProjectV2(JSON.stringify({ schemaVersion }))).toThrow(/must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 or 11/);
     }
-    expect(() => parseProjectV2(JSON.stringify({ schemaVersion: 11 }))).toThrow(/version 11.*Update Squidware/);
+    expect(() => parseProjectV2(JSON.stringify({ schemaVersion: 12 }))).toThrow(/version 12.*Update Squidware/);
     expect(() => parseProjectV2(v1Text.replace('"counts":16', '"counts":0'))).toThrow(/sets\[1\].counts/);
     expect(() => validateProjectV2(validateLegacyProject(JSON.parse(v1Text)))).toThrow(/Use migrateProjectV1/);
   });

@@ -8,7 +8,7 @@ import type { EditorState, ProjectHistory, SessionSlice } from './state';
 import { applyProjectPatches, estimatePatchBytes, projectPatches, retainHistory } from './history';
 import type { HistoryPatch } from './history';
 import { transformSessionCurrent } from './transformSession';
-import { formationSessionCurrent } from './formationSession';
+import { formationSessionRetained } from './formationSession';
 import { spacingSessionCurrent } from './spacingSession';
 import { coordinateSessionCurrent } from './coordinateSession';
 import { activePassage, rehearsalBounds, resolvePassage } from '../rehearsal';
@@ -51,7 +51,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     if (next === state) return;
     if (next.ui.selectionPreview && !selectionReviewCurrent(next)) next = { ...next, ui: { ...next.ui, selectionPreview: null } };
     if (next.ui.transformPreview && !transformSessionCurrent(next)) next = { ...next, ui: { ...next.ui, transformPreview: null } };
-    if (next.ui.formationPreview && !formationSessionCurrent(next)) next = { ...next, ui: { ...next.ui, formationPreview: null } };
+    if (next.ui.formationPreview && !formationSessionRetained(next)) next = { ...next, ui: { ...next.ui, formationPreview: null } };
     if (next.ui.spacingPreview && !spacingSessionCurrent(next)) next = { ...next, ui: { ...next.ui, spacingPreview: null } };
     if (next.ui.coordinatePreview && !coordinateSessionCurrent(next)) next = { ...next, ui: { ...next.ui, coordinatePreview: null } };
     if (next.ui.dialog && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };

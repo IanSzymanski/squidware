@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 11 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 12 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -677,5 +677,16 @@ test('native v10 scatter round-trips stored dots and refuses invalid spacing bef
  assert.equal(await h.invoke('save-project',content,'Scatter'),filename);
  const bad=JSON.parse(content);bad.sets[0].liveFormations[0].scatter.points[1]={...bad.sets[0].liveFormations[0].scatter.points[0]};
  await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Scatter'),/minimum spacing/);
+ assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
+});
+
+test('native v11 assignment constraints round-trip and prohibited mappings cannot overwrite a saved production',async t=>{
+ const h=await harness(t),filename=path.join(h.directory,'assignment.squid');
+ const content=await fs.readFile(path.join(root,'format/examples/assignment-v11.squid'),'utf8');
+ await fs.writeFile(filename,content);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,content);
+ assert.equal(await h.invoke('save-project',content,'Assignment'),filename);
+ const bad=JSON.parse(content);bad.sets[0].liveFormations[0].assignmentConstraints.forbidden.push({performerId:'a',slot:0});
+ await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Assignment'),/assignment constraints/);
  assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
 });

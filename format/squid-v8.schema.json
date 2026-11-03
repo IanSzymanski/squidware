@@ -570,6 +570,11 @@
             "required": [
               "scatter"
             ]
+          },
+          {
+            "required": [
+              "assignmentConstraints"
+            ]
           }
         ]
       }

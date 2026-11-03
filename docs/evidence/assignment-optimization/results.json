@@ -1,0 +1,197 @@
+{
+  "passed": [
+    "native comparison shows 320→0 yd, shared spacing/stride flags, incoming/outgoing eased count samples, path visibility and Escape cancellation without production/history edits",
+    "native role-unknown policy, infeasible prohibited pin, explicit ordered section group, pin movement, section rules and exact role restrictions",
+    "accept leaves a draft until Apply; one native undo/redo; only chosen set members change; native v11 save/reopen retains identities, pins, roles and prohibited pairs",
+    "worker startup failure, explicit calculation cancellation/termination, successful retry and stale-selection acceptance guard",
+    "dark/light/high-contrast and enlarged narrow modal keep comparison, scrollable geometry and fixed Cancel/Use controls reachable",
+    "real worker completes 2/64/500-member comparisons with shared adjacent-move checks and no production mutation"
+  ],
+  "metrics": {
+    "fieldHeight": 485,
+    "layouts": [
+      {
+        "theme": "dark",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "modal": {
+          "left": 123,
+          "right": 1243,
+          "top": 24,
+          "bottom": 744
+        },
+        "cancel": {
+          "left": 889.90625,
+          "right": 957.265625,
+          "top": 683,
+          "bottom": 719
+        },
+        "use": {
+          "left": 1113.96875,
+          "right": 1218,
+          "top": 683,
+          "bottom": 719
+        },
+        "bodyWidth": 1055,
+        "bodyScrollWidth": 1055
+      },
+      {
+        "theme": "light",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "modal": {
+          "left": 123,
+          "right": 1243,
+          "top": 24,
+          "bottom": 744
+        },
+        "cancel": {
+          "left": 889.90625,
+          "right": 957.265625,
+          "top": 683,
+          "bottom": 719
+        },
+        "use": {
+          "left": 1113.96875,
+          "right": 1218,
+          "top": 683,
+          "bottom": 719
+        },
+        "bodyWidth": 1055,
+        "bodyScrollWidth": 1055
+      },
+      {
+        "theme": "high-contrast",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "modal": {
+          "left": 123,
+          "right": 1243,
+          "top": 24,
+          "bottom": 744
+        },
+        "cancel": {
+          "left": 889.90625,
+          "right": 957.265625,
+          "top": 683,
+          "bottom": 719
+        },
+        "use": {
+          "left": 1113.96875,
+          "right": 1218,
+          "top": 683,
+          "bottom": 719
+        },
+        "bodyWidth": 1055,
+        "bodyScrollWidth": 1055
+      },
+      {
+        "theme": "dark",
+        "width": 1120,
+        "scale": 1.25,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "modal": {
+          "left": 20,
+          "right": 1100,
+          "top": 30,
+          "bottom": 738
+        },
+        "cancel": {
+          "left": 660.390625,
+          "right": 744.09375,
+          "top": 662.5,
+          "bottom": 707
+        },
+        "use": {
+          "left": 939.46875,
+          "right": 1069,
+          "top": 662.5,
+          "bottom": 707
+        },
+        "bodyWidth": 802,
+        "bodyScrollWidth": 802
+      }
+    ],
+    "sizes": [
+      {
+        "members": 2,
+        "nativeComparisonMs": 112,
+        "alternatives": [
+          {
+            "name": "Current mapping",
+            "text": "Current mappingTotal 89.96 yd · longest member 54.60 ydPeak demand 2.559–2.560 yd/countAll-cast spacing/crossing flags: 1 · stride flags: 2",
+            "disabled": null
+          },
+          {
+            "name": "Shortest total travel",
+            "text": "Shortest total travelTotal 89.96 yd · longest member 54.60 ydPeak demand 2.559–2.560 yd/countAll-cast spacing/crossing flags: 1 · stride flags: 2",
+            "disabled": null
+          },
+          {
+            "name": "Balanced member travel",
+            "text": "Balanced member travelTotal 89.96 yd · longest member 54.60 ydPeak demand 2.559–2.560 yd/countAll-cast spacing/crossing flags: 1 · stride flags: 2",
+            "disabled": null
+          }
+        ]
+      },
+      {
+        "members": 64,
+        "nativeComparisonMs": 209,
+        "alternatives": [
+          {
+            "name": "Current mapping",
+            "text": "Current mappingTotal 1522.17 yd · longest member 47.02 ydPeak demand 2.204–2.205 yd/countAll-cast spacing/crossing flags: 703 · stride flags: 25",
+            "disabled": null
+          },
+          {
+            "name": "Shortest total travel",
+            "text": "Shortest total travelTotal 1288.97 yd · longest member 40.93 ydPeak demand 1.918–1.919 yd/countAll-cast spacing/crossing flags: 270 · stride flags: 22",
+            "disabled": null
+          },
+          {
+            "name": "Balanced member travel",
+            "text": "Balanced member travelTotal 1290.53 yd · longest member 40.93 ydPeak demand 1.918–1.919 yd/countAll-cast spacing/crossing flags: 193 · stride flags: 20",
+            "disabled": null
+          }
+        ]
+      },
+      {
+        "members": 500,
+        "nativeComparisonMs": 2236,
+        "alternatives": [
+          {
+            "name": "Current mapping",
+            "text": "Current mappingTotal 11477.51 yd · longest member 51.14 ydPeak demand 2.396–2.397 yd/countAll-cast spacing/crossing flags: 13754 · stride flags: 209",
+            "disabled": null
+          },
+          {
+            "name": "Shortest total travel",
+            "text": "Shortest total travelTotal 9514.62 yd · longest member 45.14 ydPeak demand 2.115–2.116 yd/countAll-cast spacing/crossing flags: 6725 · stride flags: 158",
+            "disabled": null
+          },
+          {
+            "name": "Balanced member travel",
+            "text": "Balanced member travelTotal 9670.89 yd · longest member 40.00 ydPeak demand 1.875–1.876 yd/countAll-cast spacing/crossing flags: 4166 · stride flags: 144",
+            "disabled": null
+          }
+        ]
+      }
+    ]
+  },
+  "platform": "linux"
+}
