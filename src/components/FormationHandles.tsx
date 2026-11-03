@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { PointerEvent } from 'react';
-import type { BezierFormation, FormationOptions, Point, Project } from '../types';
+import type { ScatterFormation, ScatterRegion, BezierFormation, FormationOptions, Point, Project } from '../types';
 import { formationHandleValue, formationPoint } from '../formationPreview';
 import type { FormationHandle, FormationResult, FormationSession } from '../formationPreview';
 
 export interface FieldFormationPreview {
   session: FormationSession; result: FormationResult; original: Record<string, Point>; invalidInput: boolean;
+  onScatterSelect?: (selection: {vertex?:number;slot?:number}) => void; onScatterRestore?: (scatter:ScatterFormation,pending:boolean) => void;
+  onScatterRegion?: (region: ScatterRegion) => void; onScatterPoint?: (slot: number, point: Point) => void;
   onBezierSelect?: (id: string) => void;
   onBezierUpdate?: (bezier: BezierFormation) => void;
   onUpdate: (options: FormationOptions) => void; onCancel: () => void; onApply: () => void;

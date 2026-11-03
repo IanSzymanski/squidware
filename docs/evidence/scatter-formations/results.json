@@ -1,0 +1,174 @@
+{
+  "passed": [
+    "seeded previews, fixed pins/reroll, explicit density/region regeneration, polygon editing, numeric dot overrides, native canceled gestures, infeasibility without partial edits, one-step undo/redo and native v10 files",
+    "stored scatter reopens without reshuffling; dark/light/high-contrast and enlarged narrow controls keep Apply/Cancel and numeric region entry reachable",
+    "native 2/64/500-member previews and worker checks complete; 64-member uniform/clustered output reviewed without changing the production"
+  ],
+  "metrics": {
+    "layouts": [
+      {
+        "theme": "dark",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "height": 485
+        },
+        "seed": {
+          "left": 1121,
+          "right": 1344,
+          "top": 310.59375,
+          "bottom": 343.59375,
+          "height": 33
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "height": 34
+        }
+      },
+      {
+        "theme": "light",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "height": 485
+        },
+        "seed": {
+          "left": 1121,
+          "right": 1344,
+          "top": 310.59375,
+          "bottom": 343.59375,
+          "height": 33
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "height": 34
+        }
+      },
+      {
+        "theme": "high-contrast",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 130,
+          "bottom": 615,
+          "height": 485
+        },
+        "seed": {
+          "left": 1121,
+          "right": 1344,
+          "top": 310.59375,
+          "bottom": 343.59375,
+          "height": 33
+        },
+        "apply": {
+          "left": 1121,
+          "right": 1234.5,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "height": 34
+        },
+        "cancel": {
+          "left": 1240.5,
+          "right": 1354,
+          "top": 227.59375,
+          "bottom": 261.59375,
+          "height": 34
+        }
+      },
+      {
+        "theme": "dark",
+        "width": 1120,
+        "scale": 1.25,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "field": {
+          "left": 292.5,
+          "right": 775,
+          "top": 247.25,
+          "bottom": 543.5,
+          "height": 296.25
+        },
+        "seed": {
+          "left": 813.5,
+          "right": 1095,
+          "top": 433.25,
+          "bottom": 474.5,
+          "height": 41.25
+        },
+        "apply": {
+          "left": 813.5,
+          "right": 955.5,
+          "top": 330,
+          "bottom": 372.5,
+          "height": 42.5
+        },
+        "cancel": {
+          "left": 963,
+          "right": 1105,
+          "top": 330,
+          "bottom": 372.5,
+          "height": 42.5
+        }
+      }
+    ],
+    "sizes": [
+      {
+        "members": 2,
+        "nativeActionToPreviewMs": 3227
+      },
+      {
+        "members": 64,
+        "nativeActionToPreviewMs": 1122
+      },
+      {
+        "members": 500,
+        "nativeActionToPreviewMs": 202
+      }
+    ]
+  },
+  "platform": "linux"
+}

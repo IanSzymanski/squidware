@@ -22,7 +22,7 @@ export function currentFormationResult(state: EditorState) {
 
 export function sessionLiveFormation(session: FormationSession): LiveFormation {
   const live = session.live!;
-  return { ...(session.bezier ? {bezier:session.bezier} : {}), id: live.id, name: liveFormationName(live.name), kind: session.kind, options: { ...session.options, assignment: session.options.assignment ?? 'position' }, slotCount: live.slotCount,
+  return { ...(session.scatter ? {scatter:session.scatter} : {}), ...(session.bezier ? {bezier:session.bezier} : {}), id: live.id, name: liveFormationName(live.name), kind: session.kind, options: { ...session.options, assignment: session.options.assignment ?? 'position' }, slotCount: live.slotCount,
     members: (session.order ?? session.ids).map((performerId,index)=>({performerId,slot:live.slots[index]})).sort((a,b)=>a.slot-b.slot) };
 }
 export function formationProject(project: Project, session: FormationSession, positions: Record<string, Point>): Project {
@@ -39,6 +39,7 @@ export function previewFormationSession(project: Project, session: FormationSess
     const conflict = project.sets.find(s=>s.id===session.setId)!.liveFormations?.find(f=>f.id!==shape.id && f.members.some(m=>session.ids.includes(m.performerId)));
     if (conflict) throw Error(`A performer belongs to another live formation: ${conflict.name}. Remove that member from this preview, or Cancel and detach the existing membership first.`);
     const updates = liveFormationPoints(shape,project.field), next = {...positions,...updates};
+    if (session.scatter && (!session.ids.length || session.scatterPending || session.scatterError)) return {positions:next,updates,changed:false,travel:null,error:!session.ids.length?'Select at least one scatter member.':session.scatterError??'Settings or membership changed. Regenerate the scatter before applying.'};
     validateProjectEdit(project,formationProject(project,session,next));
     const distances = Object.entries(updates).map(([id,p])=>Math.hypot(p.x-positions[id].x,p.y-positions[id].y));
     const original = project.sets.find(s=>s.id===session.setId)?.liveFormations?.find(s=>s.id===shape.id);
