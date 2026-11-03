@@ -1,3 +1,4 @@
+import { editSharedRoute, type RouteEdit } from './routeEditing';
 import { uniqueLiveName } from '../liveFormations';
 import { copyIntervals } from '../movementPathOperations';
 import { pathOperationPlan, type PathOperationRequest, type PathCopyRequest, type PathReviewContext } from './pathOperationReview';
@@ -42,6 +43,8 @@ import { templateReviewError, templateReviewResult } from './templateReview';
 import type { TemplateReview } from './templateReview';
 
 export interface CommandArguments {
+  'routes.open': undefined;
+  'routes.save': RouteEdit;
   'path.operations-open': undefined;
   'path.operation-apply': PathOperationRequest;
   'path.copy-intervals': PathCopyRequest;
@@ -204,6 +207,10 @@ const canOpenSplit = (s: EditorState) => {
 };
 
 export const commandRegistry = {
+  'routes.open': simple('routes.open', 'Shared routes', 'Draw and edit production-local open or closed route geometry independently of performers and move timing.', s => canNavigate(s) && canEditPositions(s), c => showDialog(c, 'routes')),
+  'routes.save': define({ id: 'routes.save', name: 'Save shared route', description: 'Apply or delete reviewed route geometry as one undo action.', arguments: { route: 'reviewed geometry, or null to delete', routeId: 'reviewed ID', existing: 'whether the route already exists', revision: 'reviewed revision', epoch: 'project session' },
+    enabled: (s, a) => !!a && s.ui.dialog === 'routes' && !s.ui.pendingDraft && !s.project.transactionName && canEditPositions(s) && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch,
+    execute: (c, a) => { c.edit(p => editSharedRoute(p, a)); c.patch('ui', { dialog: null }); } }),
   'templates.open': simple('templates.open', 'Templates', 'Save ensemble setups and formations, import a library or preview reusable formations.', canNavigate,
     c => { showDialog(c, 'templates'); c.patch('ui', { menu: false }); }),
   'templates.apply': define({ id: 'templates.apply', name: 'Apply saved formation', description: 'Recheck the reviewed selection and apply a saved formation as one undo action.',

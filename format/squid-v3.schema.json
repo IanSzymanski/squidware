@@ -283,6 +283,11 @@
     "openingTiming",
     "tempoMap"
   ],
+  "not": {
+    "required": [
+      "sharedRoutes"
+    ]
+  },
   "definitions": {
     "id": {
       "type": "string",

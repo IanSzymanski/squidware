@@ -9,7 +9,7 @@ import { HelpButton } from './ControlHelp';
 
 interface Props {
   project: Project; positions: Record<string, Point>; performerId: string;
-  from: Point; to: Point; path?: PerformerPath; original?: PerformerPath;
+  from: Point; to: Point; path?: PerformerPath; original?: PerformerPath; originalFrom?: Point;
   counts: number; transition: Move['transition']; handles: TravelHandle[];
   selectedRow?: string; onSelectRow?: (id: string) => void;
   onHandle: (handle: TravelHandle, point: Point) => void;
@@ -18,6 +18,7 @@ interface Props {
   onCancelCapture?: () => void;
   onError?: (message: string) => void; onGesture?: (active: boolean) => void;
   label?: string;
+  routeMode?: boolean; routeClosed?: boolean; samples?: { count: number; point: Point }[];
 }
 type Gesture = { pointer: number; handle?: TravelHandle; before: Point[]; points: Point[] };
 
@@ -28,7 +29,7 @@ export function TravelCanvas(props: Props) {
   const svg = useRef<SVGSVGElement>(null), gesture = useRef<Gesture | null>(null);
   const [active, setActive] = useState(''), [zoom, setZoom] = useState(1), [snap, setSnap] = useState(false);
   const handle = handles.find(h => h.id === active && (!selectedRow || h.rowId === selectedRow)) ?? handles.find(h => h.rowId === selectedRow) ?? (!selectedRow ? handles[0] : undefined);
-  const travels = movementTravels(from, to, path), ticks = travelTicks(from, to, path, counts, transition);
+  const travels = movementTravels(from, to, path), ticks = props.samples ?? travelTicks(from, to, path, counts, transition);
   const center = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
   const width = (project.field.width + 14) / zoom, height = (project.field.height + 16) / zoom;
   const origin = zoom === 1 ? { x: -7, y: -8 } : { x: Math.max(-7, Math.min(project.field.width + 7 - width, center.x - width / 2)), y: Math.max(-8, Math.min(project.field.height + 8 - height, center.y - height / 2)) };
@@ -40,6 +41,7 @@ export function TravelCanvas(props: Props) {
     return { x: point.x, y: point.y };
   }
   function attached(point: Point): Point {
+    if (props.routeMode) return point;
     const matrix = svg.current?.getScreenCTM();
     if (!matrix) return point;
     const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
@@ -133,7 +135,7 @@ export function TravelCanvas(props: Props) {
     const delta = deltas[event.key];
     if (delta) { event.preventDefault(); move(handle, { x: handle.point.x + delta.x, y: handle.point.y + delta.y }, true); }
   }
-  const description = capture ? 'Draw from the start square to the end square. Stroke endpoints snap within 8 screen pixels. Fit stroke reviews the captured, attached polyline.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.';
+  const description = props.routeMode ? capture ? 'Draw a free route, or place anchors. Closed strokes must finish near their start; anchor mode adds an explicit closing segment. Escape cancels the capture.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.' : capture ? 'Draw from the start square to the end square. Stroke endpoints snap within 8 screen pixels. Fit stroke reviews the captured, attached polyline.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.';
   const endpoints = capture ? [props.captureFrom ?? from, props.captureTo ?? to] : [from, to];
   return <div className="travel-canvas">
     <div className="schedule-actions">
@@ -142,7 +144,7 @@ export function TravelCanvas(props: Props) {
     </div>
     <svg ref={svg} className={`path-preview travel-field ${capture ? 'is-drawing' : ''}`} viewBox={`${origin.x} ${origin.y} ${width} ${height}`} tabIndex={0} role="group" aria-label={props.label ?? 'Editable travel field'} aria-describedby="travel-field-help"
       onPointerDown={start} onPointerMove={update} onPointerUp={finish} onPointerCancel={() => rollback()} onLostPointerCapture={() => rollback()} onKeyDown={keyboard}>
-      <g pointerEvents="none"><FieldDrawing project={project} positions={positions} selectedIds={[performerId]} showLabels={false} /><path className="path-original" d={movementSvg(from, to, original)} /></g>
+      <g pointerEvents="none"><FieldDrawing project={project} positions={positions} selectedIds={[performerId]} showLabels={false} />{(!props.routeMode || original) && <path className="path-original" d={movementSvg(props.originalFrom ?? from, to, original)} />}</g>
       {travels.map(part => <g key={part.segment.id}>
         <path className={`path-proposed ${part.segment.id === selectedRow ? 'is-selected' : ''}`} d={movementSvg(part.from, part.to, { segments: [part.segment] })} pointerEvents="none" />
         {onSelectRow && !capture && <path data-travel-segment={part.segment.id} className="travel-segment-hit" d={movementSvg(part.from, part.to, { segments: [part.segment] })} />}
@@ -150,14 +152,14 @@ export function TravelCanvas(props: Props) {
       <g className="travel-ticks" pointerEvents="none">{ticks.map(({ count, point }, i) => <g key={count} data-travel-count={count} transform={`translate(${point.x} ${point.y})`}><circle r={.18 / zoom} />{tickLabel(i) && <text x={.45 / zoom} y={-1 / zoom} fontSize={3 / zoom}>{tickLabel(i)}</text>}</g>)}</g>
       {!capture && <g className="path-polygon">{travels.map(({ from: a, to: b, segment: s }) => s.kind === 'cubic' && <path key={s.id} d={`M${a.x} ${a.y}L${s.control1.x} ${s.control1.y}M${b.x} ${b.y}L${s.control2.x} ${s.control2.y}`} pointerEvents="none" />)}
         {handles.filter(h => !selectedRow || h.rowId === selectedRow).map(h => <g key={h.id} data-travel-handle={h.id} className={`travel-handle ${h.id === handle?.id ? 'is-active' : ''}`} aria-label={h.label} transform={`translate(${h.point.x} ${h.point.y})`}>
-          <circle className="travel-handle-hit" r={2.5 / zoom} /><circle r={.6 / zoom} /><text x={1 / zoom} y={-1 / zoom} style={{fontSize: `${3 / zoom}px`}}>{h.kind === 'arrival' ? 'A' : h.kind === 'control1' ? '1' : '2'}</text>
+          <circle className="travel-handle-hit" r={2.5 / zoom} /><circle r={.6 / zoom} /><text x={1 / zoom} y={-1 / zoom} style={{fontSize: `${3 / zoom}px`}}>{h.kind === 'start' ? 'S' : h.kind === 'arrival' ? 'A' : h.kind === 'control1' ? '1' : '2'}</text>
         </g>)}
       </g>}
-      <g className="travel-endpoints" pointerEvents="none">{endpoints.map((p, i) => <g key={i} transform={`translate(${p.x} ${p.y})`}><rect x={-.6 / zoom} y={-.6 / zoom} width={1.2 / zoom} height={1.2 / zoom} /><text x={1 / zoom} y={2.5 / zoom} fontSize={3 / zoom}>{i ? 'End' : 'Start'}</text></g>)}</g>
+      <g className="travel-endpoints" pointerEvents="none">{endpoints.map((p, i) => <g key={i} transform={`translate(${p.x} ${p.y})`}><rect x={-.6 / zoom} y={-.6 / zoom} width={1.2 / zoom} height={1.2 / zoom} /><text x={1 / zoom} y={2.5 / zoom} fontSize={3 / zoom}>{props.routeClosed ? i ? '' : 'Seam' : i ? 'End' : 'Start'}</text></g>)}</g>
       {!!stroke.length && <polyline className="travel-stroke" points={stroke.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)).map(p => `${p.x},${p.y}`).join(' ')} pointerEvents="none" />}
     </svg>
-    <p className="microcopy" id="travel-field-help">{description} Zoom centers on the move endpoints. Square endpoints stay attached to the sets.</p>
+    <p className="microcopy" id="travel-field-help">{description} Zoom centers on the endpoints. {props.routeMode ? 'Route endpoints are independent of set pictures.' : 'Square endpoints stay attached to the sets.'}</p>
     {!capture && <p className="microcopy" role="status" aria-label="Active path handle">{handle ? `${handle.label}: X ${handle.point.x.toFixed(3)}, Y ${handle.point.y.toFixed(3)} yd` : 'Straight travel has no control handles. Choose cubic geometry to add them.'}</p>}
-    <details><summary>Count tick coordinates · includes holds</summary><div className="travel-tick-table"><table><thead><tr><th>Count</th><th>X yd</th><th>Y yd</th></tr></thead><tbody>{ticks.map(({ count, point }) => <tr key={count}><td>{Number(count.toFixed(4))}</td><td>{point.x.toFixed(3)}</td><td>{point.y.toFixed(3)}</td></tr>)}</tbody></table></div></details>
+    <details><summary>{props.routeMode ? 'Distance tick coordinates · yards' : 'Count tick coordinates · includes holds'}</summary><div className="travel-tick-table"><table><thead><tr><th>{props.routeMode ? 'Distance yd' : 'Count'}</th><th>X yd</th><th>Y yd</th></tr></thead><tbody>{ticks.map(({ count, point }) => <tr key={count}><td>{Number(count.toFixed(4))}</td><td>{point.x.toFixed(3)}</td><td>{point.y.toFixed(3)}</td></tr>)}</tbody></table></div></details>
   </div>;
 }

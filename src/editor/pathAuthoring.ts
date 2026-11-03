@@ -8,7 +8,7 @@ export const DRAW_LIMIT = 2048;
 export const DRAW_TOLERANCE = .15;
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const mix = (a: Point, b: Point, t: number): Point => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-export interface TravelHandle { id: string; rowId: string; kind: 'arrival' | 'control1' | 'control2'; point: Point; label: string }
+export interface TravelHandle { id: string; rowId: string; kind: 'start' | 'arrival' | 'control1' | 'control2'; point: Point; label: string }
 
 export function travelHandles(from: Point, to: Point, path?: PerformerPath): TravelHandle[] {
   const travels = movementTravels(from, to, path);

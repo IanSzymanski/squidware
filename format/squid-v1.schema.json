@@ -116,6 +116,11 @@
     "sets",
     "audioOffsetSeconds"
   ],
+  "not": {
+    "required": [
+      "sharedRoutes"
+    ]
+  },
   "definitions": {
     "id": {
       "type": "string",

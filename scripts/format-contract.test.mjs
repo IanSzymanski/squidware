@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { formatTools, smallExample, liveExample, generateContract } from './format-contract.mjs';
+import { formatTools, smallExample, liveExample, routeExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6,7].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=8;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=9;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -148,4 +148,23 @@ test('v7 editable formations are portable and protected from older format reader
 test('v7 writer omits empty optional anchors after alignment removal',()=>{
   const p=liveExample();p.audioAnchors=[];
   const wire=JSON.parse(tools.serializeProject(p));assert.equal(wire.schemaVersion,7);assert.ok(check(wire));assert.equal(wire.audioAnchors,undefined);
+});
+
+test('v8 shared route geometry coexists with live formations and cannot hide in older wire versions',()=>{
+  const p=routeExample(); assert.ok(check(p));
+  const canonical=tools.parseProject(JSON.stringify(p)), wire=JSON.parse(tools.serializeProject(canonical));
+  assert.equal(wire.schemaVersion,8);assert.ok(check(wire));assert.deepEqual(canonical.sharedRoutes,p.sharedRoutes);
+  assert.deepEqual(canonical.sets[0].liveFormations,p.sets[0].liveFormations);
+  for(const schemaVersion of [1,2,3,4,5,6,7]) {
+    const old={...p,schemaVersion};assert.equal(check(old),false);
+    // v1–v6 also contain protected v7 shapes; remove those to isolate routes.
+    old.sets=old.sets.map(({liveFormations:_live,...set})=>set);
+    assert.throws(()=>tools.parseProject(JSON.stringify(old)),/requires schema version 8/);
+  }
+  for(const edit of [r=>r.closed='yes',r=>r.segments=[],r=>r.start.x=-1,r=>r.segments[0].kind='hold',r=>r.name=' ',r=>r.segments[1].control1={x:1,y:1}]) {
+    const bad=structuredClone(p);edit(bad.sharedRoutes[0]);assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/shared route/);
+  }
+  for(const edit of [r=>r.start.x=21,r=>r.segments[1].id=r.segments[0].id]) {
+    const bad=structuredClone(p);edit(bad.sharedRoutes[0]);assert.ok(check(bad));assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/shared route/);
+  }
 });

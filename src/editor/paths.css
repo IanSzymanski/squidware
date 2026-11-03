@@ -39,3 +39,9 @@
 .travel-tick-table table { width: 100%; text-align: right; }
 .draw-travel { padding: 8px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; }
 .draw-anchors { max-height: 220px; overflow: auto; padding-left: 20px; }
+.route-coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.shared-routes-panel .route-closed { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.shared-routes-panel input[type=checkbox] { width: auto; }
+
+.shared-routes-panel .route-error { flex-basis: 100%; margin: 0 0 8px; }
+.shared-routes-panel button[aria-disabled=true] { color: var(--disabled-text); background: var(--disabled-bg); border-color: var(--border); border-style: dashed; }

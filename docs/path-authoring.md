@@ -73,9 +73,10 @@ Only fitted segments, handles and counts are serialized in the existing format;
 raw pointer strokes are discarded. Playback, 2D/3D, analysis, print, save/reopen
 and undo consume the same serialized geometry. No project schema changes.
 
-This delivers individual interval drawing and field editing for #75. Shared-route
-storage, closed shared-route seams and using routes with #50's conveyor/member
-timing remain follow-up work. #75 must remain open for that expanded scope.
+This delivers individual interval drawing and field editing for #75.
+[Shared routes](shared-routes.md) add independent open/closed geometry, drawing,
+seam editing and persistence. Using those routes with #50's conveyor/member
+timing remains follow-up work. #75 must remain open for that expanded scope.
 
 ## Validation
 
