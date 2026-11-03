@@ -53,7 +53,7 @@ export function AssignmentPanel({controller:c}:{controller:EditorController}) {
   const pairPin=(enabled:boolean)=>draft({...constraints,pins:[...constraints.pins.filter(p=>p.performerId!==personId),...(enabled?[{performerId:personId,slot}]:[])]});
   const role=(value:string)=>{const roles={...constraints.roles};if(value)roles[personId]=value;else delete roles[personId];draft({...constraints,roles});};
   const addGroup=()=>{const members=problem.slots.filter(s=>problem.performers.find(p=>p.id===s.ownerId)!.sectionId===orderedSection);if(members.length<2){setError('Choose a section with at least two selected performers.');return;}
-    draft({...constraints,orderedGroups:[...constraints.orderedGroups,{id:uid(),name:initial.project.sections.find(s=>s.id===orderedSection)!.name+' order',performerIds:members.map(s=>s.ownerId),slots:members.map(s=>s.slot)}]});};
+    draft({...constraints,orderedGroups:[...constraints.orderedGroups,{id:uid(),name:initial.project.sections.find(s=>s.id===orderedSection)!.name.slice(0,74)+' order',performerIds:members.map(s=>s.ownerId),slots:members.map(s=>s.slot)}]});};
   const close=()=>{stop();c.setDialog(null);};
   return <Modal title="Optimize assignment" wide className="assignment-panel" onClose={close}>
     <div className="assignment-body">
