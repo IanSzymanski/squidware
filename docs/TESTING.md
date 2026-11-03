@@ -20,6 +20,8 @@ Screenshot capture first settles the renderer against native content size and zo
 
 Use the shared `selectNativeOption` helper for native dropdown checks. It focuses the select and sends real key/character events for an unambiguous option-label prefix, then checks the actual value. This avoids opening a native popup or relying on Home/arrow behavior in hidden macOS windows. It never assigns the select value or dispatches a synthetic change event; failures report the observed value and focused element.
 
+The template workflow also waits for a trusted `Enter` key release before moving focus after a native commit/activation. Electron's `sendInputEvent` queues events, so a fixed five-millisecond pause can let a delayed Enter open the next select's OS popup and swallow its typeahead. `keyWithRelease` requires the explicit DOM release name, uses a bounded receipt wait, removes its listener on success/failure and never resends the key. [PR #169's Linux failure](https://github.com/IanSzymanski/squidware/actions/runs/41725534411/job/126230131979) reproduced with a controlled 20 ms Enter delay; the other 43 suites and both other platforms passed. This harness synchronization change preserves the application's native keyboard behavior and selection assertions; application visual review is not applicable.
+
 ## Layers
 
 | Layer | Command | Owns |

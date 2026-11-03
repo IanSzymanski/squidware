@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key, waitFor, settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, keyWithRelease, waitFor, settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--templates-manifest=')).slice('--templates-manifest='.length));
 const { root, output, profile, files, bundle } = manifest;
 const { createDemoProject, parseProject, parseTemplateLibrary } = require(bundle);
@@ -17,6 +17,11 @@ require(path.join(root, 'electron/main.cjs'));
 const evaluate = text => window.webContents.executeJavaScript(text);
 const qa = 'window.__templateQA', store = qa + '.editor', state = store + '.getState()';
 const wait = (text, label) => waitFor(() => evaluate(text), label, { timeoutMs: 20000, failure: () => failure });
+// A queued Enter must finish before focus moves to a select, where it would
+// open a native popup and swallow the next typeahead selection.
+const key = (window, keyCode, modifiers = []) => keyCode === 'Return'
+  ? keyWithRelease(window, keyCode, modifiers, { releaseKey: 'Enter' })
+  : sendKey(window, keyCode, modifiers);
 const checks = [], viewports = [];
 function instrument() {
   const qa = window.__templateQA = { editor: null, errors: [], confirm: true };
