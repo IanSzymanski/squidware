@@ -22,7 +22,7 @@ export function currentFormationResult(state: EditorState) {
 
 export function sessionLiveFormation(session: FormationSession): LiveFormation {
   const live = session.live!;
-  return { id: live.id, name: liveFormationName(live.name), kind: session.kind, options: { ...session.options, assignment: session.options.assignment ?? 'position' }, slotCount: live.slotCount,
+  return { ...(session.bezier ? {bezier:session.bezier} : {}), id: live.id, name: liveFormationName(live.name), kind: session.kind, options: { ...session.options, assignment: session.options.assignment ?? 'position' }, slotCount: live.slotCount,
     members: (session.order ?? session.ids).map((performerId,index)=>({performerId,slot:live.slots[index]})).sort((a,b)=>a.slot-b.slot) };
 }
 export function formationProject(project: Project, session: FormationSession, positions: Record<string, Point>): Project {

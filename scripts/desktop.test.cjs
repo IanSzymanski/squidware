@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 9 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 10 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -656,4 +656,15 @@ test('native v8 routes round-trip; empty anchors are omitted and an invalid seam
  const bad=JSON.parse(wire);bad.sharedRoutes[0].segments.at(-1).to.x+=1;
  await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Routes'),/end exactly at its start seam/);
  assert.equal(await fs.readFile(filename,'utf8'),wire);assert.equal(h.saveDialogCount(),0);
+});
+
+test('native v9 Bézier geometry round-trips and malformed anchors cannot overwrite the saved production',async t=>{
+ const h=await harness(t),filename=path.join(h.directory,'bezier.squid');
+ const content=await fs.readFile(path.join(root,'format/examples/bezier-v9.squid'),'utf8');
+ await fs.writeFile(filename,content);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,content);
+ assert.equal(await h.invoke('save-project',content,'Bézier'),filename);
+ const bad=JSON.parse(content);bad.sets[0].liveFormations[0].bezier.anchors[1].id='start';
+ await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Bézier'),/Bézier/);
+ assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
 });

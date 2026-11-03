@@ -47,7 +47,7 @@ function versionError(version: unknown): never {
   if (typeof version === 'number' && Number.isInteger(version) && version > 8) {
     throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3, 4, 5, 6, 7 and 8.`);
   }
-  return invalid('schemaVersion', 'must be 1, 2, 3, 4, 5, 6, 7 or 8. Open a supported Squidware project (.squid) file.');
+  return invalid('schemaVersion', 'must be 1, 2, 3, 4, 5, 6, 7, 8 or 9. Open a supported Squidware project (.squid) file.');
 }
 function assertSize(content: string): void {
   if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
@@ -84,7 +84,7 @@ export function migrateProjectV1(input: unknown): ProjectV2 {
 export function validateProjectV2(input: unknown, geometry: GeometryValidation = {}): ProjectV2 {
   const data = object(input, 'root');
   if (data.schemaVersion === 1) invalid('schemaVersion', 'must be 2 for v2 validation. Use migrateProjectV1 or parseProjectV2 to migrate a v1 file.');
-  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5 && data.schemaVersion !== 6 && data.schemaVersion !== 7 && data.schemaVersion !== 8) versionError(data.schemaVersion);
+  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5 && data.schemaVersion !== 6 && data.schemaVersion !== 7 && data.schemaVersion !== 8 && data.schemaVersion !== 9) versionError(data.schemaVersion);
   if (!Array.isArray(data.sets) || data.sets.length < 1 || data.sets.length > PROJECT_LIMITS.sets) {
     invalid('sets', `must contain 1 to ${PROJECT_LIMITS.sets} items.`);
   }
@@ -211,8 +211,9 @@ export function parseProjectV2(content: string): ProjectV2 {
   if ([1, 2, 3].includes(data.schemaVersion as number) && data.audioAnchors !== undefined) invalid('audioAnchors', 'requires schema version 4 so older applications cannot discard alignment.');
   if (Number(data.schemaVersion) < 7 && Array.isArray(data.sets) && data.sets.some(set => Object.hasOwn(object(set, 'set'), 'liveFormations'))) invalid('sets.liveFormations', 'requires schema version 7 so older applications cannot discard editable shapes.');
   if (Number(data.schemaVersion) < 8 && Object.hasOwn(data, 'sharedRoutes')) invalid('sharedRoutes', 'requires schema version 8 so older applications cannot discard routes.');
+  if (Number(data.schemaVersion)<9 && Array.isArray(data.sets) && data.sets.some(set=>Array.isArray(object(set,'set').liveFormations) && (object(set,'set').liveFormations as unknown[]).some(f=>Object.hasOwn(object(f,'formation'),'bezier')))) invalid('sets.liveFormations.bezier','requires schema version 9 so older applications cannot discard curve geometry.');
   if (data.schemaVersion === 1) return migrateProjectV1(data);
-  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5 || data.schemaVersion === 6 || data.schemaVersion === 7 || data.schemaVersion === 8) {
+  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5 || data.schemaVersion === 6 || data.schemaVersion === 7 || data.schemaVersion === 8 || data.schemaVersion === 9) {
     const checked = validateProjectV2(data);
     if (Number(data.schemaVersion) < 6 && checked.moves.some(hasScheduledPaths)) invalid('moves.paths', 'timed intervals require schema version 6 so older applications cannot discard movement.');
     if (Number(data.schemaVersion) < 5 && checked.moves.some(hasCurvedPaths)) invalid('moves.paths', 'cubic paths require schema version 5 so older applications cannot discard geometry.');
@@ -225,7 +226,7 @@ export function serializeProjectV2(project: ProjectV2): string {
   const checked = validateProjectV2(project);
   const mapped = !!checked.tempoMap && !!(checked.tempoMap.regions.length || checked.tempoMap.holds.length);
   const { tempoMap, audioAnchors, ...plain } = checked;
-  const content = `${JSON.stringify(checked.sharedRoutes?.length ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 8 } : checked.sets.some(set => set.liveFormations?.length) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 7 } : checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
+  const content = `${JSON.stringify(checked.sets.some(set=>set.liveFormations?.some(f=>f.bezier)) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion:9 } : checked.sharedRoutes?.length ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 8 } : checked.sets.some(set => set.liveFormations?.length) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 7 } : checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
   assertSize(content);
   return content;
 }

@@ -1,0 +1,31 @@
+{
+  "platform": "linux",
+  "node": "24.19.0",
+  "scope": "local software host; two-set production; one cubic S-curve; five warmups",
+  "rows": [
+    {
+      "members": 2,
+      "runs": 100,
+      "geometryP50Ms": 0.10466800000000376,
+      "geometryP95Ms": 0.2773019999999633,
+      "previewP50Ms": 0.3856700000000046,
+      "previewP95Ms": 2.3499500000000353
+    },
+    {
+      "members": 64,
+      "runs": 100,
+      "geometryP50Ms": 0.11334399999998368,
+      "geometryP95Ms": 0.23810499999990498,
+      "previewP50Ms": 0.3950550000000703,
+      "previewP95Ms": 0.8111619999999675
+    },
+    {
+      "members": 500,
+      "runs": 100,
+      "geometryP50Ms": 0.1332999999999629,
+      "geometryP95Ms": 0.3076419999999871,
+      "previewP50Ms": 1.4832979999999907,
+      "previewP95Ms": 2.157504000000017
+    }
+  ]
+}

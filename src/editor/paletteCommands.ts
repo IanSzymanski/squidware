@@ -72,6 +72,8 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   add('workspace.show', { workspace: 'production' }, 'Production sheet');
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
   for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);
+  add('formation.bezier',{wave:false},'Preview Bézier curve formation','formation-bezier-curve');
+  add('formation.bezier',{wave:true},'Preview Bézier wave formation','formation-bezier-wave');
   for (const shape of state.project.present.sets[state.selection.activeIndex].liveFormations ?? []) {
     add('live.edit',{id:shape.id},`Edit live formation: ${shape.name}`,`live-edit-${shape.id}`);
     add('live.detach',{id:shape.id},`Detach live formation: ${shape.name}`,`live-detach-${shape.id}`);

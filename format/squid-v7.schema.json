@@ -555,7 +555,12 @@
         "options",
         "slotCount",
         "members"
-      ]
+      ],
+      "not": {
+        "required": [
+          "bezier"
+        ]
+      }
     },
     "segment": {
       "oneOf": [

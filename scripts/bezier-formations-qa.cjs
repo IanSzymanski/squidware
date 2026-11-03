@@ -1,0 +1,102 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const {settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
+// Assignment choices/paths belong here; the editor owner retains shape handles,
+// draft validation and the existing file-dialog race matrix.
+module.exports=async function({project,editor,state,evaluate,wait,key,capture:takeScreenshot,window,pass,saved,Menu}) {
+  const ids=project.performers.slice(0,4).map(p=>p.id);const layouts=[];
+  const capture=async name=>{await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('.tooltip-panel')",'dismissed help before capture');await takeScreenshot(name);};
+  const control=async selector=>{
+    await evaluate('document.activeElement?.blur()');
+    // Move off the previous help trigger before approaching a different control.
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
+    await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__assignmentPoint={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__assignmentPoint.x,window.__assignmentPoint.y)));}));})`,'actionable '+selector);
+    await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});
+    const point=await evaluate('window.__assignmentPoint');
+    for(const type of ['mouseMoved','mousePressed','mouseReleased'])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
+  };
+  const number=label=>`[...document.querySelectorAll('label.form-label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)}).querySelector('input')`;
+  const edit=async(label,value)=>{await evaluate(`(()=>{const n=${number(label)};n.focus();n.select()})()`);await window.webContents.debugger.sendCommand('Input.insertText',{text:String(value)});await key('Return');await wait(`!${state}.ui.pendingDraft`,'committed '+label);};
+  const menu=label=>{function find(m){for(const item of m?.items??[]){if(item.label===label)return item;const child=find(item.submenu);if(child)return child;}}const item=find(Menu.getApplicationMenu());assert.ok(item?.click);item.click(item,window,{});};
+  window.setContentSize(1366,768);window.webContents.setZoomFactor(1);await settleNativeViewport(window,'Bézier baseline');
+  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('selection','selectedIds',${JSON.stringify(ids)});${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom',inspectorFormationOpen:true});`);
+  await wait("!!document.querySelector('[aria-label=\"Line formation\"]')",'formation panel');
+  await capture('bezier-before.png');
+  await control('[aria-label="Bézier wave formation"]');
+  await wait(`!!${state}.ui.formationPreview?.bezier`,'wave preview');
+  const initial=await evaluate(`${state}.ui.formationPreview.bezier`);
+  await capture('bezier-wave-preview.png');
+  assert.deepEqual(await evaluate(`${state}.project.present`),project);
+  assert.equal(await evaluate(`${state}.project.past.length`),0);
+  const drag=async(selector,dx,dy,cancel=false)=>{
+    const start=await evaluate(`(()=>{const p=new DOMPoint(0,0).matrixTransform(document.querySelector(${JSON.stringify(selector)}).getScreenCTM());return {x:p.x,y:p.y};})()`);
+    for(const e of [{type:'mouseMoved',...start},{type:'mousePressed',...start,button:'left',buttons:1,clickCount:1},{type:'mouseMoved',x:start.x+dx,y:start.y+dy,button:'left',buttons:1}])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',e);
+    if(cancel)await key('Escape');
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseReleased',x:start.x+dx,y:start.y+dy,button:'left',buttons:0,clickCount:1});
+  };
+  await evaluate(`${editor}.setValue('ui','snap',false)`);
+  const handle='[data-bezier-anchor="anchor-start"][data-bezier-part="outgoing"]';
+  await drag(handle,20,10,true);
+  await wait(`${state}.ui.formationPreview?.bezier.anchors[0].outgoing.x===${initial.anchors[0].outgoing.x}`,'Escape rolls back only gesture');
+  assert.deepEqual(await evaluate(`${state}.ui.formationPreview.bezier`),initial);
+  await drag(handle,20,10);
+  await wait(`${state}.ui.formationPreview.bezier.anchors[0].outgoing.x!==${initial.anchors[0].outgoing.x}`,'native handle drag');
+  const dragged=await evaluate(`${state}.ui.formationPreview.bezier`);
+  assert.equal(await evaluate(`${state}.ui.formationPreview.bezierAnchorId`),'anchor-start');
+  await selectNativeOption(window,'[aria-label="Point or tangent"]','outgoing');
+  await edit('Curve X · yd',initial.anchors[0].outgoing.x);await edit('Curve Y · yd',initial.anchors[0].outgoing.y);
+  assert.deepEqual(await evaluate(`${state}.ui.formationPreview.bezier`),initial);
+  await edit('Curve X · yd',dragged.anchors[0].outgoing.x);await edit('Curve Y · yd',dragged.anchors[0].outgoing.y);
+  const numeric=await evaluate(`${state}.ui.formationPreview.bezier`);
+  assert.ok(Math.abs(numeric.anchors[0].outgoing.x-dragged.anchors[0].outgoing.x)<1e-5);
+  assert.ok(Math.abs(numeric.anchors[0].outgoing.y-dragged.anchors[0].outgoing.y)<1e-5);
+  await control('[aria-label="Insert curve anchor"]');await wait(`${state}.ui.formationPreview.bezier.anchors.length===3`,'split anchor');
+  await selectNativeOption(window,'[aria-label="Tangent join"]','symmetric');
+  const middle=await evaluate(`${state}.ui.formationPreview.bezier.anchors[1]`);
+  assert.equal(middle.mode,'symmetric');
+  await edit('Curve X · yd',middle.outgoing.x+1);
+  const symmetric=await evaluate(`${state}.ui.formationPreview.bezier.anchors[1]`);
+  assert.ok(Math.abs(symmetric.incoming.x+symmetric.outgoing.x-2*symmetric.point.x)<1e-6);
+  await capture('bezier-edited.png');
+  await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'apply curve');
+  const accepted=await evaluate(`${state}.project.present`),shape=accepted.sets[0].liveFormations[0];
+  assert.equal(await evaluate(`${state}.project.past.length`),1);
+  for(const p of project.performers.slice(4))assert.deepEqual(accepted.sets[0].positions[p.id],project.sets[0].positions[p.id]);
+  assert.deepEqual(accepted.moves,project.moves);
+  await capture('bezier-applied.png');
+  menu('Undo drill edit');await wait(`${state}.project.future.length===1`,'undo curve');assert.deepEqual(await evaluate(`${state}.project.present`),project);
+  menu('Redo drill edit');await wait(`${state}.project.future.length===0`,'redo curve');assert.deepEqual(await evaluate(`${state}.project.present`),accepted);
+  menu('Save As…');await wait("document.querySelector('.save-state').textContent==='Project file saved'",'native v9 save');
+  assert.equal(JSON.parse(await fs.readFile(saved,'utf8')).schemaVersion,9);
+  menu('Open project…');await wait(`${state}.project.past.length===0`,'native v9 reopen');assert.deepEqual(await evaluate(`${state}.project.present`),accepted);
+  pass('native tangent drag and Escape rollback, numeric equivalence, split/symmetric joins, one-step Apply/undo/redo, untouched unrelated dots and paths, native v9 save/reopen');
+  await evaluate(`document.querySelector('[aria-label="Edit ${shape.name}"]').focus()`);await key('Return');await wait(`!!${state}.ui.formationPreview?.bezier`,'keyboard reopen');
+  await control('[aria-label="Delete curve anchor"]');await wait(`${state}.ui.formationPreview.bezier.anchors.length===2`,'delete preview');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Delete curve anchor\"]').getAttribute('aria-disabled')"),'true');
+  await control('[aria-label="Cancel formation"]');assert.deepEqual(await evaluate(`${state}.project.present`),accepted);
+  await control(`[aria-label="Edit ${shape.name}"]`);
+  await selectNativeOption(window,'[aria-label="Curve anchor"]','anchor-end');
+  await edit('Curve X · yd',0);
+  await wait(`Number(${number('Curve X · yd')}.value)===${shape.bezier.anchors.at(-1).point.x}`,'rejected boundary number restores saved field value');
+  assert.deepEqual(await evaluate(`${state}.ui.formationPreview.bezier`),shape.bezier);
+  await capture('bezier-boundary-rejected.png');await control('[aria-label="Cancel formation"]');
+  // Numeric entry and pointer interaction retain physical coordinates at reversed orientation/zoom.
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'});${editor}.setValue('ui','zoom',1.6)`);
+  await control(`[aria-label="Edit ${shape.name}"]`);await drag('[data-bezier-anchor="anchor-end"][data-bezier-part="point"]',-10,0);
+  await wait(`${state}.ui.formationPreview.bezier.anchors.at(-1).point.x>${shape.bezier.anchors.at(-1).point.x}`,'flipped drag uses field coordinates');
+  await control('[aria-label="Cancel formation"]');
+  for(const [theme,width,scale] of [['dark',1366,1],['light',1366,1],['high-contrast',1366,1],['dark',1120,1.25]]) {
+    window.setContentSize(width,768);
+    await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)},uiScale:${scale},fieldOrientation:'audience-bottom'});${editor}.setValue('ui','zoom',1)`);
+    await settleNativeViewport(window,'Bézier layout');await control(`[aria-label="Edit ${shape.name}"]`);
+    await evaluate("document.querySelector('.bezier-fields').scrollIntoView({block:'nearest'})");
+    const metrics=await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),anchor:rect('[aria-label=\"Curve anchor\"]'),apply:rect('[aria-label=\"Apply formation\"]'),cancel:rect('[aria-label=\"Cancel formation\"]')}})()");
+    for(const r of [metrics.anchor,metrics.apply,metrics.cancel])assert.ok(r.left>=0&&r.right<=metrics.viewport.width+.5&&r.top>=0&&r.bottom<=metrics.viewport.height+.5,JSON.stringify(metrics));
+    if(width===1366)assert.ok(metrics.field.height>=470,JSON.stringify(metrics));
+    layouts.push({theme,width,scale,...metrics});await capture(`bezier-${theme}-${width}-${scale}.png`);await control('[aria-label="Cancel formation"]');
+  }
+  assert.deepEqual(await evaluate(`${state}.project.present`),accepted);
+  pass('keyboard reopen, deletion/minimum anchors, canceled preview, flipped/zoomed pointer coordinates and dark/light/high-contrast/narrow enlarged layout');
+  return {layouts};
+};
