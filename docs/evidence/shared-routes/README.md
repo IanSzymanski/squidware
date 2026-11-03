@@ -92,3 +92,19 @@ Related to #75 and #50. #75 stays open for routes consumed by conveyor/group
 movement with explicit member order, offsets/delays, count ticks and movement
 analysis. The delivered library stores geometry only. This PR does not mark
 cross-platform hosted CI or all desktop owners as passed; those run separately.
+
+## Source certification follow-up
+
+[PR #166's first CI run](https://github.com/IanSzymanski/squidware/actions/runs/41668858589)
+failed because the source route test imported the generated
+`electron/project-codec.cjs` before the desktop build stage. A prior local build
+had hidden that dependency. The source test now checks renderer round trips
+without native artifacts; codec assertions live with the existing native bridge
+tests, after their codec build. The native v8 test also verifies real file
+save/open and that invalid closure cannot overwrite the durable file.
+
+Verification: all 760 source tests and format/release contracts passed while the
+generated project codec was temporarily absent; type checking passed. After
+building the codec, all 87 native tests passed. Application behavior and CI stage
+ordering are unchanged. These local results do not claim the subsequent hosted
+run has passed.

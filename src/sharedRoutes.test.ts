@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import { createDemoProject, parseProject, sampleProject, serializeProject, validateProject } from './domain';
 import { projectV2AsLegacy } from './projectV2';
@@ -125,12 +124,11 @@ describe('reviewed route transactions and portable files', () => {
     expect(store.dispatch('routes.save', { ...request, existing: true, route: null, revision: store.getState().project.revision })).toBe(true);
     expect(store.getState().project.present.sharedRoutes).toBeUndefined(); store.dispatch('history.undo'); expect(store.getState().project.present).toEqual(saved);
   });
-  it('round trips v8 and empty optional anchors in renderer and native codecs', () => {
+  it('round trips v8 and empty optional anchors without requiring a native build', () => {
     const project = { ...createDemoProject(), sharedRoutes: [closed()], audioAnchors: [] };
     const wire = serializeProject(project); expect(JSON.parse(wire).schemaVersion).toBe(8); expect(JSON.parse(wire).audioAnchors).toBeUndefined();
     const canonical = parseProject(wire); expect(validateProject(canonical)).toEqual(canonical);
-    const native = createRequire(import.meta.url)('../electron/project-codec.cjs'); expect(native.parseProjectV2(wire)).toEqual(canonical);
-    expect(native.serializeProjectV2(canonical)).toBe(wire);
+    expect(serializeProject(canonical)).toBe(wire);
     for (const schemaVersion of [1, 2, 3, 4, 5, 6, 7]) expect(() => parseProject(JSON.stringify({ ...JSON.parse(wire), schemaVersion }))).toThrow(/requires schema version 8/);
     expect(() => projectV2AsLegacy(canonical)).toThrow(/routes cannot be downgraded/);
   });

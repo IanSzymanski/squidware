@@ -642,3 +642,18 @@ test('native v7 live formations round-trip; invalid ownership cannot overwrite a
  await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Live'),/same slot/);
  assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
 });
+
+test('native v8 routes round-trip; empty anchors are omitted and an invalid seam cannot overwrite the saved production',async t=>{
+ const h=await harness(t),filename=path.join(h.directory,'routes.squid');
+ const {parseProjectV2,serializeProjectV2}=require('../electron/project-codec.cjs');
+ const content=await fs.readFile(path.join(root,'format/examples/routes-v8.squid'),'utf8');
+ const canonical=parseProjectV2(content),wire=serializeProjectV2({...canonical,audioAnchors:[]});
+ assert.equal(JSON.parse(wire).schemaVersion,8);assert.equal(JSON.parse(wire).audioAnchors,undefined);
+ assert.deepEqual(parseProjectV2(wire),canonical);assert.equal(serializeProjectV2(parseProjectV2(wire)),wire);
+ await fs.writeFile(filename,wire);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,wire);
+ assert.equal(await h.invoke('save-project',wire,'Routes'),filename);
+ const bad=JSON.parse(wire);bad.sharedRoutes[0].segments.at(-1).to.x+=1;
+ await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Routes'),/end exactly at its start seam/);
+ assert.equal(await fs.readFile(filename,'utf8'),wire);assert.equal(h.saveDialogCount(),0);
+});
