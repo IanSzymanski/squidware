@@ -26,7 +26,10 @@ const input = (type, point, extra = {}) => {
   // sendInputEvent also works with hidden software-composited windows, where
   // DevTools' mouse acknowledgement can wait indefinitely for a visible frame.
   const types = { mouseMoved: 'mouseMove', mousePressed: 'mouseDown', mouseReleased: 'mouseUp' };
-  window.webContents.sendInputEvent({ type:types[type], x:Math.round(point.x), y:Math.round(point.y), ...extra, modifiers:extra.modifiers ? ['shift'] : [] });
+  // Electron's native mouseMove schema carries held buttons in modifiers.
+  // A numeric `buttons` property alone can release capture on macOS.
+  const modifiers = [...(extra.modifiers ? ['shift'] : []), ...(type === 'mouseMoved' && extra.buttons === 1 ? ['leftButtonDown'] : [])];
+  window.webContents.sendInputEvent({ type:types[type], x:Math.round(point.x), y:Math.round(point.y), ...extra, modifiers });
 };
 async function click(point, modifiers = 0) { await input('mouseMoved', point); await input('mousePressed', point, { button: 'left', clickCount: 1, modifiers }); await input('mouseReleased', point, { button: 'left', clickCount: 1, modifiers }); }
 const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 20);

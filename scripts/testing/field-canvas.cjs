@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 module.exports = async function checkCanvas({window,evaluate,command,dispatch,state,editor,fixture,output,wait}) {
-  const {settleNativeViewport} = require('./renderer.cjs');
+  const {settleNativeViewport,waitViewport} = require('./renderer.cjs');
   const checks=[], metrics=[]; const pass=label=>{checks.push(label);console.log('PASS '+fixture.name+': '+label);};
   const frames=()=>evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
   const canvasReady="document.querySelector('[data-field-canvas]')?.style.visibility==='visible' && document.querySelector('.field-drawing')?.getAttribute('opacity')==='0'";
@@ -89,9 +89,19 @@ module.exports = async function checkCanvas({window,evaluate,command,dispatch,st
   }
   window.setContentSize(1000,700);
   await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1.25})`); await frames(); await capture('narrow-125');
-  window.setContentSize(1366,768); await settleNativeViewport(window); await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1,theme:'dark'})`);
+  // Keep the native window narrow while testing the explicit laptop viewport:
+  // this reproduces a constrained desktop work area on every test platform.
+  await settleNativeViewport(window); await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1,theme:'dark'})`);
+  await wait("getComputedStyle(document.documentElement).zoom==='1'",'default UI scale restored');
+  // macOS constrains visible windows to its desktop work area. Keep the laptop
+  // budget at an explicit 1366×768 renderer viewport, as in the DPI cases above.
+  await command('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:1,mobile:false});
+  await waitViewport(window,{width:1366,height:768,dpr:1},'fixed laptop layout');
   await dispatch('set.select',{index:0}); await frames();
-  const height=await evaluate("document.querySelector('.field-container').getBoundingClientRect().height"); assert.ok(height>=470,`field height ${height}`);metrics.push({fieldHeight:height});
+  const layout=await evaluate("({width:innerWidth,height:innerHeight,scale:getComputedStyle(document.documentElement).zoom,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height})");
+  assert.deepEqual([layout.width,layout.height,layout.scale],[1366,768,'1']);
+  assert.ok(layout.fieldHeight>=470,JSON.stringify(layout)); metrics.push({...layout,nativeContent:window.getContentSize()});
+  await command('Emulation.clearDeviceMetricsOverride'); window.setContentSize(1366,768); await settleNativeViewport(window,'native viewport after laptop budget');
   assert.equal(await evaluate(state+'.project.revision'),revision);
   pass('themes, 125% narrow layout and view changes preserve coordinates/history and at least 470px laptop field height');
   const parity=async label=>{

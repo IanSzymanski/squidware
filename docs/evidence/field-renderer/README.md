@@ -55,3 +55,10 @@ The native `field-renderer` suite checks all performer transforms against engine
 Screenshots are supporting evidence; native interaction and source checks establish behavior. The existing print, field, accessibility, selection, playback, movement, preview and theme suites supply additional regression coverage. Local check totals and the final build/native results are recorded in the PR.
 
 Reviewed screenshots: [SVG baseline](before.png), [canvas playback](after.png), [maximum paths](maximum-paths.png), [light theme](light.png), [high contrast at 125% and 1000×700](narrow-125.png). Native pixel comparisons also capture the current SVG fallback at the same count/selection.
+
+
+## CI regression corrections
+
+The first cross-platform run exposed duplicate selection-set construction in canvas painting and an array scan in the focused SVG description. Both now reuse the editor's immutable selection-membership cache. The unchanged native thumbnail guard requires exactly one cache construction for a new section selection and zero constructions/scans during playback; its failure reproduced locally before the correction.
+
+The canvas layout check now asserts the same 1366×768, 100% renderer viewport even when the native desktop window is constrained. The test deliberately retains its narrow native window while applying that viewport, so all platforms exercise the macOS work-area limitation without reducing the 470px field-height target. Native panning supplies Electron's held-left-button modifier and verifies canonical view-matrix movement plus an opaque canvas dot at the new location, rather than relying on bounds of transparent SVG paint. These are internal performance/test corrections; section colors, physical geometry, print/export and visible styling are unchanged.

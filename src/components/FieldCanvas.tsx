@@ -1,4 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { selectionMembership } from '../selection';
 import type { Point, Project } from '../types';
 import type { NeighborOverlay, NeighborPath } from '../neighborPaths';
 import type { SelectionReview } from '../selectionTools';
@@ -46,7 +47,7 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
       // Ceil allocation never changes world-to-CSS-pixel scale.
       context.setTransform(1, 0, 0, 1, 0, 0); context.clearRect(0, 0, canvas.width, canvas.height);
       context.setTransform(size.ratio, 0, 0, size.ratio, -bounds.left * size.ratio, -bounds.top * size.ratio);
-      const selected = new Set(selectedIds);
+      const selected = selectionMembership(selectedIds);
       const colors = new Map(project.sections.map(section => [section.id, section.color]));
       const accent = accentCache.current ||= getComputedStyle(canvas).getPropertyValue('--field-accent').trim() || '#91c1ff';
       const spriteKey = `${display.dotRadiusPx}/${size.ratio}/${accent}/${project.sections.map(s => s.color).join(',')}/${display.colorMode}/${display.customColor}`;
@@ -116,7 +117,7 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
         }
       }
       if (selectionPreview) {
-        const included = new Set(selectionPreview.ids);
+        const included = selectionMembership(selectionPreview.ids);
         for (const candidate of selectionPreview.candidates) {
           const point = positions[candidate.id]; if (!point) continue;
           const p = view(point); circle(p.x, p.y, 11); context.lineWidth = 2;

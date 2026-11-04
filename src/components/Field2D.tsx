@@ -219,7 +219,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       if (canvasActive && id === focusedId) {
         const person = project.performers.find(person => person.id === id)!;
         const section = project.sections.find(section => section.id === person.sectionId)?.name;
-        node.setAttribute('aria-label', [person.label, person.name, section, coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ') + (selectedIds.includes(id) ? ', selected' : ''));
+        node.setAttribute('aria-label', [person.label, person.name, section, coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ') + (selectionMembership(selectedIds).has(id) ? ', selected' : ''));
       }
     }
   });
