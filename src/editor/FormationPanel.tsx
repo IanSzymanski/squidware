@@ -29,6 +29,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
   const unavailable = c.pendingDraft ? 'Finish or cancel the pending input first.' : c.readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   return <div ref={region} className="formation-panel">
     {!session && <HelpButton title="Browse saved formations" command="templates.open" className="button subtle" disabled={c.pendingDraft} onClick={() => c.dispatch('templates.open')}>Saved formations…</HelpButton>}
+    {!session && <HelpButton title="Edit formation transition" command="transition.open" className="button subtle" disabled={c.pendingDraft||c.readOnly||c.index===0||c.selectedIds.length<2||c.view!=='2d'} disabledReason="Pause at an arrival set in 2D and select at least two members of the endpoint formations." onClick={()=>c.dispatch('transition.open')}>Formation transition…</HelpButton>}
     {!session && !!c.activeSet.liveFormations?.length && <details className="live-formations" open>
       <summary>Live formations · {c.activeSet.liveFormations.length}</summary>
       <p className="microcopy">Moving dots individually detaches them. Other members keep their slots until you redistribute.</p>

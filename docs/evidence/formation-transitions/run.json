@@ -1,0 +1,44 @@
+{
+  "suite": "formation-transitions",
+  "state": "passed",
+  "results": [
+    {
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 69728,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-04T16-35-41-017Z-92f2b52c/formation-transitions/desktop.log"
+    }
+  ],
+  "scope": "targeted",
+  "source": {
+    "revision": "0c0893dd61c54a353ba1e5dd8ec1128378d07876",
+    "tree": "f62ffa9f8823e7d8746bf9743d9270ef1b7d6448",
+    "dirty": true,
+    "contentHash": "c6168267a28c866b15a70b81135841c34945d45902a497e52993257a193514b3",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-11-04T16:35:16.314Z",
+    "source": {
+      "revision": "0c0893dd61c54a353ba1e5dd8ec1128378d07876",
+      "tree": "f62ffa9f8823e7d8746bf9743d9270ef1b7d6448",
+      "dirty": true,
+      "contentHash": "c6168267a28c866b15a70b81135841c34945d45902a497e52993257a193514b3",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "31a735cfd0ef0bacde92f0a8256c0b5b8f9660a67a5ce1b05959c7e32940564c"
+  }
+}

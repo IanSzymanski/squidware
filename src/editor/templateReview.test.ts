@@ -101,4 +101,21 @@ describe('guarded template application', () => {
     expect(store.getState().project.present.moves).toEqual(before.moves);
     expect(parseProject(serializeProject(store.getState().project.present)).audioAnchors).toEqual(before.audioAnchors);
   });
+  it('keeps an explicitly chosen parametric library form editable with the reviewed mapping, reload and undo',()=>{
+    const {store,review}=fixture(),before=store.getState().project.present;review.keepEditable=true;
+    review.template.name='Long template name '.repeat(8).trim();
+    expect(store.dispatch('templates.apply',review)).toBe(true);const accepted=store.getState().project.present,shape=accepted.sets[0].liveFormations![0];
+    expect(shape.members.map(m=>m.performerId).sort()).toEqual([...review.ids].sort());expect(shape.slotCount).toBe(8);expect(shape.kind).toBe('line');expect(shape.name.length).toBeLessThanOrEqual(80);expect(accepted.sets.slice(1)).toEqual(before.sets.slice(1));expect(accepted.moves).toEqual(before.moves);
+    expect(JSON.parse(serializeProject(accepted)).schemaVersion).toBe(7);expect(parseProject(serializeProject(accepted))).toEqual(accepted);
+    store.dispatch('history.undo');expect(store.getState().project.present).toEqual(before);store.dispatch('history.redo');expect(store.getState().project.present).toEqual(accepted);
+  });
+  it('can add live metadata to an unchanged template placement without inventing movement',()=>{
+    const {store,review}=fixture();store.dispatch('templates.apply',review);const before=store.getState().project.present;store.dispatch('templates.open');const again=beginTemplateReview(store.getState(),review.template);again.placement=review.placement;
+    expect(templateReviewResult(store.getState(),again).changed).toBe(false);again.keepEditable=true;expect(templateReviewResult(store.getState(),again).changed).toBe(true);expect(store.dispatch('templates.apply',again)).toBe(true);expect(store.getState().project.present.sets[0].positions).toEqual(before.sets[0].positions);
+  });
+  it('rejects live ownership conflicts but retains ordinary template detachment behavior',()=>{
+    const {store,review}=fixture();review.keepEditable=true;store.dispatch('templates.apply',review);const before=store.getState().project.present;store.dispatch('templates.open');const again=beginTemplateReview(store.getState(),review.template);again.keepEditable=true;
+    expect(store.dispatch('templates.apply',again)).toBe(false);expect(store.getState().project.present).toEqual(before);expect(store.getState().ui.toast).toMatch(/already belongs/);
+    again.keepEditable=false;again.placement.center.x+=2;expect(store.dispatch('templates.apply',again)).toBe(true);expect(store.getState().project.present.sets[0].liveFormations).toBeUndefined();expect(parseProject(serializeProject(store.getState().project.present))).toEqual(store.getState().project.present);
+  });
 });

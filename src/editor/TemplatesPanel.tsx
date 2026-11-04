@@ -51,6 +51,7 @@ function FormationTemplateReview({ entry, controller: c, draft }: { entry: Forma
       <NumberField label="Template rotation · °" value={placement.rotation} min={-3600} max={3600} onDraftChange={draft.update} onChange={rotation => update({ rotation })} />
       <label className="form-label">Assignment<select aria-label="Template assignment" value={placement.assignment} disabled={draft.pending} onChange={e => update({ assignment: e.target.value as 'position' | 'roster' })}><option value="position">Positional order</option><option value="roster">Cast order</option></select></label>
       {geometry.kind === 'parametric' && <>
+        <label className="template-checkbox"><input aria-label="Keep template editable" type="checkbox" checked={!!review.keepEditable} disabled={draft.pending} onChange={e=>setReview({...review,keepEditable:e.target.checked})}/>Keep editable on this set</label>
         <NumberField label="Template width · yd" value={geometry.width} min={.1} max={200} step={.1} onDraftChange={draft.update} onChange={width => options({ width })} />
         {geometry.shape !== 'line' && <NumberField label="Template depth · yd" value={geometry.height} min={0} max={200} step={.1} onDraftChange={draft.update} onChange={height => options({ height })} />}
         {geometry.shape === 'block' && <NumberField label="Template columns" value={geometry.columns} min={1} max={500} integer onDraftChange={draft.update} onChange={columns => options({ columns })} />}

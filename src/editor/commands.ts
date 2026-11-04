@@ -46,10 +46,15 @@ import { applySheetRange, type SheetEdit } from './productionSheet';
 import { compileScore, countForScore, validateScore } from '../score';
 import type { Meter, ScoreMap } from '../types';
 import { splitTransition, splitTransitionError, type SplitTransitionRequest } from './splitTransition';
-import { templateReviewError, templateReviewResult } from './templateReview';
+import { templateReviewError, templateReviewProject } from './templateReview';
 import type { TemplateReview } from './templateReview';
+import { canReviewFormationTransition, formationTransitionCurrent, formationTransitionPlan } from './formationTransition';
+import type { FormationTransitionReview } from './formationTransition';
 
 export interface CommandArguments {
+  'transition.open': undefined;
+  'transition.cancel': undefined;
+  'transition.apply': FormationTransitionReview;
   'assignment.open': undefined;
   'assignment.accept': AssignmentAcceptance;
   'routes.open': undefined;
@@ -227,6 +232,10 @@ const canOpenSplit = (s: EditorState) => {
 };
 
 export const commandRegistry = {
+  'transition.open': simple('transition.open','Formation transition','Review controlled travel between editable formations on the two endpoint sets. Only selected members of the incoming move change.',canReviewFormationTransition,c=>showDialog(c,'formation-transition')),
+  'transition.cancel': simple('transition.cancel','Cancel formation transition','Discard the transition review and retain committed movement and unrelated drafts.',s=>s.ui.dialog==='formation-transition',c=>c.patch('ui',{dialog:null})),
+  'transition.apply': define({id:'transition.apply',name:'Apply formation transition',description:'Keep both endpoint forms and the reviewed identities; apply selected paths on one move as one undo action.',arguments:{moveId:'reviewed move',ids:'explicit members',sourceId:'source formation',destinationId:'destination formation',mapping:'reviewed member slots',controls:'travel controls',policies:'per-member path choices',revision:'reviewed revision',epoch:'project session'},
+    enabled:(s,a)=>!!a&&formationTransitionCurrent(s,a),execute:(c,a)=>{const plan=formationTransitionPlan(c.getState().project.present,a);if(!plan.changed)throw Error('The reviewed paths are unchanged. Adjust controls or an individual override first.');c.edit(()=>plan.project);c.patch('ui',{dialog:null});}}),
   'assignment.open': simple('assignment.open','Optimize assignment','Compare optional constrained assignments for a valid formation preview with at least two selected performers.',s=>formationSessionCurrent(s)&&!s.ui.pendingDraft&&s.selection.selectedIds.length>=2&&!!currentFormationResult(s)&&!currentFormationResult(s)!.error,c=>c.patch('ui',{dialog:'assignment'})),
   'assignment.accept': define({id:'assignment.accept',name:'Use assignment proposal',description:'Return the reviewed mapping and constraints to the formation preview. Apply formation commits it as one undo step.',arguments:{revision:'reviewed revision',epoch:'project session',signature:'reviewed formation',constraints:'AssignmentConstraints',order:'performerId[]'},
     enabled:(s,a)=>!!a&&assignmentReviewCurrent(s,a),execute:(c,a)=>{const formationPreview=acceptedAssignment(c.getState(),a);c.patch('ui',{formationPreview,dialog:null});} }),
@@ -240,10 +249,7 @@ export const commandRegistry = {
     arguments: { template: 'FormationTemplate', placement: 'center, rotation and assignment', ids: 'reviewed performers in Cast order', setId: 'reviewed set', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => !!a && s.ui.dialog === 'templates' && !s.ui.pendingDraft && !templateReviewError(s, a),
     execute: (c, a) => {
-      const s = c.getState(), result = templateReviewResult(s, a);
-      if (result.error) throw new Error(result.error);
-      if (!result.changed) throw new Error('The preview matches the current positions.');
-      c.edit(p => ({ ...p, sets: p.sets.map(set => set.id === a.setId ? { ...set, positions: result.positions } : set) }));
+      const next=templateReviewProject(c.getState(),a);c.edit(()=>next);
       c.patch('ui', { dialog: null });
     } }),
   'path.operations-open': simple('path.operations-open', 'Move operations', 'Preview move count rescaling, selected-path reversal and interval copy/paste.', canReviewPaths, c => showDialog(c, 'path-operations')),
