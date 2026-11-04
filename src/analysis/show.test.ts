@@ -3,6 +3,7 @@ import { ShowAnalysis, defaultProblemFilter, findings, problemMarkers } from './
 import { createEditorStore } from '../editor/store';
 import { createBlankProject, analyzeTransition, setStartCount } from '../domain';
 import type { AnalysisWorker } from './client';
+import type { TransitionIssue } from '../types';
 import type { AnalysisRequest, AnalysisResponse } from './input';
 import { TransitionAnalyzer } from './engine';
 import { createPerformanceFixture } from '../performanceFixtures';
@@ -123,4 +124,25 @@ describe('show-wide result ownership',()=>{
     for(const m of service.getSnapshot().moves)expect(m.issues).toEqual(analyzeTransition(store.getState().project.present,m.index));service.dispose();
   });
 
+});
+
+describe('cached problem marker windows', () => {
+  it('retains inclusive boundaries, first finding, severity and totals across viewport changes and immutable worker replies', () => {
+    const issue = (atCount: number, severity: 'danger' | 'warning'): TransitionIssue => ({type:'collision',severity,performerIds:['a','b'],message:'Spacing',atCount});
+    const first = issue(0,'warning'), boundary = issue(8,'warning'), danger = issue(8,'danger'), outside = issue(100,'danger');
+    const move = {index:1,moveId:'one',signature:[],status:'ready' as const,issues:[first,boundary,danger,outside]};
+    const check = () => {
+      const markers = problemMarkers([move],0,8,14);
+      expect(markers.map(m=>[m.count,m.danger,m.finding.issue])).toEqual([[1,false,first],[2,true,boundary]]);
+      expect(problemMarkers([move],1,6,14)).toEqual([]);
+      expect(problemMarkers([move],99,1,14)[0]).toMatchObject({count:1,danger:true,finding:{issue:outside}});
+    };
+    check(); check();
+    const later = {...move,index:2,moveId:'two',issues:[issue(8,'warning')]};
+    const shared = problemMarkers([move,later],0,8,14);
+    expect(shared[1]).toMatchObject({count:3,danger:true,finding:{moveId:'one',index:1,issue:boundary}});
+    expect(problemMarkers([{...move,issues:[first]}],0,8,14)).toHaveLength(1);
+    expect(problemMarkers([{...move,status:'pending'}],0,8,14)).toEqual([]);
+    expect(move.issues).toEqual([first,boundary,danger,outside]);
+  });
 });

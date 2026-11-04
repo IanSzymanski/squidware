@@ -158,16 +158,42 @@ export function findings(checks: ShowChecks, filter: ProblemFilter): Finding[] {
     || (a.issue.atCount ?? 0) - (b.issue.atCount ?? 0) || a.index - b.index);
 }
 
-/** At most one marker per pixel bucket. The panel retains every finding. */
-export function problemMarkers(moves: MoveCheck[], start: number, span: number, width: number) {
-  const buckets = new Map<number, { finding: Finding; count: number; danger: boolean }>();
-  for (const move of moves) if (move.status === 'ready') for (const issue of move.issues) {
+interface MarkerSummary { issue: TransitionIssue; count: number; danger: boolean }
+const markerCache = new WeakMap<TransitionIssue[], { min: number; max: number; start?: number; span?: number; width?: number; buckets?: Map<number, MarkerSummary> }>();
+/** Cache one viewport per immutable result array, with bounds to skip off-screen
+ * moves. Worker replies and count-window changes must not rescan the whole show. */
+function moveMarkers(issues: TransitionIssue[], start: number, span: number, width: number) {
+  let cached = markerCache.get(issues);
+  if (!cached) {
+    let min = Infinity, max = -Infinity;
+    for (const issue of issues) { const at = issue.atCount ?? 0; min = Math.min(min, at); max = Math.max(max, at); }
+    cached = { min, max }; markerCache.set(issues, cached);
+  }
+  if (cached.min > start + span || cached.max < start) return null;
+  if (cached.start === start && cached.span === span && cached.width === width) return cached.buckets!;
+  const buckets = new Map<number, MarkerSummary>();
+  for (const issue of issues) {
     const at = issue.atCount ?? 0;
     if (at < start || at > start + span) continue;
     const key = Math.floor((at - start) / span * Math.max(1, width / 14));
     const bucket = buckets.get(key);
     if (bucket) { bucket.count++; bucket.danger ||= issue.severity === 'danger'; }
-    else buckets.set(key, { finding: { index: move.index, moveId: move.moveId, issue }, count: 1, danger: issue.severity === 'danger' });
+    else buckets.set(key, { issue, count: 1, danger: issue.severity === 'danger' });
+  }
+  Object.assign(cached, { start, span, width, buckets });
+  return buckets;
+}
+
+/** At most one marker per pixel bucket. The panel retains every finding. */
+export function problemMarkers(moves: MoveCheck[], start: number, span: number, width: number) {
+  const buckets = new Map<number, { finding: Finding; count: number; danger: boolean }>();
+  for (const move of moves) {
+    if (move.status !== 'ready') continue;
+    for (const [key, summary] of moveMarkers(move.issues, start, span, width) ?? []) {
+      const bucket = buckets.get(key);
+      if (bucket) { bucket.count += summary.count; bucket.danger ||= summary.danger; }
+      else buckets.set(key, { finding: { index: move.index, moveId: move.moveId, issue: summary.issue }, count: summary.count, danger: summary.danger });
+    }
   }
   return [...buckets.values()];
 }

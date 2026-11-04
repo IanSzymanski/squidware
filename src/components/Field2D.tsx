@@ -1,3 +1,5 @@
+import { FieldCanvas } from './FieldCanvas';
+import { fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from './fieldScene';
 import { ScatterFormationHandles } from './ScatterFormationHandles';
 import { BezierFormationHandles } from './BezierFormationHandles';
 import { isNudgeKey, type NudgeKey } from '../editIncrements';
@@ -12,7 +14,7 @@ import { coordinateDescription } from '../domain';
 import { FieldReadout } from './FieldReadout';
 import { FIELD_KEYS, nextFieldFocus } from './fieldKeyboard';
 import type { FieldKey } from './fieldKeyboard';
-import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, layoutFieldLabels, nearestFieldDots } from './fieldPresentation';
+import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, nearestFieldDots } from './fieldPresentation';
 import type { FieldPresentation, HitCycle, ScreenBox } from './fieldPresentation';
 import './stages.css';
 import { NeighborDrawing } from './NeighborDrawing';
@@ -37,7 +39,9 @@ interface DrawingProps {
   keyboardHelpId?: string;
   keyboardFocusId?: string | null;
   presentation?: Partial<FieldPresentation>;
-  screen?: { scale: number; bounds: ScreenBox };
+  screen?: FieldScreen;
+  dynamicOnly?: boolean;
+  deferMotion?: boolean;
 }
 
 export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING }: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping'] }) {
@@ -82,7 +86,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, he
 StaticFieldMarkings.displayName = 'StaticFieldMarkings';
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, orientation = 'audience-bottom' }: DrawingProps) {
+export function FieldDrawing({ project, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, dynamicOnly = false, deferMotion = false, orientation = 'audience-bottom' }: DrawingProps) {
   const { width, height, preset } = project.field;
   const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
@@ -93,26 +97,19 @@ export function FieldDrawing({ project, positions, neighbors, selectedIds = [], 
   const flipped = !!screen && orientation === 'audience-top';
   const viewPoint = (point: Point) => fieldViewPoint(point, project.field, flipped ? orientation : 'audience-bottom');
   // Measure the actual font once per roster/font change; use conservative fallback during SSR.
-  const labelWidths = useMemo(() => {
-    const context = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
-    if (context) context.font = `700 ${display.labelSizePx}px Arial, sans-serif`;
-    return new Map(project.performers.map(person => [person.id, context?.measureText(person.label).width ?? person.label.length * display.labelSizePx]));
-  }, [project.performers, display.labelSizePx]);
-  const labels = screen ? layoutFieldLabels(project.performers.flatMap(person => positions[person.id] ? [{
-    id: person.id, x: viewPoint(positions[person.id]).x * scale, y: viewPoint(positions[person.id]).y * scale,
-    labelWidth: labelWidths.get(person.id)!, selected: selected.has(person.id), focused: keyboardFocusId === person.id,
-  }] : []), screen.bounds, { ...display, labelMode: showLabels ? display.labelMode : 'none' }) : null;
+  const labelWidths = useMemo(() => measureFieldLabels(project, display.labelSizePx), [project.performers, display.labelSizePx]);
+  const labels = screen ? fieldLabels(project, positions, selected, keyboardFocusId, { ...display, labelMode: showLabels ? display.labelMode : 'none' }, screen, orientation, labelWidths) : null;
   return <>
-    <StaticFieldMarkings width={width} height={height} preset={preset} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />
+    {!dynamicOnly && <StaticFieldMarkings width={width} height={height} preset={preset} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />}
     {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
       const point = positions[performer.id];
       if (!point) return null;
       const isSelected = selected.has(performer.id);
       const sectionColor = colors.get(performer.sectionId) ?? '#b9ed85';
-      const color = !screen || display.colorMode === 'section' ? sectionColor : display.colorMode === 'custom' ? display.customColor : isSelected ? '#8dc8ff' : '#b3c5bd';
+      const color = screen ? fieldDotColor(sectionColor, isSelected, display) : sectionColor;
       const labelPoint = viewPoint(point);
-      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ');
+      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), !deferMotion && coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ');
       const label = labels?.get(performer.id);
       const focusRadius = screen ? (display.dotRadiusPx + 5) / scale : 1.35;
       return <g key={performer.id} data-performer-id={performer.id} tabIndex={readoutId ? focusedId === performer.id ? 0 : -1 : undefined} role={readoutId ? 'button' : undefined} aria-label={readoutId ? `${details}${isSelected ? ', selected' : ''}` : undefined} aria-describedby={keyboardHelpId} aria-pressed={readoutId ? isSelected : undefined} className={`field-performer${keyboardFocusId === performer.id ? ' field-performer--focused' : ''}`} transform={`translate(${point.x} ${point.y})`}>
@@ -130,6 +127,16 @@ export function FieldDrawing({ project, positions, neighbors, selectedIds = [], 
     })}
   </>;
 }
+
+// Retain the roving SVG buttons and vector fallback without reconciling hidden
+// paint on every clock tick. Canonical positions are synchronized below.
+const InteractiveFieldDrawing = memo(FieldDrawing, (before, after) => {
+  if (!before.deferMotion || !after.deferMotion) return false;
+  return (Object.keys(after) as (keyof DrawingProps)[]).every(key => ['positions', 'screen'].includes(key) || before[key] === after[key]);
+});
+InteractiveFieldDrawing.displayName = 'InteractiveFieldDrawing';
+const NO_POSITIONS: Record<string, Point> = {};
+const NO_NEIGHBORS: NeighborOverlay[] = [];
 
 interface Field2DProps extends DrawingProps {
   transformPreview?: FieldTransformPreview;
@@ -167,6 +174,8 @@ const clamp = (value: number, minimum: number, maximum: number) => Math.min(maxi
 export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
+  const performerNodes = useRef<SVGGElement[]>([]);
+  const paintedPositions = useRef(new WeakMap<SVGGElement, Point>());
   const readoutId = useId();
   const keyboardHelpId = useId();
   const fieldHasFocus = useRef(false);
@@ -174,7 +183,8 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const hitCycle = useRef<HitCycle | null>(null);
-  const display = { ...DEFAULT_FIELD_PRESENTATION, ...presentation };
+  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode]);
+  const [canvasReady, setCanvasReady] = useState(false);
   const [screen, setScreen] = useState<DrawingProps['screen']>();
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [preview, setPreview] = useState<Record<string, Point>>({});
@@ -187,9 +197,32 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   const viewWidth = (width + 14) / safeZoom;
   const viewHeight = (height + 16) / safeZoom;
   const viewport = `${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`;
-  const displayedPositions = { ...positions, ...preview };
+  const displayedPositions = useMemo(() => Object.keys(preview).length ? { ...positions, ...preview } : positions, [positions, preview]);
+  const wantsCanvas = readOnly || moving || !!selectionPreview || !!neighbors?.length;
+  const canvasActive = wantsCanvas && canvasReady;
   const focusedId = rememberedFocus?.project === project.id && positions[rememberedFocus.id]
     ? rememberedFocus.id : selectedIds.find(id => positions[id]) ?? project.performers[0]?.id ?? null;
+
+  useLayoutEffect(() => {
+    performerNodes.current = [...(geometryRef.current?.querySelectorAll<SVGGElement>('[data-performer-id]') ?? [])];
+  }, [project.performers]);
+  useLayoutEffect(() => {
+    for (const node of performerNodes.current) {
+      const id = node.dataset.performerId!, point = displayedPositions[id];
+      if (!point) continue;
+      const old = paintedPositions.current.get(node);
+      if (!old || old.x !== point.x || old.y !== point.y) {
+        node.setAttribute('transform', `translate(${point.x} ${point.y})`); paintedPositions.current.set(node, point);
+      }
+      // Only the focused button announces live coordinates during motion. The
+      // whole SVG refreshes on return to editing, including every description.
+      if (canvasActive && id === focusedId) {
+        const person = project.performers.find(person => person.id === id)!;
+        const section = project.sections.find(section => section.id === person.sectionId)?.name;
+        node.setAttribute('aria-label', [person.label, person.name, section, coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ') + (selectionMembership(selectedIds).has(id) ? ', selected' : ''));
+      }
+    }
+  });
 
   useLayoutEffect(() => {
     const svg = svgRef.current;
@@ -200,8 +233,8 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       const rect = svg.getBoundingClientRect();
       const topLeft = new DOMPoint(rect.left, rect.top).matrixTransform(matrix.inverse());
       const bottomRight = new DOMPoint(rect.right, rect.bottom).matrixTransform(matrix.inverse());
-      const next = { scale, bounds: { left: topLeft.x * scale, top: topLeft.y * scale, right: bottomRight.x * scale, bottom: bottomRight.y * scale } };
-      setScreen(old => old && old.scale === next.scale && Object.keys(next.bounds).every(key => old.bounds[key as keyof ScreenBox] === next.bounds[key as keyof ScreenBox]) ? old : next);
+      const next = { scale, pixelRatio: window.devicePixelRatio, bounds: { left: topLeft.x * scale, top: topLeft.y * scale, right: bottomRight.x * scale, bottom: bottomRight.y * scale } };
+      setScreen(old => old && old.scale === next.scale && old.pixelRatio === next.pixelRatio && Object.keys(next.bounds).every(key => old.bounds[key as keyof ScreenBox] === next.bounds[key as keyof ScreenBox]) ? old : next);
     };
     let frame = 0;
     const refresh = () => { measure(); cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
@@ -446,17 +479,23 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   }
 
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
+    <svg className="field-stage__background" viewBox={viewport} aria-hidden="true">
+      <g transform={fieldViewTransform(project.field, orientation)}><StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} /></g>
+    </svg>
+    {screen && <FieldCanvas project={project} positions={displayedPositions} selectedIds={selectedIds} display={display} screen={screen} orientation={orientation} focusedId={keyboardFocus ? focusedId : null} showLabels={showLabels} enabled={wantsCanvas} neighbors={moving ? NO_NEIGHBORS : neighbors} selectionPreview={selectionPreview} snapPreview={moving ? preview : NO_POSITIONS} original={positions} onReady={setCanvasReady} />}
     <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
       <g ref={geometryRef} data-field-geometry={orientation} transform={fieldViewTransform(project.field, orientation)}>
-      <FieldDrawing project={project} positions={displayedPositions} neighbors={moving ? [] : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
+      <g className="field-drawing" opacity={canvasActive ? 0 : 1}>
+      <InteractiveFieldDrawing dynamicOnly deferMotion={canvasActive} project={project} positions={displayedPositions} neighbors={moving ? NO_NEIGHBORS : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
+      </g>
       {problemOverlay}
-      {selectionPreview && <g aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
+      {selectionPreview && <g opacity={canvasActive ? 0 : 1} aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
       {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && (formationPreview.session.scatter ? <ScatterFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : formationPreview.session.bezier ? <BezierFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />)}
       {transformPreview && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
       {coordinatePreview && <CoordinateGuides preview={coordinatePreview} scale={screen?.scale ?? 1} />}
       {spacingPreview && <SpacingGuides key={orientation} preview={spacingPreview} project={project} scale={screen?.scale ?? 1} flipped={orientation === 'audience-top'} />}
-      {moving && Object.keys(preview).length > 0 && <g data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke="#fff" strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}
+      {moving && Object.keys(preview).length > 0 && <g opacity={canvasActive ? 0 : 1} data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke="#fff" strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{!canvasActive && Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#8dc8ff18" stroke="#8dc8ff" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
       </g>
     </svg>

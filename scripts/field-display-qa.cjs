@@ -6,7 +6,10 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   const ids = project.performers.map(p => p.id);
   const before = await evaluate(`${state}.project`);
   const original = before.present;
-  const center = id => evaluate(`(() => {const n=document.querySelector('[data-performer-id="${id}"] .field-dot'),r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+  // Panning paints canvas while the retained SVG dots are transparent. Derive
+  // native targets from canonical positions and the same matrix as hit testing.
+  const centerExpression = id => `(() => {const p=${state}.project.present.sets[0].positions[${JSON.stringify(id)}],m=document.querySelector('[data-field-geometry]').getScreenCTM(),s=new DOMPoint(p.x,p.y).matrixTransform(m);return {x:s.x,y:s.y}})()`;
+  const center = id => evaluate(centerExpression(id));
   const select = async id => { await click(await center(id)); await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'flipped nearest selection'); };
   const preferences = update => evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,...${JSON.stringify(update)}})`);
   const clickControl = async selector => { await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`); await click(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`)); };
@@ -79,7 +82,9 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await input('mousePressed', panFrom, {button:'left',clickCount:1});
   await wait("!!document.querySelector('.field-stage--moving')", 'native pan gesture started');
   await input('mouseMoved', {x:panFrom.x+20,y:panFrom.y+10}, {button:'left',buttons:1});
-  await wait(`(() => {const r=document.querySelector('[data-performer-id="${ids[212]}"] .field-dot').getBoundingClientRect();return Math.abs(r.x+r.width/2-${panFrom.x}-20)<1 && Math.abs(r.y+r.height/2-${panFrom.y}-10)<1})()`, 'native pan movement rendered');
+  await wait(`(() => {const p=${centerExpression(ids[212])};return Math.abs(p.x-${panFrom.x}-20)<1 && Math.abs(p.y-${panFrom.y}-10)<1})()`, 'native pan movement rendered');
+  // Check the active raster layer as well as the matrix used by native input.
+  await wait(`(() => {const c=document.querySelector('[data-field-canvas]');if(c?.style.visibility!=='visible')return false;const p=${centerExpression(ids[212])},b=c.getBoundingClientRect();return c.getContext('2d').getImageData(Math.floor((p.x-b.left)*c.width/b.width),Math.floor((p.y-b.top)*c.height/b.height),1,1).data[3]>200})()`, 'panned canvas performer painted');
   await input('mouseReleased', {x:panFrom.x+20,y:panFrom.y+10}, {button:'left',clickCount:1});
   await wait("!document.querySelector('.field-stage--moving')", 'native pan gesture finished');
   const panTo = await center(ids[212]);
