@@ -1,3 +1,4 @@
+import { assertIndividualMovement } from '../groupMotion';
 import { uid } from '../domain';
 import type { CubicPathSegment, Point, Project } from '../types';
 
@@ -12,6 +13,7 @@ export function editMovementPath(project: Project, edit: PathEdit): Project {
   const index = project.moves.findIndex(move => move.id === edit.moveId);
   if (index < 0 || !project.performers.some(p => p.id === edit.performerId)) throw new Error('Choose an existing move and performer.');
   const move = project.moves[index], paths = { ...move.paths };
+  assertIndividualMovement(move,edit.performerId);
   if (!edit.controls) delete paths[edit.performerId];
   else {
     const segment: CubicPathSegment = { id: paths[edit.performerId]?.segments[0]?.id ?? uid(), kind: 'cubic', startCount: 0, endCount: move.counts,

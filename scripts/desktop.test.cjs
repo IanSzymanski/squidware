@@ -195,7 +195,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 12 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 13 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -689,4 +689,16 @@ test('native v11 assignment constraints round-trip and prohibited mappings canno
  const bad=JSON.parse(content);bad.sets[0].liveFormations[0].assignmentConstraints.forbidden.push({performerId:'a',slot:0});
  await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Assignment'),/assignment constraints/);
  assert.equal(await fs.readFile(filename,'utf8'),content);assert.equal(h.saveDialogCount(),0);
+});
+
+test('native v12 group motion round-trips and invalid programs cannot overwrite a saved production',async t=>{
+ const h=await harness(t),filename=path.join(h.directory,'group.squid');
+ const content=await fs.readFile(path.join(root,'format/examples/group-v12.squid'),'utf8');
+ await fs.writeFile(filename,content);h.dialog({canceled:false,filePaths:[filename]});
+ assert.equal((await h.invoke('open-project')).content,content);
+ assert.equal(await h.invoke('save-project',content,'Group movement'),filename);
+ for(const mutate of [g=>g.routeId='missing',g=>g.members=['a','a'],g=>g.entryCounts=16,g=>g.cues=[{count:0,direction:1},{count:0,direction:-1}]]){
+  const bad=JSON.parse(content);mutate(bad.moves[0].groupMotions[0]);await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Group movement'),/Group movement/);assert.equal(await fs.readFile(filename,'utf8'),content);
+ }
+ assert.equal(h.saveDialogCount(),0);
 });

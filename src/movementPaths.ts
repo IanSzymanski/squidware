@@ -1,9 +1,9 @@
 import type { Move, PathSegment, PerformerPath, Point } from './types';
 
 export const hasCurvedPaths = (move: Move): boolean => Object.values(move.paths).some(path => path.segments.some(s => s.kind === 'cubic'));
-export const isScheduledPath = (path: PerformerPath | undefined, counts: number): boolean => !!path && (path.segments.length !== 1 || path.segments.some(s => s.kind === 'hold' || s.startCount !== 0 || s.endCount !== counts || s.to !== undefined));
+export const isScheduledPath = (path: PerformerPath | undefined, counts: number): boolean => !!path && (!!path.linearCounts || path.segments.length !== 1 || path.segments.some(s => s.kind === 'hold' || s.startCount !== 0 || s.endCount !== counts || s.to !== undefined));
 export const hasScheduledPaths = (move: Move): boolean => Object.values(move.paths).some(path => isScheduledPath(path, move.counts));
-export const hasDetailedPaths = (move: Move): boolean => hasCurvedPaths(move) || hasScheduledPaths(move);
+export const hasDetailedPaths = (move: Move): boolean => !!move.groupMotions?.length || hasCurvedPaths(move) || hasScheduledPaths(move);
 const mix = (a: Point, b: Point, t: number): Point => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
 function travel(from: Point, to: Point, segment: PathSegment | undefined, progress: number, transition: Move['transition'], exact = false): Point {
@@ -17,11 +17,21 @@ function travel(from: Point, to: Point, segment: PathSegment | undefined, progre
   return mix(mix(a, b, u), mix(b, c, u), u);
 }
 
+const groupSamples=new WeakMap<PerformerPath,{from:Point;to:Point;starts:Point[]}>();
+
 /** Gaps hold the preceding position; the last travel arrives at the destination
  * picture. Easing applies within each travel, never across its hold time.
  * The owning move duration includes trailing hold time. */
 export function sampleMovement(from: Point, to: Point, path: PerformerPath | undefined, localCount: number, counts: number, transition: Move['transition'] = 'linear'): Point {
   const count = Math.max(0, Math.min(counts, Number.isFinite(localCount) ? localCount : 0));
+  if(path?.linearCounts) {
+    let cached=groupSamples.get(path);
+    if(!cached||cached.from!==from||cached.to!==to){let position=from;const starts=path.segments.map(s=>{const p=position;if(s.kind!=='hold')position=s.to??to;return p;});cached={from,to,starts};groupSamples.set(path,cached);}
+    let lo=0,hi=path.segments.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(path.segments[mid].endCount<count)lo=mid+1;else hi=mid;}
+    const s=path.segments[lo],position=cached.starts[lo];
+    if(count<s.startCount||s.kind==='hold')return {...position};
+    return travel(position,s.to??to,s,Math.max(0,Math.min(1,(count-s.startCount)/(s.endCount-s.startCount))),'linear',true);
+  }
   const t = count / counts;
   if (!isScheduledPath(path, counts)) return travel(from, to, path?.segments[0], t, transition);
   let position = from;

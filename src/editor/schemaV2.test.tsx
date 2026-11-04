@@ -139,7 +139,7 @@ describe('canonical v2 command and recovery integration', () => {
       expect(recovered.recoveryError).toBeUndefined();
       expect(serializeProject(recovered.project)).toBe(serializeProject(parseProject(content)));
     }
-    const future = JSON.stringify({ schemaVersion: 12 });
+    const future = JSON.stringify({ schemaVersion: 13 });
     const storage = { getItem: () => future };
     const recovered = recoverProject(storage);
     expect(recovered.recoveryError).toMatch(/Update Squidware/);

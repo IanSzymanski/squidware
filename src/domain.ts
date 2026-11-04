@@ -1,3 +1,4 @@
+import { effectiveMove } from './groupMotion';
 import { generateFormation } from './formationGeometry';
 export { generateFormation } from './formationGeometry';
 import { referenceDetailedTransition } from './analysis/reference';
@@ -213,7 +214,7 @@ export function sampleProject(project: Project, count: number): TimelineSample {
   const timing = sampleTimeline(project, count);
   if (!project.sets.length) return { ...timing, positions: {} };
   if (timing.setIndex === 0) return { ...timing, positions: Object.fromEntries(Object.entries(project.sets[0].positions).map(([id, point]) => [id, { ...point }])) };
-  const move = project.moves[timing.setIndex - 1];
+  const move = effectiveMove(project,timing.setIndex - 1);
   return { ...timing, positions: Object.fromEntries(project.performers.map(performer => {
     const { from, to } = moveEndpoints(project, timing.setIndex - 1, performer.id)!;
     return [performer.id, sampleMovement(from, to, move.paths[performer.id], timing.localCount, move.counts, move.transition)];
@@ -395,12 +396,13 @@ export function performerMoveOutput(project: Project, index: number, performerId
   const arrival = coordinateDescription(point, project.field, options);
   if (index === 0) return { kind: 'opening', counts: 0, arrival, direction: 'Opening position', distanceYards: 0, averageStepsPerFive: null, peakStepsPerFive: null, description: 'Opening position' };
   const endpoints = moveEndpoints(project, index - 1, performerId);
-  const move = project.moves[index - 1];
+  const move = effectiveMove(project,index - 1);
   if (!endpoints || !move || move.counts <= 0) throw new Error('Move output requires a valid incoming move.');
   const dx = endpoints.to.x - endpoints.from.x; const dy = endpoints.to.y - endpoints.from.y;
   const path = move.paths[performerId];
   const distanceYards = movementLength(endpoints.from, endpoints.to, path);
   if (distanceYards <= EPSILON) return { kind: 'hold', counts: move.counts, arrival, direction: 'Hold', distanceYards, averageStepsPerFive: null, peakStepsPerFive: null, description: `Hold for ${move.counts} ${move.counts === 1 ? 'count' : 'counts'}` };
+  if(path?.linearCounts){const group=move.groupMotions!.find(g=>g.members.includes(performerId))!;return {kind:'move',counts:move.counts,arrival,direction:group.mode,distanceYards,averageStepsPerFive:5*move.counts/distanceYards,peakStepsPerFive:null,description:`${group.name}: ${group.mode}. Ordered member ${group.members.indexOf(performerId)+1}/${group.members.length}; route ${project.sharedRoutes?.find(r=>r.id===group.routeId)?.name??'Route'}. ${group.speed} yd/count; ${group.entryCounts} entry counts, ${group.exitCounts} exit counts. Travel ${distanceYards.toFixed(3)} yd. ${group.cues.map(cue=>({at:group.entryCounts+cue.count+(group.mode==='conveyor'?0:group.members.indexOf(performerId)*group.delay),direction:cue.direction})).filter(cue=>cue.at>=group.entryCounts&&cue.at<move.counts-group.exitCounts).map(cue=>`Count ${Number(cue.at.toFixed(3))}: ${cue.direction===0?'stop/hold':cue.direction===1?'travel forward along route':'travel reverse along route'}`).join('; ')}. Problems reports spacing/stride bounds.`};}
   if (isScheduledPath(path, move.counts)) return { kind: 'move', counts: move.counts, arrival, direction: 'Timed path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `${movementSchedule(path!, move.counts)}. Travel ${distanceYards.toFixed(3)} yd. Counts are local to this move. Peak step size is not listed here. Problems reports conservative spacing and peak-stride bounds.` };
   if (path?.segments[0]?.kind === 'cubic') return { kind: 'move', counts: move.counts, arrival, direction: 'Curved path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `Curved travel: ${distanceYards.toFixed(3)} yards in ${move.counts} counts. Bézier parameter timing; speed varies. Peak step size is not listed here. Problems reports conservative spacing and peak-stride bounds.` };
   const direction = 'Toward ' + [Math.abs(dx) > distanceYards * 1e-9 ? dx > 0 ? 'Side 2' : 'Side 1' : '', Math.abs(dy) > distanceYards * 1e-9 ? dy > 0 ? 'front sideline' : 'back sideline' : ''].filter(Boolean).join(' and ');

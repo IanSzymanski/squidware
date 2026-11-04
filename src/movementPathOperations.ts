@@ -1,3 +1,4 @@
+import { assertIndividualMovement, reverseGroupMotion } from './groupMotion';
 import { sampleMovement } from './movementPaths';
 import type { Move, PathSegment, PerformerPath, Point, Project } from './types';
 
@@ -13,6 +14,7 @@ export interface ResolvedInterval { segment: PathSegment; from: Point; to: Point
 export function resolveIntervals(project: Project, index: number, performerId: string): ResolvedInterval[] {
   const move = project.moves[index], from = project.sets[index]?.positions[performerId], to = project.sets[index + 1]?.positions[performerId];
   if (!move || !from || !to) throw Error('Choose an existing move and performer.');
+  assertIndividualMovement(move,performerId);
   let position = from;
   return (move.paths[performerId]?.segments ?? [{ id: 'implicit-line', kind: 'line', startCount: 0, endCount: move.counts } as const]).map(segment => {
     const arrival = segment.kind === 'hold' ? position : segment.to ?? to;
@@ -26,16 +28,18 @@ function canonicalSegments(segments: PathSegment[]): PerformerPath {
 export function reversePaths(project: Project, index: number, ids: readonly string[]): Project {
   const move = project.moves[index];
   if (!move || !ids.length || new Set(ids).size !== ids.length || ids.some(id => !project.performers.some(p => p.id === id))) throw Error('Select existing performers explicitly before reversing.');
+  const touched=move.groupMotions?.filter(g=>g.members.some(id=>ids.includes(id)))??[];
+  if(touched.some(g=>g.members.some(id=>!ids.includes(id))))throw Error('Reverse every member of a group together. Partial group reversal is unsupported.');
   const paths = { ...move.paths }, left = { ...project.sets[index].positions }, right = { ...project.sets[index + 1].positions };
   for (const id of ids) {
-    if (paths[id]) paths[id] = canonicalSegments(resolveIntervals(project, index, id).reverse().map(({ segment: s, from }) => {
+    if (paths[id]) paths[id] = canonicalSegments(resolveIntervals({...project,moves:project.moves.map((m,i)=>i===index?{...m,groupMotions:undefined}:m)}, index, id).reverse().map(({ segment: s, from }) => {
       const timing = { id: s.id, startCount: move.counts - s.endCount, endCount: move.counts - s.startCount };
       return s.kind === 'hold' ? { ...timing, kind: 'hold' } : s.kind === 'line' ? { ...timing, kind: 'line', to: from }
         : { ...timing, kind: 'cubic', to: from, control1: clone(s.control2), control2: clone(s.control1) };
     }));
     [left[id], right[id]] = [right[id], left[id]];
   }
-  return { ...project, sets: project.sets.map((set, i) => i === index ? { ...set, positions: left } : i === index + 1 ? { ...set, positions: right } : set), moves: project.moves.map((m, i) => i === index ? { ...m, paths } : m) };
+  return { ...project, sets: project.sets.map((set, i) => i === index ? { ...set, positions: left } : i === index + 1 ? { ...set, positions: right } : set), moves: project.moves.map((m, i) => i === index ? { ...m, paths, ...(m.groupMotions?{groupMotions:m.groupMotions.map(g=>touched.includes(g)?reverseGroupMotion(g,m.counts):g)}:{}) } : m) };
 }
 export interface MovementClipboard {
   id: string; epoch: number; sourceMoveId: string; sourcePerformerId: string; sourceLabel: string; sourceSetName: string;

@@ -75,8 +75,9 @@ and undo consume the same serialized geometry. No project schema changes.
 
 This delivers individual interval drawing and field editing for #75.
 [Shared routes](shared-routes.md) add independent open/closed geometry, drawing,
-seam editing and persistence. Using those routes with #50's conveyor/member
-timing remains follow-up work. #75 must remain open for that expanded scope.
+seam editing and persistence. [Group route movement](group-movement.md) completes
+the #50/#75 integration with ordered members, delayed turns, arc-length conveyor
+offsets, count ticks and shared movement checks on those saved routes.
 
 ## Validation
 

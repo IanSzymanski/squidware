@@ -1,3 +1,4 @@
+import { effectiveMove } from '../groupMotion';
 import { hasDetailedPaths } from '../movementPaths';
 import { PROJECT_LIMITS } from '../projectValidation';
 import { setStartCount } from '../domain';
@@ -24,7 +25,7 @@ export type AnalysisResponse = { revision: number; result: AnalysisResult } | { 
 /** Only the selected move crosses the worker boundary, never the whole show. */
 export function transitionInput(project: Project, index: number, epoch: number, rules?: AnalysisRules): AnalysisInput | null {
   if (index < 1 || index >= project.sets.length) return null;
-  const move = project.moves[index - 1], previous = project.sets[index - 1], destination = project.sets[index];
+  const move = effectiveMove(project,index - 1), previous = project.sets[index - 1], destination = project.sets[index];
   const tracks = project.performers.map(p => ({ id: p.id, label: p.label, from: previous.positions[p.id], to: destination.positions[p.id], ...(move.paths[p.id] ? { path: move.paths[p.id] } : {}), ...resolveAnalysisRules(project, index - 1, p, rules) }));
   return { projectKey: `${epoch}:${project.id}`, moveId: move.id,
     modelKey: JSON.stringify([project.schemaVersion, project.field, move.fromSetId, move.toSetId, hasDetailedPaths(move) ? 'bounded-paths-v1' : move.paths, project.analysisRules, move.marchingDirections]),

@@ -1,3 +1,4 @@
+import { assertIndividualMovement } from '../groupMotion';
 import { uid } from '../domain';
 import { PROJECT_LIMITS } from '../projectValidation';
 import type { PathSegment, PerformerPath, Point, Project } from '../types';
@@ -48,6 +49,7 @@ export function pathFromRows(rows: ScheduleRow[]): PerformerPath | null {
 export function editMovementSchedule(project: Project, edit: ScheduleEdit): Project {
   const index = project.moves.findIndex(move => move.id === edit.moveId);
   if (index < 0 || !project.performers.some(p => p.id === edit.performerId)) throw new Error('Choose an existing move and performer.');
+  assertIndividualMovement(project.moves[index],edit.performerId);
   const paths = { ...project.moves[index].paths };
   if (edit.path) paths[edit.performerId] = structuredClone(edit.path);
   else delete paths[edit.performerId];

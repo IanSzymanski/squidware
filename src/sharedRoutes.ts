@@ -105,7 +105,7 @@ export function compileRoute(route: SharedRoute) {
     const t = span ? startT + (end.t - startT) * (target - begin.length) / span : end.t;
     return sampleMovement(first, s.to, { segments: [{ ...s, startCount: 0, endCount: 1 }] }, t, 1);
   }
-  return { length: total, atDistance, samples: table.length };
+  return { length: total, atDistance, samples: table.length, table };
 }
 
 export function routeSeam(route: SharedRoute): string {

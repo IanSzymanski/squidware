@@ -10,6 +10,8 @@ export function editSharedRoute(project: Project, request: RouteEdit): Project {
   const routes = project.sharedRoutes ?? [], exists = routes.some(r => r.id === request.routeId);
   if (exists !== request.existing || (!exists && !request.route)) throw Error('The route changed. Cancel and reopen Shared routes.');
   if (request.route && request.route.id !== request.routeId) throw Error('The reviewed route ID changed.');
+  const original=routes.find(r=>r.id===request.routeId);
+  if(original&&project.moves.some(m=>m.groupMotions?.some(g=>g.routeId===request.routeId))&&(!request.route||JSON.stringify({...original,name:''})!==JSON.stringify({...request.route,name:''})))throw Error('This route is used by group movement. Remove or reroute those groups before editing its geometry or deleting it. A name-only change is allowed.');
   const index = routes.findIndex(r => r.id === request.routeId);
   const next = request.route ? index < 0 ? [...routes, request.route] : routes.map((r, i) => i === index ? request.route! : r) : routes.filter(r => r.id !== request.routeId);
   const checked = validateSharedRoutes(next, project.field);
