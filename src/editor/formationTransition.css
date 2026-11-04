@@ -1,0 +1,22 @@
+.modal.wide.formation-transition-panel { display:flex; flex-direction:column; overflow:hidden; width:min(1160px,calc(var(--viewport-width,100vw) - 32px)); max-height:calc(var(--viewport-height,100dvh) - 48px); }
+.formation-transition-panel .modal-header,.transition-intro,.transition-tabs,.formation-transition-panel .modal-actions { flex-shrink:0; }
+.transition-intro { font-size:12px; color:var(--muted); margin-bottom:12px; }
+.transition-tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.transition-body { overflow:auto; min-height:0; padding:3px; }
+.transition-grid,.transition-preview-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 16px; }
+.transition-grid input,.transition-grid select { width:100%; }
+.transition-body .microcopy,.transition-body .section-description { margin:8px 0 12px; }
+.transition-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
+.transition-metric { display:flex; flex-direction:column; gap:7px; border:1px solid var(--border); border-radius:6px; padding:12px; font-size:12px; line-height:1.5; }
+.transition-field { display:block; width:100%; max-height:230px; background:#233c31; border:1px solid var(--border); }
+.transition-preview-toggles { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin:8px 0; }
+.transition-check { display:flex; gap:7px; align-items:center; font-size:12px; }
+.transition-check input { width:auto; }
+.transition-mapping { overflow:auto; max-height:220px; margin:12px 0; }
+.transition-mapping table { border-collapse:collapse; width:100%; text-align:left; font-size:12px; font-variant-numeric:tabular-nums; }
+.transition-mapping th,.transition-mapping td { padding:7px; border-bottom:1px solid var(--border); }
+.transition-findings { padding-left:20px; font-size:12px; }
+.formation-transition-panel .modal-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.formation-transition-panel .modal-actions>p { flex-basis:100%; margin:0; font-size:12px; }
+.formation-transition-panel .button[aria-disabled=true] { color:var(--disabled-text); background:var(--disabled-bg); border-style:dashed; }
+@media(max-width:850px) { .transition-grid,.transition-metrics,.transition-preview-controls { grid-template-columns:1fr; } }
