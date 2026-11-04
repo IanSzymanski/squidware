@@ -28,7 +28,7 @@ try {
     console.log(`\nCERTIFY ${layer}: ${step.name}`);
     report.steps[index].status = 'running'; await save();
     try {
-      const result = await requireProcess(invocation.command, invocation.args, { cwd: root, timeoutMs: 900000, logFile: path.join(output, `${step.name}.log`), env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' } });
+      const result = await requireProcess(invocation.command, invocation.args, { cwd: root, timeoutMs: step.timeoutMs ?? 15 * 60_000, logFile: path.join(output, `${step.name}.log`), env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' } });
       report.steps[index] = { name: step.name, ...result };
     } catch (error) { report.steps[index] = { name: step.name, status: 'failed', error: error.message }; throw error; }
     await save();

@@ -93,6 +93,43 @@ test('parallel suites respect the worker limit, retain order and failures, and s
   await assert.rejects(runChecks([], () => {}, undefined, { concurrency: 0 }), /concurrency/);
 });
 
+function keyReleaseFixture() {
+  const events = [], listeners = new Set();
+  const context = { window: {
+    addEventListener(type, listener, capture) { assert.equal(type, 'keyup'); assert.equal(capture, true); listeners.add(listener); },
+    removeEventListener(type, listener, capture) { assert.equal(type, 'keyup'); assert.equal(capture, true); listeners.delete(listener); },
+  } };
+  const window = { webContents: {
+    executeJavaScript: async source => vm.runInNewContext(source, context),
+    sendInputEvent(event) { events.push(event); },
+  } };
+  return { window, context, events, listeners, release: event => { for (const listener of listeners) listener(event); } };
+}
+
+test('a queued Enter finishes in the input before focus can move to a native dropdown', async () => {
+  const fixture = keyReleaseFixture(); let focused = 'name', complete = false;
+  const pressing = renderer.keyWithRelease(fixture.window, 'Return', [], { releaseKey: 'Enter' }).then(() => { complete = true; focused = 'select'; });
+  await renderer.waitFor(() => fixture.events.length === 3, 'queued Enter', { intervalMs: 1 });
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(complete, false); assert.equal(focused, 'name', 'A fixed input pause must not allow the next control to steal Enter');
+  fixture.release({ isTrusted: false, key: 'Enter' }); fixture.release({ isTrusted: true, key: 'Escape' });
+  await new Promise(resolve => setImmediate(resolve)); assert.equal(complete, false);
+  fixture.release({ isTrusted: true, key: 'Enter' }); await pressing;
+  assert.equal(complete, true); assert.equal(focused, 'select');
+  assert.deepEqual(fixture.events.map(event => event.type), ['keyDown', 'char', 'keyUp']);
+  assert.equal(fixture.listeners.size, 0); assert.equal(fixture.context.window.__squidwareQaKeyReleases.pending.size, 0);
+});
+
+test('missing native key release fails once and removes its acknowledgement listener', async () => {
+  const fixture = keyReleaseFixture();
+  await assert.rejects(renderer.keyWithRelease(fixture.window, 'Return', [], { releaseKey: 'Enter', timeoutMs: 30 }), /Timed out: native Enter release/);
+  assert.equal(fixture.events.length, 3, 'Do not resend a timed-out key');
+  assert.equal(fixture.listeners.size, 0); assert.equal(fixture.context.window.__squidwareQaKeyReleases.pending.size, 0);
+  fixture.release({ isTrusted: true, key: 'Enter' });
+  await assert.rejects(renderer.keyWithRelease(fixture.window, 'Return'), /explicit DOM release key/);
+  assert.equal(fixture.events.length, 3);
+});
+
 test('native dropdown uses acknowledged typeahead for numeric and Unicode labels', async () => {
   let selected = '1.5', buffer = '';
   const events = [], options = [{ value: '1', label: '100%' }, { value: '1.1', label: '110%' }, { value: '1.25', label: '125%' }, { value: '1.5', label: '150%' }];

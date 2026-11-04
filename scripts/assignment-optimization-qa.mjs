@@ -1,0 +1,21 @@
+import { createRequire } from 'node:module';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { createQa, root } from './testing/launcher.mjs';
+const require=createRequire(import.meta.url);
+const qa=await createQa('assignment-optimization',{timeoutMs:180000});
+const bundle=path.join(qa.output,'fixture.cjs');
+const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]}));
+await esbuild.build({stdin:{contents:`
+ import {createDemoProject,serializeProject} from './src/domain';
+ const project=createDemoProject();project.title='Constrained assignment';
+ project.performers=project.performers.filter((_,i)=>i<4||i===24||i===32);
+ project.sets=project.sets.slice(0,3).map((s,index)=>({...s,positions:Object.fromEntries(project.performers.map((p,i)=>[p.id,i<4?{x:index===1?20+i*20:80-i*20,y:25}:{x:i===4?5:95,y:45}]))}));
+ project.moves=project.moves.slice(0,2).map(m=>({...m,counts:8,transition:'ease',paths:{}}));
+ export const content=serializeProject(project);
+ export {createPerformanceFixture} from './src/performanceFixtures';
+`,resolveDir:root,loader:'ts'},bundle:true,outfile:bundle,platform:'node',format:'cjs',logLevel:'silent'});
+const fixture=path.join(qa.output,'assignment.squid');await fs.writeFile(fixture,require(bundle).content);
+const largeFixtures=path.join(qa.output,'large-fixtures.json');
+await fs.writeFile(largeFixtures,JSON.stringify([2,64,500].map(count=>{const p=require(bundle).createPerformanceFixture('maximum');p.performers=p.performers.slice(0,count);p.sets=p.sets.slice(0,2).map(s=>({...s,positions:Object.fromEntries(p.performers.map(person=>[person.id,s.positions[person.id]]))}));p.moves=p.moves.slice(0,1);return p;})));
+await qa.run('assignment-optimization-qa-runner.cjs','assignment-manifest',{fixture,largeFixtures});

@@ -40,6 +40,33 @@ async function key(window, keyCode, modifiers = [], settleMs = 5) {
   await pause(settleMs);
 }
 
+/** Finish a known native key release before the caller moves focus. Electron's
+ * sendInputEvent queues input; a short pause is not a renderer acknowledgement.
+ * Explicit DOM names avoid guessing keyCode aliases or Unicode key mappings. */
+async function keyWithRelease(window, keyCode, modifiers = [], { releaseKey, timeoutMs = 20000 } = {}) {
+  if (!releaseKey) throw new Error('An explicit DOM release key is required.');
+  const token = await window.webContents.executeJavaScript(`(() => {
+    const releases = window.__squidwareQaKeyReleases ??= { next: 0, pending: new Map() };
+    const token = ++releases.next;
+    const state = { done: false };
+    const listener = event => { if (event.isTrusted && event.key === ${JSON.stringify(releaseKey)}) state.done = true; };
+    state.cleanup = () => window.removeEventListener('keyup', listener, true);
+    releases.pending.set(token, state);
+    window.addEventListener('keyup', listener, true);
+    return token;
+  })()`);
+  try {
+    await key(window, keyCode, modifiers, 0);
+    await waitFor(() => window.webContents.executeJavaScript(`window.__squidwareQaKeyReleases?.pending.get(${token})?.done === true`),
+      `native ${releaseKey} release`, { timeoutMs });
+  } finally {
+    await window.webContents.executeJavaScript(`(() => {
+      const pending = window.__squidwareQaKeyReleases?.pending;
+      pending?.get(${token})?.cleanup(); pending?.delete(${token});
+    })()`).catch(() => {});
+  }
+}
+
 /** Native typeahead avoids OS select popups and platform-specific Home/End keys. */
 async function selectNativeOption(window, selector, value, { timeoutMs = 15000, accepted } = {}) {
   const query = JSON.stringify(selector);
@@ -165,4 +192,4 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
     await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }
-module.exports = { pause, waitFor, waitForProgress, key, selectNativeOption, capturePage, waitViewport, settleNativeViewport };
+module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport };

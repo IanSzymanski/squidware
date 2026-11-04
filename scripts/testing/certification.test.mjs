@@ -19,8 +19,10 @@ test('local certification covers the combined hosted layers, including PDFs and 
 test('macOS certification isolates the native desktop and audio output without changing coverage', () => {
   const plans = ['darwin', 'linux', 'win32'].map(platform => certificationPlan('desktop', { platform }));
   for (const [index, plan] of plans.entries()) {
-    assert.deepEqual(plan.find(step => step.name === 'workflows').args,
+    const workflows = plan.find(step => step.name === 'workflows');
+    assert.deepEqual(workflows.args,
       ['scripts/run-desktop-regressions.mjs', index === 0 ? '--jobs=1' : '--jobs=2']);
+    assert.equal(workflows.timeoutMs, (index === 0 ? 20 : 15) * 60_000);
     assert.deepEqual(plan.filter(step => step.name !== 'workflows'), plans[0].filter(step => step.name !== 'workflows'));
   }
 });

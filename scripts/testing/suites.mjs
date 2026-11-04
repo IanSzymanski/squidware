@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  { name: 'assignment-optimization', title: 'Constrained alternatives, exact mapping, movement metrics, worker guards and native v11 files', script: 'assignment-optimization-qa.mjs', timeoutMs: 240000 },
   { name: 'shared-routes', title: 'Open/closed route capture, handles, direction, seam, undo and native v8 files', script: 'shared-routes-qa.mjs', timeoutMs: 240000 },
   { name: 'scatter-formations', title: 'Seeded regions, spacing, pins, regeneration, overrides, worker checks and native v10 files', script: 'scatter-formations-qa.mjs', timeoutMs: 240000 },
   { name: 'bezier-formations', title: 'Bézier anchors, tangents, arc-length slots, cancel, undo and native v9 files', script: 'bezier-formations-qa.mjs', timeoutMs: 240000 },

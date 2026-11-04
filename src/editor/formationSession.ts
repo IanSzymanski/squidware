@@ -15,6 +15,11 @@ export function formationSessionCurrent(state: EditorState): boolean {
     && state.ui.workspace === 'design' && state.ui.view === '2d' && !state.ui.dialog && !state.ui.transformPreview
     && session.ids.length === selected.size && session.ids.every(id => selected.has(id));
 }
+/** Assignment review owns a frozen draft. Retain it behind that modal while
+ * keeping ordinary formation editing/Apply commands disabled until it closes. */
+export function formationSessionRetained(state:EditorState):boolean {
+  return formationSessionCurrent(state)||state.ui.dialog==='assignment'&&formationSessionCurrent({...state,ui:{...state.ui,dialog:null}});
+}
 export function currentFormationResult(state: EditorState) {
   const session = state.ui.formationPreview;
   return session && formationSessionCurrent(state) ? previewFormationSession(state.project.present,session) : null;
@@ -22,7 +27,7 @@ export function currentFormationResult(state: EditorState) {
 
 export function sessionLiveFormation(session: FormationSession): LiveFormation {
   const live = session.live!;
-  return { ...(session.scatter ? {scatter:session.scatter} : {}), ...(session.bezier ? {bezier:session.bezier} : {}), id: live.id, name: liveFormationName(live.name), kind: session.kind, options: { ...session.options, assignment: session.options.assignment ?? 'position' }, slotCount: live.slotCount,
+  return { ...(session.assignmentConstraints?{assignmentConstraints:session.assignmentConstraints}:{}), ...(session.scatter ? {scatter:session.scatter} : {}), ...(session.bezier ? {bezier:session.bezier} : {}), id: live.id, name: liveFormationName(live.name), kind: session.kind, options: { ...session.options, assignment: session.options.assignment ?? 'position' }, slotCount: live.slotCount,
     members: (session.order ?? session.ids).map((performerId,index)=>({performerId,slot:live.slots[index]})).sort((a,b)=>a.slot-b.slot) };
 }
 export function formationProject(project: Project, session: FormationSession, positions: Record<string, Point>): Project {

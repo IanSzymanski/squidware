@@ -1,3 +1,5 @@
+import { pruneAssignmentConstraints } from '../assignmentConstraints';
+import { acceptedAssignment, assignmentReviewCurrent, type AssignmentAcceptance } from './assignmentReview';
 import { generateScatter, scatterPreset, scatterSeedHash, validateScatterFormation, validateScatterSettings } from '../scatterFormations';
 import type { ScatterFormation, ScatterSettings } from '../types';
 import { scatterMembers } from './scatterSession';
@@ -48,6 +50,8 @@ import { templateReviewError, templateReviewResult } from './templateReview';
 import type { TemplateReview } from './templateReview';
 
 export interface CommandArguments {
+  'assignment.open': undefined;
+  'assignment.accept': AssignmentAcceptance;
   'routes.open': undefined;
   'routes.save': RouteEdit;
   'path.operations-open': undefined;
@@ -223,6 +227,9 @@ const canOpenSplit = (s: EditorState) => {
 };
 
 export const commandRegistry = {
+  'assignment.open': simple('assignment.open','Optimize assignment','Compare optional constrained assignments for a valid formation preview with at least two selected performers.',s=>formationSessionCurrent(s)&&!s.ui.pendingDraft&&s.selection.selectedIds.length>=2&&!!currentFormationResult(s)&&!currentFormationResult(s)!.error,c=>c.patch('ui',{dialog:'assignment'})),
+  'assignment.accept': define({id:'assignment.accept',name:'Use assignment proposal',description:'Return the reviewed mapping and constraints to the formation preview. Apply formation commits it as one undo step.',arguments:{revision:'reviewed revision',epoch:'project session',signature:'reviewed formation',constraints:'AssignmentConstraints',order:'performerId[]'},
+    enabled:(s,a)=>!!a&&assignmentReviewCurrent(s,a),execute:(c,a)=>{const formationPreview=acceptedAssignment(c.getState(),a);c.patch('ui',{formationPreview,dialog:null});} }),
   'routes.open': simple('routes.open', 'Shared routes', 'Draw and edit production-local open or closed route geometry independently of performers and move timing.', s => canNavigate(s) && canEditPositions(s), c => showDialog(c, 'routes')),
   'routes.save': define({ id: 'routes.save', name: 'Save shared route', description: 'Apply or delete reviewed route geometry as one undo action.', arguments: { route: 'reviewed geometry, or null to delete', routeId: 'reviewed ID', existing: 'whether the route already exists', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => !!a && s.ui.dialog === 'routes' && !s.ui.pendingDraft && !s.project.transactionName && canEditPositions(s) && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch,
@@ -352,7 +359,7 @@ export const commandRegistry = {
   'live.configure': define({ id: 'live.configure', name: 'Keep formation editable', description: 'Save shape geometry and membership with this set.', arguments: { enabled: 'boolean?', name: 'string?' },
     enabled: s => formationSessionCurrent(s) && !s.ui.pendingDraft,
     execute: (c,a) => { const s=c.getState(), session=s.ui.formationPreview!, existing=s.project.present.sets[s.selection.activeIndex].liveFormations ?? [];
-      if (a.enabled === false) { if (session.bezier || session.scatter) throw Error('Curve and scatter formations keep editable geometry. Cancel or detach the saved formation.'); if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
+      if (a.enabled === false) { if (session.assignmentConstraints || session.bezier || session.scatter) throw Error('Constrained, curve and scatter formations keep editable geometry. Cancel or detach the saved formation.'); if (existing.some(f=>f.id===session.live?.id)) throw Error('Detach the saved formation outside its preview.'); c.patch('ui',{formationPreview:{...session,live:undefined}}); return; }
       const live=session.live ?? { id:uid(), name:uniqueLiveName(existing), slotCount:session.ids.length, slots:session.ids.map((_,i)=>i) };
       c.patch('ui',{formationPreview:{...session,live:{...live,...(a.name===undefined?{}:{name:a.name})}}});
     } }),
@@ -361,11 +368,12 @@ export const commandRegistry = {
     execute:(c,a)=>{ const s=c.getState(), set=s.project.present.sets[s.selection.activeIndex], f=set.liveFormations!.find(f=>f.id===a.id)!;
       const order=f.members.map(m=>m.performerId), ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
       c.patch('selection',{selectedIds:ids});
-      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,scatter:f.scatter?structuredClone(f.scatter):undefined,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
+      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,assignmentConstraints:f.assignmentConstraints?structuredClone(f.assignmentConstraints):undefined,scatter:f.scatter?structuredClone(f.scatter):undefined,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
     } }),
   'live.members': define({ id:'live.members',name:'Change formation members',description:'Preview explicit membership and redistribution.',arguments:{ids:'performerId[]'},
     enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
     execute:(c,a)=>{ const s=c.getState(), session=s.ui.formationPreview!;
+      if(session.assignmentConstraints)throw Error('Clear assignment constraints in Optimize assignment before changing members or redistributing slots.');
       if (!Array.isArray(a.ids) || new Set(a.ids).size!==a.ids.length || a.ids.some(id=>!s.project.present.performers.some(p=>p.id===id))) throw Error('Choose unique performers in this cast.');
       const ids=s.project.present.performers.filter(p=>a.ids.includes(p.id)).map(p=>p.id), order=formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions,ids,session.kind,session.options);
       c.patch('ui',{formationPreview:null}); c.patch('selection',{selectedIds:ids});
@@ -376,13 +384,13 @@ export const commandRegistry = {
   'live.detach': define({id:'live.detach',name:'Detach live formation members',description:'Keep current dots and remove their shape membership. Undo restores membership.',arguments:{id:'formationId',ids:'performerId[]?'},
     enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id),
     execute:(c,a)=>{ const index=c.getState().selection.activeIndex;
-      c.edit(p=>({...p,sets:p.sets.map((set,i)=>{if(i!==index)return set; const shapes=set.liveFormations!.flatMap(f=>{if(f.id!==a.id)return [f];const members=a.ids?f.members.filter(m=>!a.ids!.includes(m.performerId)):[];return members.length?[{...f,members,...(f.scatter?{scatter:{...f.scatter,pinnedSlots:f.scatter.pinnedSlots.filter(slot=>members.some(m=>m.slot===slot))}}:{})}]:[];});const {liveFormations:_old,...plain}=set;return shapes.length?{...plain,liveFormations:shapes}:plain;})}));
+      c.edit(p=>({...p,sets:p.sets.map((set,i)=>{if(i!==index)return set; const shapes=set.liveFormations!.flatMap(f=>{if(f.id!==a.id)return [f];const members=a.ids?f.members.filter(m=>!a.ids!.includes(m.performerId)):[];return members.length?[{...f,members,...(f.assignmentConstraints?{assignmentConstraints:pruneAssignmentConstraints(f.assignmentConstraints,members)}:{}),...(f.scatter?{scatter:{...f.scatter,pinnedSlots:f.scatter.pinnedSlots.filter(slot=>members.some(m=>m.slot===slot))}}:{})}]:[];});const {liveFormations:_old,...plain}=set;return shapes.length?{...plain,liveFormations:shapes}:plain;})}));
     } }),
   'live.copy': define({id:'live.copy',name:'Copy live formation to set',description:'Preview the same members and slots on another set. Conflicts must be resolved before applying.',arguments:{id:'formationId',targetSetId:'setId'},
     enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id) && s.project.present.sets.some((set,i)=>set.id===a?.targetSetId && i!==s.selection.activeIndex),
     execute:(c,a)=>{const s=c.getState(), source=s.project.present.sets[s.selection.activeIndex].liveFormations!.find(f=>f.id===a.id)!, index=s.project.present.sets.findIndex(set=>set.id===a.targetSetId), target=s.project.present.sets[index];
       selectSet(c,index); const order=source.members.map(m=>m.performerId),ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
-      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,scatter:source.scatter?structuredClone(source.scatter):undefined,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
+      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,assignmentConstraints:source.assignmentConstraints?structuredClone(source.assignmentConstraints):undefined,scatter:source.scatter?structuredClone(source.scatter):undefined,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
     } }),
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
@@ -394,7 +402,7 @@ export const commandRegistry = {
       const previous = s.ui.formationPreview;
       const assignmentRotation = previous?.kind === kind ? previous.assignmentRotation ?? options.rotation : options.rotation;
       const order = (previous?.live || previous?.kind === kind) && previous?.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
-      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, ...(previous?.live ? { live: previous.live } : {}) } });
+      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
   'formation.scatter': define({id:'formation.scatter',name:'Preview scatter formation',description:'Generate a seeded arrangement for explicitly selected performers, then review and Apply or Cancel.',arguments:{},
     enabled:s=>(editable(s)||formationSessionCurrent(s))&&!s.ui.pendingDraft&&!s.ui.dialog&&!s.project.transactionName&&s.selection.selectedIds.length>0,
@@ -449,11 +457,12 @@ export const commandRegistry = {
     execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
       const options = { ...a.options, assignment: a.options.assignment ?? session.options.assignment ?? 'position' };
       const changedMode = options.assignment !== session.options.assignment;
+      if(session.assignmentConstraints&&changedMode)throw Error('Change the mapping in Optimize assignment, or explicitly clear its constraints first.');
       if(session.scatter){c.patch('ui',{formationPreview:scatterMembers(session,session.ids,s.project.present.sets[s.selection.activeIndex].positions,options)});return;}
       const assignmentRotation = changedMode ? options.rotation : session.assignmentRotation ?? session.options.rotation;
       const reassign = changedMode || !session.order || (!session.live && session.kind === 'block' && options.columns !== session.options.columns);
       const order = reassign ? formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, { ...options, rotation: assignmentRotation }) : session.order;
-      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options } });
+      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, assignmentReviewed:reassign?undefined:session.assignmentReviewed, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options } });
     } }),
   'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
     execute: c => c.patch('ui', { formationPreview: null }) }),

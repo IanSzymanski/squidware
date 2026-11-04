@@ -1,9 +1,11 @@
 import { generateFormation } from './formationGeometry';
 import { formationAssignmentOrder } from './formationAssignment';
-import type { ScatterFormation, BezierFormation, FormationKind, FormationOptions, Point, Project } from './types';
+import type { AssignmentConstraints, ScatterFormation, BezierFormation, FormationKind, FormationOptions, Point, Project } from './types';
 import { affinePoint } from './transforms';
 
 export interface FormationSession {
+  assignmentConstraints?: AssignmentConstraints;
+  assignmentReviewed?: boolean;
   revision: number; setId: string; ids: string[]; kind: FormationKind; options: FormationOptions;
   /** Frozen while moving/rotating dimensions; recompute only for an explicit reassignment. */
   scatter?: ScatterFormation; scatterPending?: boolean; scatterError?: string; scatterShowTravel?: boolean; scatterVertex?: number; scatterSlot?: number;

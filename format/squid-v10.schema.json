@@ -636,7 +636,16 @@
         "options",
         "slotCount",
         "members"
-      ]
+      ],
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "assignmentConstraints"
+            ]
+          }
+        ]
+      }
     },
     "bezierAnchor": {
       "type": "object",

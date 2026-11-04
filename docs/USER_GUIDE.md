@@ -278,3 +278,8 @@ Preview local count to compare the selected performer with the rest of the cast.
 ### Draw and refine individual travel
 
 At an arrival picture, pause and select one performer. Use **Draw performer path** to draw a stroke or place numeric anchors for one selected interval. Fit the stroke, refine field handles or numeric controls, and Apply as one undo action. **Edit performer path** also exposes field handles and playback count ticks. See [individual path authoring](path-authoring.md) for fitting tolerances, fixed endpoints, keyboard controls, holds and shared-route scope.
+
+
+## Compare constrained formation assignments
+
+Start or Edit a formation preview with 2–500 selected performers and choose **Optimize assignment…**. Keep section slots, pin member/destination pairings, prohibit pairings, enter explicit instrument/role tags, or capture a section's ordered slot sequence. Blank roles mean unknown and need explicit permission to enter restricted slots. Compare the current mapping with shortest-total and balanced-member alternatives, including travel, spacing/crossing flags and peak step-demand bounds. Inspect both adjacent moves at fractional counts. **Use proposal** returns to the draft; **Apply formation** creates one undo action. Cancel and infeasible comparisons leave the production unchanged. Saved restrictions stay with the editable formation in format v11. See [constraint semantics, objective tradeoffs and limits](assignment-optimization.md).
