@@ -59,11 +59,7 @@ stays inside the field. Saving routes requires [format v8](../format/FORMAT.md#v
 projects without routes retain their least required older version. The renderer
 and native file bridge use the same codec.
 
-This completes shared-route geometry authoring in #75. **#75 remains open**:
-conveyor consumption, member order/delays, count ticks and assigned movement
-implications belong to the group-movement integration with #50. Routes currently
-have distance ticks and an explicit analysis warning, without a crossing,
-collision, stride or clearance result. No physical safety guarantee is implied.
+Shared-route geometry is consumed by [Group route movement](group-movement.md): ordered delayed followers, explicit counter-march cues, and open/closed arc-length conveyors. A route still owns no performers or timing on its own. The group editor adds count ticks, connectors and shared stride/spacing analysis, completing the route-consumption integration for #75/#50. Geometry edits/deletion are blocked while any group references the route; reroute/remove those groups first. Name-only changes remain available. Along-route intervals do not guarantee physical clearance.
 
 Design guidance §§1–4 uses the existing Inspector, command registry, modal,
 HelpButton, field controls, CSS tokens and Apply/Cancel conventions. The modal

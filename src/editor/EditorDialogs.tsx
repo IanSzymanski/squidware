@@ -1,3 +1,4 @@
+import { GroupMotionPanel } from './GroupMotionPanel';
 import { AssignmentPanel } from './AssignmentPanel';
 import { FormationTransitionPanel } from './FormationTransitionPanel';
 import { SharedRoutesPanel } from './SharedRoutesPanel';
@@ -38,6 +39,7 @@ import { NewProductionPanel } from './NewProductionPanel';
 export function EditorDialogs({ controller }: { controller: EditorController }) {
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, removeSet, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
+    {dialog === 'group-motion' && <GroupMotionPanel controller={controller} />}
     {dialog === 'formation-transition' && <FormationTransitionPanel controller={controller} />}
     {dialog === 'assignment' && <AssignmentPanel controller={controller} />}
     {dialog === 'routes' && <SharedRoutesPanel controller={controller} />}

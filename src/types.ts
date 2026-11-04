@@ -79,14 +79,28 @@ export interface LinePathSegment { id: string; kind: 'line'; startCount: number;
 export interface CubicPathSegment { id: string; kind: 'cubic'; startCount: number; endCount: number; control1: Point; control2: Point; to?: Point }
 export interface HoldPathSegment { id: string; kind: 'hold'; startCount: number; endCount: number }
 export type PathSegment = LinePathSegment | CubicPathSegment | HoldPathSegment;
-export interface PerformerPath { segments: PathSegment[] }
+export interface PerformerPath {
+  segments: PathSegment[];
+  /** Derived group paths only. Never stored in move.paths or written to a file. */
+  linearCounts?: true;
+}
 /** Production-local geometry, independent of performer membership and timing. */
 export type RouteSegment = { id: string; to: Point } & ({ kind: 'line' } | { kind: 'cubic'; control1: Point; control2: Point });
 export interface SharedRoute { id: string; name: string; closed: boolean; start: Point; segments: RouteSegment[] }
+export interface GroupMotion {
+  id: string; name: string; routeId: string; mode: 'follow' | 'countermarch' | 'conveyor';
+  /** First member is the leader/reference member; identities never interpolate. */
+  members: string[]; delay: number; interval: number; offsetDirection: -1 | 1;
+  phase: number; speed: number; entryCounts: number; exitCounts: number;
+  endpointPolicy: 'reject' | 'hold';
+  /** Route-local leader clock; negative cues explicitly describe follower history. */
+  cues: { count: number; direction: -1 | 0 | 1 }[];
+}
 export interface Move extends OpeningTiming {
   id: string; fromSetId: string; toSetId: string; counts: number;
   paths: Record<string, PerformerPath>;
   marchingDirections?: Record<string, MarchingDirection>;
+  groupMotions?: GroupMotion[];
 }
 export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   schemaVersion: 2;

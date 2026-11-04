@@ -1,3 +1,4 @@
+import { rescaleGroupMotions } from '../groupMotion';
 import { rescalePaths } from '../movementPathOperations';
 import { hasDetailedPaths } from '../movementPaths';
 import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
@@ -14,7 +15,7 @@ export function reconnectSets(project: Project, sets: DrillSet[], newTiming = ne
     const old = incoming.get(set.id);
     if (old) {
       if (old.fromSetId === sets[index].id) return old;
-      if (hasDetailedPaths(old)) throw new Error('This operation changes a detailed move’s starting set. Remove its custom paths first.');
+      if (hasDetailedPaths(old)) throw new Error('This operation changes a detailed move’s starting set. Remove its custom paths and group movements first.');
       // Declarations describe this exact move, not a new predecessor's travel.
       const { marchingDirections: _directions, ...rewired } = old;
       return { ...rewired, fromSetId: sets[index].id };
@@ -47,6 +48,7 @@ export function updateSetProperties(project: Project, index: number, update: Set
     ...move, ...(counts === undefined ? {} : { counts }), ...(tempo === undefined ? {} : { tempo }),
     ...(transition === undefined ? {} : { transition }),
     // Uniform count rescaling retains every interval, hold, control and ID.
+    ...(move.groupMotions?{groupMotions:counts===undefined||counts===move.counts?move.groupMotions:rescaleGroupMotions(move.groupMotions,move.counts,counts)}:{}),
     paths: counts === undefined || counts === move.counts ? move.paths : rescalePaths(move.paths, move.counts, counts),
   });
   return { ...project, sets, moves };

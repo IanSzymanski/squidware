@@ -32,6 +32,8 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'history.undo') return 'There are no earlier edits to undo.';
   if (id === 'history.redo') return 'There are no undone edits to restore.';
   if (id === 'path.operations-open') return 'Pause at a set in a production with at least one move. Finish other input first.';
+  if ((id==='path.open'||id==='path.draw-open'||id==='schedule.open')&&state.project.present.moves[state.selection.activeIndex-1]?.groupMotions?.some(g=>g.members.includes(state.selection.selectedIds[0])))return 'Edit Group route movement or remove this member there before editing individual travel.';
+  if(id==='group.open')return 'Pause at an arrival set in 2D and select at least two members, or choose a saved group.';
   if (id === 'path.open' || id === 'path.draw-open' || id === 'schedule.open') return 'Pause at an arrival set and select exactly one performer. Finish other input first.';
   if (id === 'set.split-open') {
     if (state.project.present.sets.length >= PROJECT_LIMITS.sets) return 'The production has reached its set limit.';
@@ -66,6 +68,8 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
   add('tempo.open', undefined);
   add('audio.align-open', undefined);
+  add('group.open',{},'Group route movement','group-movement-new');
+  for(const group of state.project.present.moves[state.selection.activeIndex-1]?.groupMotions??[])add('group.open',{id:group.id},`Edit group movement: ${group.name}`,`group-movement-${group.id}`);
   add('transform.preview', {});
   add('view.select', { view: '2d' }, 'Open 2D field', 'view-2d');
   add('view.select', { view: '3d' }, 'Open 3D preview', 'view-3d');

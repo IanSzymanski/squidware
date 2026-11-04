@@ -10,7 +10,7 @@ import type { CoordinateEntrySession } from '../drillEntry';
 import type { SelectionReview } from '../selectionTools';
 import type { SetCreationKind } from './projectEdits';
 
-export type Dialog = 'formation-transition' | 'assignment' | 'routes' | 'path-draw' | 'path-operations' | 'movement-schedule' | 'path' | 'templates' | 'audio-alignment' | 'tempo' | 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'group-motion' | 'formation-transition' | 'assignment' | 'routes' | 'path-draw' | 'path-operations' | 'movement-schedule' | 'path' | 'templates' | 'audio-alignment' | 'tempo' | 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
@@ -24,7 +24,7 @@ export interface EditorState {
   ui: {
     workspace: Workspace; focusMode: boolean; view: '2d' | '3d'; tool: 'select' | 'pan' | 'lasso'; zoom: number; fitVersion: number; projectEpoch: number;
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
-    showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog;
+    showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog; groupMotionId?: string;
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
     setCreationKind: SetCreationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;

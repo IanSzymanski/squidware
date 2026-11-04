@@ -127,7 +127,7 @@ describe('live formations',()=>{
     }
     const wire=JSON.parse(serializeProject(project));
     for(const schemaVersion of [1,2,3,4,5,6]) expect(()=>parseProject(JSON.stringify({...wire,schemaVersion}))).toThrow(/requires schema version 7/);
-    expect(()=>parseProject('{"schemaVersion":12}')).toThrow(/Update Squidware/);
+    expect(()=>parseProject('{"schemaVersion":13}')).toThrow(/Update Squidware/);
   });
   it('guards pending, stale and out-of-field previews and exposes the same live edit through Commands',()=>{
     const {store,shape}=setup();expect(paletteEntries(store.getState()).find(e=>e.key===`live-edit-${shape.id}`)?.disabledReason).toBeNull();

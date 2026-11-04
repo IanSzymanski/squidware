@@ -70,7 +70,7 @@ export function compileTrack(track: Track, counts: number, transition: AnalysisI
     if (s.kind === 'hold') add(s.startCount, s.endCount, [position]);
     else {
       const end = s.to ?? track.to;
-      const curve = timeCurve(s.kind === 'cubic' ? [position, s.control1, s.control2, end] : [position, end], transition === 'ease');
+      const curve = timeCurve(s.kind === 'cubic' ? [position, s.control1, s.control2, end] : [position, end], transition === 'ease' && !track.path?.linearCounts);
       add(s.startCount, s.endCount, curve.points, derivative(curve.local, s.endCount - s.startCount));
       position = end;
     }

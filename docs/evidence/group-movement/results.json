@@ -1,0 +1,147 @@
+{
+  "passed": [
+    "native route/timing/member ordering and acknowledged keyboard input; exact S-curve delay/count ticks and scoped path display; saved individual travel requires acknowledgement, draft save is blocked, Escape leaves endpoints/history unchanged",
+    "incompatible zero-count connectors, crowded seam capacity, worker failure/retry, pending worker termination and stale selection cannot accept partial movement",
+    "keyboard Apply records one group undo; exact v12 native reload keeps pinned live endpoints, member identities, dormant paths, other moves and cast metadata",
+    "saved groups reopen with explicit ordered selection; removal restores individual paths; copy fits destination clocks/speed without editing the source and both actions undo atomically",
+    "explicit delayed counter-march turns and a newly authored closed shared route feed the conveyor; analytic rectangle positions agree through two laps, seams and reverse scrubbing without identity changes",
+    "all themes and enlarged narrow review preserve exact geometry with fixed reachable footer actions and no horizontal body overflow",
+    "real 2/64/500-member workers complete with loop/open flow samples; maximum-cast Apply preserves endpoints and undoes exactly"
+  ],
+  "metrics": {
+    "fieldHeight": 485,
+    "layouts": [
+      {
+        "theme": "dark",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "modal": {
+          "left": 103,
+          "right": 1263,
+          "top": 24,
+          "bottom": 744
+        },
+        "apply": {
+          "left": 1074.671875,
+          "right": 1238,
+          "top": 683,
+          "bottom": 719
+        },
+        "cancel": {
+          "left": 861.25,
+          "right": 928.609375,
+          "top": 683,
+          "bottom": 719
+        },
+        "bodyWidth": 1095,
+        "bodyScrollWidth": 1095
+      },
+      {
+        "theme": "light",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "modal": {
+          "left": 103,
+          "right": 1263,
+          "top": 24,
+          "bottom": 744
+        },
+        "apply": {
+          "left": 1074.671875,
+          "right": 1238,
+          "top": 683,
+          "bottom": 719
+        },
+        "cancel": {
+          "left": 861.25,
+          "right": 928.609375,
+          "top": 683,
+          "bottom": 719
+        },
+        "bodyWidth": 1095,
+        "bodyScrollWidth": 1095
+      },
+      {
+        "theme": "high-contrast",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "modal": {
+          "left": 103,
+          "right": 1263,
+          "top": 24,
+          "bottom": 744
+        },
+        "apply": {
+          "left": 1074.671875,
+          "right": 1238,
+          "top": 683,
+          "bottom": 719
+        },
+        "cancel": {
+          "left": 861.25,
+          "right": 928.609375,
+          "top": 683,
+          "bottom": 719
+        },
+        "bodyWidth": 1095,
+        "bodyScrollWidth": 1095
+      },
+      {
+        "theme": "dark",
+        "width": 1120,
+        "scale": 1.25,
+        "viewport": {
+          "width": 1120,
+          "height": 768
+        },
+        "modal": {
+          "left": 20,
+          "right": 1100,
+          "top": 30,
+          "bottom": 738
+        },
+        "apply": {
+          "left": 865.34375,
+          "right": 1069,
+          "top": 662.5,
+          "bottom": 707
+        },
+        "cancel": {
+          "left": 599.0625,
+          "right": 682.765625,
+          "top": 662.5,
+          "bottom": 707
+        },
+        "bodyWidth": 802,
+        "bodyScrollWidth": 802
+      }
+    ],
+    "sizes": [
+      {
+        "members": 2,
+        "lastControlToChecksMs": 124
+      },
+      {
+        "members": 64,
+        "lastControlToChecksMs": 4609
+      },
+      {
+        "members": 500,
+        "lastControlToChecksMs": 1521
+      }
+    ]
+  },
+  "platform": "linux"
+}

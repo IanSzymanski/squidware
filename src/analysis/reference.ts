@@ -1,3 +1,4 @@
+import { effectiveMove } from '../groupMotion';
 import { compileTrack, detailedCollision, detailedStride } from './detailed';
 import { PROJECT_LIMITS } from '../projectValidation';
 import { resolveAnalysisRules } from './rules';
@@ -7,7 +8,7 @@ function finish<T>(work: Generator<void, T>): T { let next = work.next(); while 
 /** Synchronous reference API, without worker caches or broad-phase pruning.
  * Production editor/gesture consumers always use the cancellable worker. */
 export function referenceDetailedTransition(project: Project, index: number, base?: Partial<AnalysisThresholds>): TransitionIssue[] {
-  const m = project.moves[index - 1], a = project.sets[index - 1], b = project.sets[index];
+  const m = effectiveMove(project,index - 1), a = project.sets[index - 1], b = project.sets[index];
   const tracks = project.performers.map(p => ({ id: p.id, label: p.label, from: a.positions[p.id], to: b.positions[p.id], path: m.paths[p.id], ...resolveAnalysisRules(project, index - 1, p, base) }));
   const input: AnalysisInput = { projectKey: project.id, moveId: m.id, modelKey: 'reference', counts: m.counts, tempo: m.tempo, transition: m.transition,
     startCount: project.moves.slice(0, index - 1).reduce((n, m) => n + m.counts, 0),

@@ -1,3 +1,4 @@
+import { groupOwner } from '../groupMotion';
 import { validateProjectEdit } from '../domain';
 import type { LiveFormation, PerformerPath, Project } from '../types';
 import { canEditPositions } from './editMode';
@@ -17,6 +18,7 @@ export const savedTransitionPath=(project:Project,index:number,id:string)=>Objec
 export function canReviewFormationTransition(state:EditorState):boolean {
   return !state.ui.dialog&&!state.ui.pendingDraft&&!state.project.transactionName&&!state.fileSession.fileOperation
     &&state.ui.workspace==='design'&&state.ui.view==='2d'&&canEditPositions(state)&&state.selection.activeIndex>0
+    &&!state.project.present.moves[state.selection.activeIndex-1]?.groupMotions?.some(g=>g.members.some(id=>state.selection.selectedIds.includes(id)))
     &&state.selection.selectedIds.length>=2&&state.selection.selectedIds.length<=500
     &&new Set(state.selection.selectedIds).size===state.selection.selectedIds.length
     &&state.selection.selectedIds.every(id=>state.project.present.performers.some(p=>p.id===id));
@@ -58,6 +60,7 @@ export function formationTransitionPlan(project:Project,review:FormationTransiti
   const mapping=transitionMapping(project,index,review.sourceId,review.destinationId,review.ids,review.order);
   if(JSON.stringify(mapping)!==JSON.stringify(review.mapping))throw Error('The explicit member-to-slot mapping changed. Reopen the review.');
   const move=project.moves[index],c=review.controls;
+  if(review.ids.some(id=>groupOwner(move,id)))throw Error('Edit group movement or remove these members there before using formation transition controls.');
   if(!c||!['line','cubic'].includes(c.kind)||![c.bend,c.departure,c.arrival,c.stagger].every(Number.isFinite)
     ||Math.abs(c.bend)>100||c.departure<0||c.arrival>move.counts||c.arrival<=c.departure||c.stagger<0||c.stagger>move.counts)
     throw Error('Use a valid travel kind, bend from −100 to 100 yd, and a positive departure/arrival window inside the move. Stagger must be nonnegative.');

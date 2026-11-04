@@ -1,3 +1,4 @@
+import { effectiveMove } from './groupMotion';
 import { moveEndpoints } from './domain';
 import { selectionMembership } from './selection';
 import { movementSvg, movementLength } from './movementPaths';
@@ -39,7 +40,7 @@ export function neighborOverlays(project: Project, index: number, options: Neigh
     const moveIndex = direction === 'previous' ? index - 1 : index;
     const paths = performers.flatMap(person => {
       const endpoints = moveEndpoints(project, moveIndex, person.id);
-      return endpoints ? [{ performerId: person.id, ...endpoints, svg: movementSvg(endpoints.from, endpoints.to, project.moves[moveIndex].paths[person.id]), moving: movementLength(endpoints.from, endpoints.to, project.moves[moveIndex].paths[person.id]) > 1e-8 }] : [];
+      return endpoints ? [{ performerId: person.id, ...endpoints, svg: movementSvg(endpoints.from, endpoints.to, effectiveMove(project,moveIndex).paths[person.id]), moving: movementLength(endpoints.from, endpoints.to, effectiveMove(project,moveIndex).paths[person.id]) > 1e-8 }] : [];
     });
     return paths.length ? [{ direction, setIndex, setName: neighbor.name, paths }] : [];
   });

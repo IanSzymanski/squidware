@@ -396,7 +396,12 @@
       },
       "required": [
         "segments"
-      ]
+      ],
+      "not": {
+        "required": [
+          "linearCounts"
+        ]
+      }
     },
     "move": {
       "type": "object",
@@ -459,7 +464,12 @@
         "tempo",
         "transition",
         "paths"
-      ]
+      ],
+      "not": {
+        "required": [
+          "groupMotions"
+        ]
+      }
     },
     "selectionGroup": {
       "type": "object",
