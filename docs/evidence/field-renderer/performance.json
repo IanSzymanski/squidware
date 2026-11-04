@@ -1,0 +1,736 @@
+{
+  "recordedAt": "2026-11-04T19:55:36.483Z",
+  "baselineCommit": "e0ea40333373d051aa37407a65ebb38ddea9fe71",
+  "mergedMain": "47b86c9f06033bf7991372e8b27a32054b4c3af9",
+  "protocol": "Sequential native production windows, identical deterministic demo/maximum fixtures, CPU rate 1/4, all performers selected, 48 observations, eight scrub warmups, 250ms settling. TaskDuration is averaged per observed rAF opportunity; median/p95 are separately recorded for rAF intervals and second-rAF latency. Timings include renderer tasks, worker reply handling and measurement overhead.",
+  "limits": "One software host and run pair; CPU throttling is CDP simulation. Normal maximum playback/drag meet the 16.7ms investigation target on average; stress playback, resizing and some tails exceed it. No physical-device qualification or per-frame CPU guarantee.",
+  "rawArtifacts": ".qa/field-renderer/{baseline-1366,optimized}/{results.json,maximum-playback.cpuprofile,desktop.log}",
+  "runs": {
+    "before": {
+      "hardware": {
+        "os": "Linux",
+        "release": "6.18.57",
+        "architecture": "x64",
+        "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "logicalCpus": 3,
+        "totalMemoryBytes": 10452459520,
+        "node": "24.19.0",
+        "representativeSchoolLaptop": false,
+        "note": "Host measurements only; school-laptop qualification requires a separate run."
+      },
+      "runtime": {
+        "node": "24.19.0",
+        "platform": "linux",
+        "arch": "x64",
+        "os": "6.18.57",
+        "githubRun": null,
+        "githubAttempt": null,
+        "githubRef": null,
+        "runnerImage": null,
+        "runnerImageVersion": null
+      },
+      "buildSha256": "6e421219015f21f3cbcea9751244789347befb04cd66089063aa5a6b02f702f5",
+      "source": {
+        "revision": "e0ea40333373d051aa37407a65ebb38ddea9fe71",
+        "tree": "4768d31b7269ce869cde6edc91f0022769511640",
+        "dirty": true,
+        "contentHash": "84023da4edf311088f0d524a250c58213fd13093c70bb8c064ed12eaa4576981",
+        "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+      },
+      "fixtures": [
+        {
+          "name": "demo",
+          "sha256": "e1eb55efd82b176fd63cb01d00a183ad71a518fe4774facd27af2dbaa103029e",
+          "sizeBytes": 35347
+        },
+        {
+          "name": "maximum",
+          "sha256": "208538daa7963311e7ca6251cbc319d989b519fb29cd4cce7e3d0bf95bf776a4",
+          "sizeBytes": 4017637
+        }
+      ],
+      "reports": [
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.3447470000001,
+            "p95": 34.03027800000018
+          },
+          "rafIntervalMs": {
+            "samples": 95,
+            "median": 16.699999999999818,
+            "p95": 16.700000000000273
+          },
+          "taskMsPerOpportunity": 2.9219175257731953,
+          "scriptMsPerOpportunity": 1.069536082474227,
+          "layoutMsPerOpportunity": 0.22014432989690721
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.404357999999775,
+            "p95": 34.66230500000074
+          },
+          "rafIntervalMs": {
+            "samples": 94,
+            "median": 16.699999999999818,
+            "p95": 16.799999999999272
+          },
+          "taskMsPerOpportunity": 5.855250000000001,
+          "scriptMsPerOpportunity": 2.3095104166666665,
+          "layoutMsPerOpportunity": 0.42997916666666663
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 50.07126299999982,
+            "p95": 50.61154499999975
+          },
+          "rafIntervalMs": {
+            "samples": 142,
+            "median": 16.699999999999818,
+            "p95": 16.700000000000728
+          },
+          "taskMsPerOpportunity": 2.583909722222222,
+          "scriptMsPerOpportunity": 1.2190277777777778,
+          "layoutMsPerOpportunity": 0.15130555555555555
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 32.992841000001135,
+            "p95": 40.16437300000143
+          },
+          "rafIntervalMs": {
+            "samples": 95,
+            "median": 16.69999999999891,
+            "p95": 16.700000000000728
+          },
+          "taskMsPerOpportunity": 11.089690721649482,
+          "scriptMsPerOpportunity": 3.796886597938143,
+          "layoutMsPerOpportunity": 1.2879690721649486
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 34.4037129999997,
+            "p95": 50.549026000000595
+          },
+          "rafIntervalMs": {
+            "samples": 116,
+            "median": 16.69999999999891,
+            "p95": 16.700000000000728
+          },
+          "taskMsPerOpportunity": 11.883898305084745,
+          "scriptMsPerOpportunity": 4.9731440677966114,
+          "layoutMsPerOpportunity": 0.7819915254237287
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 57.040265999999974,
+            "p95": 71.1534329999995
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 33.29999999999927,
+            "p95": 33.400000000001455
+          },
+          "taskMsPerOpportunity": 28.99171428571429,
+          "scriptMsPerOpportunity": 13.511999999999999,
+          "layoutMsPerOpportunity": 2.1970714285714292
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 66.87148000000161,
+            "p95": 83.13708100000076
+          },
+          "rafIntervalMs": {
+            "samples": 190,
+            "median": 16.700000000000728,
+            "p95": 16.799999999999272
+          },
+          "taskMsPerOpportunity": 8.763114583333333,
+          "scriptMsPerOpportunity": 4.389411458333332,
+          "layoutMsPerOpportunity": 0.5726145833333333
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 79.74019899999985,
+            "p95": 95.11971599999742
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 33.400000000001455,
+            "p95": 66.70000000000073
+          },
+          "taskMsPerOpportunity": 39.07774489795919,
+          "scriptMsPerOpportunity": 13.669020408163268,
+          "layoutMsPerOpportunity": 3.6324387755102046
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 40.53860800000257,
+            "p95": 50.535563999997976
+          },
+          "rafIntervalMs": {
+            "samples": 116,
+            "median": 16.699999999999818,
+            "p95": 16.800000000000182
+          },
+          "taskMsPerOpportunity": 11.000533898305086,
+          "scriptMsPerOpportunity": 5.984474576271186,
+          "layoutMsPerOpportunity": 0.18909322033898304
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 49.25298800000019,
+            "p95": 78.01715100000001
+          },
+          "rafIntervalMs": {
+            "samples": 97,
+            "median": 33.19999999999982,
+            "p95": 33.5
+          },
+          "taskMsPerOpportunity": 24.90005050505051,
+          "scriptMsPerOpportunity": 16.520343434343435,
+          "layoutMsPerOpportunity": 0.43375757575757584
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 50.30365699999675,
+            "p95": 66.83023500000127
+          },
+          "rafIntervalMs": {
+            "samples": 156,
+            "median": 16.69999999999891,
+            "p95": 16.700000000000728
+          },
+          "taskMsPerOpportunity": 6.171018987341772,
+          "scriptMsPerOpportunity": 3.6288544303797434,
+          "layoutMsPerOpportunity": 0.12708860759493662
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 73.87722299999587,
+            "p95": 119.28409300000203
+          },
+          "rafIntervalMs": {
+            "samples": 95,
+            "median": 49.899999999999636,
+            "p95": 66.70000000000073
+          },
+          "taskMsPerOpportunity": 39.761793814433,
+          "scriptMsPerOpportunity": 22.678000000000004,
+          "layoutMsPerOpportunity": 1.3696082474226805
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 87.47329499999614,
+            "p95": 162.57157699999516
+          },
+          "rafIntervalMs": {
+            "samples": 146,
+            "median": 16.700000000000728,
+            "p95": 66.70000000000073
+          },
+          "taskMsPerOpportunity": 28.6614054054054,
+          "scriptMsPerOpportunity": 14.474709459459454,
+          "layoutMsPerOpportunity": 0.7009864864864865
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 170.75070899999992,
+            "p95": 209.18970799999806
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 83.39999999999782,
+            "p95": 100.10000000000218
+          },
+          "taskMsPerOpportunity": 87.53285714285715,
+          "scriptMsPerOpportunity": 50.38280612244899,
+          "layoutMsPerOpportunity": 2.4735306122448972
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 132.23073399999703,
+            "p95": 152.11496700000134
+          },
+          "rafIntervalMs": {
+            "samples": 192,
+            "median": 16.69999999999709,
+            "p95": 83.30000000000291
+          },
+          "taskMsPerOpportunity": 25.13897938144331,
+          "scriptMsPerOpportunity": 14.750731958762886,
+          "layoutMsPerOpportunity": 0.5570103092783507
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 289.82463999999163,
+            "p95": 512.661328999995
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 116.69999999999709,
+            "p95": 283.3000000000029
+          },
+          "taskMsPerOpportunity": 150.9448571428572,
+          "scriptMsPerOpportunity": 86.8716836734694,
+          "layoutMsPerOpportunity": 4.7824693877551026
+        }
+      ]
+    },
+    "after": {
+      "hardware": {
+        "os": "Linux",
+        "release": "6.18.57",
+        "architecture": "x64",
+        "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "logicalCpus": 3,
+        "totalMemoryBytes": 10452459520,
+        "node": "24.19.0",
+        "representativeSchoolLaptop": false,
+        "note": "Host measurements only; school-laptop qualification requires a separate run."
+      },
+      "runtime": {
+        "node": "24.19.0",
+        "platform": "linux",
+        "arch": "x64",
+        "os": "6.18.57",
+        "githubRun": null,
+        "githubAttempt": null,
+        "githubRef": null,
+        "runnerImage": null,
+        "runnerImageVersion": null
+      },
+      "buildSha256": "ea82d7c4217434a23af972b31d3ae7656a57d01053e2a0ac1737bf63995d7c6f",
+      "source": {
+        "revision": "e0ea40333373d051aa37407a65ebb38ddea9fe71",
+        "tree": "4768d31b7269ce869cde6edc91f0022769511640",
+        "dirty": true,
+        "contentHash": "714a914341f95d6648fa1e43803288189b3f58ca6c6885404159b4eda76a8ea2",
+        "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+      },
+      "reports": [
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.29225099999985,
+            "p95": 34.16530800000055
+          },
+          "rafIntervalMs": {
+            "samples": 95,
+            "median": 16.699999999999818,
+            "p95": 16.700000000000273
+          },
+          "taskMsPerOpportunity": 2.394762886597938,
+          "scriptMsPerOpportunity": 0.9772371134020618,
+          "layoutMsPerOpportunity": 0.11043298969072164
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.24480299999959,
+            "p95": 34.547121000000516
+          },
+          "rafIntervalMs": {
+            "samples": 94,
+            "median": 16.699999999999818,
+            "p95": 16.800000000000182
+          },
+          "taskMsPerOpportunity": 4.977229166666667,
+          "scriptMsPerOpportunity": 1.8804791666666663,
+          "layoutMsPerOpportunity": 0.20924999999999994
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 50.04143999999906,
+            "p95": 50.68050000000039
+          },
+          "rafIntervalMs": {
+            "samples": 143,
+            "median": 16.699999999999818,
+            "p95": 16.799999999999272
+          },
+          "taskMsPerOpportunity": 2.3345517241379317,
+          "scriptMsPerOpportunity": 1.0588827586206893,
+          "layoutMsPerOpportunity": 0.08298620689655173
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 1,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.66554900000119,
+            "p95": 41.08277799999996
+          },
+          "rafIntervalMs": {
+            "samples": 95,
+            "median": 16.69999999999891,
+            "p95": 16.799999999999272
+          },
+          "taskMsPerOpportunity": 9.937886597938142,
+          "scriptMsPerOpportunity": 3.1801855670103083,
+          "layoutMsPerOpportunity": 0.8432680412371135
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.3260109999992,
+            "p95": 34.42510500000026
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 16.69999999999891,
+            "p95": 16.799999999999272
+          },
+          "taskMsPerOpportunity": 10.434887755102038,
+          "scriptMsPerOpportunity": 4.433908163265308,
+          "layoutMsPerOpportunity": 0.40298979591836737
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 40.024663000000146,
+            "p95": 47.25100099999872
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 16.69999999999891,
+            "p95": 33.399999999999636
+          },
+          "taskMsPerOpportunity": 20.163010204081633,
+          "scriptMsPerOpportunity": 8.340142857142858,
+          "layoutMsPerOpportunity": 0.9192244897959184
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 66.84670900000128,
+            "p95": 80.36051099999895
+          },
+          "rafIntervalMs": {
+            "samples": 188,
+            "median": 16.69999999999709,
+            "p95": 16.799999999999272
+          },
+          "taskMsPerOpportunity": 8.021778947368414,
+          "scriptMsPerOpportunity": 4.132336842105262,
+          "layoutMsPerOpportunity": 0.32491052631578937
+        },
+        {
+          "fixture": "demo",
+          "cpuRate": 4,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 79.872926,
+            "p95": 103.60087799999746
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 33.400000000001455,
+            "p95": 66.70000000000073
+          },
+          "taskMsPerOpportunity": 38.58644897959182,
+          "scriptMsPerOpportunity": 13.808836734693879,
+          "layoutMsPerOpportunity": 2.975551020408163
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.55338800000027,
+            "p95": 42.71508800000083
+          },
+          "rafIntervalMs": {
+            "samples": 98,
+            "median": 16.699999999999818,
+            "p95": 16.700000000000273
+          },
+          "taskMsPerOpportunity": 7.861040000000002,
+          "scriptMsPerOpportunity": 3.904700000000001,
+          "layoutMsPerOpportunity": 0.21470000000000003
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 33.58810600000288,
+            "p95": 41.887831000000006
+          },
+          "rafIntervalMs": {
+            "samples": 97,
+            "median": 16.699999999999818,
+            "p95": 16.800000000000182
+          },
+          "taskMsPerOpportunity": 15.855343434343434,
+          "scriptMsPerOpportunity": 7.26219191919192,
+          "layoutMsPerOpportunity": 0.3455959595959595
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 50.01932699999452,
+            "p95": 51.26784900000348
+          },
+          "rafIntervalMs": {
+            "samples": 145,
+            "median": 16.69999999999891,
+            "p95": 16.700000000000728
+          },
+          "taskMsPerOpportunity": 4.905006802721087,
+          "scriptMsPerOpportunity": 2.631632653061224,
+          "layoutMsPerOpportunity": 0.06478231292517009
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 1,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 40.69015599999693,
+            "p95": 81.12755800000014
+          },
+          "rafIntervalMs": {
+            "samples": 98,
+            "median": 16.700000000000728,
+            "p95": 50
+          },
+          "taskMsPerOpportunity": 22.014749999999996,
+          "scriptMsPerOpportunity": 12.362800000000002,
+          "layoutMsPerOpportunity": 0.8210500000000002
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "scrub",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 69.01296500000171,
+            "p95": 83.69607299999916
+          },
+          "rafIntervalMs": {
+            "samples": 142,
+            "median": 16.700000000000728,
+            "p95": 50
+          },
+          "taskMsPerOpportunity": 18.554444444444442,
+          "scriptMsPerOpportunity": 9.43661111111111,
+          "layoutMsPerOpportunity": 0.5029930555555555
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "playback",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 131.14242499999818,
+            "p95": 153.95654800000193
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 66.69999999999709,
+            "p95": 83.30000000000291
+          },
+          "taskMsPerOpportunity": 65.99170408163265,
+          "scriptMsPerOpportunity": 30.422418367346943,
+          "layoutMsPerOpportunity": 1.7288673469387756
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "drag",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 100.95145200000115,
+            "p95": 117.49551899999642
+          },
+          "rafIntervalMs": {
+            "samples": 205,
+            "median": 16.700000000000728,
+            "p95": 50.10000000000218
+          },
+          "taskMsPerOpportunity": 17.758478260869566,
+          "scriptMsPerOpportunity": 9.58660869565217,
+          "layoutMsPerOpportunity": 0.2479951690821257
+        },
+        {
+          "fixture": "maximum",
+          "cpuRate": 4,
+          "workload": "resize",
+          "twoRafMs": {
+            "samples": 48,
+            "median": 202.76946000000316,
+            "p95": 256.04349399999774
+          },
+          "rafIntervalMs": {
+            "samples": 96,
+            "median": 83.20000000000437,
+            "p95": 166.70000000000437
+          },
+          "taskMsPerOpportunity": 97.38170408163268,
+          "scriptMsPerOpportunity": 55.869693877551015,
+          "layoutMsPerOpportunity": 3.5111836734693873
+        }
+      ],
+      "checks": [
+        {
+          "fixture": "demo",
+          "checks": [
+            "canvas pixels and all performer transforms match engine samples at DPR 1/2, both orientations and zoom 0.6/1/3; one retained field Tab stop",
+            "native arrows focus, Enter selects, and focused coordinates update while scrubbing without replacing buttons",
+            "representative pixels match the SVG fallback; lost/unavailable contexts preserve buttons and recover automatically",
+            "drawing failure returns to current vector geometry without a renderer error",
+            "themes, 125% narrow layout and view changes preserve coordinates/history and at least 470px laptop field height",
+            "canvas neighboring paths/arrowheads and selection candidates match vector pixels; cancel preserves the edit",
+            "native full-roster drag uses canvas; Escape restores every vector transform, release commits once and Undo restores the same geometry"
+          ],
+          "metrics": [
+            {
+              "canvasSvgPixelDifferenceFraction": 0.0015270406295754026
+            },
+            {
+              "fieldHeight": 485
+            },
+            {
+              "label": "neighbor-paths",
+              "pixelDifferenceFraction": 0.0028091065763787212
+            },
+            {
+              "label": "selection-preview",
+              "pixelDifferenceFraction": 0.0015727946559297218
+            }
+          ]
+        },
+        {
+          "fixture": "maximum",
+          "checks": [
+            "canvas pixels and all performer transforms match engine samples at DPR 1/2, both orientations and zoom 0.6/1/3; one retained field Tab stop",
+            "native arrows focus, Enter selects, and focused coordinates update while scrubbing without replacing buttons",
+            "representative pixels match the SVG fallback; lost/unavailable contexts preserve buttons and recover automatically",
+            "drawing failure returns to current vector geometry without a renderer error",
+            "themes, 125% narrow layout and view changes preserve coordinates/history and at least 470px laptop field height",
+            "canvas neighboring paths/arrowheads and selection candidates match vector pixels; cancel preserves the edit",
+            "native full-roster drag uses canvas; Escape restores every vector transform, release commits once and Undo restores the same geometry"
+          ],
+          "metrics": [
+            {
+              "canvasSvgPixelDifferenceFraction": 0.0007768652391410444
+            },
+            {
+              "fieldHeight": 485
+            },
+            {
+              "label": "neighbor-paths",
+              "pixelDifferenceFraction": 0.0015079764519277696
+            },
+            {
+              "label": "selection-preview",
+              "pixelDifferenceFraction": 0.0007177662884333821
+            }
+          ]
+        }
+      ],
+      "fixtures": [
+        {
+          "name": "demo",
+          "sha256": "e1eb55efd82b176fd63cb01d00a183ad71a518fe4774facd27af2dbaa103029e",
+          "sizeBytes": 35347
+        },
+        {
+          "name": "maximum",
+          "sha256": "208538daa7963311e7ca6251cbc319d989b519fb29cd4cce7e3d0bf95bf776a4",
+          "sizeBytes": 4017637
+        }
+      ]
+    }
+  }
+}
