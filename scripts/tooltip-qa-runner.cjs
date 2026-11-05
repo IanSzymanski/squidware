@@ -1,5 +1,5 @@
 'use strict';
-const { key: sendKey, waitFor: waitUntil, capturePage, settleNativeViewport } = require('./testing/renderer.cjs');
+const { key: sendKey, keyWithRelease, waitFor: waitUntil, capturePage, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const { root, output, profile, force3DFallback, softwareWebgl } = require(process.argv.find(arg => arg.startsWith('--tooltip-manifest=')).slice('--tooltip-manifest='.length));
@@ -21,10 +21,22 @@ const editor = 'window.__tooltipQA.editor';
 const selector = name => `[data-tooltip-name=${JSON.stringify(name)}]`;
 const tooltip = () => evaluate("document.querySelector('[role=tooltip]')?.innerText || ''");
 const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 15);
+const frames = () => evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+// Focus help follows :focus-visible. Programmatic focus after a pointer action
+// shows none, so reach each control with native Tab/Shift+Tab (keyboard modality).
 async function focus(name) {
-  await evaluate(`document.activeElement?.blur(); document.querySelector(${JSON.stringify(selector(name))}).focus()`);
-  await uiWait(`document.querySelector('[role=tooltip] strong')?.textContent === ${JSON.stringify(name)}`, 'focus help: ' + name);
+  const target = `document.querySelector(${JSON.stringify(selector(name))})`;
+  await evaluate(`${target}.focus()`);
+  await keyWithRelease(window, 'Tab', [], { releaseKey: 'Tab' }); await keyWithRelease(window, 'Tab', ['shift'], { releaseKey: 'Tab' });
+  await evaluate(`if (document.activeElement !== ${target}) ${target}.focus()`);
+  await uiWait(`document.activeElement === ${target} && document.querySelector('[role=tooltip] strong')?.textContent === ${JSON.stringify(name)}`, 'focus help: ' + name);
 }
+async function click(name) {
+  const point = await evaluate(`(() => { const control = document.querySelector(${JSON.stringify(selector(name))}); control.scrollIntoView({ block: 'nearest' }); const rect = control.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`);
+  for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
+}
+const contained = name => evaluate(`(() => { const a = document.querySelector(${JSON.stringify(selector(name))}).getBoundingClientRect(), p = document.querySelector('.tooltip-panel').getBoundingClientRect(), w = document.documentElement.clientWidth, h = document.documentElement.clientHeight;
+  return (p.left >= 0 && p.top >= 0 && p.right <= w && p.bottom <= h && !(p.left < a.right && p.right > a.left && p.top < a.bottom && p.bottom > a.top)) || JSON.stringify({ name, anchor: a, panel: p, w, h }); })()`);
 async function hover(name) {
   await evaluate('document.activeElement?.blur()');
   const point = await evaluate(`(() => { const control = document.querySelector(${JSON.stringify(selector(name))}); control.scrollIntoView({ block: 'nearest' }); const rect = control.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`);
@@ -102,6 +114,21 @@ app.whenReady().then(async () => {
       await focus('Mirror selection'); assert.match(await tooltip(), /Preview a mirror across the 50/);
       pass('Escape dismisses help without clearing selection; toggle and formation explanations stay current');
 
+      await evaluate(`${editor}.setValue('selection', 'selectedIds', ${editor}.getState().project.present.performers.slice(0, 4).map(p => p.id))`);
+      const previewRevision = await evaluate(`${editor}.getState().project.revision`);
+      // Each preview moves keyboard focus (and its help) into the preview; the
+      // transform preview starts on a select, which still forwards Escape.
+      for (const [name, preview, tag] of [['Shape selection', 'formationPreview', 'BUTTON'], ['Align selection', 'spacingPreview', 'BUTTON'], ['Rotate selection', 'transformPreview', 'SELECT']]) {
+        await focus(name); await key('Return');
+        await uiWait(`!!${editor}.getState().ui.${preview} && document.activeElement.tagName === ${JSON.stringify(tag)} && document.querySelector('[role=tooltip] strong')?.textContent === document.activeElement.closest('[data-tooltip-name]')?.getAttribute('data-tooltip-name')`, `${name} preview focus help`);
+        await key('Escape'); await uiWait(`!${editor}.getState().ui.${preview}`, `one Escape cancels ${name}`);
+        await frames(); assert.equal(await tooltip(), '', name);
+        assert.equal(await evaluate(`${editor}.getState().selection.selectedIds.length`), 4, name);
+        assert.equal(await evaluate(`${editor}.getState().project.revision`), previewRevision, name);
+      }
+      await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
+      pass('one Escape closes preview help and cancels shape, align and transform previews while keeping the selection');
+
       await evaluate(`${editor}.dispatch('set.select', { index: 0 })`); await focus('Counts'); await pause(150);
       assert.match(await tooltip(), /Counts/);
       assert.match(await tooltip(), /opening set.*zero counts/);
@@ -177,20 +204,44 @@ app.whenReady().then(async () => {
 
     await focus('Save');
     assert.equal(await evaluate("document.activeElement.getAttribute('title')"), null);
-    assert.ok(await evaluate("(() => { const r = document.querySelector('.tooltip-panel').getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; })()"));
+    assert.equal(await contained('Save'), true);
+    // Left-edge timeline and bottom-row status controls under UI scale: help
+    // stays inside the viewport and never covers its own control.
+    for (const scale of [1.25, 1.5]) {
+      await evaluate(`${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, uiScale: ${scale}})`);
+      for (const focusMode of [false, true]) {
+        await evaluate(`if (${editor}.getState().ui.focusMode !== ${focusMode}) ${editor}.dispatch('layout.focus')`);
+        await uiWait(`!!document.querySelector('.studio--focus') === ${focusMode} && document.documentElement.style.getPropertyValue('--ui-scale') === '${scale}'`, 'scaled tooltip layout'); await frames();
+        for (const name of focusMode ? ['Timeline view'] : ['Timeline view', 'Recovery copies']) {
+          await focus(name); await frames(); const placed = await contained(name);
+          assert.equal(placed, true, `${name} at ${scale}${focusMode ? ' in focus mode' : ''}: ${placed}`);
+        }
+      }
+      await evaluate(`if (${editor}.getState().ui.focusMode) ${editor}.dispatch('layout.focus')`);
+    }
+    await evaluate(`${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, uiScale: 1})`);
+    await uiWait("!document.querySelector('.studio--focus') && document.documentElement.style.getPropertyValue('--ui-scale') === '1'", 'restored tooltip scale');
+    await focus('Save');
     await hover('Save'); await uiWait("!!document.querySelector('[role=tooltip]')", 'hover screenshot'); await pause(80);
     // A hidden Linux window may stop producing compositor frames after 3D
     // fallback. Electron's capture API explicitly wakes it without showing it.
     await capturePage(window, output, 'focus-help.png');
     pass('hidden-window screenshot completes after 3D controls or fallback');
     if (force3DFallback) { await finish(); return; }
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 });
+    await uiWait("!document.querySelector('[role=tooltip]')", 'hover help dismissed before Help');
     await evaluate(`${editor}.dispatch('help.open')`); await uiWait("!!document.querySelector('dialog[open] .shortcut-list')", 'help dialog');
     const saveKeys = () => evaluate("Array.from(document.querySelectorAll('.shortcut-list > div')).find(row => row.querySelector('dt').textContent === 'Save production').querySelector('dd').innerText");
     assert.match(await saveKeys(), nativeSaveKeys);
     await focus('Close dialog'); assert.equal(await evaluate("!!document.querySelector('dialog[open] [role=tooltip]')"), true);
-    await key('Escape'); assert.equal(await tooltip(), ''); assert.equal(await evaluate("!!document.querySelector('dialog[open]')"), true);
-    await key('Escape'); await uiWait("!document.querySelector('dialog[open]')", 'dialog dismissal');
-    pass('descriptions use aria-describedby, stay inside the viewport and work inside modal top layers');
+    // Escape closes help and continues to the dialog: one press dismisses both.
+    await key('Escape'); await uiWait("!document.querySelector('dialog[open]')", 'one Escape closes help and dialog'); assert.equal(await tooltip(), '');
+    // A pointer-opened dialog focuses Close without :focus-visible, so no help covers its intro.
+    await click('Help'); await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 });
+    await uiWait(`!!document.activeElement?.matches('dialog[open] [aria-label="Close dialog"]')`, 'pointer-opened Help focuses Close'); await frames();
+    assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"), false); assert.equal(await tooltip(), '');
+    await key('Escape'); await uiWait("!document.querySelector('dialog[open]')", 'pointer-opened dialog closes with one Escape');
+    pass('descriptions use aria-describedby, stay inside the viewport and work inside modal top layers; pointer-opened dialogs show no help and one Escape closes help with its dialog');
 
     await evaluate("Object.defineProperty(navigator, 'platform', { configurable: true, value: 'MacIntel' })");
     await evaluate(`${editor}.setValue('ui', 'toast', 'Platform QA')`); await focus('Save'); assert.match(await tooltip(), /Cmd\s+S/);

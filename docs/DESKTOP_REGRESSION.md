@@ -11,7 +11,7 @@ Each platform installs the locked application toolchain and pinned PDF inspectio
 | Accessibility | Keyboard entry/exit, reachability of all 500 performers including overlaps, selection/nudge distinctions, focus visibility, keyboard save/export, text sizes at 125% UI zoom. |
 | Spacing | Alignment, distribution, unit/anchor choices, lane guides, interval-handle/number agreement, invalid drafts, bounds, orientation, narrow/enlarged layouts, named undo and native save/reopen. |
 | Coordinate entry | Typed field phrases, explicit side/unit resolution, absolute placement and exact group moves, preview saves, errors/bounds, keyboard acceptance, layouts, undo and native save/reopen. |
-| Tooltip | Pointer/focus, disabled explanations and activation guards, native platform shortcut labels, modal layers, explicit unavailable-WebGL pass. |
+| Tooltip | Pointer/`:focus-visible` focus, disabled explanations and activation guards, one-Escape preview and dialog dismissal, scaled viewport placement, native platform shortcut labels, modal layers, explicit unavailable-WebGL pass. |
 | Preferences | Multiple desktop launches, saved choices, reset, pending quit and A4/Letter PDF dimensions. |
 | Thumbnails | Maximum-size invalidation counts, roster/colors/selection, undo/redo and playback. |
 | Split transition | Whole-count preview, easing comparison and acknowledgment, keyboard Apply/Cancel, atomic undo, native persistence, maximum cast/set boundary and enlarged/theme layouts. |

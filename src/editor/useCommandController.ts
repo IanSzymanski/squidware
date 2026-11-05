@@ -5,6 +5,7 @@ import { bindingFromEvent, defaultShortcuts, nativeMenuCommands, shortcutForEven
 import { shortcutPlatform } from './shortcutDisplay';
 import { useEditorStore } from './react';
 import { isModalOpen } from './confirmation';
+import { isTooltipEscape } from '../components/Tooltip';
 
 export const menuCommands = nativeMenuCommands;
 const isInput = (target: Element | null) => target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable);
@@ -53,11 +54,14 @@ export function useCommandController() {
         if (!store.dispatch(id) && id === 'palette.open') store.setValue('ui', 'toast', 'Finish or cancel the pending edit before opening commands.');
         return;
       }
-      if (input) return;
+      const cancel = state.ui.formationPreview ? 'formation.cancel' : state.ui.spacingPreview ? 'spacing.cancel' : state.ui.coordinatePreview ? 'coordinates.cancel' : state.ui.transformPreview ? 'transform.cancel' : null;
+      // A select has no Escape action of its own, so Escape there still cancels a preview it controls.
+      if (input && !(event.key === 'Escape' && cancel && target.matches('select'))) return;
       if (event.key === 'Escape') {
         if (state.ui.selectionToolsOpen) { event.preventDefault(); store.dispatch(state.ui.selectionPreview ? 'selection.cancel' : 'selection.close'); return; }
-        const cancel = state.ui.formationPreview ? 'formation.cancel' : state.ui.spacingPreview ? 'spacing.cancel' : state.ui.coordinatePreview ? 'coordinates.cancel' : state.ui.transformPreview ? 'transform.cancel' : 'selection.clear';
-        event.preventDefault(); store.dispatch(cancel); return;
+        // Closing help also cancels a preview, but never clears the selection by itself.
+        if (!cancel && isTooltipEscape(event)) return;
+        event.preventDefault(); store.dispatch(cancel ?? 'selection.clear'); return;
       }
       if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey && !target.closest('button, summary, a[href], [role="button"]')) {
         const apply = state.ui.selectionPreview ? 'selection.apply' : state.ui.formationPreview ? 'formation.apply' : state.ui.spacingPreview ? 'spacing.apply' : state.ui.coordinatePreview ? 'coordinates.apply' : state.ui.transformPreview ? 'transform.apply' : null;

@@ -117,8 +117,8 @@ app.whenReady().then(async()=>{
   exportDestination=path.join(output,'scheduled.pdf');await evaluate(`${editor}.dispatch('file.export')`);await frames();await click('.export-options label:nth-child(2)');await click('.export-pdf');await wait(`${state}.ui.toast==='PDF saved'`,'PDF');assert.ok((await fs.stat(exportDestination)).size>1000);exportDestination=null;
   await evaluate(`${editor}.dispatch('set.select',{index:1});${editor}.setValue('selection','selectedIds',['a'])`);await frames();
   await click(button('Edit performer path'));await wait(`${state}.ui.dialog==='movement-schedule'`,'saved schedule routes to timing editor');
-  // Focus help owns Escape while open; blur it before testing modal dismissal.
-  await evaluate('document.activeElement?.blur()');await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'close routed schedule');
+  // One Escape closes the dialog from its initial Close focus; open help no longer consumes it.
+  await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'close routed schedule');
   for(const theme of ['dark','light','high-contrast']) {
    await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await openSchedule();await capture(`schedule-${theme}.png`);await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'theme cancel');
   }

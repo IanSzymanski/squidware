@@ -1,4 +1,5 @@
 import { uiScale } from '../uiScale';
+import { placeTooltip } from './tooltipPlacement';
 import { cloneElement, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { HTMLAttributes, ReactElement } from 'react';
@@ -6,6 +7,15 @@ import type { HTMLAttributes, ReactElement } from 'react';
 export function Keycaps({ groups }: { groups: readonly (readonly string[])[] }) {
   return <span className="shortcut-keycaps">{groups.map((keys, index) => <span key={index}>{index > 0 && <span className="shortcut-or">or</span>}{keys.map((key, i) => <kbd key={i}>{key}</kbd>)}</span>)}</span>;
 }
+
+const tooltipEscapes = new WeakSet<Event>();
+/** True when this Escape closed open help. It still reaches its target, so it
+ * also cancels a draft, preview or dialog; it must not clear selection alone. */
+export const isTooltipEscape = (event: Event) => tooltipEscapes.has(event);
+/** Focus help follows the focus ring: keyboard navigation and text entry match
+ * :focus-visible; programmatic focus after a pointer action (dialog or preview
+ * autofocus) does not. */
+const focusVisible = (element: Element) => { try { return element.matches(':focus-visible'); } catch { return true; } };
 
 type TriggerProps = HTMLAttributes<HTMLElement> & { disabled?: boolean };
 export interface TooltipProps {
@@ -29,7 +39,6 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
   const pointerFocus = useRef(false);
   const [open, setOpen] = useState(false);
   const passThrough = pointerPassThrough && !help;
-  const [position, setPosition] = useState({ left: 0, top: 0 });
   const cancelTimer = () => { clearTimeout(timer.current); timer.current = undefined; };
   const close = () => { cancelTimer(); setOpen(false); };
   const show = () => {
@@ -44,27 +53,28 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     return () => { cancelTimer(); document.removeEventListener('squidware-tooltip', other); };
   }, [id]);
   const place = () => {
-    if (!trigger.current || !panel.current) return;
-    const anchor = trigger.current.getBoundingClientRect();
-    const box = panel.current.getBoundingClientRect();
-    const margin = 8;
-    const left = Math.max(margin, Math.min(anchor.left + (anchor.width - box.width) / 2, window.innerWidth - box.width - margin));
-    const below = anchor.bottom + 8;
-    const top = below + box.height <= window.innerHeight - margin ? below : Math.max(margin, anchor.top - box.height - 8);
-    const scale = uiScale();
-    setPosition(previous => previous.left === left / scale && previous.top === top / scale ? previous : { left: left / scale, top: top / scale });
+    const element = panel.current;
+    if (!trigger.current || !element) return;
+    // Measure the natural size; a previous cap must not shrink the next one.
+    element.style.maxHeight = '';
+    const { clientWidth: width, clientHeight: height } = document.documentElement;
+    const p = placeTooltip(trigger.current.getBoundingClientRect(), element.getBoundingClientRect(), { width, height }, { scale: uiScale() });
+    Object.assign(element.style, { left: `${p.left}px`, top: `${p.top}px`, maxHeight: p.maxHeight === undefined ? '' : `${p.maxHeight}px` });
   };
   useLayoutEffect(() => { if (open) place(); }, [open, name, description, state, disabledReason]);
+  useEffect(() => {
+    if (!open || !panel.current || typeof ResizeObserver === 'undefined') return;
+    // Font, keycap and content reflow; the next frame avoids resize-observer loops.
+    let frame = 0;
+    const observer = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(place); });
+    observer.observe(panel.current);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+  }, [open]);
   useLayoutEffect(() => {
     if (!open) return;
-    const dismiss = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      // Text/number editors also use Escape to cancel drafts. Let their target
-      // handlers run; the command controller already ignores text-entry events.
-      if (!(event.target instanceof HTMLElement) || !event.target.matches('input, textarea')) event.stopPropagation();
-      close();
-    };
+    // One Escape closes help and continues: draft editors, native dialog cancel
+    // and preview cancel still run. The mark keeps it from clearing selection.
+    const dismiss = (event: KeyboardEvent) => { if (event.key === 'Escape') { tooltipEscapes.add(event); close(); } };
     const outside = (event: PointerEvent) => { if (!panel.current?.contains(event.target as Node)) close(); };
     const scroll = (event: Event) => {
       if (panel.current?.contains(event.target as Node)) return;
@@ -101,7 +111,7 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     onPointerDown: event => { children.props.onPointerDown?.(event); pointerFocus.current = true; close(); },
     onFocus: event => {
       children.props.onFocus?.(event); trigger.current = event.currentTarget; focused.current = true;
-      if (!pointerFocus.current) show();
+      if (!pointerFocus.current && focusVisible(event.target)) show();
       pointerFocus.current = false;
     },
     onBlur: event => {
@@ -115,7 +125,7 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     ? <span {...handlers} className="tooltip-disabled-field" tabIndex={0} role="group" aria-label={name} aria-disabled="true" data-tooltip-name={name}
       onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); event.stopPropagation(); } }}>{children}</span>
     : cloneElement(children, { ...handlers, ...{ 'data-tooltip-name': name } });
-  return <>{control}{open && createPortal(<div ref={panel} className={`tooltip-panel${passThrough ? ' tooltip-panel--pointer-through' : ''}`} style={position}
+  return <>{control}{open && createPortal(<div ref={panel} className={`tooltip-panel${passThrough ? ' tooltip-panel--pointer-through' : ''}`}
     onPointerEnter={() => { cancelTimer(); }} onPointerLeave={leave}
     onFocus={() => { focused.current = true; cancelTimer(); }} onBlur={event => { if (!panel.current?.contains(event.relatedTarget as Node) && event.relatedTarget !== trigger.current) { focused.current = false; close(); } }}>
     <div id={id} role="tooltip"><strong>{name}</strong><p>{description}</p>{state && <p className="tooltip-state">Current: {state}</p>}{disabledReason && <p className="tooltip-reason">Unavailable: {disabledReason}</p>}<Keycaps groups={keycaps} /></div>
