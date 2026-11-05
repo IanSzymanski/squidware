@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, selectNativeOption, waitFor, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { auditText } = require('./accessibility-audit.cjs');
 const { root, output, profile } = require(process.argv.find(a => a.startsWith('--themes-manifest=')).slice('--themes-manifest='.length));
 const phase = process.argv.find(a => a.startsWith('--phase='))?.slice(8);
@@ -20,7 +20,6 @@ const wait = (source, label) => waitFor(() => evaluate(source), label, { timeout
 const key = (code, modifiers = []) => sendKey(window, code, modifiers, 20);
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 function instrument() {
-  window.confirm = () => true;
   window.__themesQA = { editor: null, errors: [] };
   window.addEventListener('error', e => window.__themesQA.errors.push(e.message));
   window.addEventListener('unhandledrejection', e => window.__themesQA.errors.push(String(e.reason)));
@@ -66,7 +65,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'theme window'); await wait("!!document.querySelector('.field-stage__svg')", 'initial renderer');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source }));
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'theme store');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true }); await viewport(1366, 768);
     if (phase === 'restart') {

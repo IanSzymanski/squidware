@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, keyWithRelease, waitFor, settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, keyWithRelease, waitFor, settleNativeViewport, selectNativeOption, installConfirmShim } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--templates-manifest=')).slice('--templates-manifest='.length));
 const { root, output, profile, files, bundle } = manifest;
 const { createDemoProject, parseProject, parseTemplateLibrary } = require(bundle);
@@ -24,8 +24,7 @@ const key = (window, keyCode, modifiers = []) => keyCode === 'Return'
   : sendKey(window, keyCode, modifiers);
 const checks = [], viewports = [];
 function instrument() {
-  const qa = window.__templateQA = { editor: null, errors: [], confirm: true };
-  window.confirm = () => qa.confirm;
+  const qa = window.__templateQA = { editor: null, errors: [] };
   window.addEventListener('error', e => qa.errors.push(e.message));
   window.addEventListener('unhandledrejection', e => qa.errors.push(String(e.reason)));
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; }, onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const value = f.memoizedProps?.value; if (value?.getState && value?.dispatch) qa.editor = value; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
@@ -62,6 +61,7 @@ app.whenReady().then(async () => { try {
   window.show(); window.focus(); window.setContentSize(1366, 768);
   window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
   await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
+  await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source }));
   window.webContents.reload(); await wait(`!!${store}&&${state}.preferences.status==='saved'`, 'editor ready');
   await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
   if (phase === 'read') {
@@ -87,8 +87,12 @@ app.whenReady().then(async () => { try {
   await evaluate('document.activeElement?.blur()'); await key(window, 'N', [process.platform === 'darwin' ? 'meta' : 'control']);
   await wait("!!document.querySelector('[aria-label=" + JSON.stringify('Show template') + "]')", 'new setup picker');
   await selectNativeOption(window, '[aria-label="Show template"]', 0); await capture('templates-new-production.png');
-  await evaluate(`${qa}.confirm=false`); await press('Create from template'); assert.deepEqual(await evaluate(state + '.project.present'), original);
-  await evaluate(`${qa}.confirm=true`); await press('Create from template'); await wait(`${state}.project.present.id!==${JSON.stringify(original.id)}`, 'new production');
+  // The loaded production is unsaved: replacing it asks in-app, starting on Cancel.
+  await evaluate("window.__qaConfirmResponse='manual'"); await press('Create from template');
+  await wait("document.querySelector('dialog.confirm-dialog[open] h2')?.textContent==='Replace this production?' && document.activeElement?.matches('.confirm-dialog__cancel')", 'replace confirmation on Cancel');
+  await key(window, 'Return'); await wait(`!${state}.ui.confirmation && !document.querySelector('.confirm-dialog') && ${state}.ui.dialog==='new'`, 'replacement canceled');
+  assert.deepEqual(await evaluate(state + '.project.present'), original);
+  await evaluate('window.__qaConfirmResponse=true'); await press('Create from template'); await wait(`${state}.project.present.id!==${JSON.stringify(original.id)}`, 'new production');
   const fresh = await evaluate(state + '.project.present'); assert.equal(fresh.performers.length, 64); assert.equal(fresh.sets.length, 1); assert.ok(fresh.performers.every(p => p.name === '' && p.label.startsWith('S'))); assert.notEqual(fresh.performers[0].id, original.performers[0].id);
   pass('menu and native keyboard New production use privacy-safe setup previews, unsaved replacement cancellation and fresh identities');
   const ids = original.performers.slice(0, 8).map(p => p.id);
@@ -148,9 +152,16 @@ app.whenReady().then(async () => { try {
   await press('Import template library'); await press('Add imported templates'); await wait("document.querySelectorAll('.template-list button').length===6", 'merged import');
   await evaluate("document.querySelector('.template-management summary').focus()"); await key(window, 'Return'); await type('Rename template', 'Renamed setup'); await press('Rename saved template');
   await wait("[...document.querySelectorAll('.template-list strong')].some(n=>n.textContent==='Renamed setup')", 'renamed');
-  await evaluate("document.querySelector('.template-management summary').focus()"); await key(window, 'Return'); await press('Remove saved template'); await wait("document.querySelectorAll('.template-list button').length===5", 'removed');
+  await evaluate("document.querySelector('.template-management summary').focus()"); await key(window, 'Return');
+  // Removal confirms in-app over the library; Escape cancels only the confirmation and keeps the template.
+  const removeConfirmation = "document.querySelector('dialog.confirm-dialog[open] h2')?.textContent==='Remove “Renamed setup”?' && document.activeElement?.matches('.confirm-dialog__cancel') && !document.querySelector('.tooltip-panel')";
+  await evaluate("window.__qaConfirmResponse='manual'"); await press('Remove saved template'); await wait(removeConfirmation, 'remove confirmation on Cancel');
+  await key(window, 'Escape'); await wait(`!document.querySelector('.confirm-dialog') && !!document.querySelector('.templates-modal[open]') && ${state}.ui.dialog==='templates'`, 'removal canceled');
+  assert.equal(await evaluate("document.querySelectorAll('.template-list button').length"), 6); assert.equal((await readLibrary()).entries.length, 6);
+  await press('Remove saved template'); await wait(removeConfirmation, 'second remove confirmation'); await press('Remove template'); await wait("document.querySelectorAll('.template-list button').length===5", 'removed');
+  await evaluate('window.__qaConfirmResponse=true');
   assert.deepEqual(await evaluate(state + '.project'), beforeLibraryIo);
-  pass('native export disclosure/cancel, version rejection, import review/cancel/append and rename/remove preserve production history and project save destination');
+  pass('native export disclosure/cancel, version rejection, import review/cancel/append, rename and confirmed remove (Escape keeps the template) preserve production history and project save destination');
   assert.deepEqual(await evaluate(qa + '.errors'), []); assert.ok(viewports.every(v => !v.overflow));
   await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ checks, viewports, source: manifest.source, host: process.platform, backend: 'Electron software rendering; native input and controlled OS file dialogs; 64-member/6-set production', limits: 'Linux software host; no human or physical-device validation claimed.' }, null, 2));
   app.exit(0);

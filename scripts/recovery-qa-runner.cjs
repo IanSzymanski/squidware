@@ -1,5 +1,5 @@
 'use strict';
-const { waitFor: waitUntil } = require('./testing/renderer.cjs');
+const { waitFor: waitUntil, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -34,7 +34,6 @@ async function copies() {
 const pass = label => { checks.push(label); console.log(`PASS ${label}`); };
 function instrument(legacy) {
   const state = window.__recoveryQA = { editor: null, serializations: 0, storageWrites: 0 };
-  window.confirm = () => true;
   if (legacy && !sessionStorage.getItem('recovery-qa-seeded')) { localStorage.setItem('squidware.autosave.v1', legacy); sessionStorage.setItem('recovery-qa-seeded', 'yes'); }
   const stringify = JSON.stringify;
   JSON.stringify = function(value, ...args) { if (value?.schemaVersion === 2) state.serializations++; return stringify.call(this, value, ...args); };
@@ -56,7 +55,7 @@ app.whenReady().then(async () => {
     window.webContents.debugger.attach('1.3');
     await window.webContents.debugger.sendCommand('Page.enable');
     const legacy = phase === 'write' ? await fs.readFile(path.join(root, 'src/fixtures/schema-v1.squid'), 'utf8') : null;
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})(${JSON.stringify(legacy)})` });
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})(${JSON.stringify(legacy)})` }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source }));
     window.webContents.reload();
     await uiWait("!!window.__recoveryQA?.editor && document.querySelector('.modal h2')?.textContent === 'Recovery copies'", 'startup chooser');
     if (phase === 'write') {

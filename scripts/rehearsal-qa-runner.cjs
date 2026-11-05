@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict'), { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--rehearsal-manifest=')).slice('--rehearsal-manifest='.length));
 const { root, output, profile, bundle } = manifest, { fixture, parseProject } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
@@ -21,7 +21,6 @@ const wait = (expression,label) => waitFor(()=>evaluate(expression),label,{timeo
 const frames = () => evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
 const pass = label => { checks.push(label); console.log('PASS '+label); };
 function instrument() {
- window.confirm=()=>true;
  const qa=window.__rehearsalQA={editor:null,errors:[]}; window.addEventListener('error',e=>qa.errors.push(e.message));window.addEventListener('unhandledrejection',e=>qa.errors.push(String(e.reason)));
  window.__REACT_DEVTOOLS_GLOBAL_HOOK__={supportsFiber:true,renderers:new Map(),inject(){return 1;},onCommitFiberRoot(_id,root){function visit(f){if(!f)return;const v=f.memoizedProps?.value;if(v?.getState&&v?.dispatch)qa.editor=v;visit(f.child);visit(f.sibling);}visit(root.current);},onCommitFiberUnmount(){},onPostCommitFiberRoot(){}};
 }
@@ -33,7 +32,7 @@ async function text(selector,value) { await click(selector); await key(window,'a
 async function capture(name) { await evaluate("(()=>{document.activeElement?.blur();const modal=document.querySelector('dialog');if(modal)modal.scrollTop=0})()"); await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height,timelineHeight:document.querySelector('.timeline')?.getBoundingClientRect().height})`)); }
 app.whenReady().then(async()=>{try{
  await waitFor(()=>!!window,'window');await wait("!!document.querySelector('.set-card')",'renderer');window.setContentSize(1366,768);
- window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});window.webContents.reload();
+ window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});await installConfirmShim(source=>window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source}));window.webContents.reload();
  await wait(`!!${editor} && ${state}.preferences.status==='saved'`,'store');await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');
  const p=fixture();await evaluate(`${editor}.setValue('ui','dialog',null);${editor}.dispatch('project.load',{project:${JSON.stringify(p)}})`);await frames();
  await capture(manifest.baseline ? 'rehearsal-before.png' : 'rehearsal-default-dark.png');

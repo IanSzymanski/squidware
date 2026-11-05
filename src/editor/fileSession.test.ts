@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createBlankProject, createDemoProject } from '../domain';
 import type { Project } from '../types';
 import { createEditorStore } from './store';
-import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, isFileDirty, markFileOpened, saveProjectRevision } from './fileSession';
+import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, isFileDirty, markFileOpened, markProductionClean, saveProjectRevision } from './fileSession';
 
 function opened() {
   const store = createEditorStore(createDemoProject());
@@ -16,7 +16,7 @@ function pendingSave() {
 }
 
 describe('explicit project file state', () => {
-  it('starts new and recovered productions unsaved until an explicit save succeeds', async () => {
+  it('keeps unmarked and recovered loads unsaved until an explicit save succeeds', async () => {
     const store = createEditorStore(createDemoProject());
     expect(isFileDirty(store.getState())).toBe(true);
     expect(fileStatusText(store.getState())).toBe('Unsaved changes');
@@ -27,6 +27,43 @@ describe('explicit project file state', () => {
     expect(store.getState().fileSession.savedRevision).toBeNull();
     expect(isFileDirty(store.getState())).toBe(true);
     expect(store.getState().fileSession.needsSaveAs).toBe(true);
+  });
+
+  it('treats a fresh production as clean until its first edit without claiming a saved file', () => {
+    const store = createEditorStore(createDemoProject()); markProductionClean(store);
+    expect(isFileDirty(store.getState())).toBe(false);
+    expect(hasUnsavedWork(store.getState())).toBe(false);
+    expect(fileStatusText(store.getState())).toBe('No changes');
+    expect(store.getState().fileSession).toMatchObject({ savedRevision: null, cleanRevision: 0, needsSaveAs: true });
+    store.dispatch('project.update', { title: 'First edit' });
+    expect(fileStatusText(store.getState())).toBe('Unsaved changes');
+    store.dispatch('history.undo');
+    expect(fileStatusText(store.getState())).toBe('No changes');
+    store.setValue('ui', 'pendingDraft', true);
+    expect(fileStatusText(store.getState())).toBe('Unsaved changes · Draft pending');
+    store.setValue('ui', 'pendingDraft', false);
+    // A recovery restore or other generic load is never marked clean.
+    store.dispatch('project.load', { project: createBlankProject() });
+    expect(store.getState().fileSession.cleanRevision).toBeNull();
+    expect(fileStatusText(store.getState())).toBe('Unsaved changes');
+    // New production marks its freshly loaded revision explicitly.
+    markProductionClean(store);
+    expect(hasUnsavedWork(store.getState())).toBe(false);
+    expect(fileStatusText(store.getState())).toBe('No changes');
+  });
+
+  it('lets a saved revision take precedence over the clean starting revision', async () => {
+    const store = createEditorStore(createDemoProject()); markProductionClean(store);
+    expect(await saveProjectRevision(store, async () => false)).toBe('canceled');
+    expect(fileStatusText(store.getState())).toBe('No changes');
+    store.dispatch('project.update', { title: 'Saved edit' });
+    await saveProjectRevision(store, async () => true);
+    expect(fileStatusText(store.getState())).toBe('Project file saved');
+    store.dispatch('history.undo');
+    expect(isFileDirty(store.getState())).toBe(true);
+    expect(fileStatusText(store.getState())).toBe('Unsaved changes');
+    store.dispatch('history.redo');
+    expect(fileStatusText(store.getState())).toBe('Project file saved');
   });
 
   it('marks opened files clean, while imports may still require a new destination', () => {
@@ -114,6 +151,11 @@ describe('explicit project file state', () => {
     const fresh = createEditorStore(createDemoProject());
     await saveProjectRevision(fresh, writer);
     expect(writer.mock.calls[1][1]).toBe(true);
+    // A clean new production still has no file destination.
+    const clean = createEditorStore(createDemoProject()); markProductionClean(clean);
+    expect(clean.getState().fileSession.needsSaveAs).toBe(true);
+    await saveProjectRevision(clean, writer);
+    expect(writer.mock.calls[2][1]).toBe(true);
   });
 
   it('checks file-open completion for intervening edits, reloads, drafts and transactions', () => {

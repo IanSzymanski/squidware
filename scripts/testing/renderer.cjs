@@ -192,4 +192,27 @@ async function capturePage(window, output, name, { timeoutMs = 20000 } = {}) {
     await waitViewport(window, viewport, `viewport restored after ${name}`, { timeoutMs });
   }
 }
-module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport };
+/** Page-side answerer for the in-app confirmation that replaced window.confirm.
+ * window.__qaConfirmResponse mirrors the old `window.confirm = () => response`
+ * stubs: true (the default) confirms, false cancels, and 'manual' leaves the
+ * dialog for the workflow to drive with real input. Every request is recorded
+ * in window.__qaConfirmations. Serialized into the page; keep it self-contained. */
+function confirmShim() {
+  if (window.__qaConfirmShim) return;
+  window.__qaConfirmShim = true; window.__qaConfirmations = [];
+  const seen = new WeakSet();
+  const answer = () => {
+    const dialog = document.querySelector('dialog.confirm-dialog[open]');
+    if (!dialog || seen.has(dialog)) return;
+    seen.add(dialog);
+    const response = window.__qaConfirmResponse ?? true;
+    window.__qaConfirmations.push({ title: dialog.querySelector('h2')?.textContent || '', response });
+    if (response !== 'manual') dialog.querySelector(response ? '.confirm-dialog__confirm' : '.confirm-dialog__cancel').click();
+  };
+  new MutationObserver(answer).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+}
+/** `run` receives the page source and sets the shim's lifetime: pass the runner's
+ * evaluate for the current document, or a Page.addScriptToEvaluateOnNewDocument
+ * sender (registered before reload) to cover every later document. */
+async function installConfirmShim(run) { return run(`(${confirmShim.toString()})();`); }
+module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport, installConfirmShim };

@@ -14,6 +14,7 @@ import { coordinateSessionCurrent } from './coordinateSession';
 import { activePassage, rehearsalBounds, resolvePassage } from '../rehearsal';
 import { historyName } from './historyNames';
 import { selectionReviewCurrent } from './selectionCommands';
+import { isModalOpen } from './confirmation';
 
 export const AUTOSAVE_KEY = 'squidware.autosave.v1';
 type Equality<T> = (a: T, b: T) => boolean;
@@ -54,8 +55,8 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     if (next.ui.formationPreview && !formationSessionRetained(next)) next = { ...next, ui: { ...next.ui, formationPreview: null } };
     if (next.ui.spacingPreview && !spacingSessionCurrent(next)) next = { ...next, ui: { ...next.ui, spacingPreview: null } };
     if (next.ui.coordinatePreview && !coordinateSessionCurrent(next)) next = { ...next, ui: { ...next.ui, coordinatePreview: null } };
-    if (next.ui.dialog && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
-    if (next.ui.dialog && next.ui.paletteOpen) next = { ...next, ui: { ...next.ui, paletteOpen: false } };
+    if (isModalOpen(next) && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
+    if (isModalOpen(next) && next.ui.paletteOpen) next = { ...next, ui: { ...next.ui, paletteOpen: false } };
     if (next.project.present !== state.project.present && next.playback.rehearsalId) {
       const passage = activePassage(next.project.present, next.playback.rehearsalId);
       const error = passage ? resolvePassage(next.project.present, passage).error : 'Active rehearsal passage was removed.';
@@ -122,10 +123,10 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       active = null;
       const revision = ++revisionClock;
       publish({ ...state, project: { present: next, past: [], future: [], revision, estimatedBytes: 0, droppedEntries: 0 } });
-      // Loading geometry alone is not evidence of a saved project file.
-      patch('fileSession', { savedRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
+      // Loading geometry alone is not evidence of a saved project file, or of a clean new production.
+      patch('fileSession', { savedRevision: null, cleanRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
       patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false, rehearsalId: null });
-      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, movementClipboard: null, dialog: null, pendingDraft: false, paletteOpen: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
+      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, movementClipboard: null, dialog: null, confirmation: null, pendingDraft: false, paletteOpen: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
     },
     history: direction => {
       const history = state.project;

@@ -1,5 +1,5 @@
 'use strict';
-const { waitFor: waitUntil, capturePage, key: sendKey } = require('./testing/renderer.cjs');
+const { waitFor: waitUntil, capturePage, key: sendKey, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--preferences-manifest=')).slice('--preferences-manifest='.length));
@@ -26,7 +26,7 @@ const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 async function click(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await pause(40); }
 function native(label) { function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } } const item = find(Menu.getApplicationMenu()); assert.ok(item, label); item.click(); }
 function instrument() {
-  window.__preferencesQA = { editor: null }; window.confirm = () => true;
+  window.__preferencesQA = { editor: null };
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { const visit = fiber => { if (!fiber) return; const value = fiber.memoizedProps?.value; if (value?.getState && value?.dispatch) window.__preferencesQA.editor = value; visit(fiber.child); visit(fiber.sibling); }; visit(root.current); },
     onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
@@ -118,7 +118,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); window.webContents.reload();
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source })); window.webContents.reload();
     await uiWait("!!window.__preferencesQA?.editor && window.__preferencesQA.editor.getState().preferences.status !== 'loading'", 'preferences startup');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
     // Preferences and recovery initialize independently. On restart, recovery
