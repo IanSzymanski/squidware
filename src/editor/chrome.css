@@ -120,7 +120,6 @@
   .project-file-state { flex-basis: 120px; }
   .inspector { width: 235px; min-width: 235px; }
   .audio-attach { max-width: 125px; }
-  .transport-options select { width: 65px; }
   .count-display { gap: 4px; }
   .count-display > span { display: none; }
 }
@@ -140,6 +139,7 @@
 .field-display-preferences > .microcopy { margin-bottom: 12px; }
 .formation-panel .preview-formation { width: 100%; margin-top: 8px; }
 .formation-parameters { margin-top: 10px; }
+.formation-assignment > :first-child { grid-column: 1 / -1; }
 .formation-panel .transform-result { margin-top: 8px; }
 .formation-handles { color: #8dc8ff; }
 .display-color-control { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createDemoProject, sampleTimeline, setStartCount, totalCounts } from '../domain';
 import { createPerformanceFixture } from '../performanceFixtures';
 import { createEditorStore } from './store';
-import { formatTimelineCount, timelineLabels, timelineReadout, timelineWindow } from './timelineNavigation';
+import { formatTimelineCount, formatTransportCount, timelineLabels, timelineReadout, timelineWindow, transportCount } from './timelineNavigation';
 
 describe('timeline count navigation', () => {
   it('shows the opening picture, fractional incoming counts, exact arrivals and the final boundary', () => {
@@ -14,6 +14,17 @@ describe('timeline count navigation', () => {
     expect(timelineReadout(project, boundary + .25)).toMatchObject({ setIndex: 2, localCount: .25, arrived: false });
     expect(timelineReadout(project, Infinity)).toMatchObject({ setIndex: project.sets.length - 1, arrived: true });
     expect(formatTimelineCount(3.125)).toBe('3.125');
+  });
+  it('shows the last whole count reached while playing and keeps paused fractions', () => {
+    expect(transportCount(69.545, true)).toBe(69);
+    expect(transportCount(69.9999999999, true)).toBe(70);
+    expect(transportCount(.4, true)).toBe(0);
+    expect(transportCount(72, true)).toBe(72);
+    expect(formatTransportCount(69.545, true)).toBe('69');
+    expect(formatTransportCount(69.545, false)).toBe('69.545');
+    expect(formatTransportCount(72.9636, false)).toBe('72.964');
+    expect(formatTransportCount(12, false)).toBe('12');
+    expect(transportCount(8.25, false)).toBe(8.25);
   });
   it('steps by exactly one from fractional counts, pauses and clamps at both ends without editing the production', () => {
     const project = createDemoProject(), store = createEditorStore(project);

@@ -25,7 +25,7 @@ Persisted choices:
 | Label visibility | All; selected/focused or hidden also persist from the toolbar |
 | Performer coloring; custom color | Section colors; selection groups or custom RGB (`#B9ED85`) |
 | Formation tool kind | Arc; line, arc, circle, block or curve |
-| Formation width, depth, rotation, columns | 45 yd, 22 yd, 0°, 8; 1–95 yd, 1–48 yd, −180–180°, 1–500 whole columns |
+| Formation width, depth, rotation, columns | 45 yd, 22 yd, 0°, 8; 1–95 yd, 1–48 yd, −180–180°, 1–500 whole columns. New shapes are sized to the selection; width/depth apply to a selection without extent, and depth also limits a new arc, circle or wave's depth. |
 | Normal / fast nudge; unit | 0.625 / 2.5, in yards by default; 0.125–5 / 0.125–10. Optional production-step units use the current 8/6/12-to-5 grid step, independent of subdivision. |
 | Rotation / scale presets | 15° / 10%; 0.1–180° / 0.1–99%. Buttons open an exact preview before Apply. |
 | Coordinate description decimals | 2; 0, 1 or 2 |

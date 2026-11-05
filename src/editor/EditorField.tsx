@@ -15,6 +15,7 @@ import { isAtActiveSet } from './editMode';
 import type { EditorController } from './useEditorController';
 import { activePassage, resolvePassage } from '../rehearsal';
 import { neighborOverlays } from '../neighborPaths';
+import { formatTransportCount } from './timelineNavigation';
 
 export function EditorField({ controller, children }: { controller: EditorController; children?: ReactNode }) {
   const { project, activeSet, view, selectedIds, setSelectedIds, playing, tool, zoom, setZoom, fitVersion, showLabels, showPaths, showGrid, snap, index, readOnly, selectSet, movePerformers } = controller;
@@ -67,7 +68,7 @@ export function EditorField({ controller, children }: { controller: EditorContro
   }), [controller.formationPreview?.scatter, rehearsalProject, index, showPaths, controller.showNextPaths, selectedIds, controller.sectionFilter, readOnly]);
   const reviewing = !controller.formationPreview?.scatter && !readOnly && (showPaths && index > 0 || controller.showNextPaths && index < project.sets.length - 1);
   const destination = project.sets[sample.setIndex];
-  const displayCount = (value: number) => Number(value.toFixed(1));
+  const displayCount = (value: number) => formatTransportCount(value, playing);
   const previewing = !!(controller.selectionPreview || controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview);
   const rosterCount = rehearsalProject.performers.length === project.performers.length ? `${project.performers.length} ON FIELD` : `${rehearsalProject.performers.length} OF ${project.performers.length} SHOWN`;
   return (<div ref={fieldRef} className={`field-container ${view === '3d' ? 'is-3d' : ''}${readOnly ? ' field-container--preview' : ''}${previewing ? ' field-container--previewing' : ''}${controller.preferences.value.showHints ? '' : ' field-container--no-hints'}`}><div className="field-topline"><span><span className="live-dot" />{controller.selectionPreview ? 'SELECTION PREVIEW' : controller.coordinatePreview ? 'COORDINATE PREVIEW' : controller.spacingPreview ? 'SPACING PREVIEW' : controller.formationPreview ? 'FORMATION PREVIEW' : controller.transformPreview ? 'TRANSFORM PREVIEW' : playing ? 'REHEARSING' : readOnly ? 'READ-ONLY PREVIEW' : 'FIELD VIEW'}{view === '2d' && <> · AUDIENCE {controller.preferences.value.fieldOrientation === 'audience-top' ? 'TOP' : 'BOTTOM'}</>}</span><span title={`${project.field.preset === 'college' ? 'College' : 'High school'} field, 100 × 53⅓ yd`}>{rosterCount}</span></div>

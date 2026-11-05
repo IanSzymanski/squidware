@@ -100,8 +100,11 @@ app.whenReady().then(async () => {
     await click('Fit show timeline'); await click('Zoom timeline in'); await click('Zoom timeline in');
     await evaluate(`${editor}.dispatch('playback.scrub',{count:0}); ${editor}.setValue('playback','speed',1.5)`);
     await click('Play show'); await wait(`${state}.playback.playing`, 'native Play starts playback'); await wait(`${state}.playback.count>2`, 'playback advancement');
+    const running = await evaluate(`({playing:${state}.playback.playing,show:document.querySelector('.show-count strong').textContent,move:document.querySelector('.move-count > small').textContent,score:document.querySelector('[aria-label="Score position"]').textContent,valuetext:document.querySelector('[aria-label="Timeline playhead"]').getAttribute('aria-valuetext')})`);
+    assert.equal(running.playing, true); assert.match(running.show, /^\d+$/); assert.doesNotMatch(`${running.score} ${running.valuetext}`, /\d\.\d/, JSON.stringify(running));
+    if (running.move.startsWith('Move')) assert.match(running.move, /^Move \d+ \/ \d+/, JSON.stringify(running));
     assert.equal(await evaluate("!!document.querySelector('.playhead')"), true); await click('Pause playback');
-    pass('ordinary typing does not step counts, and follow keeps the running clock visible');
+    pass('ordinary typing does not step counts, follow keeps the running clock visible, and running readouts show whole counts');
     for (const theme of ['light','high-contrast']) {
       await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);
       await capture(`timeline-${theme}.png`);

@@ -7,7 +7,7 @@ import { HelpButton } from './ControlHelp';
 import { Button } from './EditorControls';
 import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
-import { formatTimelineCount as fmt, timelineLabels, timelineWindow } from './timelineNavigation';
+import { formatTimelineCount as fmt, formatTransportCount, timelineLabels, timelineWindow, transportCount } from './timelineNavigation';
 import './timeline.css';
 import { ProblemTimeline, ProblemTimelineLabel } from './ProblemTimeline';
 
@@ -84,7 +84,7 @@ export function TimelineTracks({ controller }: { controller: EditorController })
             return at >= view.start && at <= view.start + span ? <i key={i} style={{ left: `${percent(at)}%`, height: `${Math.max(2, value * 95)}%` }} /> : null;
           }) : <span>{audioLoading ? 'Loading audio…' : 'Audio attached'}</span>}</div>}
           {count >= view.start && count <= view.start + span && <div className="playhead" style={{ left: `${percent(count)}%` }}><i /></div>}
-          <input className="timeline-scrubber" type="range" min={view.start} max={Math.min(duration, view.start + span) || 1} step="any" value={Math.max(view.start, Math.min(view.start + span, count))} aria-label="Timeline playhead" aria-valuetext={`Show count ${fmt(count)} · ${scoreLabel(score,Math.min(duration,Math.max(0,count)))}`} onChange={e => scrub(Number(e.target.value))} />
+          <input className="timeline-scrubber" type="range" min={view.start} max={Math.min(duration, view.start + span) || 1} step="any" value={Math.max(view.start, Math.min(view.start + span, count))} aria-label="Timeline playhead" aria-valuetext={`Show count ${formatTransportCount(count, playing)} · ${scoreLabel(score,transportCount(Math.min(duration,Math.max(0,count)), playing))}`} onChange={e => scrub(Number(e.target.value))} />
         </div>
       </div>
     </div>

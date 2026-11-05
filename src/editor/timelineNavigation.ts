@@ -2,6 +2,9 @@ import { sampleTimeline, setStartCount, setTiming, totalCounts } from '../domain
 import type { Project } from '../types';
 
 export const formatTimelineCount = (count: number) => String(Math.round(count * 1000) / 1000);
+/** While playing, readouts name the last whole count reached (the click just heard); paused positions keep fractions. */
+export const transportCount = (count: number, playing: boolean) => playing ? Math.floor(count + 1e-9) : count;
+export const formatTransportCount = (count: number, playing: boolean) => formatTimelineCount(transportCount(count, playing));
 
 /** A count viewport, independent of tempos, geometry and saved production data. */
 export function timelineWindow(duration: number, width: number, zoom: number, start: number) {
