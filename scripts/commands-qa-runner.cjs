@@ -71,6 +71,15 @@ app.whenReady().then(async () => {
       const ids = await evaluate(`${state}.selection.selectedIds`), baseline = await evaluate(`${state}.project`);
       const height = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height"); assert.ok(height>=470); layouts.push({width:1366,scale:1,height});
       await capture('commands-before.png'); await palette(); await audit('dark palette'); await capture('commands-dark-search.png');
+      // Single-line results with one fixed detail region: at least 8 whole rows at 1366 × 768, and hovering never moves the list.
+      const results = () => evaluate("(()=>{const list=document.querySelector('.palette-list').getBoundingClientRect(),rows=[...document.querySelectorAll('.palette-result')],c=document.querySelector('[role=combobox]'),a=document.getElementById(c.getAttribute('aria-activedescendant')),d=document.getElementById(a.getAttribute('aria-describedby'));return {visible:rows.filter(r=>{const b=r.getBoundingClientRect();return b.top>=list.top-.5&&b.bottom<=list.bottom+.5}).length,tallest:Math.max(...rows.map(r=>r.getBoundingClientRect().height)),active:rows.indexOf(a),detail:d?.matches('.palette-results .palette-detail')?d.textContent:null,rects:JSON.stringify([list,d.getBoundingClientRect(),document.querySelector('dialog[open]').getBoundingClientRect()])}})()");
+      const dense = await results(); assert.ok(dense.visible>=8 && dense.tallest<=40 && dense.active===0 && dense.detail, JSON.stringify(dense));
+      const hoverRow = await evaluate("(()=>{const r=document.querySelectorAll('.palette-result')[4].getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()");
+      await debug('Input.dispatchMouseEvent',{type:'mouseMoved',...hoverRow}); await wait("document.querySelectorAll('.palette-result')[4].getAttribute('aria-selected')==='true'",'hovered result active');
+      const hovered = await results(); assert.equal(hovered.active,4); assert.equal(hovered.rects,dense.rects); assert.notEqual(hovered.detail,dense.detail);
+      await evaluate("document.querySelector('[role=combobox]').focus()"); await key('Down'); await wait("document.querySelectorAll('.palette-result')[5].getAttribute('aria-selected')==='true'",'arrowed result active');
+      const next = await results(); assert.equal(next.rects,dense.rects); assert.ok(next.detail && next.detail!==hovered.detail, JSON.stringify(next));
+      pass('Command palette shows at least 8 single-line results at 1366 × 768; the active result is described by one fixed detail region that hover and arrows update without moving the list');
       await search('move 4 forward'); await wait("document.querySelector('.palette-phrase button')?.disabled===false",'valid move');
       assert.deepEqual(await evaluate(`${state}.project`),baseline);await key('Return');await wait(`!!${state}.ui.coordinatePreview && !${state}.ui.paletteOpen`,'field move preview');
       await click(button('Apply coordinates'));await wait(`${state}.project.past.length===1`,'one applied move');
@@ -86,7 +95,7 @@ app.whenReady().then(async () => {
       await palette();await search(`place ${label} at Side 1: on the 40; on front hash`);await key('Return');await wait(`!!${state}.ui.coordinatePreview`,'label coordinate preview');
       assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[ids[0]]);await click(button('Apply coordinates'));await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[0])}].x===40`,'applied labelled coordinate');await field();await key('z',[primary]);await wait(`${state}.project.past.length===0`,'labelled coordinate undo');assert.deepEqual(await evaluate(`${state}.project.present`),baseline.present);
       await palette();await search('interval 2 steps');await key('Return');assert.equal(await evaluate(`${state}.ui.paletteOpen`),true);assert.match(await evaluate("document.querySelector('.palette-phrase').textContent"),/axis/);await key('Escape');
-      await evaluate(`${editor}.setValue('selection','selectedIds',[])`);await palette();await search('mirror');await key('Return');assert.equal(await evaluate(`${state}.ui.paletteOpen`),true);assert.match(await evaluate("document.querySelector('.palette-results').textContent"),/Select performers/);await capture('commands-disabled.png');await key('Escape');
+      await evaluate(`${editor}.setValue('selection','selectedIds',[])`);await palette();await search('mirror');await key('Return');assert.equal(await evaluate(`${state}.ui.paletteOpen`),true);assert.match(await evaluate("(()=>{const a=document.getElementById(document.querySelector('[role=combobox]').getAttribute('aria-activedescendant')),d=document.getElementById(a.getAttribute('aria-describedby'));return a.getAttribute('aria-disabled')+' '+(d?.matches('.palette-results .palette-detail')?d.textContent:'')})()"),/^true .*Unavailable: Select performers/);await capture('commands-disabled.png');await key('Escape');
       assert.deepEqual(await evaluate(`${state}.project.present`),baseline.present);
       pass('mirror/interval cancel preserves geometry; labelled coordinate Apply and undo restore the production; invalid syntax and empty selection cannot mutate');
       // Check keyboard navigation and ordinary text entry rather than dispatching edit commands.
@@ -119,7 +128,7 @@ app.whenReady().then(async () => {
       for (const [theme,width,scale] of [['light',1366,1],['high-contrast',1000,1.25],['dark',850,1.5]]) {
         await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)},uiScale:${scale}})`);
         window.setContentSize(width,width===1366?768:700);await settleNativeViewport(window,'commands '+theme);
-        await palette();await search('move 4 forward');await audit(theme+' enlarged phrase');
+        await palette();await search('path');await audit(theme+' enlarged results');await search('move 4 forward');await audit(theme+' enlarged phrase');
         const bounds=await evaluate("(()=>{const n=document.querySelector('dialog[open]'),r=n.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight}})()");
         assert.ok(bounds.x>=0&&bounds.y>=0&&bounds.right<=bounds.width+1&&bounds.bottom<=bounds.height+1,JSON.stringify(bounds));
         await capture('commands-'+theme+'-'+width+'.png');await key('Escape');layouts.push({theme,width,scale});

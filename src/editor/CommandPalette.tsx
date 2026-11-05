@@ -14,9 +14,9 @@ import './commands.css';
 export function CommandPalette() {
   const store = useEditorStore(); const state = useEditorSelector(state => state);
   const [query, setQuery] = useState(''); const [active, setActive] = useState(0); const [error, setError] = useState('');
-  const input = useRef<HTMLInputElement>(null); const list = useId(); const help = useId();
+  const input = useRef<HTMLInputElement>(null); const list = useId(); const help = useId(); const detail = useId();
   const { phrase, resolved, entries } = paletteQuery(state, query);
-  const current = Math.min(active, Math.max(0, entries.length - 1));
+  const current = Math.min(active, Math.max(0, entries.length - 1)), selected = entries[current];
   useEffect(() => { input.current?.focus(); }, []);
   useEffect(() => { document.getElementById(`${list}-${current}`)?.scrollIntoView({ block: 'nearest' }); }, [current, list]);
   const close = () => store.setValue('ui', 'paletteOpen', false);
@@ -49,16 +49,19 @@ export function CommandPalette() {
       <h3>Drill phrase preview</h3><p role="status" className={resolved?.error ? 'field-error' : ''}>{resolved?.error ?? resolved?.plan?.summary}</p>
       <p className="microcopy">Bare distances mean production steps ({(state.project.present.snapping ?? DEFAULT_SNAPPING).steps}-to-5). Forward is toward the front sideline; right is toward Side 2. Interval defaults to a center anchor. Exact moves bypass snapping and reject field crossings.</p>
       <button className="button primary" disabled={!resolved?.plan} onClick={preview}>Preview on field</button>
-    </div> : <div role="listbox" aria-label="Commands" id={list} className="palette-results">
-      {entries.map((entry, index) => <button key={entry.key} id={`${list}-${index}`} role="option" aria-selected={index === current} aria-disabled={!!entry.disabledReason} className={`palette-result${index === current ? ' palette-result--active' : ''}`} onMouseMove={() => setActive(index)} type="button" tabIndex={index === current ? 0 : -1} aria-label={entry.name} onFocus={() => setActive(index)} onClick={() => run(entry)} onKeyDown={event => {
+    </div> : <div className="palette-results"><div role="listbox" aria-label="Commands" id={list} className="palette-list">
+      {entries.map((entry, index) => <button key={entry.key} id={`${list}-${index}`} role="option" aria-selected={index === current} aria-disabled={!!entry.disabledReason} aria-describedby={index === current ? detail : undefined} className={`palette-result${index === current ? ' palette-result--active' : ''}`} onMouseMove={() => setActive(index)} type="button" tabIndex={index === current ? 0 : -1} aria-label={entry.name} onFocus={() => setActive(index)} onClick={() => run(entry)} onKeyDown={event => {
           if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
           event.preventDefault(); const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + entries.length) % entries.length; setActive(next);
           document.getElementById(`${list}-${next}`)?.focus();
         }}>
-          <span><strong>{entry.name}</strong><span className="palette-description">{entry.description}</span>{entry.disabledReason && <span className="palette-unavailable">Unavailable: {entry.disabledReason}</span>}</span>
+          <strong className="palette-name">{entry.name}</strong>
           <Keycaps groups={commandKeycaps(entry.invocation.id, undefined, undefined, undefined, state.preferences.value.shortcutBindings)} />
       </button>)}
       {!entries.length && <p className="empty-state" role="status">No matching commands. Try an action name or a drill phrase below.</p>}
+    </div>
+      {/* One fixed-height detail region for the active result: rows never expand, so hover cannot shift the list. */}
+      {selected && <p className="palette-detail" id={detail}><span className="palette-description">{selected.description}</span>{selected.disabledReason && <> <span className="palette-unavailable"><strong>Unavailable:</strong> {selected.disabledReason}</span></>}</p>}
     </div>}
     <details className="palette-examples"><summary>Drill phrase examples</summary><p>move 4 forward<br />mirror across 50<br />interval 2 steps horizontal<br />place B1 at Side 1: on the 40; on front hash</p><p className="microcopy">Move, mirror and interval use the explicit selection. Place uses an exact performer label. Name both coordinate axes and the side; incomplete phrases leave the production unchanged.</p></details>
   </Modal>;
