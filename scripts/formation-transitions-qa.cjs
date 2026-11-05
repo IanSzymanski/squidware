@@ -29,7 +29,9 @@ module.exports=async function({api,project,largeFixtures,editor,state,evaluate,w
   await click('Transition mapping');await selectNativeOption(window,button('Transition member'),ids[2]);await selectNativeOption(window,button('Transition member path'),'custom');
   await number('Override interval 1 Departure count',4,true);await number('Override interval 1 Arrival count',14,true);
   const path=structuredClone(api.formationTransitionPlan(baseline,baseReview).project.moves[1].paths[ids[2]]);path.segments[0].startCount=4;path.segments[0].endCount=14;path.segments[0].control1.y+=1;
-  await number('Override interval 1 Control 1 Y',path.segments[0].control1.y,true);return path;
+  await number('Override interval 1 Control 1 Y',path.segments[0].control1.y,true);
+  // Untouched overrides show at most three decimals; typed exact text stays as typed.
+  assert.deepEqual(await evaluate("['Control 1 X','Control 1 Y'].map(l=>document.querySelector('[aria-label=\"Override interval 1 '+l+'\"]').value)"),[api.formatYards(path.segments[0].control1.x),String(path.segments[0].control1.y)]);return path;
  };
  let path=await custom();let request=structuredClone(baseReview);request.policies[ids[2]]={mode:'custom',path};expected=api.formationTransitionPlan(baseline,request).project;await capture('transition-mapping-override.png');
  await click('Transition preview');await ready();await number('Transition preview count',8.25);await samePoints(expected,8.25);assert.equal(await evaluate("document.querySelectorAll('[data-transition-path]').length"),4);await click('Show transition paths');assert.equal(await evaluate("document.querySelectorAll('[data-transition-path]').length"),0);await click('Show transition paths');await capture('transition-preview.png');

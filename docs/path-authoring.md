@@ -11,7 +11,9 @@ never implicitly target the cast.
 Select an interval with the interval selector, its row button or its field path.
 Only that interval's control and intermediate-arrival handles are exposed.
 Square set endpoints are fixed. Drag a handle to preview; numeric fields use the
-same stored coordinates. Moving an intermediate arrival changes the following
+same stored coordinates. Fields and readouts show yards to at most three
+decimals; that display never rounds the stored value, and typed entries stay
+exactly as typed. Moving an intermediate arrival changes the following
 segment's start, preserving the shared endpoint chain. Holds have no handles.
 
 The field is one Tab stop. `[` / `]` choose handles within the selected interval;

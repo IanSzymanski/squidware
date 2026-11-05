@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '../components/Modal';
+import { FormattedNumberInput, formattedNumber } from '../components/NumberField';
+import { formatYards } from '../coordinates';
 import { Tooltip } from '../components/Tooltip';
 import { TravelCanvas } from './TravelCanvas';
 import { DrawTravel } from './DrawTravel';
@@ -10,6 +12,7 @@ import { movementLength, movementSchedule } from '../movementPaths';
 import { HelpButton } from './ControlHelp';
 import { editMovementSchedule, newScheduleRow, pathFromRows, scheduleRows } from './movementScheduleEditing';
 import type { ScheduleEdit, ScheduleRow } from './movementScheduleEditing';
+import { formatTimelineCount } from './timelineNavigation';
 import type { EditorController } from './useEditorController';
 import './paths.css';
 
@@ -43,7 +46,7 @@ export function MovementSchedulePanel({ controller: c, drawInitially = false }: 
   function update(rowId: string, key: keyof ScheduleRow, value: string) { setRows(old => old.map(row => row.id === rowId ? { ...row, [key]: value } : row)); }
   function numeric(row: ScheduleRow, i: number, key: keyof ScheduleRow, title: string, maximum: number) {
     const name = `Interval ${i + 1} ${title}`;
-    return <label className="form-label">{title}<Tooltip name={name} description="Change this interval's local written count or field coordinate. Preview updates before Apply."><input type="number" aria-label={name} step={key === 'start' || key === 'end' ? .25 : .1} min={0} max={maximum} value={row[key]} disabled={!!capture || gesture} onChange={e => update(row.id, key, e.target.value)} /></Tooltip></label>;
+    return <label className="form-label">{title}<Tooltip name={name} description="Change this interval's local written count or field coordinate. Preview updates before Apply."><FormattedNumberInput aria-label={name} step={key === 'start' || key === 'end' ? .25 : .1} min={0} max={maximum} value={row[key]} format={key === 'start' || key === 'end' ? formatTimelineCount : formatYards} disabled={!!capture || gesture} onChange={text => update(row.id, key, text)} /></Tooltip></label>;
   }
   function close() { c.setPendingDraft(false, 'movement-schedule'); c.setDialog(null); }
   function apply() {
@@ -61,14 +64,14 @@ export function MovementSchedulePanel({ controller: c, drawInitially = false }: 
       <details><summary>Movement timing notes</summary><p className="microcopy">Before departure, in a gap and after the final arrival, hold the preceding position. Each travel begins at the preceding arrival; the last travel ends at the next set. These movement holds do not stop the show clock, recording or other performers.</p></details>
       {(error || stale || submitError) && <p className="field-error" role="alert">{stale ? 'The production or selection changed. Copy your draft, then cancel and reopen.' : error || submitError}</p>}
       {!error && <>
-        <label className="form-label">Selected interval<select aria-label="Selected travel interval" value={selectedRow} disabled={!!capture || gesture} onChange={e => selectRow(e.target.value)}>{rows.map((row, i) => <option key={row.id} value={row.id}>{`Interval ${i + 1} · ${row.kind} · ${row.start}–${row.end}`}</option>)}</select></label>
+        <label className="form-label">Selected interval<select aria-label="Selected travel interval" value={selectedRow} disabled={!!capture || gesture} onChange={e => selectRow(e.target.value)}>{rows.map((row, i) => <option key={row.id} value={row.id}>{`Interval ${i + 1} · ${row.kind} · ${formattedNumber(row.start, formatTimelineCount)}–${formattedNumber(row.end, formatTimelineCount)}`}</option>)}</select></label>
         {travel ? <DrawTravel key={selectedRow} rows={rows} rowId={selectedRow} from={travel.from} to={travel.to} mode={capture} setMode={setCapture} stroke={stroke} setStroke={setStroke} onFit={draft => { const checked = editMovementSchedule(project, { moveId: move.id, performerId: id, path: pathFromRows(draft), revision: initial.revision, epoch: initial.epoch }); validateProject(checked); setRows(draft); setSubmitError(''); }} disabled={gesture || stale} />
           : <p className="microcopy">Select a travel interval to draw. Holds have no travel handles.</p>}
         <TravelCanvas project={project} positions={preview} performerId={id} from={from} to={to} path={path ?? undefined} original={move.paths[id]} counts={move.counts} transition={move.transition}
           handles={travelHandles(from, to, path ?? undefined)} selectedRow={selectedRow} onSelectRow={selectRow} onHandle={(handle, point) => setRows(old => moveTravelHandle(old, handle, point))}
           capture={travel ? capture : null} captureFrom={travel?.from} captureTo={travel?.to} stroke={stroke} onStroke={setStroke} onCancelCapture={() => { setCapture(null); setStroke([]); }} onError={setSubmitError} onGesture={setGesture} label="Timed movement preview" />
-        <label className="form-label">Preview local count · {count.toFixed(2)}<input type="range" aria-label="Preview movement count" min={0} max={move.counts} step={.01} value={count} onChange={e => setCount(Number(e.target.value))} /></label>
-        <p role="status" aria-label="Movement preview position">{label}: X {preview[id].x.toFixed(3)}, Y {preview[id].y.toFixed(3)} yd · travel {movementLength(from, to, path ?? undefined).toFixed(3)} yd.</p>
+        <label className="form-label">Preview local count · {formatTimelineCount(count)}<input type="range" aria-label="Preview movement count" min={0} max={move.counts} step={.01} value={count} onChange={e => setCount(Number(e.target.value))} /></label>
+        <p role="status" aria-label="Movement preview position">{label}: X {formatYards(preview[id].x)}, Y {formatYards(preview[id].y)} yd · travel {formatYards(movementLength(from, to, path ?? undefined))} yd.</p>
         <p className="microcopy" aria-label="Movement schedule summary">{path ? movementSchedule(path, move.counts) : `Travel 0–${move.counts}`}. Solid: proposed path. Dashed: saved path. Ring: sampled position.</p>
       </>}
       <ol className="schedule-rows" aria-label="Movement intervals">{rows.map((row, i) => <li key={row.id} data-schedule-row={i}>
@@ -79,7 +82,7 @@ export function MovementSchedulePanel({ controller: c, drawInitially = false }: 
           {numeric(row, i, 'end', row.kind === 'hold' ? 'End count' : 'Arrival count', move.counts)}
         </div>
         {row.kind === 'hold' ? <p className="microcopy">Holds the preceding arrival position. A schedule with only holds requires matching positions in both sets.</p>
-          : i === lastTravel ? <p className="microcopy">Final arrival: next set at X {to.x.toFixed(3)}, Y {to.y.toFixed(3)} yd.</p>
+          : i === lastTravel ? <p className="microcopy">Final arrival: next set at X {formatYards(to.x)}, Y {formatYards(to.y)} yd.</p>
           : <div className="form-row">{numeric(row, i, 'x', 'Arrival X yards', project.field.width)}{numeric(row, i, 'y', 'Arrival Y yards', project.field.height)}</div>}
         {row.kind === 'cubic' && <div className="path-controls">{numeric(row, i, 'c1x', 'Control 1 X', project.field.width)}{numeric(row, i, 'c1y', 'Control 1 Y', project.field.height)}{numeric(row, i, 'c2x', 'Control 2 X', project.field.width)}{numeric(row, i, 'c2y', 'Control 2 Y', project.field.height)}</div>}
       </li>)}</ol>
