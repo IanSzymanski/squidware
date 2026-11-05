@@ -17,10 +17,8 @@
 .button.primary:hover:not(:disabled):not([aria-disabled=true]), .play-button:hover { filter: brightness(1.1); }
 .button.danger { color: var(--error); background: var(--error-bg); border: 1px solid var(--error); }
 .field-error, .recovery-error, .selection-tools-error, .transform-result--error { color: var(--error); }
-.warning-box { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
 .tooltip-reason { color: var(--warning); }
 .transform-result { color: var(--muted); }
-.active-marker { color: var(--accent); }
 .set-card.selected, .field-legend button.selected, .icon-button.active, .formation-grid button.active, .view-switch > button.active, .set-track button.active { border-color: var(--accent); }
 /* .button variants load above; the 0,2,0 and hover selectors keep a disabled primary, subtle or danger action visibly unavailable. */
 .selection-actions > button[aria-disabled=true], button:disabled, button[aria-disabled=true], .button:disabled, .button[aria-disabled=true], .button[aria-disabled=true]:is(.primary, .subtle):hover, input:disabled, select:disabled { background: var(--disabled-bg); color: var(--disabled-text); border-color: var(--border); border-style: dashed; }

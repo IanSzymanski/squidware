@@ -42,10 +42,20 @@ async function measure(label) {
   const result = await evaluate(`(()=>{const r=document.querySelector('.field-container').getBoundingClientRect();return {fieldWidth:r.width,fieldHeight:r.height,viewport:[innerWidth,innerHeight],header:document.querySelector('.app-header').getBoundingClientRect().height,overflow:document.documentElement.scrollWidth>innerWidth}})()`);
   assert.equal(result.overflow, false, label + ' has no document overflow'); metrics.push({ label, ...result }); return result;
 }
+// Pressed presets render visibly active (2px accent border and a check mark); a custom layout says so instead.
+const presetState = "(()=>{const probe=document.createElement('i');probe.style.color='var(--accent)';document.body.append(probe);const accent=getComputedStyle(probe).color;probe.remove();return {custom:document.querySelector('.layout-custom')?.textContent??null,presets:[...document.querySelectorAll('.layout-presets .button')].map(b=>{const s=getComputedStyle(b);return [b.getAttribute('aria-label'),b.getAttribute('aria-pressed'),!!b.querySelector('.lucide-check'),s.borderTopColor===accent&&parseFloat(s.borderTopWidth)>=1.5]})}})()";
+const expectedPresets = current => ({ custom: current === 'custom' ? 'Custom layout: choose a preset to restore its panels and widths.' : null,
+  presets: ['Write', 'Review', 'Rehearse'].map(name => { const on = name.toLowerCase() === current; return [`${name} preset`, String(on), on, on]; }) });
 async function preset(name) {
-  await control('[aria-label="Workspace layout"]'); await control(`[aria-label="${name} preset"]`);
-  await control('[aria-label="Close layout options"]');
+  await control('[aria-label="Workspace layout"]');
+  const current = await evaluate(`${state}.preferences.value.workspaceLayout.preset`);
+  assert.deepEqual(await evaluate(presetState), expectedPresets(current), 'Layout popover shows the current preset');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Workspace layout\"]').getAttribute('aria-expanded')"), 'true');
+  await control(`[aria-label="${name} preset"]`);
   await wait(`${state}.preferences.value.workspaceLayout.preset==='${name.toLowerCase()}'`, name + ' preset applied');
+  await wait(`document.querySelector('[aria-label="${name} preset"]')?.getAttribute('aria-pressed')==='true'`, name + ' preset pressed');
+  assert.deepEqual(await evaluate(presetState), expectedPresets(name.toLowerCase()), name + ' preset renders active');
+  await control('[aria-label="Close layout options"]');
 }
 app.whenReady().then(async () => {
   try {

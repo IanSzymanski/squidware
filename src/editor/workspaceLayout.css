@@ -5,7 +5,10 @@
 .layout-popover-heading button { display: flex; padding: 5px; border-radius: 4px; background: transparent; }
 .layout-presets { display: flex; gap: 6px; }
 .layout-presets button { flex: 1; }
-.layout-presets [aria-pressed=true] { border: 2px solid var(--accent); background: var(--selected-bg); }
+/* Beats .button.subtle from styles.css (loaded later); a check mark repeats the state without color. */
+.layout-presets .button[aria-pressed=true]:not([aria-disabled=true]) { border: 2px solid var(--accent); padding: 7px 12px; background: var(--selected-bg); color: var(--text); }
+.layout-presets .button { gap: 5px; }
+.layout-popover .layout-custom { margin-bottom: 0; font-weight: 600; }
 .layout-popover p { margin: 10px 0; line-height: 1.5; }
 .layout-pane-option { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding: 10px 0; }
 .layout-pane-option label { display: flex; align-items: center; gap: 8px; }
@@ -21,7 +24,7 @@
 .workspace-pane-content { display: flex; flex: 1; min-height: 0; overflow: auto; }
 .studio .workspace-pane-content > .set-panel, .studio .workspace-pane-content > .inspector, .studio .workspace-pane-content > .cast-dock { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; }
 .studio .workspace-pane-content > .cast-dock { min-height: 440px; }
-.workspace-pane .panel-heading, .workspace-pane .inspector-header { display: none; }
+.workspace-pane .inspector-header { display: none; }
 .workspace-pane .set-list { padding-top: 10px; }
 .workspace-pane .cast-panel-heading h2 { display: none; }
 .workspace-pane .cast-panel-heading { justify-content: flex-end; padding: 2px 8px; }
