@@ -21,9 +21,6 @@
   --shadow: #00000060;
   --backdrop: #080b10b8;
   --field-accent: #91c1ff;
-  --lime: var(--accent);
-  --dark: var(--text);
-  --paper: var(--surface);
   --ui-scale: 1;
   --viewport-height: calc(100dvh / var(--ui-scale));
   --viewport-width: calc(100vw / var(--ui-scale));
