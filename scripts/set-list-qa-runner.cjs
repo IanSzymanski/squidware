@@ -105,7 +105,7 @@ app.whenReady().then(async () => {
     // The set list no longer reserves a footer for direct positions; the Command palette keeps the one-step reorder.
     const palette = named('Search commands or drill phrases');
     await evaluate(`${editor}.dispatch('palette.open')`); await wait(`!!document.querySelector(${JSON.stringify(palette)})`, 'palette open');
-    await type(palette, 'Move current set to position 12'); await wait("document.querySelector('.palette-result--active')?.textContent.startsWith('Move current set to position 12Reorder')", 'direct reorder ready'); await key(window, 'Return');
+    await type(palette, 'Move current set to position 12'); await wait(`(()=>{const input=document.querySelector(${JSON.stringify(palette)});return document.getElementById(input.getAttribute('aria-activedescendant'))?.querySelector('strong')?.textContent==='Move current set to position 12'})()`, 'direct reorder ready'); await key(window, 'Return');
     await wait(`${state}.project.present.sets[11].id===${JSON.stringify(maximum.sets[39].id)} && ${state}.project.past.length===1`, 'single direct reorder');
     let accepted = await evaluate(state + '.project.present'); assert.equal(await evaluate(`${state}.selection.activeIndex`), 11); assert.equal(await evaluate(`${state}.playback.count`), setStartCount(accepted, 11)); await visibleCurrent(); await capture('set-list-reordered.png');
     await evaluate(`${editor}.dispatch('history.undo')`); await wait(`${state}.selection.activeIndex===39`, 'undo retains identity'); assert.deepEqual(await evaluate(state + '.project.present'), maximum);

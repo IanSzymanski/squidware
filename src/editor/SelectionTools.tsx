@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { type FocusEvent, useEffect, useId, useRef, useState } from 'react';
 import { ListFilter, X } from 'lucide-react';
 import type { Section } from '../types';
 import { PROJECT_LIMITS } from '../domain';
@@ -28,6 +28,15 @@ function GroupName({ id, value, controller: c }: { id: string; value: string; co
 export function SelectionToolsButton({ controller }: { controller: EditorController }) {
   const enabled = useEditorSelector(s => canChooseSelection(s, true));
   return <HelpButton pointerPassThrough command="selection.tools" title="Selection tools and groups" className="icon-button" disabled={!enabled} disabledReason="Finish or cancel the current input, position preview or gesture first." onClick={() => controller.dispatch('selection.tools')}><ListFilter size={17} /></HelpButton>;
+}
+
+/** Focus scrolling leaves a partly clipped control in place, so the compact legend reveals the focused chip fully. */
+export function revealFocusedChip(event: FocusEvent<HTMLElement>) {
+  const scroller = event.currentTarget, chip = (event.target as HTMLElement).closest('button');
+  if (!chip || !scroller.contains(chip)) return;
+  const inner = chip.getBoundingClientRect(), outer = scroller.getBoundingClientRect(), pad = 2;
+  if (inner.left < outer.left + pad) scroller.scrollLeft -= outer.left + pad - inner.left;
+  else if (inner.right > outer.right - pad) scroller.scrollLeft += inner.right - (outer.right - pad);
 }
 
 export function SectionSelectionButton({ section, controller }: { section: Section; controller: EditorController }) {

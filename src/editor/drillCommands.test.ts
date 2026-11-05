@@ -78,6 +78,11 @@ describe('command search and enablement', () => {
     store.setValue('selection', 'selectedIds', []);
     expect(searchPalette(paletteEntries(store.getState()), 'Mirror across 50')[0].disabledReason).toMatch(/Select/);
   });
+  it('lists each palette entry once, so result rows keep stable identities', () => {
+    const { store } = fixture(); const keys = paletteEntries(store.getState()).map(entry => entry.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(searchPalette(paletteEntries(store.getState()), 'Align recording').filter(entry => entry.invocation.id === 'audio.align-open')).toHaveLength(1);
+  });
   it('offers direct set positions as one-step palette reorders that undo atomically', () => {
     const { store } = fixture(); const before = store.getState().project.present.sets.map(set => set.id);
     const entries = paletteEntries(store.getState()).filter(entry => entry.invocation.id === 'set.move-to');

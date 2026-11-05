@@ -75,8 +75,11 @@ app.whenReady().then(async () => {
     native('Open project…'); await uiWait("document.querySelectorAll('.field-performer').length === 500", 'maximum cast');
     const initial = JSON.parse(await fs.readFile(fixture, 'utf8')); const ids = initial.performers.map(person => person.id);
     const baseline = await revision();
+    // A hidden test window has no OS focus, so focus events would never fire; emulate a focused window for this check.
+    await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
     await evaluate("document.querySelector('.field-legend button:last-child').focus()");
     const legendReachable = await evaluate("(() => { const button=document.activeElement.getBoundingClientRect(); const row=document.querySelector('.field-legend-scroll').getBoundingClientRect(); return button.left>=row.left-.5 && button.right<=row.right+.5 && button.top>=row.top && button.bottom<=row.bottom; })()");
+    await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: false });
     assert.equal(legendReachable, true);
     assert.equal(await revision(), baseline);
     pass('keyboard focus reveals the last section in the floating legend without editing the production');

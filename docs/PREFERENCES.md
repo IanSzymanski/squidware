@@ -17,6 +17,7 @@ Persisted choices:
 | UI scale | 100%; 110%, 125% and 150% available |
 | Panel layout; field view | Comfortable; 2D |
 | Labels; previous paths; grid visibility; snap | On; off; on; on |
+| Show hints | On. Off hides short instructional lines in the set list, field, status bar, Inspector, command palette and 3D preview; tooltips and Help keep the same guidance, and field keyboard help remains the field's accessible description. |
 | New production placement defaults | 8-to-5, whole steps, grid targets, keep spacing; 6/12-to-5, half/quarter steps, markings and individual mode also available |
 | Field zoom | 1×; 0.6–3× |
 | Audience orientation | Bottom; top turns the 2D view 180° |

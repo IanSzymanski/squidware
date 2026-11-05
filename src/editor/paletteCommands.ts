@@ -71,8 +71,6 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   for (let target = 0; target < state.project.present.sets.length; target++) if (target !== state.selection.activeIndex) {
     add('set.move-to', { id: current.id, target, revision: state.project.revision, epoch: state.ui.projectEpoch }, `Move current set to position ${target + 1}`, `move-to-${target}`);
   }
-  add('tempo.open', undefined);
-  add('audio.align-open', undefined);
   add('group.open',{},'Group route movement','group-movement-new');
   for(const group of state.project.present.moves[state.selection.activeIndex-1]?.groupMotions??[])add('group.open',{id:group.id},`Edit group movement: ${group.name}`,`group-movement-${group.id}`);
   add('transform.preview', {});
