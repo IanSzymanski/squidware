@@ -95,9 +95,19 @@
         80,
         50,
         98,
-        99
+        99,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182
       ],
-      "description": "Editable live formations, curved paths, holds and submoves, constrained assignment, controlled transitions, scatter and wave editing, and canvas rendering."
+      "description": "Editable live formations, curved paths, holds and submoves, constrained assignment, controlled transitions, scatter and wave editing, and canvas rendering; audit-driven usability: field space, contextual toolbar, unified workspaces, responsive layout, docked spatial editors, problem navigation, pop-out 3D and an original demo show."
     },
     {
       "version": "0.9.0",
@@ -555,6 +565,56 @@
       49,
       9,
       44
+    ],
+    "173": [
+      40,
+      37
+    ],
+    "174": [
+      37,
+      43
+    ],
+    "175": [
+      6,
+      38,
+      78,
+      77
+    ],
+    "176": [
+      4,
+      37,
+      40
+    ],
+    "177": [
+      176,
+      40,
+      39
+    ],
+    "178": [
+      43,
+      40
+    ],
+    "179": [
+      176,
+      73,
+      74,
+      75,
+      77
+    ],
+    "180": [
+      45,
+      44,
+      31
+    ],
+    "181": [
+      15,
+      40
+    ],
+    "182": [
+      71,
+      53,
+      52,
+      175
     ]
   }
 }

@@ -31,6 +31,11 @@ The themes below are planned development areas, not shipped features or delivery
 - Add configurable print styles, coordinate precision, page templates, and robust pagination for long productions. — [#34](https://github.com/IanSzymanski/squidware/issues/34), [#35](https://github.com/IanSzymanski/squidware/issues/35)
 - Improve large-cast performance and report tested performer/set sizes instead of relying only on schema limits. — [#3](https://github.com/IanSzymanski/squidware/issues/3), [#9](https://github.com/IanSzymanski/squidware/issues/9), [#10](https://github.com/IanSzymanski/squidware/issues/10), [#11](https://github.com/IanSzymanski/squidware/issues/11), [#12](https://github.com/IanSzymanski/squidware/issues/12), [#15](https://github.com/IanSzymanski/squidware/issues/15)
 - Add signed release builds and an update workflow once distribution infrastructure is available. — [#72](https://github.com/IanSzymanski/squidware/issues/72)
+- Give the field priority, retire always-on hints and fix misleading states found in the 2026-11-05 UI/UX audit. — [#173](https://github.com/IanSzymanski/squidware/issues/173), [#174](https://github.com/IanSzymanski/squidware/issues/174), [#175](https://github.com/IanSzymanski/squidware/issues/175)
+- Replace the Inspector launcher stack with a contextual toolbar, unify Design/Cast/Sheet and layout presets into saveable workspaces, and keep small windows and large UI scales usable. — [#176](https://github.com/IanSzymanski/squidware/issues/176), [#177](https://github.com/IanSzymanski/squidware/issues/177), [#178](https://github.com/IanSzymanski/squidware/issues/178)
+- Edit paths and routes on the main field instead of modal mini fields, and make timeline problems navigable. — [#179](https://github.com/IanSzymanski/squidware/issues/179), [#180](https://github.com/IanSzymanski/squidware/issues/180)
+- Add a pop-out 3D window for two-monitor review. — [#181](https://github.com/IanSzymanski/squidware/issues/181)
+- Ship an original drum-corps-style demo set to Squidwriter's Space show. — [#182](https://github.com/IanSzymanski/squidware/issues/182)
 
 **Ready when:** the common create, edit, save, reopen, rehearse, and export workflows have repeatable tests on each supported platform and produce consistent printed output.
 

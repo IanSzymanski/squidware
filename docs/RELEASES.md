@@ -1,6 +1,6 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** is active, with 14 of 15 issues completed. Tempo maps [#52](https://github.com/IanSzymanski/squidware/issues/52) landed through [#157](https://github.com/IanSzymanski/squidware/pull/157). Continue with [#53 — recording alignment](https://github.com/IanSzymanski/squidware/issues/53), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** has all 15 issues completed and awaits publication. **v0.8 — Reusable forms and detailed motion** has 13 of 23 issues completed; the 10 open issues ([#173](https://github.com/IanSzymanski/squidware/issues/173)–[#182](https://github.com/IanSzymanski/squidware/issues/182)) come from the [2026-11-05 UI/UX audit](audits/2026-11-05/UI_UX_AUDIT.md). Continue with [#173 — field space](https://github.com/IanSzymanski/squidware/issues/173), respecting the maintained queue and hard prerequisites.
 
 **Main certification:** [PR #153 certification](https://github.com/IanSzymanski/squidware/actions/runs/40790853888) passed source checks, all desktop suites and package verification on Windows/macOS/Linux before merge. It includes the field-gesture lifecycle repair for the macOS pan timeout observed after #152. v0.7 remains unpublished with 1 unfinished issue; publication still requires successful exact-source main CI.
 
@@ -62,7 +62,7 @@ Dense-field selection, formations, exact transforms, coordinate entry, spacing a
 
 Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, portable audio and show-wide movement analysis.
 
-13/15 implementation issues completed at reconciliation.
+15/15 implementation issues completed at reconciliation.
 
 - [x] [#9 · Audit A08 Run incremental collision analysis in a Web Worker with broad-phase filtering](https://github.com/IanSzymanski/squidware/issues/9)
 - [x] [#13 · Audit A12 Use the attached audio track as the playback clock](https://github.com/IanSzymanski/squidware/issues/13)
@@ -76,29 +76,39 @@ Audio-clock playback, metronome, set/timeline editing, meter and tempo maps, por
 - [x] [#45 · Audit A32 Add show-wide problems with count navigation and live field overlays](https://github.com/IanSzymanski/squidware/issues/45)
 - [x] [#51 · Audit A51 Add measures, meter, rehearsal marks and pickup counts](https://github.com/IanSzymanski/squidware/issues/51)
 - [x] [#52 · Audit A52 Support tempo changes, ramps and fermatas within a move](https://github.com/IanSzymanski/squidware/issues/52)
-- [ ] [#53 · Audit A53 Align the tempo map to audio using per-set/count anchors](https://github.com/IanSzymanski/squidware/issues/53)
+- [x] [#53 · Audit A53 Align the tempo map to audio using per-set/count anchors](https://github.com/IanSzymanski/squidware/issues/53)
 - [x] [#71 · Roadmap Package or reference audio portably when saving and reopening productions](https://github.com/IanSzymanski/squidware/issues/71)
 - [x] [#86 · Roadmap Add rehearsal annotations, bookmarks, count ranges and sectional playback](https://github.com/IanSzymanski/squidware/issues/86)
 
 ## v0.8 — Reusable forms and detailed motion
 
-Editable live formations, curved paths, holds and submoves, constrained assignment, controlled transitions, scatter and wave editing, and canvas rendering.
+Editable live formations, curved paths, holds and submoves, constrained assignment, controlled transitions, scatter and wave editing, and canvas rendering; audit-driven usability: field space, contextual toolbar, unified workspaces, responsive layout, docked spatial editors, problem navigation, pop-out 3D and an original demo show.
 
-0/13 implementation issues completed at reconciliation.
+13/23 implementation issues completed at reconciliation.
 
-- [ ] [#12 · Audit A11 Render dynamic performer layers on canvas during playback and dragging](https://github.com/IanSzymanski/squidware/issues/12)
-- [ ] [#46 · Audit A46 Add reusable and shareable show templates and formation libraries](https://github.com/IanSzymanski/squidware/issues/46)
-- [ ] [#49 · Audit A49 Persist live formation objects that remain editable after application](https://github.com/IanSzymanski/squidware/issues/49)
-- [ ] [#73 · Roadmap Model and sample editable curved performer paths with intermediate control points](https://github.com/IanSzymanski/squidware/issues/73)
-- [ ] [#74 · Roadmap Support performer holds and submoves with explicit arrival and departure counts](https://github.com/IanSzymanski/squidware/issues/74)
-- [ ] [#75 · Roadmap Draw and edit performer travel paths with handles, distances and count ticks](https://github.com/IanSzymanski/squidware/issues/75)
-- [ ] [#76 · Roadmap Extend spacing and stride analysis to curved and independently timed paths](https://github.com/IanSzymanski/squidware/issues/76)
-- [ ] [#77 · Roadmap Define count-resize, reverse and copy operations for detailed movement paths](https://github.com/IanSzymanski/squidware/issues/77)
-- [ ] [#78 · Roadmap Optimize performer-to-destination assignment with pinned and role constraints](https://github.com/IanSzymanski/squidware/issues/78)
-- [ ] [#80 · Roadmap Preview and edit controlled transitions between reusable formations](https://github.com/IanSzymanski/squidware/issues/80)
-- [ ] [#50 · Audit A50 Model follow-the-leader, counter-march and conveyor-belt movement](https://github.com/IanSzymanski/squidware/issues/50)
-- [ ] [#98 · Formations Add point-based Bézier editing for curve and wave formations](https://github.com/IanSzymanski/squidware/issues/98)
-- [ ] [#99 · Formations Add controlled scatter forms with seeded distribution and spacing constraints](https://github.com/IanSzymanski/squidware/issues/99)
+- [x] [#12 · Audit A11 Render dynamic performer layers on canvas during playback and dragging](https://github.com/IanSzymanski/squidware/issues/12)
+- [x] [#46 · Audit A46 Add reusable and shareable show templates and formation libraries](https://github.com/IanSzymanski/squidware/issues/46)
+- [x] [#49 · Audit A49 Persist live formation objects that remain editable after application](https://github.com/IanSzymanski/squidware/issues/49)
+- [x] [#73 · Roadmap Model and sample editable curved performer paths with intermediate control points](https://github.com/IanSzymanski/squidware/issues/73)
+- [x] [#74 · Roadmap Support performer holds and submoves with explicit arrival and departure counts](https://github.com/IanSzymanski/squidware/issues/74)
+- [x] [#75 · Roadmap Draw and edit performer travel paths with handles, distances and count ticks](https://github.com/IanSzymanski/squidware/issues/75)
+- [x] [#76 · Roadmap Extend spacing and stride analysis to curved and independently timed paths](https://github.com/IanSzymanski/squidware/issues/76)
+- [x] [#77 · Roadmap Define count-resize, reverse and copy operations for detailed movement paths](https://github.com/IanSzymanski/squidware/issues/77)
+- [x] [#78 · Roadmap Optimize performer-to-destination assignment with pinned and role constraints](https://github.com/IanSzymanski/squidware/issues/78)
+- [x] [#80 · Roadmap Preview and edit controlled transitions between reusable formations](https://github.com/IanSzymanski/squidware/issues/80)
+- [x] [#50 · Audit A50 Model follow-the-leader, counter-march and conveyor-belt movement](https://github.com/IanSzymanski/squidware/issues/50)
+- [x] [#98 · Formations Add point-based Bézier editing for curve and wave formations](https://github.com/IanSzymanski/squidware/issues/98)
+- [x] [#99 · Formations Add controlled scatter forms with seeded distribution and spacing constraints](https://github.com/IanSzymanski/squidware/issues/99)
+- [ ] [#173 · Field Reclaim field space from persistent overlays and retire always-on hints](https://github.com/IanSzymanski/squidware/issues/173)
+- [ ] [#174 · Polish Restore text hierarchy and fix dialog, panel and palette presentation issues](https://github.com/IanSzymanski/squidware/issues/174)
+- [ ] [#175 · Editing Fix misleading states, raw values and defaults in editing and file flows](https://github.com/IanSzymanski/squidware/issues/175)
+- [ ] [#176 · Workspace Replace the Inspector launcher stack with a contextual command toolbar](https://github.com/IanSzymanski/squidware/issues/176)
+- [ ] [#177 · Workspace Add unified, saveable workspaces for different writing tasks](https://github.com/IanSzymanski/squidware/issues/177)
+- [ ] [#178 · Workspace Add UI-scale-aware breakpoints so small windows and large text keep the field usable](https://github.com/IanSzymanski/squidware/issues/178)
+- [ ] [#179 · Field tools Move spatial path and route editors from modals onto the main field](https://github.com/IanSzymanski/squidware/issues/179)
+- [ ] [#180 · Review Make timeline problem markers navigable and descriptive, and surface Problems outside the Inspector](https://github.com/IanSzymanski/squidware/issues/180)
+- [ ] [#181 · 3D Add a pop-out 3D preview window that follows the editor](https://github.com/IanSzymanski/squidware/issues/181)
+- [ ] [#182 · Demo Replace the generated demo with an original drum-corps-style show set to Squidwriter's Space show](https://github.com/IanSzymanski/squidware/issues/182)
 
 ## v0.9 — Staging and 3D choreography
 
@@ -168,5 +178,3 @@ Tracker #1 spans all releases and belongs to the last milestone; it closes only 
 The release coordinator creates/synchronizes milestones and reconciles issue ranks. It considers only the first unpublished release, requires every planned issue to be closed as completed and no open milestone items, and requires successful CI on the exact source commit. It then builds and verifies Windows, macOS and Linux packages. Only successful builds can create a version commit/tag and publish a GitHub release with packages, checksums and issue-based notes. Existing published releases and tags are never overwritten. Pre-1.0 releases are marked prerelease. Release commits record the packaged version; normal development remains on main.
 
 Publication is rechecked against live issue state immediately before it becomes public. A failure keeps the release unpublished. Scheduled reconciliation retries interrupted work without treating cancelled/not-planned issues as fulfilled. Human review and physical-hardware qualification are not release gates under the [2026-10-22 validation policy](VALIDATION_POLICY.md). Automated acceptance, exact-source cross-platform CI, package verification and signing requirements in #72 remain in force; waived checks are not recorded as passed.
-
-All implementation work follows the [shared design guidance](DESIGN_GUIDANCE.md). Record applicable review evidence or a reasoned not-applicable result, and document deviations; retain the guidance link in each issue during reconciliation.
