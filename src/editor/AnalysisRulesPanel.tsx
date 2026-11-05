@@ -4,6 +4,7 @@ import { DEFAULT_ANALYSIS_RULES, MARCHING_DIRECTIONS, validateAnalysisRules } fr
 import type { AnalysisOverrides, AnalysisThresholds, DirectionRules, MarchingDirection, ProjectAnalysisRules, SectionAnalysisRules } from '../types';
 import type { EditorController } from './useEditorController';
 import { sameAnalysisRules } from './analysisCommands';
+import { HelpButton } from './ControlHelp';
 import { PROJECT_LIMITS } from '../domain';
 import './analysisRules.css';
 
@@ -60,7 +61,7 @@ export function AnalysisRulesPanel({ controller }: { controller: EditorControlle
         {!!assignments.length && <details><summary>Saved declarations</summary><ul className="analysis-declarations">{assignments.map(([id,d]) => <li key={id}>{project.performers.find(p => p.id === id)?.label}: {d}</li>)}</ul></details>}
       </>}
       {(invalid || error) && <p className="field-error" role="alert">{error || invalid}</p>}
-      <div className="modal-actions"><button type="button" className="button subtle" onClick={() => controller.setDialog(null)}>Cancel</button><button type="submit" className="button primary" aria-label="Save rules" disabled={!!invalid || !changed}>Save rules</button></div>
+      <div className="modal-actions"><button type="button" className="button subtle" onClick={() => controller.setDialog(null)}>Cancel</button><HelpButton type="submit" className="button primary" title="Save rules" description="Apply these rules and any declaration as one undoable edit." disabled={!!invalid || !changed} disabledReason={invalid ? 'Fix the highlighted values first.' : 'Change a rule or declaration first.'}>Save rules</HelpButton></div>
     </form>
   </Modal>;
 }
