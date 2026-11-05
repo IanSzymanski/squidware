@@ -166,6 +166,51 @@ Use the shared coordinate formatter everywhere, and disable Apply when the draft
 
 Items 1, 2, 5 and 6 are small, mostly CSS or copy changes, and together fix most of what a first-time user notices.
 
+## Product direction (follow-up)
+
+These are maintainer suggestions from after the audit, with an assessment of each.
+
+**Workspaces: yes, as panel and toolbar arrangements, not as feature tiers.** Squidware already has Write, Review and Rehearse presets (`src/workspaceLayout.ts`). They only toggle two panels and their widths, can't be named or saved, and sit apart from the Design, Cast and Sheet tabs.
+
+Merge everything into one workspace switcher. Each workspace sets the visible panels, the toolbar set, the timeline height and the default 2D or 3D view. Suggested built-ins:
+
+- **Field:** field-dominant, with a top toolbar and a compact timeline.
+- **Design:** today's layout, with the Inspector.
+- **Production:** the Production sheet and Cast.
+- **Rehearse:** field plus 3D plus transport.
+
+Users can save their own. Adobe workspaces rearrange tools; they don't remove them. Hiding features behind "basic" and "advanced" modes would create "where did X go" confusion and split the docs. Handle complexity with contextual toolbars instead.
+
+**Contextual toolbar: yes, and it replaces the Inspector launcher stack (finding 1).** Generate the toolbar from the existing command registry, since commands already carry `enabled()` rules, titles and shortcuts. It changes with the editing state:
+
+- **Nothing selected:** selection tools.
+- **Selection:** transform, formation, align and spacing.
+- **Exactly one performer:** path and timing tools.
+- **Active preview:** parameters plus Apply and Cancel.
+- **Playback:** transport.
+
+Keep it in a fixed toolbar row rather than floating near the selection. A fixed row is predictable and never covers dots. The Inspector then becomes an optional details panel.
+
+**Pyware-style layout: take the proportions, not the density.** A large field, a top toolbar and a small timeline match guide §1, and the Field workspace should look like that. Pyware's long row of unlabeled icons and its dialog-based tools are the same problem as finding 2, so don't copy that part.
+
+**Realistic demo show: high value. Author it by hand rather than generating it.** `createDemoProject()` generates Tidal forces from formulas in `src/domain.ts`, which is why it looks blocky. Replace it with a hand-authored `.squid` file loaded from `examples/`. It must be an original show, not a recreation of a real corps program. Target:
+
+- **Size:** about 150 members in a drum corps layout, with roughly 80 brass, 25 battery and 30 guard on the field, plus the front ensemble fixed on the front sideline until props (#81) land.
+- **Shape:** 10 to 14 sets in a curvilinear, asymmetric design that uses Bézier forms, seeded scatter, follow-the-leader, rotating blocks and a company front.
+- **Validation:** no problems under the default rules.
+- **Audio:** a tempo map and metronome, or a CC0 recording. No licensed music.
+
+It doubles as a showcase for the tools added in #160 to #172 and fixes finding 4.
+
+**Pop-out 3D view: feasible with modest work.** The Electron main process currently blocks every child window (`electron/main.cjs:438`). Allow one same-origin child window and render the existing `Stage3D` into it through a React portal. It then shares the editor store directly, with no IPC sync. It needs:
+
+- persisted window position and size
+- a return to the inline view when the window closes
+- paused rendering when the window is minimized or hidden
+- a CSP check for the child document
+
+It should follow playback, the current set and the selection. The main benefit is a two-monitor setup, with the field on one screen and 3D on the other.
+
 ## Method notes
 
 - Screenshots in this folder were taken with Playwright against `pnpm dev` and color-quantized for size.
