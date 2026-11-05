@@ -150,7 +150,7 @@ test('native dropdown uses acknowledged typeahead for numeric and Unicode labels
   await assert.rejects(renderer.selectNativeOption(window, 'select', 'unknown'), /Missing native option/);
   options.push({ value: 'duplicate', label: '125%' });
   await assert.rejects(renderer.selectNativeOption(window, 'select', '1.25'), /Ambiguous native option/);
-  options.splice(0, options.length, { value: '.5', label: '0.5×' }, { value: '1', label: '1× speed' }, { value: '1.25', label: '1.25×' });
+  options.splice(0, options.length, { value: '.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '1.25', label: '1.25×' });
   await renderer.selectNativeOption(window, 'select', '1'); assert.equal(selected, '1');
   assert.ok(events.some(event => event.type === 'char' && event.text === '×'));
   window.webContents.debugger.sendCommand = async () => {}; selected = '1.5';

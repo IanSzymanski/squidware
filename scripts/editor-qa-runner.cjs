@@ -140,7 +140,7 @@ async function checkActionClarity() {
   assert.equal(inventory.filter(n => n.name === 'Add set').length, 1);
   assert.equal(inventory.filter(n => n.name === 'Help').length, 1);
   const icon = name => inventory.find(n => n.name === name)?.icon;
-  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome'].map(icon);
+  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome', 'First set', 'Previous set', 'Previous count', 'Next count', 'Next set', 'Last set'].map(icon);
   assert.ok(distinct.every(Boolean)); assert.equal(new Set(distinct).size, distinct.length);
   await capture('action-clarity-design.png');
   for (const [action, heading] of [['New production', 'New production'], ['Production settings', 'Production settings'], ['Preferences', 'Preferences']]) {

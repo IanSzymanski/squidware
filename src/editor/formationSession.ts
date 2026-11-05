@@ -1,5 +1,7 @@
-import type { FormationSession, FormationResult } from '../formationPreview';
-import type { LiveFormation, Project, Point } from '../types';
+import type { FormationAssignmentMode, FormationSession, FormationResult } from '../formationPreview';
+import type { FormationKind, FormationOptions, LiveFormation, Project, Point } from '../types';
+import { formationAssignmentOrder, shortestTravelOrder } from '../formationAssignment';
+import { generateFormation } from '../formationGeometry';
 import { liveFormationName, liveFormationPoints } from '../liveFormations';
 import { validateProjectEdit } from '../domain';
 import { previewFormation } from '../formationPreview';
@@ -23,6 +25,14 @@ export function formationSessionRetained(state:EditorState):boolean {
 export function currentFormationResult(state: EditorState) {
   const session = state.ui.formationPreview;
   return session && formationSessionCurrent(state) ? previewFormationSession(state.project.present,session) : null;
+}
+
+/** Sessions reopened from saved data carry only the persisted positional/roster choice. */
+export const sessionAssignmentMode = (session: Pick<FormationSession, 'assignmentMode' | 'options'>): FormationAssignmentMode =>
+  session.assignmentMode ?? (session.options.assignment === 'position' ? 'position' : 'roster');
+/** Shortest travel solves against the generated slots; positional order sorts along the assignment rotation. */
+export function sessionAssignmentOrder(positions: Record<string, Point>, ids: readonly string[], kind: FormationKind, options: FormationOptions, mode: FormationAssignmentMode, assignmentRotation = options.rotation): string[] {
+  return mode === 'shortest' ? shortestTravelOrder(positions, ids, generateFormation(kind, ids.length, options)) : formationAssignmentOrder(positions, ids, kind, { ...options, assignment: mode, rotation: assignmentRotation });
 }
 
 export function sessionLiveFormation(session: FormationSession): LiveFormation {

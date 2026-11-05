@@ -3,6 +3,8 @@ import { formationAssignmentOrder } from './formationAssignment';
 import type { AssignmentConstraints, ScatterFormation, BezierFormation, FormationKind, FormationOptions, Point, Project } from './types';
 import { affinePoint } from './transforms';
 
+/** Session-only planner choice. Saved formations keep the narrower FormationAssignment ('position' | 'roster'). */
+export type FormationAssignmentMode = 'shortest' | 'position' | 'roster';
 export interface FormationSession {
   assignmentConstraints?: AssignmentConstraints;
   assignmentReviewed?: boolean;
@@ -11,6 +13,8 @@ export interface FormationSession {
   scatter?: ScatterFormation; scatterPending?: boolean; scatterError?: string; scatterShowTravel?: boolean; scatterVertex?: number; scatterSlot?: number;
   bezier?: BezierFormation; bezierAnchorId?: string;
   order?: string[]; assignmentRotation?: number;
+  /** Absent for sessions reopened from saved data: their options.assignment names the mode. */
+  assignmentMode?: FormationAssignmentMode;
   live?: { id: string; name: string; slotCount: number; slots: number[] };
 }
 export interface FormationResult {

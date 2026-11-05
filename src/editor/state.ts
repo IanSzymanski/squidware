@@ -1,6 +1,6 @@
 import type { MovementClipboard } from '../movementPathOperations';
 import type { FormationKind, FormationOptions, Project } from '../types';
-import type { FormationSession } from '../formationPreview';
+import type { FormationAssignmentMode, FormationSession } from '../formationPreview';
 import type { HistoryEntry } from './history';
 import { defaultPreferences } from '../preferences';
 import type { Preferences } from '../preferences';
@@ -36,6 +36,8 @@ export interface EditorState {
     formationPreview: FormationSession | null;
     movementClipboard: MovementClipboard | null;
     formationDrafts: Partial<Record<FormationKind, FormationOptions>>;
+    /** Session-only assignment choice per shape; never saved with drafts or live formations. */
+    formationAssignmentModes: Partial<Record<FormationKind, FormationAssignmentMode>>;
   };
   fileSession: {
     savedRevision: number | null; needsSaveAs: boolean; saveStatus: string;
@@ -56,7 +58,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
       pendingDraft: false, menu: false, paletteOpen: false, toast: '', setCreationKind: 'new', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
-      castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {}, movementClipboard: null },
+      castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {}, formationAssignmentModes: {}, movementClipboard: null },
     fileSession: { savedRevision: null, needsSaveAs: true, fileOperation: null,
       saveStatus: 'Save a project file', audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '', audioDuration: 0, audioName: '', audioUrl: '', waveform: [], audioLoading: false },
   };
