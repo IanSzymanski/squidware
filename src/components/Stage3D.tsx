@@ -226,7 +226,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       renderer.toneMappingExposure = 1.15;
       renderer.domElement.tabIndex = 0;
       renderer.domElement.setAttribute('role', 'img');
-      renderer.domElement.setAttribute('aria-label', 'Three dimensional drill preview. Drag to orbit, scroll to zoom, and click a performer to select. Use the camera buttons for front and overhead views.');
+      renderer.domElement.setAttribute('aria-label', 'Three dimensional drill preview. Drag to orbit, right-drag to pan, scroll to zoom, and click a performer to select. Use the camera buttons for front and overhead views.');
       host.appendChild(renderer.domElement);
       scene.background = new THREE.Color('#141e1b');
       scene.fog = new THREE.Fog('#141e1b', 130, 240);
@@ -426,9 +426,9 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     {!error && <>
       <div className="field-stage__corner"><span className="stage-status-light" /> LIVE 3D PREVIEW</div>
       <div className="stage-three__controls" role="group" aria-label="Camera presets">
-        <HelpButton title="Perspective camera" description="Reset the camera to an angled view of the entire field." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
-        <HelpButton title="Front camera" description="Reset the camera to the home sideline view." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
-        <HelpButton title="Overhead camera" description="Reset the camera to look straight down at the field." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
+        <HelpButton title="Perspective camera" description="Reset the camera to an angled view of the entire field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
+        <HelpButton title="Front camera" description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
+        <HelpButton title="Overhead camera" description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
         <Tooltip name="3D quality" description="Choose detailed shadows or lightweight rendering for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
       </div>
       <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan · Click a performer to select</span></div>

@@ -38,8 +38,4 @@ summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outli
 .field-container { container-type: size; }
 @container (max-height: 300px) {
   .field-topline, .field-bottomline { display: none; }
-  .field-keyboard-help { display: none; }
-  .field-snap-status { bottom: 8px; }
-  .field-stage:focus-within .field-keyboard-help { display: block; }
-  .field-stage:focus-within .field-snap-status { display: none; }
 }

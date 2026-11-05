@@ -36,7 +36,7 @@ export function SectionSelectionButton({ section, controller }: { section: Secti
   const enabled = useEditorSelector(canSelectSection);
   return <HelpButton pointerPassThrough command="selection.section" title={`Select all ${section.name}`} description={`Select ${ids.length} performers in the whole section. Shift-click or Shift-Enter adds them. Cast filters do not limit section buttons.`} active={selected} state={selected ? 'Selected' : 'Not selected'} disabled={!enabled} disabledReason="Finish the current gesture or selection review first." className={selected ? 'selected' : ''}
     onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') shift.current = event.shiftKey; }}
-    onClick={event => { controller.dispatch('selection.section', { id: section.id, additive: event.detail === 0 ? shift.current || event.shiftKey : event.shiftKey }); shift.current = false; }}><i style={{ background: section.color }} />Select {section.name}<span>{ids.length}</span></HelpButton>;
+    onClick={event => { controller.dispatch('selection.section', { id: section.id, additive: event.detail === 0 ? shift.current || event.shiftKey : event.shiftKey }); shift.current = false; }}><i style={{ background: section.color }} />{section.name}<span>{ids.length}</span></HelpButton>;
 }
 
 export function SelectionTools({ controller: c }: { controller: EditorController }) {

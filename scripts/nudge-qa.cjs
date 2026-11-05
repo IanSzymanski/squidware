@@ -84,7 +84,10 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   }
   await key('Escape'); window.webContents.setZoomFactor(1); window.setContentSize(1120,768); await settleNativeViewport(window,'step help layout');
   await reset({nudgeUnit:'steps',nudgeStep:1,fastNudgeStep:4});
-  assert.ok(await evaluate("(()=>{const help=document.querySelector('.field-keyboard-help').getBoundingClientRect();return ['.field-topline','.field-snap-status'].every(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return r.bottom<=help.top || help.bottom<=r.top})})()"),'step help must not overlap field information');
+  // Keyboard help is drawn only after a key press in the field, and then replaces the field status line.
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.field-keyboard-help')).clipPath"), 'inset(50%)', 'idle keyboard help is not drawn');
+  await focusField(); await key('Right');
+  assert.ok(await evaluate("(()=>{const n=document.querySelector('.field-keyboard-help');const r=n.getBoundingClientRect();return getComputedStyle(n).clipPath==='none'&&r.height>10&&/4 steps/.test(n.textContent)&&getComputedStyle(document.querySelector('.field-topline')).visibility==='hidden'&&!document.querySelector('.field-snap-status')})()"),'keyboard step help replaces field information');
   await capture('increments-field-narrow.png');
   pass('configured editing controls remain reachable at 1366/1120px and 125% UI zoom; step help stays separate from field information');
 };

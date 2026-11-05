@@ -34,13 +34,24 @@
 .field-container { margin: 0 12px 8px; min-height: 180px; }
 .field-container .field-stage, .field-container .stage-three,
 .field-container .field-stage__svg, .field-container .stage-three__canvas { min-height: 180px; }
-.field-legend { position: absolute; z-index: 4; top: 8px; left: 8px; right: 8px; min-height: 0; max-height: none; padding: 4px; gap: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); overflow: visible; }
-.field-legend-scroll { overflow-x: auto; flex-wrap: nowrap !important; min-width: 0; padding: 2px; scrollbar-width: thin; }
-.field-legend button { flex-shrink: 0; white-space: nowrap; padding: 4px 7px; font-size: 12px; }
-.field-legend > span { padding-right: 4px; }
-.field-topline { top: auto; bottom: 54px; left: 12px; right: 12px; font-size: 12px; letter-spacing: .3px; }
-.field-preview-banner { top: 60px; }
-.neighbor-legend { top: 60px; }
+/* A compact section legend in the top apron, left of the centered sideline label. It never spans the field. */
+.field-legend { position: absolute; z-index: 4; top: 8px; left: 8px; right: auto; max-width: calc(50% - 50px); min-height: 0; max-height: none; padding: 0; gap: 4px; border: 0; background: transparent; overflow: visible; transition: opacity .12s ease; }
+.field-legend > .field-legend-scroll { overflow-x: auto; flex-wrap: nowrap !important; min-width: 0; padding: 2px; gap: 4px; scrollbar-width: thin; }
+.field-legend button { flex-shrink: 0; white-space: nowrap; padding: 2px 5px; gap: 4px; min-height: 24px; font-size: 12px; }
+/* The legend steps aside while dragging; during previews it reappears on hover or keyboard focus. */
+.field-container:has(.field-stage--moving) .field-legend { opacity: 0; pointer-events: none; }
+.field-container--previewing .field-legend:not(:hover):not(:focus-within) { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .field-legend { transition: none; } }
+/* View state and roster count sit in the bottom apron corners, clear of the centered sideline label. */
+.field-topline { top: auto; bottom: 8px; left: 12px; right: 12px; font-size: 12px; letter-spacing: .3px; pointer-events: none; }
+.field-topline > span { max-width: calc(50% - 60px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.is-3d .field-topline { bottom: 36px; }
+.field-container:has(.field-stage--keyboard) .field-topline { visibility: hidden; }
+/* With Show hints off, field keyboard help stays an accessible description only. */
+.field-container.field-container--no-hints .field-stage .field-keyboard-help { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.field-container--no-hints:has(.field-stage--keyboard) .field-topline { visibility: visible; }
+.field-preview-banner { top: 48px; }
+.neighbor-legend { top: 48px; }
 /* Keep camera actions below the floating section row, including its scrollbar. */
 .field-container .stage-three__controls { top: 72px; max-width: calc(100% - 24px); flex-wrap: wrap; }
 .field-container--preview .stage-three__controls { top: auto; bottom: 72px; }

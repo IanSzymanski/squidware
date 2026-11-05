@@ -55,6 +55,7 @@ describe('drill commands through shared preview sessions', () => {
     expect(drillPlan(store.getState(), 'place "Flute 1" at Side 2: on the 40; on back hash').plan?.ids).toEqual([ids[0]]);
     expect(searchPalette(paletteEntries(store.getState()), 'rename group').some(entry => entry.invocation.id === 'selection.tools')).toBe(true);
     expect(searchPalette(paletteEntries(store.getState()), 'rebind').some(entry => entry.invocation.id === 'preferences.open')).toBe(true);
+    expect(searchPalette(paletteEntries(store.getState()), 'hints').some(entry => entry.invocation.id === 'preferences.open')).toBe(true);
   });
   it('rejects ambiguity, unknown labels, trailing words, field crossings and stale editing context without mutation', () => {
     const { store, before } = fixture();
@@ -77,6 +78,18 @@ describe('command search and enablement', () => {
     store.setValue('selection', 'selectedIds', []);
     expect(searchPalette(paletteEntries(store.getState()), 'Mirror across 50')[0].disabledReason).toMatch(/Select/);
   });
+  it('offers direct set positions as one-step palette reorders that undo atomically', () => {
+    const { store } = fixture(); const before = store.getState().project.present.sets.map(set => set.id);
+    const entries = paletteEntries(store.getState()).filter(entry => entry.invocation.id === 'set.move-to');
+    expect(entries).toHaveLength(before.length - 1);
+    expect(entries.some(entry => entry.name === `Move current set to position ${store.getState().selection.activeIndex + 1}`)).toBe(false);
+    const last = entries.find(entry => entry.name === `Move current set to position ${before.length}`)!;
+    expect(last.disabledReason).toBeNull();
+    expect(store.dispatch(last.invocation.id, last.invocation.args as never)).toBe(true);
+    expect(store.getState().project.present.sets.at(-1)!.id).toBe(before[0]);
+    expect(store.dispatch('history.undo')).toBe(true);
+    expect(store.getState().project.present.sets.map(set => set.id)).toEqual(before);
+  });
   it('opening and closing command search preserves an existing preview', () => {
     const { store, before } = fixture(); store.dispatch('transform.preview', {});
     const preview = store.getState().ui.transformPreview;
@@ -87,6 +100,8 @@ describe('command search and enablement', () => {
     const { store, before } = fixture();
     const action = paletteQuery(store.getState(), 'Move current set earlier');
     expect(action.phrase).toBe(false); expect(action.entries[0].invocation.id).toBe('set.reorder');
+    const direct = paletteQuery(store.getState(), 'Move current set to position 2');
+    expect(direct.phrase).toBe(false); expect(direct.entries[0].invocation.id).toBe('set.move-to');
     expect(paletteQuery(store.getState(), 'move 4 forward').resolved?.plan?.command.kind).toBe('coordinates');
     expect(paletteQuery(store.getState(), 'move 4 diagonally').resolved?.error).toBeTruthy();
     store.dispatch('transform.preview', {}); const preview = store.getState().ui.transformPreview;

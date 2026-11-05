@@ -43,6 +43,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'set.next') return 'This is the last set.';
   if (['set.new', 'set.duplicate', 'set.insert-before', 'set.hold'].includes(id)) return 'The production has reached its set limit.';
   if (id === 'set.reorder') return 'The current set is already at this end of the set list.';
+  if (id === 'set.move-to') return 'Pause playback and finish other input before reordering sets.';
   if (id === 'set.add') return 'The production has reached its set limit.';
   if (id === 'performers.add-dialog') return 'The production has reached its performer limit.';
   if (id === 'playback.toggle') return 'Add a second set with move counts before rehearsing.';
@@ -60,12 +61,16 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
   function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string) {
     const invocation = { id, args } as CommandInvocation;
-    const keywords = id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
+    const keywords = id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
     entries.push({ key, name: name ?? commandRegistry[id].name, description: commandRegistry[id].description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
   }
   for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && definition.id !== 'palette.open' && definition.id !== 'section.add' && definition.id !== 'selection.close') add(definition.id, undefined);
   add('coordinates.preview', {});
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
+  const current = state.project.present.sets[state.selection.activeIndex];
+  for (let target = 0; target < state.project.present.sets.length; target++) if (target !== state.selection.activeIndex) {
+    add('set.move-to', { id: current.id, target, revision: state.project.revision, epoch: state.ui.projectEpoch }, `Move current set to position ${target + 1}`, `move-to-${target}`);
+  }
   add('tempo.open', undefined);
   add('audio.align-open', undefined);
   add('group.open',{},'Group route movement','group-movement-new');

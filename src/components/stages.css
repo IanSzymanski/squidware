@@ -55,8 +55,10 @@
 .field-performer:focus-visible .field-focus-ring { visibility: visible; }
 .field-performer--focused .field-focus-ring { visibility: visible; }
 .field-stage__svg:focus-visible, .stage-three__canvas > canvas:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
-.field-keyboard-help { position: absolute; left: 8px; right: 8px; bottom: 8px; pointer-events: none; background: #14231bf5; color: #edf5e5; padding: 6px 9px; border-radius: 4px; font-size: 11px; line-height: 1.45; }
-.field-snap-status { position: absolute; left: 8px; right: 8px; bottom: 80px; padding: 4px 8px; border-radius: 4px; background: #14231bf5; color: #edf5e5; font-size: 11px; line-height: 1.45; pointer-events: none; }
+/* Keyboard help is always the field's accessible description; it is drawn only while the field has keyboard focus. */
+.field-keyboard-help { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; pointer-events: none; background: #14231bf5; color: #edf5e5; border-radius: 4px; font-size: 11px; line-height: 1.45; }
+.field-stage--keyboard .field-keyboard-help { left: 8px; right: 8px; bottom: 8px; width: auto; height: auto; margin: 0; padding: 6px 9px; overflow: visible; clip-path: none; white-space: normal; }
+.field-drag-status { position: absolute; z-index: 3; left: 50%; bottom: 8px; transform: translateX(-50%); padding: 4px 8px; border-radius: 4px; background: #14231bf5; color: #edf5e5; font-size: 11px; line-height: 1.45; white-space: nowrap; pointer-events: none; }
 .stage-three__controls > button { font-size: 12px; }
 .stage-three__controls > button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .stage-three__fallback > p { color: #d7e4d0; }

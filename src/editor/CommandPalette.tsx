@@ -7,6 +7,7 @@ import { DEFAULT_SNAPPING } from '../snapping';
 import { drillPlan } from './drillCommands';
 import { paletteQuery, commandUnavailable, type PaletteEntry } from './paletteCommands';
 import { commandKeycaps } from './shortcutDisplay';
+import { Hint } from './ControlHelp';
 import { useEditorSelector, useEditorStore } from './react';
 import './commands.css';
 
@@ -31,7 +32,7 @@ export function CommandPalette() {
     close(); void store.dispatch('drill.preview', { text: query });
   }
   return <Modal title="Command palette" onClose={close}>
-    <p className="modal-intro">Search an action or type a drill phrase. Drill phrases open a field preview before Apply.</p>
+    {state.preferences.value.showHints && <p className="modal-intro" data-hint="">Search an action or type a drill phrase. Drill phrases open a field preview before Apply.</p>}
     <label className="palette-search"><Search size={18} aria-hidden="true" /><input ref={input} role="combobox" aria-label="Search commands or drill phrases" placeholder="Search commands or type move 4 forward" aria-expanded={!phrase} aria-controls={phrase ? undefined : list} aria-activedescendant={entries.length ? `${list}-${current}` : undefined} aria-autocomplete="list" aria-describedby={help} autoComplete="off" spellCheck={false} maxLength={DRILL_ENTRY_LIMIT} value={query}
       onChange={event => { setQuery(event.target.value); setActive(0); setError(''); }} onKeyDown={event => {
         if (event.nativeEvent.isComposing) return;
@@ -42,7 +43,7 @@ export function CommandPalette() {
         }
         if (event.key === 'Enter') { event.preventDefault(); if (phrase) preview(); else if (entries[current]) run(entries[current]); }
       }} /></label>
-    <p className="microcopy" id={help}>↑ / ↓ explore · Enter runs or previews · Escape closes · Tab moves between controls</p>
+    <Hint id={help}>↑ / ↓ explore · Enter runs or previews · Escape closes · Tab moves between controls</Hint>
     {error && <p className="field-error" role="alert">{error}</p>}
     {phrase ? <div className="palette-phrase">
       <h3>Drill phrase preview</h3><p role="status" className={resolved?.error ? 'field-error' : ''}>{resolved?.error ?? resolved?.plan?.summary}</p>
