@@ -44,4 +44,3 @@
 .shared-routes-panel input[type=checkbox] { width: auto; }
 
 .shared-routes-panel .route-error { flex-basis: 100%; margin: 0 0 8px; }
-.shared-routes-panel button[aria-disabled=true] { color: var(--disabled-text); background: var(--disabled-bg); border-color: var(--border); border-style: dashed; }

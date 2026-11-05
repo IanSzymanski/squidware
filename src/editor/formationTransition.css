@@ -18,5 +18,4 @@
 .transition-findings { padding-left:20px; font-size:12px; }
 .formation-transition-panel .modal-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .formation-transition-panel .modal-actions>p { flex-basis:100%; margin:0; font-size:12px; }
-.formation-transition-panel .button[aria-disabled=true] { color:var(--disabled-text); background:var(--disabled-bg); border-style:dashed; }
 @media(max-width:850px) { .transition-grid,.transition-metrics,.transition-preview-controls { grid-template-columns:1fr; } }

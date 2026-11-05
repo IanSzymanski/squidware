@@ -36,6 +36,7 @@ import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateS
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
 import type { SelectionSpec } from '../selectionTools';
 import { analysisCommands } from './analysisCommands';
+import { projectPatches } from './history';
 import type { ProjectAnalysisRules, MarchingDirection } from '../types';
 import { rehearsalCommands } from './rehearsalCommands';
 import { rehearsalBounds } from '../rehearsal';
@@ -261,7 +262,7 @@ export const commandRegistry = {
     } }),
   'path.operations-open': simple('path.operations-open', 'Move operations', 'Preview move count rescaling, selected-path reversal and interval copy/paste.', canReviewPaths, c => showDialog(c, 'path-operations')),
   'path.operation-apply': define({ id: 'path.operation-apply', name: 'Apply move operation', description: 'Recheck context and apply the complete move operation as one undo action.', arguments: { moveId: 'reviewed move', activeSetId: 'reviewed picture', ids: 'explicit selection', revision: 'reviewed revision', epoch: 'project session', operation: 'resize | reverse | paste' },
-    enabled: (s,a) => pathReviewCurrent(s,a), execute: (c,a) => { c.edit(p => pathOperationPlan(p,a,c.getState().ui.movementClipboard).project);selectSet(c,c.getState().selection.activeIndex);c.patch('ui',{dialog:null}); } }),
+    enabled: (s,a) => pathReviewCurrent(s,a), execute: (c,a) => { const p=c.getState().project.present,next=pathOperationPlan(p,a,c.getState().ui.movementClipboard).project;if(!projectPatches(p,next).length)throw Error('The reviewed operation does not change the move.');c.edit(()=>next);selectSet(c,c.getState().selection.activeIndex);c.patch('ui',{dialog:null}); } }),
   'path.copy-intervals': define({ id: 'path.copy-intervals', name: 'Copy movement intervals', description: 'Copy a contiguous selected range to this production’s session clipboard without changing history.', arguments: { moveId:'reviewed move',activeSetId:'reviewed picture',ids:'explicit selection',revision:'reviewed revision',epoch:'project session',performerId:'source performer',segmentIds:'contiguous intervals',wholeMove:'include outer holds' },
     enabled: (s,a) => pathReviewCurrent(s,a) && a.ids.length === 1 && a.ids[0] === a.performerId,
     execute: (c,a) => { const p=c.getState().project.present,index=p.moves.findIndex(m=>m.id===a.moveId),clipboard=copyIntervals(p,index,a.performerId,a.segmentIds,a.wholeMove,uid(),a.epoch);c.patch('ui',{movementClipboard:clipboard,dialog:null,toast:`Copied ${clipboard.intervals.length} intervals from ${clipboard.sourceLabel}`}); } }),
@@ -361,7 +362,8 @@ export const commandRegistry = {
     enabled: (s, a) => canIncrement(s) && !!a && ['rotate', 'scale'].includes(a.operation) && [-1, 1].includes(a.direction),
     execute: (c, a) => { const p = c.getState().preferences.value; beginTransform(c, { angle: a.operation === 'rotate' ? a.direction * p.rotationStep : 0, scale: a.operation === 'scale' ? 1 + a.direction * p.scaleStep / 100 : 1 }); } }),
   'snapping.update': define({ id: 'snapping.update', name: 'Change grid and snapping', description: 'Save placement rules with this production without moving any performers.', arguments: { settings: 'SnapSettings' }, enabled: s => !s.ui.pendingDraft && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview && !s.project.transactionName,
-    execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => ({ ...p, snapping })); } }),
+    // Equal effective rules are a no-op: an untouched production keeps no explicit snapping and gains no undo entry.
+    execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => { const current = p.snapping ?? DEFAULT_SNAPPING; return (Object.keys(snapping) as (keyof SnapSettings)[]).every(k => snapping[k] === current[k]) ? p : { ...p, snapping }; }); } }),
   'positions.place': define({ id: 'positions.place', name: 'Place performer', description: 'Place a performer using the active snap targets; the other coordinate stays unchanged.', arguments: { index: 'integer', id: 'performerId', axis: 'x | y', value: 'yards' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && !!s.project.present.sets[a.index].positions[a.id],
     execute: (c, a) => { const s = c.getState(); const project = s.project.present; const positions = project.sets[a.index].positions;
       if (!['x', 'y'].includes(a.axis) || !Number.isFinite(a.value) || a.value < 0 || a.value > (a.axis === 'x' ? project.field.width : project.field.height)) throw new Error('Enter a coordinate inside the field.');

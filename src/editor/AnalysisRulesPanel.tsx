@@ -3,6 +3,7 @@ import { Modal } from '../components/Modal';
 import { DEFAULT_ANALYSIS_RULES, MARCHING_DIRECTIONS, validateAnalysisRules } from '../analysis/rules';
 import type { AnalysisOverrides, AnalysisThresholds, DirectionRules, MarchingDirection, ProjectAnalysisRules, SectionAnalysisRules } from '../types';
 import type { EditorController } from './useEditorController';
+import { sameAnalysisRules } from './analysisCommands';
 import { PROJECT_LIMITS } from '../domain';
 import './analysisRules.css';
 
@@ -20,6 +21,7 @@ export function AnalysisRulesPanel({ controller }: { controller: EditorControlle
   const inherited = { ...draft.defaults, ...(scope === 'project' ? {} : section), ...(direction === 'base' ? {} : draft.directions?.[direction]) };
   let invalid = '';
   try { validateAnalysisRules(draft, new Set(project.sections.map(s => s.id))); } catch { invalid = 'Enter spacing and stride values from 0.1 to 5. Leave optional overrides empty to inherit.'; }
+  const changed = declaration !== 'unchanged' || !sameAnalysisRules(draft, project.analysisRules);
   function edit(key: keyof AnalysisThresholds, raw: string) {
     const patch = { ...value };
     if (raw === '' && !required) delete patch[key]; else patch[key] = raw === '' ? NaN : Number(raw);
@@ -40,7 +42,7 @@ export function AnalysisRulesPanel({ controller }: { controller: EditorControlle
   const assignments = Object.entries(move?.marchingDirections ?? {});
   return <Modal title="Analysis rules" wide onClose={() => controller.setDialog(null)}>
     <p className="modal-intro">These rules travel with the production. Spacing is a minimum center-to-center distance in yards; stride is a maximum peak distance in yards per count, including easing. Both range from 0.1 to 5. These checks do not model body or instrument clearance.</p>
-    <form onSubmit={e => { e.preventDefault(); if (invalid) { setError(invalid); return; }
+    <form onSubmit={e => { e.preventDefault(); if (invalid) { setError(invalid); return; } if (!changed) return;
       const change = declaration === 'unchanged' ? undefined : { index, ids: selected.map(p => p.id), direction: declaration === 'unknown' ? null : declaration };
       if (dispatch('analysis.rules-save', { rules: draft, ...(change ? { declaration: change } : {}) })) controller.setDialog(null); else setError(controller.store.getState().ui.toast || 'Could not save analysis rules.');
     }}>
@@ -58,7 +60,7 @@ export function AnalysisRulesPanel({ controller }: { controller: EditorControlle
         {!!assignments.length && <details><summary>Saved declarations</summary><ul className="analysis-declarations">{assignments.map(([id,d]) => <li key={id}>{project.performers.find(p => p.id === id)?.label}: {d}</li>)}</ul></details>}
       </>}
       {(invalid || error) && <p className="field-error" role="alert">{error || invalid}</p>}
-      <div className="modal-actions"><button type="button" className="button subtle" onClick={() => controller.setDialog(null)}>Cancel</button><button type="submit" className="button primary" aria-label="Save rules" disabled={!!invalid}>Save rules</button></div>
+      <div className="modal-actions"><button type="button" className="button subtle" onClick={() => controller.setDialog(null)}>Cancel</button><button type="submit" className="button primary" aria-label="Save rules" disabled={!!invalid || !changed}>Save rules</button></div>
     </form>
   </Modal>;
 }

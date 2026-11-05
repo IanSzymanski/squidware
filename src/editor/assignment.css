@@ -15,5 +15,3 @@
 .assignment-panel .modal-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; }
 .assignment-panel .modal-actions>p { flex-basis:100%; margin:0; }
 @media(max-width:850px) { .assignment-controls,.assignment-alternatives { grid-template-columns:1fr; } }
-
-.assignment-panel .button[aria-disabled=true] { color:var(--disabled-text); background:var(--disabled-bg); border-style:dashed; }

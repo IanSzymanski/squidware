@@ -66,6 +66,8 @@ app.whenReady().then(async () => {
     // Native pointer route from the project settings; no additional timeline row.
     await evaluate(`${editor}.dispatch('dialog.open',{dialog:'settings'})`);
     await click('Metronome and count-in…'); await wait("document.querySelector('dialog h2')?.textContent==='Metronome and count-in'",'metronome dialog');
+    // Unchanged meter and session settings have nothing to apply.
+    assert.ok(await evaluate("(()=>{const b=[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Apply');return b.disabled&&getComputedStyle(b).borderStyle==='dashed'})()"),'unchanged settings leave Apply visibly unavailable');
     await selectNativeOption(window,'[aria-label="Meter preset"]','6/8');
     await selectNativeOption(window,'[aria-label="Count-in"]','1');
     await capture('metronome-dark.png');
@@ -74,7 +76,7 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(state+'.playback.countInBars'),1);
     await evaluate(`${editor}.dispatch('history.undo')`); assert.equal(await evaluate(state+'.project.present.meter'),undefined);
     await evaluate(`${editor}.dispatch('history.redo')`); assert.equal(await evaluate(state+'.project.present.meter.numerator'),6);
-    pass('native settings route saves compound grouping as one undo action and retains session count-in');
+    pass('native settings route keeps an unchanged Apply unavailable, saves compound grouping as one undo action and retains session count-in');
     await evaluate(`${editor}.dispatch('metronome.configure',{meter:{numerator:6,denominator:8,grouping:[3,3]},enabled:true,countInBars:1,speed:1.5}); ${editor}.dispatch('playback.scrub',{count:3})`);
     await wait(`${qa}.nodes.length>=2`,'new meter worklet'); await clear(); await toggle();
     await wait(`${state}.playback.clockStatus.startsWith('Count-in')`,'visible count-in status');
