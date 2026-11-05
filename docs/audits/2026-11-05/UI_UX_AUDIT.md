@@ -211,6 +211,23 @@ It doubles as a showcase for the tools added in #160 to #172 and fixes finding 4
 
 It should follow playback, the current set and the selection. The main benefit is a two-monitor setup, with the field on one screen and 3D on the other.
 
+## Tracked issues (v0.8)
+
+| Issue | Covers |
+|---|---|
+| [#173](https://github.com/IanSzymanski/squidware/issues/173) Reclaim field space and retire always-on hints | Findings 3, 7, 8 |
+| [#174](https://github.com/IanSzymanski/squidware/issues/174) Text hierarchy and dialog, panel and palette presentation | Findings 6, 11, 16, 17, P3 items |
+| [#175](https://github.com/IanSzymanski/squidware/issues/175) Misleading states, raw values and defaults | Findings 4 (clean state, native confirm), 12, 14, 15 |
+| [#176](https://github.com/IanSzymanski/squidware/issues/176) Contextual command toolbar | Findings 1, 10; contextual toolbar direction |
+| [#177](https://github.com/IanSzymanski/squidware/issues/177) Unified, saveable workspaces | Finding 9; workspaces and Pyware-style Field workspace |
+| [#178](https://github.com/IanSzymanski/squidware/issues/178) UI-scale-aware breakpoints | Findings 5, 12 |
+| [#179](https://github.com/IanSzymanski/squidware/issues/179) Spatial editors on the main field | Finding 2 |
+| [#180](https://github.com/IanSzymanski/squidware/issues/180) Navigable problem track | Findings 1 (Problems placement), 13 |
+| [#181](https://github.com/IanSzymanski/squidware/issues/181) Pop-out 3D window | Pop-out 3D direction; related to #41 (v0.9) |
+| [#182](https://github.com/IanSzymanski/squidware/issues/182) Original demo show to Squidwriter's Space show | Finding 4 (demo content); demo direction |
+
+The demo show uses the Space show from Squidwriter (Cowork) as its music, with drill to be written in a later pass. The issue requires confirming redistribution rights before the recording ships.
+
 ## Method notes
 
 - Screenshots in this folder were taken with Playwright against `pnpm dev` and color-quantized for size.
