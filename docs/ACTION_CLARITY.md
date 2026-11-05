@@ -11,6 +11,7 @@ Implements the product changes in [#36](https://github.com/IanSzymanski/squidwar
 | Personal preferences | Header **Menu → Preferences** | SlidersHorizontal; personal settings remain separate from production data |
 | Help and shortcuts | Labeled **Help** at the bottom of the workspace rail; native **Squidware Help / F1** | CircleHelp; dialog heading **Help**; standard macOS About remains in the application menu |
 | Export | Header **Export** in every workspace | Download; dialog heading **Export** |
+| History | Header icon button beside Undo and Redo, accessible name **History** | Lucide History (a clock on a counter-clockwise arrow), distinct from the Undo2/Redo2 arrows; dialog heading **History**. Its Undo/Redo buttons name the action and explain why they are unavailable. **Menu → Recovery copies** keeps RotateCcw |
 | Cast | Workspace rail **Cast** | Users; workspace heading **Cast** |
 | Production sheet | Workspace rail **Sheet**, accessible name **Production sheet** | ListMusic; workspace heading **Production sheet** |
 | Add set | Labeled button below the set list | Plus; header duplicate removed; the empty timeline points here without adding another button |

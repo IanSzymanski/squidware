@@ -142,6 +142,8 @@ async function checkActionClarity() {
   const icon = name => inventory.find(n => n.name === name)?.icon;
   const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome', 'First set', 'Previous set', 'Previous count', 'Next count', 'Next set', 'Last set'].map(icon);
   assert.ok(distinct.every(Boolean)); assert.equal(new Set(distinct).size, distinct.length);
+  // History is a clock-arrow glyph, distinct from the Undo/Redo arrows beside it; Recovery copies keeps RotateCcw.
+  assert.match(icon('History'), /lucide-history/); assert.equal(new Set(['History', 'Undo', 'Redo'].map(icon)).size, 3);
   await capture('action-clarity-design.png');
   for (const [action, heading] of [['New production', 'New production'], ['Production settings', 'Production settings'], ['Preferences', 'Preferences']]) {
     await evaluate('document.querySelector(\'[aria-label="Project menu"]\').focus()');
@@ -761,7 +763,11 @@ app.whenReady().then(async () => {
     let actions = await openHistory();
     assert.equal(actions.length, 1);
     assert.match(actions[0], /^Edit notes — Set 1/);
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.history-actions button')].map(b => [b.textContent.split(' ')[0], b.getAttribute('aria-disabled')])"), [['Undo', null], ['Redo', 'true']]);
     await clickSelector('.history-actions button:first-child');
+    // The emptied list is a sentence, not a bare bordered list; the now-unavailable Undo looks and reads unavailable.
+    await uiWait("!!document.querySelector('.history-empty')", 'history empty state after undo');
+    assert.deepEqual(await evaluate("({ list: !!document.querySelector('.history-list:not(.future)'), empty: document.querySelector('.history-empty')?.textContent, undo: [document.querySelector('.history-actions button:first-child').getAttribute('aria-disabled'), getComputedStyle(document.querySelector('.history-actions button:first-child')).borderTopStyle], redo: document.querySelector('.history-actions button:nth-child(2)').getAttribute('aria-label') })"), { list: false, empty: 'No actions to undo.', undo: ['true', 'dashed'], redo: `Redo ${actions[0]}` });
     assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), true);
     await clickSelector('.history-actions button:nth-child(2)');
     assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), false);
@@ -832,6 +838,8 @@ app.whenReady().then(async () => {
     await pause(100);
     actions = await openHistory(); assert.equal(actions.length, 0);
     assert.equal(await evaluate("document.querySelector('.history-policy').textContent.includes('80 actions')"), true);
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.history-actions button')].map(b => b.getAttribute('aria-disabled'))"), ['true', 'true']);
+    assert.equal(await evaluate("document.querySelector('.history-empty')?.textContent"), 'No actions to undo.');
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('file loads clear history and the history panel exposes its retention policy');
 

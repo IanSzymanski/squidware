@@ -11,8 +11,8 @@
 .workspace-tab { display: flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 9px; border: 2px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 12px; }
 .workspace-tab > span { display: flex; }
 .workspace-tab svg { width: 16px; height: 16px; }
-.workspace-tab:hover { background: var(--hover-bg); }
-.workspace-tab.active { background: var(--selected-bg); border-color: var(--accent); font-weight: 650; }
+.workspace-tab:hover { background: var(--hover-bg); color: var(--text); }
+.workspace-tab.active { background: var(--selected-bg); border-color: var(--accent); color: var(--text); font-weight: 650; }
 .header-actions { gap: 4px; margin-left: auto; }
 .header-actions > .header-divider { margin: 0 2px; }
 .help-action { padding: 7px; gap: 4px; }
@@ -118,7 +118,6 @@
   .app-header { gap: 6px 10px; }
   .brand > span:first-of-type { display: none; }
   .project-file-state { flex-basis: 120px; }
-  .inspector { width: 235px; min-width: 235px; }
   .audio-attach { max-width: 125px; }
   .count-display { gap: 4px; }
   .count-display > span { display: none; }

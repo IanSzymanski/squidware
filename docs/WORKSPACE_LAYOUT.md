@@ -7,6 +7,8 @@ Open **Layout** in the header to choose a preset, show or hide panels, or adjust
 - **Rehearse** tucks both panels away and keeps the field controls and playback timeline.
 - **Reset layout** restores Write and default widths. Other personal settings remain as chosen.
 
+The active preset is pressed: it has an accent border, a selected background and a check mark, so the state does not depend on color alone. Resizing, collapsing or restoring a panel makes the layout **Custom**. No preset is then pressed, and the popover says *Custom layout: choose a preset to restore its panels and widths.* The **Layout** button's tooltip names the current layout (Write, Review, Rehearse or Custom).
+
 Cast opens in place of the Inspector using its own saved width. Opening Cast from the header reveals it even if it was collapsed previously. The full Cast table remains available from its panel. Returning to Design restores the Inspector's own layout choice.
 
 Drag the divider beside a panel to resize it. A divider is also a keyboard stop: Left/Right resize in the direction of the arrow, Shift increases the increment from 10 to 40 pixels, Home/End use the width limits, and Enter collapses the panel. Escape cancels a pointer resize. The Layout sliders offer an alternative using the keyboard with a one-pixel increment and a readable pixel value.

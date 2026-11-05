@@ -1,6 +1,6 @@
 # Named history and transaction contract
 
-Every committed project command creates a named, reversible action. Names identify the affected picture, performer, selection or section. The History control opens a list of applied actions and available redo actions, with Undo/Redo controls. Selection, camera, playback and other session controls remain outside project history.
+Every committed project command creates a named, reversible action. Names identify the affected picture, performer, selection or section. The History control opens a list of applied actions and available redo actions, with Undo/Redo controls that name the action they reverse. With nothing to undo the panel says *No actions to undo.* instead of an empty list, and unavailable Undo/Redo stay focusable with the dashed disabled style and a tooltip explaining why. Selection, camera, playback and other session controls remain outside project history.
 
 ## Commit and cancel
 
