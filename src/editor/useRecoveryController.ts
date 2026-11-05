@@ -4,8 +4,9 @@ import { bootstrapRecovery } from './recoveryBootstrap';
 import { useEditorSelector, useEditorStore } from './react';
 import { createBrowserRecovery } from './browserRecovery';
 import { assertCanReplace, hasUnsavedWork } from './fileSession';
+import type { ConfirmationRequest } from './confirmation';
 
-export function useRecoveryController(loadProject: (project: Project) => void) {
+export function useRecoveryController(loadProject: (project: Project) => void, confirm: (request: ConfirmationRequest) => Promise<boolean>) {
   const store = useEditorStore();
   const history = useEditorSelector(state => state.project);
   const [bridge] = useState<RecoveryBridge>(() => window.squidware || createBrowserRecovery());
@@ -33,7 +34,7 @@ export function useRecoveryController(loadProject: (project: Project) => void) {
       if (result.versions.length || result.warnings.length) {
         // Async startup must never overwrite edits made while storage was opening.
         const current = store.getState();
-        if (current.project.revision === 0 && !current.project.transactionName && !current.ui.pendingDraft && current.ui.dialog === null) store.dispatch('dialog.open', { dialog: 'recovery' });
+        if (current.project.revision === 0 && !current.project.transactionName && !current.ui.pendingDraft && current.ui.dialog === null && !current.ui.confirmation) store.dispatch('dialog.open', { dialog: 'recovery' });
         else store.setValue('ui', 'toast', 'Recovery copies are available in the project menu.');
       }
     }, failure => { if (active) { if (bootstrap.current === pending) bootstrap.current = undefined; setError((failure as Error).message); setStatus('Recovery unavailable'); } });
@@ -71,7 +72,8 @@ export function useRecoveryController(loadProject: (project: Project) => void) {
     const before = store.getState();
     try { assertCanReplace(before); } catch (failure) { setError((failure as Error).message); return; }
     if (before.ui.pendingDraft || before.project.transactionName || document.querySelector('[aria-invalid="true"]')) { setError('Finish or cancel the pending edit before restoring a copy.'); return; }
-    if (hasUnsavedWork(before) && !window.confirm('Replace your current production with this recovery copy? Save a project file first to keep your latest edits.')) return;
+    // The read below rechecks that nothing changed while this confirmation was open.
+    if (hasUnsavedWork(before) && !await confirm({ title: 'Restore this recovery copy?', message: 'It replaces your current production, and your unsaved changes will be discarded. Save a project file first to keep your latest edits.', confirmLabel: 'Replace with copy' })) return;
     setBusy(true);
     try {
       const result = await bridge.readRecovery(session.current, id);

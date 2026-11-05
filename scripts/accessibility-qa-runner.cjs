@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, key: sendKey, waitFor: waitUntil, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor: waitUntil, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -53,7 +53,6 @@ const focusId = () => evaluate("document.activeElement?.getAttribute('data-perfo
 const revision = () => evaluate(`${editor}.getState().project.revision`);
 const pass = label => { checks.push(label); console.log(`PASS ${label}`); };
 function instrument() {
-  window.confirm = () => true;
   window.__accessibilityQA = { editor: null };
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
     supportsFiber: true, renderers: new Map(), inject() { return 1; },
@@ -70,7 +69,7 @@ app.whenReady().then(async () => {
     window.setContentSize(1366, 768);
     window.webContents.debugger.attach('1.3');
     await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source }));
     window.webContents.reload(); await uiWait(`!!${editor}`, 'instrumented editor');
     native('Open project…'); await uiWait("document.querySelectorAll('.field-performer').length === 500", 'maximum cast');
     const initial = JSON.parse(await fs.readFile(fixture, 'utf8')); const ids = initial.performers.map(person => person.id);

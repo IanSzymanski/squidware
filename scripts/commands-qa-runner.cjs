@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog, Menu, clipboard } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, waitFor, settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor, settleNativeViewport, selectNativeOption, installConfirmShim } = require('./testing/renderer.cjs');
 const { auditText } = require('./accessibility-audit.cjs');
 const { root, output, profile } = require(process.argv.find(a => a.startsWith('--commands-manifest=')).slice('--commands-manifest='.length));
 const phase = process.argv.find(a => a.startsWith('--phase='))?.slice(8);
@@ -23,7 +23,7 @@ const primary = process.platform === 'darwin' ? 'meta' : 'control';
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 const debug = (method, args) => window.webContents.debugger.sendCommand(method, args);
 function instrument() {
-  window.confirm = () => true; window.__commandsQA = { editor: null, errors: [] };
+  window.__commandsQA = { editor: null, errors: [] };
   window.addEventListener('error', e => window.__commandsQA.errors.push(e.message));
   window.addEventListener('unhandledrejection', e => window.__commandsQA.errors.push(String(e.reason)));
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
@@ -61,7 +61,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'commands window'); await wait("!!document.querySelector('.studio')", 'renderer');
     window.webContents.debugger.attach('1.3'); await debug('Page.enable');
-    await debug('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});
+    await debug('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});await installConfirmShim(source=>debug('Page.addScriptToEvaluateOnNewDocument',{source}));
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'commands store and durable preferences');
     await debug('Emulation.setFocusEmulationEnabled',{enabled:true});
     window.setContentSize(1366,768);await settleNativeViewport(window,'commands baseline');

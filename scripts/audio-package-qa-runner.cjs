@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key, selectNativeOption, waitFor, pause, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key, selectNativeOption, waitFor, pause, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--audio-package-manifest=')).slice('--audio-package-manifest='.length));
 const { root, output, profile, recording, files } = manifest;
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
@@ -19,7 +19,6 @@ const wait = (expression, label) => waitFor(() => evaluate(expression), label, {
 const pass = message => { checks.push(message); console.log('PASS ' + message); };
 function instrument() {
   const qa = window.__packageQA = { editor: null, errors: [] };
-  window.confirm = () => true;
   window.addEventListener('error', e => qa.errors.push(e.message)); window.addEventListener('unhandledrejection', e => qa.errors.push(String(e.reason)));
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
@@ -59,7 +58,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(()=>!!window,'window'); await wait("!!document.querySelector('.set-card')",'renderer'); window.show(); window.focus();
     window.setContentSize(1366,768); window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`}); window.webContents.reload();
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});await installConfirmShim(source=>window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source})); window.webContents.reload();
     await wait(`!!${store} && ${state}.preferences.status==='saved'`,'editor and preferences');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
     await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');

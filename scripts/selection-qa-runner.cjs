@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { root, output, profile, fixture } = require(process.argv.find(a => a.startsWith('--selection-manifest=')).slice('--selection-manifest='.length));
 const phase = process.argv.find(a => a.startsWith('--phase='))?.slice('--phase='.length);
 const saved = path.join(output, 'saved-groups.squid');
@@ -27,7 +27,6 @@ const capture = async name => {
 };
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 function instrument() {
-  window.confirm = () => true;
   window.__selectionQA = { editor: null, errors: [] };
   window.addEventListener('error', e => window.__selectionQA.errors.push(e.message));
   window.addEventListener('unhandledrejection', e => window.__selectionQA.errors.push(String(e.reason)));
@@ -64,7 +63,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'selection window'); await wait("!!document.querySelector('.field-stage__svg')", 'initial renderer');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source }));
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'selection store');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true }); await viewport(1366, 768);
     await evaluate(`${editor}.dispatch('file.open')`); await wait(`${state}.project.present.title==='Selection and saved groups'`, 'native fixture open');

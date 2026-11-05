@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom';
 import { bindingFromEvent, defaultShortcuts, nativeMenuCommands, shortcutForEvent } from '../shortcuts';
 import { shortcutPlatform } from './shortcutDisplay';
 import { useEditorStore } from './react';
+import { isModalOpen } from './confirmation';
 
 export const menuCommands = nativeMenuCommands;
 const isInput = (target: Element | null) => target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable);
@@ -17,7 +18,7 @@ export function useCommandController() {
     function updateMenuContext() {
       const state = store.getState();
       // A modal recorder or text input must receive its own keystrokes before native accelerators.
-      const context = isInput(document.activeElement) ? 'text' : state.ui.dialog || state.ui.paletteOpen ? 'modal' : 'editor';
+      const context = isInput(document.activeElement) ? 'text' : isModalOpen(state) || state.ui.paletteOpen ? 'modal' : 'editor';
       if (context !== lastMenuContext) { lastMenuContext = context; window.squidware?.setKeyboardContext?.(context); }
     }
     function menuAction(action: string) {
@@ -27,7 +28,8 @@ export function useCommandController() {
       if (editing && ['undo', 'redo', 'select-all'].includes(action)) {
         document.execCommand(action === 'select-all' ? 'selectAll' : action); return;
       }
-      if (state.ui.dialog) return;
+      // An in-app confirmation is modal: menus wait for its answer.
+      if (isModalOpen(state)) return;
       const command = menuCommands[action as keyof typeof menuCommands];
       if (!command) return;
       if (command.startsWith('file.')) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -38,7 +40,8 @@ export function useCommandController() {
       const state = store.getState(); const target = event.target;
       const input = isInput(target);
       const id = shortcutForEvent(event, state.preferences.value.shortcutBindings, platform, !!window.squidware);
-      if (state.ui.dialog) return;
+      // Keys inside a confirmation (Escape, Tab, Enter) belong to that dialog.
+      if (isModalOpen(state)) return;
       if (state.ui.paletteOpen) { if (id === 'palette.open') { event.preventDefault(); store.setValue('ui', 'paletteOpen', false); } return; }
       if (id) {
         const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];
@@ -65,7 +68,7 @@ export function useCommandController() {
       }
     }
     const unsubscribe = window.squidware?.onMenuAction(menuAction);
-    const unsubscribeContext = store.subscribeSelector(state => !!state.ui.dialog || state.ui.paletteOpen, updateMenuContext);
+    const unsubscribeContext = store.subscribeSelector(state => isModalOpen(state) || state.ui.paletteOpen, updateMenuContext);
     updateMenuContext();
     document.addEventListener('focusin', updateMenuContext);
     document.addEventListener('focusout', updateMenuContext);

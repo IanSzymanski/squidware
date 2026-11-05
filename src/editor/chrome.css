@@ -146,3 +146,5 @@
 .display-color-control input[type=color] { width: 48px; height: 34px; }
 .display-color-control input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
 .display-color-control input[type=color]::-webkit-color-swatch { border: 0; border-radius: 3px; }
+/* A clean production that was never saved is neutral, not a saved-file success. */
+.status-dot.idle { background: var(--muted); }
