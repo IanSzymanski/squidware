@@ -27,7 +27,7 @@ A labelled Place command selects its target only when the user opens the preview
 
 ## Rebinding
 
-Open **Preferences → Keyboard shortcuts**. Find an action, choose its current binding and press the new keys. **Clear** unbinds that action; **Reset** restores its default. **Reset all shortcuts** restores all bindings without resetting other preferences. Escape cancels recording, and Tab keeps normal focus traversal. Conflicts identify the other command and require clearing it first. A rejected candidate is never saved.
+Open **Preferences** and choose the **Shortcuts** section button, which also opens the **Keyboard shortcuts** list. Find an action, choose its current binding and press the new keys. **Clear** unbinds that action; **Reset** restores its default. **Reset all shortcuts** restores all bindings without resetting other preferences. Escape cancels recording, and Tab keeps normal focus traversal. Conflicts identify the other command and require clearing it first. A rejected candidate is never saved.
 
 Bindings are portable single chords with a platform primary modifier: Ctrl on Windows/Linux, Cmd on macOS. Ordinary typing, text copy/cut/paste/undo/select-all, the field's arrow/Enter/Space navigation, Alt-arrow nudges and normal Tab behavior remain available. Navigation keys and known OS/browser/text-editing chords cannot be assigned. Native menu commands require Ctrl/Cmd rather than unmodified letters. Browser Ctrl/Cmd+P keeps browser printing; a different Export binding can open Squidware's export dialog. Desktop Ctrl/Cmd+P opens Export by default. Windows/Linux Ctrl+Y remains a redo alias while redo keeps its default binding; rebinding redo removes that alias.
 

@@ -2,7 +2,7 @@
 
 Issue [#43](https://github.com/IanSzymanski/squidware/issues/43).
 
-Open **Menu → Preferences** to choose **Dark**, **Light** or **High contrast**, and **100%, 110%, 125% or 150% UI scale**. Changes apply immediately and persist on this device. Dark at 100% is the default, including when an older preferences file is missing the new fields. Reset defaults restores these choices. Invalid themes/scales cannot replace the canonical preferences.
+Open **Menu → Preferences** and use its **Appearance** section to choose **Dark**, **Light** or **High contrast**, and **100%, 110%, 125% or 150% UI scale**. Changes apply immediately and persist on this device. Dark at 100% is the default, including when an older preferences file is missing the new fields. Reset defaults restores these choices. Invalid themes/scales cannot replace the canonical preferences.
 
 Chrome uses shared neutral surface/text/border tokens, blue selection/focus, and separate success/warning/error colors. Counts, tempos and coordinate readouts use tabular numerals; compact chrome defaults to 12–13 px. Theme changes apply without color interpolation so text and backgrounds do not briefly use incompatible palettes. Selected dots have a blue circular ring with a dark halo; keyboard focus has a separate square outline. Check marks, pressed borders, dashed disabled controls and error text reinforce state.
 

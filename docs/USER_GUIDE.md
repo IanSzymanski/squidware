@@ -38,9 +38,9 @@ In browser preview, Save downloads a project and PDF export opens the browser pr
 
 ## Personal preferences
 
-The **2D field display** section sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
+In Preferences, **Field display → 2D field display** sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
 
-Open **Project menu → Preferences** for device settings: panel layout, 2D/3D view, labels, paths, grid visibility, snap, zoom, keyboard increments, formation tool defaults, coordinate decimals, paper size, packet type, and geometric check thresholds. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
+Open **Project menu → Preferences** for device settings, grouped as **Appearance** (theme, UI scale, panel layout, hints), **Field display** (2D/3D start view, paths, grid visibility, zoom, labels, coordinate precision), **Editing** (keyboard increments, snap, new move counts, formation tool defaults, new-production defaults, paper size and packet type) and **Shortcuts**. The section buttons at the top jump between them. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
 
 Choose **Reset defaults** to restore the personal settings. If storage is unavailable, your choices work for the session and Preferences shows the error with **Retry save**. Unsupported newer preferences remain preserved until you update the app or reset them. Invalid numeric entries stay in Preferences until corrected or canceled with Escape. Production settings still belong to each show. See [the persistence policy](PREFERENCES.md).
 
@@ -192,14 +192,14 @@ Flags help identify moves to review. They do not certify safe movement, account 
 
 ## Export a rehearsal packet
 
-Open **Export** and choose one of the two PDF layouts:
+Open **Export**. Its **PDF drill book** section chooses one of two PDF layouts, then **Save PDF** saves it:
 
 - **Field charts:** a drawing for each set, with counts, cumulative arrival count, tempo, cast size, and rehearsal notes.
 - **Performer coordinate sheets:** an individual sheet for each performer listing their position in every set in 8-to-5 steps.
 
 The desktop app saves the chosen packet directly as a landscape Letter PDF. Browser preview uses Print / Save PDF. Long performer tables can span more than one page. Inspect a sample page before making rehearsal copies, particularly for long productions or unusually long labels and notes.
 
-Additional exports are:
+**Other formats** lists the remaining exports, one per row; hover or focus a row for its contents:
 
 | Format | Contents |
 | --- | --- |

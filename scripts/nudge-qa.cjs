@@ -78,8 +78,10 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   await button('.dropdown [aria-label="Preferences"]'); await wait("document.querySelector('.modal h2')?.textContent==='Preferences'",'increment preferences');
   for(const [width,zoom,name] of [[1366,1,'increments-preferences.png'],[1366,1.25,'increments-preferences-enlarged.png'],[1120,1,'increments-preferences-narrow.png']]) {
     window.setContentSize(width,768); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window,'increment preferences layout');
-    await evaluate("[...document.querySelectorAll('.modal h3')].find(n=>n.textContent==='Editing increments').scrollIntoView({block:'start'})");
-    assert.ok(await evaluate("['Nudge ·','Fast nudge ·','Rotate preset ·','Scale preset ·'].every(label=>{const n=[...document.querySelectorAll('.preferences-fields label')].find(n=>n.textContent.startsWith(label)).querySelector('input');const r=n.getBoundingClientRect();return r.top>=0 && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth})"));
+    // The Editing section nav jumps past Appearance and Field display; increments lead that group, clear of the pinned nav.
+    await button('.preferences-nav [aria-label="Editing"]');
+    await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Editing' && document.activeElement?.matches('.preferences-section > h3') && document.activeElement.textContent==='Editing' && document.activeElement.parentElement.querySelector('h4')?.textContent==='Editing increments'",'Editing preferences section');
+    assert.ok(await evaluate("(()=>{const nav=document.querySelector('.preferences-nav').getBoundingClientRect().bottom;return ['Nudge ·','Fast nudge ·','Rotate preset ·','Scale preset ·'].every(label=>{const n=[...document.querySelectorAll('.preferences-fields label')].find(n=>n.textContent.startsWith(label)).querySelector('input');const r=n.getBoundingClientRect();return r.top>=nav && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth})})()"));
     await capture(name);
   }
   await key('Escape'); window.webContents.setZoomFactor(1); window.setContentSize(1120,768); await settleNativeViewport(window,'step help layout');

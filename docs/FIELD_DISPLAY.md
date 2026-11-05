@@ -1,6 +1,6 @@
 # Personal 2D field display
 
-Open **Project menu → Preferences → 2D field display**. The changes save on this device and do not edit or dirty the production. The label toolbar button cycles the same saved label visibility choice.
+Open **Project menu → Preferences → Field display**; its **2D field display** group holds these choices. The changes save on this device and do not edit or dirty the production. The label toolbar button cycles the same saved label visibility choice.
 
 | Choice | Default | Range / behavior |
 | --- | --- | --- |

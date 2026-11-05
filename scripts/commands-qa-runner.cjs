@@ -50,7 +50,7 @@ function menu(label, invoke = true) {
   const item = find(Menu.getApplicationMenu()); assert.ok(item?.click, label); if(invoke)item.click(item,window,{}); return item;
 }
 async function preferences() { menu('Preferences…'); await wait("document.querySelector('dialog[open] h2')?.textContent==='Preferences'", 'Preferences'); }
-async function shortcuts() { await click('.shortcut-preferences summary'); await wait("document.querySelector('.shortcut-preferences').open", 'shortcut preferences'); }
+async function shortcuts() { await click('.preferences-nav [aria-label="Shortcuts"]'); await wait("document.querySelector('.shortcut-preferences').open && document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Shortcuts'", 'Shortcuts section opens the shortcut list'); }
 async function record(name, code, modifiers = []) {
   await type(button('Find a shortcut'), name); await click(button('Change shortcut: '+name));
   await key(code, modifiers); await wait(`document.querySelector(${JSON.stringify(button('Change shortcut: '+name))}).getAttribute('aria-pressed')==='false'`, 'finished recording');

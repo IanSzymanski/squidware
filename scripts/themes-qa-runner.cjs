@@ -87,7 +87,9 @@ app.whenReady().then(async () => {
         await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(id)}])`);
         await viewport(1366, 768); await preferences(); await select('Interface theme', theme); await select('UI scale', 1);
         await wait(`document.documentElement.dataset.theme===${JSON.stringify(theme)}`, 'applied theme');
-        await audit(theme + ' preferences'); await capture(`themes-${theme}-preferences.png`); await close();
+        await audit(theme + ' preferences'); await capture(`themes-${theme}-preferences.png`);
+        await click('.preferences-nav [aria-label="Shortcuts"]'); await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Shortcuts' && document.querySelector('.shortcut-preferences').open", 'Shortcuts section');
+        await audit(theme + ' shortcut preferences'); await close();
         await focus('.header-actions [aria-label="Save"]');
         await focus(`[data-performer-id="${id}"]`);
         await wait("getComputedStyle(document.activeElement.querySelector('.field-focus-ring')).visibility==='visible'", 'field keyboard focus');
@@ -113,7 +115,11 @@ app.whenReady().then(async () => {
         for(const type of ['mouseMoved','mousePressed','mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,x:hit.x,y:hit.y,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
         await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(hit.id)}`, 'scaled native field hit');
         await audit(theme + ' 125% design'); await capture(`themes-${theme}-1000-125.png`);
-        await viewport(850, 650); await preferences(); await select('UI scale', 1.5); await audit(theme + ' 150% preferences'); await close();
+        await viewport(850, 650); await preferences(); await select('UI scale', 1.5); await audit(theme + ' 150% preferences');
+        // At 150% in a small window the section nav stays on one row, pinned to the dialog top above the Editing heading.
+        await click('.preferences-nav [aria-label="Editing"]');
+        await wait("(()=>{const d=document.querySelector('dialog[open]').getBoundingClientRect(),n=document.querySelector('.preferences-nav'),r=n.getBoundingClientRect(),h=document.activeElement.getBoundingClientRect();return document.activeElement.textContent==='Editing'&&n.querySelector('[aria-pressed=true]')?.textContent==='Editing'&&new Set([...n.children].map(c=>Math.round(c.getBoundingClientRect().top))).size===1&&Math.abs(r.top-d.top)<3&&h.top>=r.bottom&&h.bottom<=d.bottom})()", 'pinned 150% section nav');
+        await audit(theme + ' 150% Editing preferences'); await close();
         await click('.header-actions [aria-label="Export"]'); await audit(theme + ' 150% Export'); await close();
         await capture(`themes-${theme}-850-150.png`);
         assert.deepEqual(await evaluate(`${state}.project`), baseline, 'Appearance must preserve project, history and revision');

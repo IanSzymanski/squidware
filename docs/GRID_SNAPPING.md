@@ -14,7 +14,7 @@ All positions stay inside the field. Rigid groups use only targets that fit thei
 
 The optional v2 `snapping` object contains `steps`, `subdivision`, `target` and `group`. The shared renderer/native codec, JSON Schema, editable saves and recovery retain and validate it. Files without it, including migrated v1 files, use 8-to-5 whole-step/anchor rules. Adding rules changes no positions or timing. Older v2 readers open the positions but discard these newly recognized rules when saving; retain the original file when using older builds.
 
-**Preferences → New production placement defaults** seeds productions created through New production, including the demo option. Changing defaults never modifies the current show or its dirty state. Grid visibility and the magnet toggle remain personal preferences. Coordinate descriptions and exports retain their documented 8-to-5 output convention; an editing grid does not change output units.
+**Preferences → Editing → New production placement defaults** seeds productions created through New production, including the demo option. Changing defaults never modifies the current show or its dirty state. Grid visibility (**Field display → Field grid**) and the magnet toggle (**Editing → Snap to grid**) remain personal preferences. Coordinate descriptions and exports retain their documented 8-to-5 output convention; an editing grid does not change output units.
 
 ## Design and validation
 
