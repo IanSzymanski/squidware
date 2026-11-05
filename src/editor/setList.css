@@ -25,3 +25,10 @@
 .set-list-empty { padding: 10px 3px; font-size: 12px; color: var(--muted); line-height: 1.5; }
 .set-list-panel .set-panel-footer { padding: 6px 8px 8px; flex-shrink: 0; }
 .set-list-panel .set-panel-footer > span { margin-top: 6px; font-size: 11px; }
+/* At the default pane width, set names need the room more than the BPM column; tempo stays in each row's help and the Inspector. */
+.set-list-panel { container: set-list / inline-size; }
+@container set-list (width < 260px) {
+  .set-list-panel .set-card.set-row { grid-template-columns: 10px 22px minmax(0,1fr) 28px; }
+  .set-list-panel .set-row-tempo, .set-list-columns > span:last-child { display: none; }
+  .set-list-columns { grid-template-columns: 1fr 28px; }
+}

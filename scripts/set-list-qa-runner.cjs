@@ -89,6 +89,10 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelectorAll('.mini-field').length"), 0);
     const reference = await evaluate("({width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height,rowHeight:document.querySelector('.set-card').getBoundingClientRect().height,add:document.querySelectorAll('.set-panel [aria-label=\"Add set\"]').length})");
     assert.equal(reference.width, 1366); assert.equal(reference.height, 768); assert.ok(reference.fieldHeight >= 470); assert.equal(reference.rowHeight, 32); assert.equal(reference.add, 1); layouts.push({ name: 'reference', ...reference }); await capture('set-list-compact.png');
+    // At the default pane width the BPM column gives way to set names; a wider pane shows it again.
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.set-row-tempo')).display"), 'none');
+    await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:300}})`); await wait("getComputedStyle(document.querySelector('.set-row-tempo')).display!=='none'", 'wide set list shows BPM');
+    await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:216}})`); await wait("getComputedStyle(document.querySelector('.set-row-tempo')).display==='none'", 'default set list hides BPM');
     await type(named('Find set'), '040'); await key(window, 'Return'); await wait(`${state}.selection.activeIndex===39`, 'number jump'); await visibleCurrent();
     assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 1);
     await type(named('Find set'), 'ballad'); assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 2); await capture('set-list-search.png'); await evaluate("document.querySelector('[aria-label=\"Find set\"]').focus()");
