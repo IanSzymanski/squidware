@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type InputHTMLAttributes } from 'react';
+import { formatYards } from '../coordinates';
 import { Tooltip } from './Tooltip';
 
 export function numberDraftError(draft: string, min: number, max: number, integer = false): string | undefined {
@@ -48,4 +49,31 @@ export function NumberField({ label, value, onChange, min, max, step = 1, intege
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(String(value)); onDraftChange?.(false, errorId); event.currentTarget.blur(); }
     }} />;
   return <label className="form-label">{label}<Tooltip name={label} description={description || `Enter ${integer ? 'a whole number' : 'a number'} from ${min} to ${max}. Enter applies; Escape cancels.`} disabledReason={disabled ? disabledReason || 'This field is unavailable in the current state.' : undefined}>{input}</Tooltip>{error && <span id={errorId} className="field-error" role="status">{error}</span>}</label>;
+}
+
+type NumberText = string | number;
+const parsedNumber = (value: NumberText) => typeof value === 'number' ? value : value.trim() ? Number(value) : NaN;
+/** Display text for a live value: formatted when finite; empty or incomplete draft text is shown unchanged. */
+export function formattedNumber(value: NumberText, format: (value: number) => string = formatYards): string {
+  const number = parsedNumber(value);
+  return Number.isFinite(number) ? format(number) : typeof value === 'string' ? value : '';
+}
+/** Keeps a draft that already denotes the new value ('26.' for 26, '' or '-' while empty); otherwise shows the formatted value. */
+export function syncedNumberDraft(draft: string, value: NumberText, format: (value: number) => string = formatYards): string {
+  const a = parsedNumber(draft), b = parsedNumber(value);
+  return a === b || Number.isNaN(a) && Number.isNaN(b) ? draft : formattedNumber(value, format);
+}
+
+export interface FormattedNumberInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'> {
+  value: NumberText;
+  onChange: (text: string) => void;
+  format?: (value: number) => string;
+}
+
+/** Live numeric entry: shows format(value) and passes every keystroke through for previews. Prop changes (drags, Escape restores)
+ * resync only when they denote a different number, so partial typing survives and displaying never rewrites the exact value. */
+export function FormattedNumberInput({ value, onChange, format = formatYards, ...input }: FormattedNumberInputProps) {
+  const [draft, setDraft] = useState(() => formattedNumber(value, format)), [shown, setShown] = useState(value);
+  if (!Object.is(shown, value)) { setShown(value); setDraft(syncedNumberDraft(draft, value, format)); }
+  return <input {...input} type="number" value={draft} onChange={event => { setDraft(event.target.value); onChange(event.target.value); }} />;
 }

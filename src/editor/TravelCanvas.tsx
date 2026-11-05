@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
 import type { PointerEvent, KeyboardEvent } from 'react';
 import { FieldDrawing } from '../components/Field2D';
+import { formatYards } from '../coordinates';
 import { movementSvg, movementTravels } from '../movementPaths';
 import { moveSelection } from '../snapping';
 import type { PerformerPath, Point, Project, Move } from '../types';
 import { DRAW_LIMIT, travelTicks, type TravelHandle } from './pathAuthoring';
 import { HelpButton } from './ControlHelp';
+import { formatTimelineCount } from './timelineNavigation';
 
 interface Props {
   project: Project; positions: Record<string, Point>; performerId: string;
@@ -53,7 +55,7 @@ export function TravelCanvas(props: Props) {
     const same = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y) < 1e-8;
     if (i && same(ticks[i].point, ticks[i - 1].point)) return null;
     let end = i; while (end + 1 < ticks.length && same(ticks[i].point, ticks[end + 1].point)) end++;
-    const text = (count: number) => String(Number(count.toFixed(2)));
+    const text = props.routeMode ? formatYards : formatTimelineCount;
     if (end > i) return `${text(ticks[i].count)}–${text(ticks[end].count)}`;
     return i === 0 || i === ticks.length - 1 || i % Math.max(1, Math.ceil(ticks.length / (zoom * 8))) === 0 ? text(ticks[i].count) : null;
   }
@@ -159,7 +161,7 @@ export function TravelCanvas(props: Props) {
       {!!stroke.length && <polyline className="travel-stroke" points={stroke.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)).map(p => `${p.x},${p.y}`).join(' ')} pointerEvents="none" />}
     </svg>
     <p className="microcopy" id="travel-field-help">{description} Zoom centers on the endpoints. {props.routeMode ? 'Route endpoints are independent of set pictures.' : 'Square endpoints stay attached to the sets.'}</p>
-    {!capture && <p className="microcopy" role="status" aria-label="Active path handle">{handle ? `${handle.label}: X ${handle.point.x.toFixed(3)}, Y ${handle.point.y.toFixed(3)} yd` : 'Straight travel has no control handles. Choose cubic geometry to add them.'}</p>}
-    <details><summary>{props.routeMode ? 'Distance tick coordinates · yards' : 'Count tick coordinates · includes holds'}</summary><div className="travel-tick-table"><table><thead><tr><th>{props.routeMode ? 'Distance yd' : 'Count'}</th><th>X yd</th><th>Y yd</th></tr></thead><tbody>{ticks.map(({ count, point }) => <tr key={count}><td>{Number(count.toFixed(4))}</td><td>{point.x.toFixed(3)}</td><td>{point.y.toFixed(3)}</td></tr>)}</tbody></table></div></details>
+    {!capture && <p className="microcopy" role="status" aria-label="Active path handle">{handle ? `${handle.label}: X ${formatYards(handle.point.x)}, Y ${formatYards(handle.point.y)} yd` : 'Straight travel has no control handles. Choose cubic geometry to add them.'}</p>}
+    <details><summary>{props.routeMode ? 'Distance tick coordinates · yards' : 'Count tick coordinates · includes holds'}</summary><div className="travel-tick-table"><table><thead><tr><th>{props.routeMode ? 'Distance yd' : 'Count'}</th><th>X yd</th><th>Y yd</th></tr></thead><tbody>{ticks.map(({ count, point }) => <tr key={count}><td>{props.routeMode ? formatYards(count) : formatTimelineCount(count)}</td><td>{formatYards(point.x)}</td><td>{formatYards(point.y)}</td></tr>)}</tbody></table></div></details>
   </div>;
 }

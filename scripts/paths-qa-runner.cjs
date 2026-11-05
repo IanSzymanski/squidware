@@ -55,8 +55,14 @@ async function openPath() {
   await click(button('Edit performer path'));
   await wait(`${state}.ui.dialog==='path'`, 'path editor');
 }
-async function fillCurve() {
+async function fillCurve(defaults = false) {
   await selectNativeOption(window, '[aria-label="Travel geometry"]', 'cubic');
+  // Default controls sit at exact thirds of 10,10 → 30,20: inputs show three decimals while the preview keeps the exact values.
+  if (defaults) {
+    await frames();
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.path-controls input')].map(n=>n.value)"),['16.667','13.333','23.333','16.667']);
+    assert.equal(await evaluate("document.querySelector('.travel-field .path-proposed').getAttribute('d')"),`M 10 10 C ${10+20/3} ${10+10/3} ${10+40/3} ${10+20/3} 30 20`);
+  }
   for (const [name, value] of [['Control 1 X',10],['Control 1 Y',30],['Control 2 X',30],['Control 2 Y',30]]) await type(button(name),value);
 }
 app.whenReady().then(async () => {
@@ -80,8 +86,8 @@ app.whenReady().then(async () => {
   if (manifest.smallDesktop) { window.setContentSize(1024,647);await settleNativeViewport(window,'constrained visible paths'); }
   await click('[data-performer-id="a"]');
   assert.deepEqual(await evaluate(state+'.selection.selectedIds'),['a']);
-  await openPath();await fillCurve();await capture('paths-preview.png');
-  assert.match(await evaluate("document.querySelector('[aria-label=\"Path preview position\"]').textContent"),/X 20.000, Y 26.250/);
+  await openPath();await fillCurve(true);await capture('paths-preview.png');
+  assert.match(await evaluate("document.querySelector('[aria-label=\"Path preview position\"]').textContent"),/: X 20, Y 26\.25 yd/);
   assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);
   await type(button('Control 1 X'),-1);
   assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');

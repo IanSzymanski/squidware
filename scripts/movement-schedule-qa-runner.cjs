@@ -80,9 +80,14 @@ app.whenReady().then(async()=>{
   assert.equal(await evaluate(`document.querySelector(${JSON.stringify(button('Edit movement timing'))}).getAttribute('aria-disabled')`),'true');
   await capture('schedule-before.png');assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);assert.ok(viewports.at(-1).fieldHeight>=470);
   BrowserWindow.prototype.show=showWindow;window.show();window.focus();await settleNativeViewport(window,'visible schedule');
-  await click('[data-performer-id="a"]');await openSchedule();await fillSchedule();
+  await click('[data-performer-id="a"]');await openSchedule();
+  // Default cubic controls sit at exact thirds of 10,10 → 30,20: inputs show three decimals while the preview keeps the exact values.
+  await choose('Interval 1 movement','cubic');
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-schedule-row=\"0\"] .path-controls input')].map(n=>n.value)"),['16.667','13.333','23.333','16.667']);
+  assert.equal(await evaluate("document.querySelector('.travel-field .path-proposed').getAttribute('d')"),`M 10 10 C ${10+20/3} ${10+10/3} ${10+40/3} ${10+20/3} 30 20`);
+  await choose('Interval 1 movement','line');await fillSchedule();
   assert.match(await evaluate("document.querySelector('[aria-label=\"Movement schedule summary\"]').textContent"),/Hold 0–2; Travel 2–6; Hold 6–8; Curve 8–12; Hold 12–16/);
-  assert.match(await evaluate("document.querySelector('[aria-label=\"Movement preview position\"]').textContent"),/X 20.000, Y 25.000/);
+  assert.match(await evaluate("document.querySelector('[aria-label=\"Movement preview position\"]').textContent"),/: X 20, Y 25 yd/);
   await evaluate("document.querySelector('[data-schedule-row=\"0\"]').scrollIntoView({block:'start'})");await capture('schedule-intervals.png');
   await evaluate("document.querySelector('.path-preview').scrollIntoView({block:'center'})");await capture('schedule-preview.png');assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);
   await type(button('Interval 2 Start count'),5);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');
