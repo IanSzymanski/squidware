@@ -20,6 +20,15 @@ describe('show placement commands and compatibility', () => {
     store.dispatch('history.redo'); expect(store.getState().project.present.snapping).toEqual(settings);
     expect(parseProject(serializeProject(project))).not.toHaveProperty('snapping');
   });
+  it('applying the effective rules again is a no-op: no undo entry, revision bump or explicit default', () => {
+    const { project, store } = fixture(); const revision = store.getState().project.revision;
+    expect(store.dispatch('snapping.update', { settings: { ...DEFAULT_SNAPPING } })).toBe(true);
+    expect(store.getState().project.present).toBe(project); expect(store.getState().project.past).toHaveLength(0); expect(store.getState().project.revision).toBe(revision);
+    const settings = { ...DEFAULT_SNAPPING, steps: 6 as const };
+    store.dispatch('snapping.update', { settings }); expect(store.getState().project.past).toHaveLength(1);
+    store.dispatch('snapping.update', { settings: { ...settings } }); expect(store.getState().project.past).toHaveLength(1);
+    store.dispatch('snapping.update', { settings: { ...DEFAULT_SNAPPING } }); expect(store.getState().project.past).toHaveLength(2); expect(store.getState().project.present.snapping).toEqual(DEFAULT_SNAPPING);
+  });
   it('numeric placement and translated selection use the configured targets, preserve identity and undo exactly', () => {
     const { project, ids, store } = fixture();
     store.dispatch('snapping.update', { settings: { ...DEFAULT_SNAPPING, group: 'individual' } });

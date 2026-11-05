@@ -21,7 +21,14 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
     // Select change events set up native dropdown values; real Tab/Enter below verify access and commit.
     await evaluate(`(() => {const values=${JSON.stringify([steps,subdivision,target,group])};[...document.querySelectorAll('.modal select')].forEach((n,i)=>{n.value=values[i];n.dispatchEvent(new Event('change',{bubbles:true}));});})()`);
   };
+  // Unchanged rules have nothing to apply: Apply rules stays focusable but visibly unavailable and creates no undo entry.
+  await control('[aria-label="Grid and snapping"]'); await wait("document.querySelector('.modal h2')?.textContent==='Grid and snapping'", 'unchanged grid dialog');
+  assert.ok(await evaluate("(() => {const b=document.querySelector('.modal [aria-label=\"Apply rules\"]');return b.getAttribute('aria-disabled')==='true'&&getComputedStyle(b).borderStyle==='dashed'})()"), 'unchanged rules leave Apply rules visibly unavailable');
+  await evaluate("document.querySelector('.modal [aria-label=\"Apply rules\"]').click()");
+  assert.ok(await evaluate("!!document.querySelector('.modal')")); assert.deepEqual(await evaluate(`${state}.project`), before);
+  await evaluate("[...document.querySelectorAll('.modal button')].find(b => b.textContent === 'Cancel').click()"); await wait("!document.querySelector('.modal')", 'unchanged grid cancellation');
   await configure(6, 2, 'individual');
+  assert.equal(await evaluate("document.querySelector('.modal [aria-label=\"Apply rules\"]').getAttribute('aria-disabled')"), null);
   await evaluate("document.querySelector('.modal select').focus()");
   for (let i=0; i<4; i++) await key('Tab');
   assert.equal(await evaluate('document.activeElement.textContent'), 'Cancel'); await key('Return');
@@ -35,7 +42,7 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   assert.deepEqual(await evaluate(`${state}.project.present.sets[0].positions`), positions);
   assert.equal(await evaluate(`${state}.project.past.at(-1).name`), 'Change grid and snapping');
   await capture('snapping-individual.png');
-  pass('Grid dialog exposes keyboard-reachable choices and Apply/Cancel; changing rules is one undoable edit without moving dots');
+  pass('Grid dialog exposes keyboard-reachable choices and Apply/Cancel; unchanged rules cannot be applied; changing rules is one undoable edit without moving dots');
 
   const screen = point => evaluate(`(() => {const p=new DOMPoint(${point.x},${point.y}).matrixTransform(document.querySelector('[data-field-geometry]').getScreenCTM());return {x:p.x,y:p.y}})()`);
   const shown = () => evaluate(`Object.fromEntries(${JSON.stringify(ids.slice(0,2))}.map(id=>{const xy=document.querySelector('[data-performer-id="'+id+'"]').getAttribute('transform').slice(10,-1).split(' ').map(Number);return [id,{x:xy[0],y:xy[1]}]}))`);

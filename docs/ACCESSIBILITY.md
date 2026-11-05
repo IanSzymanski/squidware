@@ -6,7 +6,7 @@ Enter/Space selects the focused performer. Shift+Enter/Space adds or removes it.
 
 Focus has a square outline, distinct from the circular selection ring. The focused performer exposes label, optional name, section and drill coordinates. Focusing outside a zoomed viewport brings the performer into view. Static SVG/print drawings do not introduce interactive Tab stops. The field keyboard hint and command help describe the same movement modifiers. The hint is always the field's accessible description; it is drawn at the bottom of the field only after a key press inside the field (never after pointer focus), and the field status line steps aside while it shows. With **Show hints** off it stays an accessible description only; Help lists the same keys.
 
-Editor chrome uses at least 11-pixel type, with 12-pixel explanatory text and 13-pixel form inputs. Muted text is darker on the existing light surfaces. Focus outlines, selected-set checks, pressed view/formation controls and error text provide cues beyond color. Disabled controls use a muted background and dashed borders rather than fading the whole control. The field legend scrolls at extreme section counts. Print typography is unchanged.
+Editor chrome uses at least 11-pixel type, with 12-pixel explanatory text and 13-pixel form inputs. Muted text is darker on the existing light surfaces. Focus outlines, selected-set checks, pressed view/formation controls and error text provide cues beyond color. Disabled controls, including primary and danger actions, use a muted background and dashed borders rather than fading the whole control. The field legend scrolls at extreme section counts. Print typography is unchanged.
 
 ## Repeatable checks and scope
 

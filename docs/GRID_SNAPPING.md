@@ -1,6 +1,6 @@
 # Grid and group snapping
 
-Implements [#21](https://github.com/IanSzymanski/squidware/issues/21) for v0.6. Open **Grid and snapping** beside the magnet in the 2D field toolbar. Choose 8-to-5, 6-to-5 or 12-to-5, with whole, half or quarter steps, or snap to 5-yard lines and the current field's hashes/sidelines. Apply rules saves the choices with the production without moving performers; Cancel discards the dialog changes. Rule changes have one named undo entry.
+Implements [#21](https://github.com/IanSzymanski/squidware/issues/21) for v0.6. Open **Grid and snapping** beside the magnet in the 2D field toolbar. Choose 8-to-5, 6-to-5 or 12-to-5, with whole, half or quarter steps, or snap to 5-yard lines and the current field's hashes/sidelines. Apply rules saves the choices with the production without moving performers; Cancel discards the dialog changes. Rule changes have one named undo entry. Apply rules stays unavailable until a rule differs from the production's current rules, and applying the current rules again adds no undo entry.
 
 Grid intersections start at the left goal line and back sideline, in physical yards. One interval is `5 / steps / subdivision` yards. Marking targets are every 5 yd horizontally and college/high-school hashes and sidelines vertically. Targets are exclusive. Equal-distance ties choose the lower physical coordinate. Flipping the view does not change physical targets.
 

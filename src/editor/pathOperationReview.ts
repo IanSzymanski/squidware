@@ -10,7 +10,8 @@ export function pathOperationPlan(project: Project, request: PathOperationReques
   const index = project.moves.findIndex(m => m.id === request.moveId);
   if (index < 0) throw Error('The reviewed move no longer exists.');
   const op = request.operation;
-  if (op.kind === 'resize') return { project: updateSetProperties(project, index + 1, { counts: op.counts }), summary: `Rescale every authored interval from ${project.moves[index].counts} to ${op.counts} counts. Geometry and interval IDs stay fixed; no trimming.` };
+  const from = project.moves[index].counts;
+  if (op.kind === 'resize') return { project: updateSetProperties(project, index + 1, { counts: op.counts }), summary: op.counts === from ? `Enter new move counts to rescale this ${from}-count move.` : `Rescale every authored interval from ${from} to ${op.counts} counts. Geometry and interval IDs stay fixed; no trimming.` };
   if (op.kind === 'reverse') return { project: reversePaths(project, index, request.ids), summary: `Reverse ${request.ids.length} selected paths and swap their positions in both endpoint pictures. Adjacent moves may change; show timing and set order stay fixed.` };
   if (!clipboard || op.clipboardId !== clipboard.id || clipboard.epoch !== request.epoch) throw Error('Copy an interval range in this production before pasting.');
   if (request.ids.length !== 1 || request.ids[0] !== op.options.performerId) throw Error('Select exactly one destination performer explicitly.');
