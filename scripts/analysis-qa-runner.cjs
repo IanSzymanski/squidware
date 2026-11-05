@@ -46,8 +46,8 @@ async function capture(name) { await evaluate("document.activeElement?.blur()");
 async function openProblems() { await click('[aria-label="Timeline problems"]');await wait("!!document.querySelector('.problems-panel')",'problems dialog'); }
 async function close() {
   // Screenshots blur the focused control while the native pointer can still
-  // hover Close. Clear that help and restore dialog focus before testing Escape;
-  // an open tooltip deliberately consumes Escape without closing its dialog.
+  // hover Close. Restore dialog focus and park the pointer on the heading before
+  // Escape; open help no longer consumes Escape, so one press closes the dialog.
   const point=await evaluate("(()=>{const d=document.querySelector('dialog');d.focus();const r=d.querySelector('h2').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()");
   await mouse('mouseMoved',point);
   await wait("!document.querySelector('dialog .tooltip-panel')",'dialog hover help dismissed');
