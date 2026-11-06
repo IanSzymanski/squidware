@@ -7,7 +7,7 @@ const bundle = path.join(qa.output, 'fixtures.cjs');
 await esbuild.build({ stdin: { contents: `
   import v1 from './src/fixtures/schema-v1.squid?raw';
   import {parseProject} from './src/domain';
-  export {parseProject, serializeProject, totalCounts, setStartCount} from './src/domain';
+  export {parseProject, serializeProject, totalCounts, setStartCount, createDemoProject} from './src/domain';
   export {createPerformanceFixture} from './src/performanceFixtures';
   export function fixture() { return parseProject(v1); }
 `, resolveDir: root, loader: 'ts' }, plugins: [{ name: 'raw', setup(build) {

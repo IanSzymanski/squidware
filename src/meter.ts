@@ -2,14 +2,22 @@ import type { Meter, Project } from './types';
 
 export const DEFAULT_METER: Meter = { numerator: 4, denominator: 4, grouping: [4] };
 export function projectMeter(project: Project): Meter { return project.meter ?? DEFAULT_METER; }
-export function meterText(meter: Meter): string { return `${meter.numerator}/${meter.denominator}:${meter.grouping.join('+')}`; }
+/** Accent groups implied when meter text omits them: compound eighth-note meters group in threes; others accent the bar. */
+export function defaultMeterGrouping(numerator: number, denominator: number): number[] {
+  return denominator === 8 && numerator > 3 && numerator % 3 === 0 ? Array(numerator / 3).fill(3) : [numerator];
+}
+/** Display/edit text; omits groups equal to the default, so parseMeterText(meterText(m)) round-trips exactly. */
+export function meterText(meter: Meter): string {
+  const groups = meter.grouping.join('+');
+  return `${meter.numerator}/${meter.denominator}${groups === defaultMeterGrouping(meter.numerator, meter.denominator).join('+') ? '' : `:${groups}`}`;
+}
 export function parseMeterText(text: string): Meter {
   if (text.length > 100) throw new Error('Meter text must be at most 100 characters.');
   const match = /^\s*(\d+)\/(2|4|8|16)(?:\s*:\s*(\d+(?:\s*\+\s*\d+)*))?\s*$/.exec(text);
   if (!match) throw new Error('Use meter such as 4/4, 6/8:3+3 or 7/8:2+2+3.');
   const numerator = Number(match[1]), denominator = Number(match[2]);
   if (!Number.isInteger(numerator) || numerator < 1 || numerator > 32) throw new Error('Meter numerator must be between 1 and 32.');
-  return validateMeter({ numerator, denominator, grouping: match[3] ? match[3].split('+').map(Number) : denominator === 8 && numerator > 3 && numerator % 3 === 0 ? Array(numerator / 3).fill(3) : [numerator] });
+  return validateMeter({ numerator, denominator, grouping: match[3] ? match[3].split('+').map(Number) : defaultMeterGrouping(numerator, denominator) });
 }
 export function validateMeter(input: unknown): Meter {
   const m = input as Meter;
