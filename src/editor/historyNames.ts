@@ -1,6 +1,7 @@
 import type { CommandArguments, CommandId } from './commands';
 import type { EditorState } from './state';
 import { nudgeLabel } from '../editIncrements';
+import { shortestOrderStale } from './formationSession';
 
 export function historyName<I extends CommandId>(state: EditorState, id: I, args: CommandArguments[I]): string {
   const project = state.project.present;
@@ -52,7 +53,7 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
       name = `${session?.options.operation === 'across-50' ? 'Mirror across 50' : session?.options.operation === 'front-back' ? 'Flip front/back' : 'Rotate/scale'} ${session?.ids.length ?? 0} performers — ${picture}`; break;
     }
     case 'live.detach': name = `Detach live formation members — ${picture}`; break;
-    case 'formation.apply': name = state.ui.formationPreview?.live ? `Save live formation · ${state.ui.formationPreview.live.name} — ${picture}` : `Apply ${state.ui.formationPreview?.kind} to ${state.ui.formationPreview?.ids.length ?? 0} performers (${state.ui.formationPreview?.assignmentMode === 'shortest' && !state.ui.formationPreview.assignmentReviewed ? 'shortest-travel' : state.ui.formationPreview?.options.assignment === 'position' ? 'positional' : 'roster'} assignment) — ${picture}`; break;
+    case 'formation.apply': name = state.ui.formationPreview?.live ? `Save live formation · ${state.ui.formationPreview.live.name} — ${picture}` : `Apply ${state.ui.formationPreview?.kind} to ${state.ui.formationPreview?.ids.length ?? 0} performers (${state.ui.formationPreview?.assignmentMode === 'shortest' && !state.ui.formationPreview.assignmentReviewed ? shortestOrderStale(state.ui.formationPreview) ? 'kept' : 'shortest-travel' : state.ui.formationPreview?.options.assignment === 'position' ? 'positional' : 'roster'} assignment) — ${picture}`; break;
     case 'spacing.apply': {
       const session = state.ui.spacingPreview; const options = session?.options;
       const operation = options?.operation === 'align' ? 'Align' : options?.operation === 'distribute' ? 'Distribute' : `Space at ${options?.interval} ${options?.unit}`;

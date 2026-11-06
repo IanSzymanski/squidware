@@ -22,6 +22,8 @@
 .set-card.selected, .field-legend button.selected, .icon-button.active, .formation-grid button.active, .view-switch > button.active, .set-track button.active { border-color: var(--accent); }
 /* .button variants load above; the 0,2,0 and hover selectors keep a disabled primary, subtle or danger action visibly unavailable. */
 .selection-actions > button[aria-disabled=true], button:disabled, button[aria-disabled=true], .button:disabled, .button[aria-disabled=true], .button[aria-disabled=true]:is(.primary, .subtle):hover, input:disabled, select:disabled { background: var(--disabled-bg); color: var(--disabled-text); border-color: var(--border); border-style: dashed; }
+/* A locked toggle group still shows its chosen option: solid accent outline, not fill color alone. */
+.button[aria-pressed=true]:is(:disabled, [aria-disabled=true]) { border-style: solid; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--text); }
 input, textarea, select { caret-color: var(--accent); }
 input[type=range] { accent-color: var(--accent); }
 a { color: var(--accent); }

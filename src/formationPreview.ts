@@ -15,6 +15,8 @@ export interface FormationSession {
   order?: string[]; assignmentRotation?: number;
   /** Absent for sessions reopened from saved data: their options.assignment names the mode. */
   assignmentMode?: FormationAssignmentMode;
+  /** Session-only: the geometry a shortest-travel order was solved for. Geometry edits keep the order frozen. */
+  assignmentSolvedFor?: string;
   live?: { id: string; name: string; slotCount: number; slots: number[] };
 }
 export interface FormationResult {

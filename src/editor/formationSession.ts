@@ -30,6 +30,17 @@ export function currentFormationResult(state: EditorState) {
 /** Sessions reopened from saved data carry only the persisted positional/roster choice. */
 export const sessionAssignmentMode = (session: Pick<FormationSession, 'assignmentMode' | 'options'>): FormationAssignmentMode =>
   session.assignmentMode ?? (session.options.assignment === 'position' ? 'position' : 'roster');
+/** The exact solver is O(n³); above this size a new preview starts in positional order so opening Shape stays responsive. */
+export const SHORTEST_DEFAULT_LIMIT = 150;
+/** New previews use shortest travel for ordinary selections; choosing it explicitly still solves at any size. */
+export const defaultAssignmentMode = (count: number): FormationAssignmentMode => count <= SHORTEST_DEFAULT_LIMIT ? 'shortest' : 'position';
+/** Identifies the shape a shortest-travel order was solved for (kind and geometry, not the stored assignment). */
+export function shortestGeometryKey(kind: FormationKind, options: FormationOptions): string {
+  const { assignment: _assignment, ...geometry } = options; return JSON.stringify([kind, geometry]);
+}
+/** A kept shortest-travel order stops being the shortest solution once the geometry moves away from the solved shape. */
+export const shortestOrderStale = (session: FormationSession) => sessionAssignmentMode(session) === 'shortest' && !session.assignmentReviewed && !session.assignmentConstraints
+  && session.assignmentSolvedFor !== undefined && session.assignmentSolvedFor !== shortestGeometryKey(session.kind, session.options);
 /** Shortest travel solves against the generated slots; positional order sorts along the assignment rotation. */
 export function sessionAssignmentOrder(positions: Record<string, Point>, ids: readonly string[], kind: FormationKind, options: FormationOptions, mode: FormationAssignmentMode, assignmentRotation = options.rotation): string[] {
   return mode === 'shortest' ? shortestTravelOrder(positions, ids, generateFormation(kind, ids.length, options)) : formationAssignmentOrder(positions, ids, kind, { ...options, assignment: mode, rotation: assignmentRotation });

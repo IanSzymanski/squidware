@@ -85,7 +85,6 @@ button:active:not(:disabled) { filter: brightness(.96); }
 .field-topline > span:first-child { display: flex; align-items: center; gap: 6px; color: #d7e4d0; }
 .live-dot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: #b4dc7a; box-shadow: 0 0 8px #a8d48b50; }
 .field-bottomline { position: absolute; z-index: 2; bottom: 13px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: center; pointer-events: none; color: #d7e4d0; font-size: 12px; letter-spacing: 1.4px; }
-.is-3d .field-topline > span:last-child { display: none; }
 .field-legend { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 13px; min-height: 45px; color: var(--muted); font-size: 12px; gap: 10px; }
 .field-legend > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .field-legend button { display: flex; align-items: center; gap: 6px; background: transparent; border: 1px solid transparent; padding: 3px 4px; border-radius: 4px; font-size: 12px; color: var(--text); }

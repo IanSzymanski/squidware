@@ -55,7 +55,8 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
     if (next.ui.formationPreview && !formationSessionRetained(next)) next = { ...next, ui: { ...next.ui, formationPreview: null } };
     if (next.ui.spacingPreview && !spacingSessionCurrent(next)) next = { ...next, ui: { ...next.ui, spacingPreview: null } };
     if (next.ui.coordinatePreview && !coordinateSessionCurrent(next)) next = { ...next, ui: { ...next.ui, coordinatePreview: null } };
-    if (isModalOpen(next) && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
+    // A pending confirmation leaves Selection tools open (inert behind the modal), so Cancel returns to the panel and its preview.
+    if (next.ui.dialog && next.ui.selectionToolsOpen) next = { ...next, ui: { ...next.ui, selectionToolsOpen: false } };
     if (isModalOpen(next) && next.ui.paletteOpen) next = { ...next, ui: { ...next.ui, paletteOpen: false } };
     if (next.project.present !== state.project.present && next.playback.rehearsalId) {
       const passage = activePassage(next.project.present, next.playback.rehearsalId);

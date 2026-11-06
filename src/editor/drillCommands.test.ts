@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoProject } from '../domain';
+import { createDemoProject, parseProject } from '../domain';
+import { createPerformanceFixture } from '../performanceFixtures';
 import { DEFAULT_SNAPPING } from '../snapping';
 import { drillPlan, parseDrillCommand } from './drillCommands';
 import { createEditorStore } from './store';
@@ -86,14 +87,30 @@ describe('command search and enablement', () => {
   it('offers direct set positions as one-step palette reorders that undo atomically', () => {
     const { store } = fixture(); const before = store.getState().project.present.sets.map(set => set.id);
     const entries = paletteEntries(store.getState()).filter(entry => entry.invocation.id === 'set.move-to');
-    expect(entries).toHaveLength(before.length - 1);
-    expect(entries.some(entry => entry.name === `Move current set to position ${store.getState().selection.activeIndex + 1}`)).toBe(false);
+    expect(entries).toHaveLength(before.length);
+    const here = entries.find(entry => entry.name === `Move current set to position ${store.getState().selection.activeIndex + 1}`)!;
+    expect(here.disabledReason).toBe(`This set is already at position ${store.getState().selection.activeIndex + 1}.`);
     const last = entries.find(entry => entry.name === `Move current set to position ${before.length}`)!;
     expect(last.disabledReason).toBeNull();
+    // Moving the opening changes show timing, so the entry says so before and the toast confirms it after.
+    expect(last.description).toMatch(/New opening: 0 counts\. The former opening now has a 32-count move\./);
     expect(store.dispatch(last.invocation.id, last.invocation.args as never)).toBe(true);
+    expect(store.getState().ui.toast).toBe(`Moved set to position ${before.length}. New opening: 0 counts. The former opening now has a 32-count move.`);
     expect(store.getState().project.present.sets.at(-1)!.id).toBe(before[0]);
     expect(store.dispatch('history.undo')).toBe(true);
     expect(store.getState().project.present.sets.map(set => set.id)).toEqual(before);
+  });
+  it('resolves a typed set position exactly, never to a longer number that starts with it', () => {
+    const store = createEditorStore(parseProject(JSON.stringify(createPerformanceFixture('maximum'))));
+    for (const current of [0, 1, 11]) {
+      store.dispatch('set.select', { index: current });
+      for (const typed of [1, 2, 12]) {
+        const [first] = paletteQuery(store.getState(), `Move current set to position ${typed}`).entries;
+        expect(first.name).toBe(`Move current set to position ${typed}`);
+        expect((first.invocation.args as { target: number }).target).toBe(typed - 1);
+        expect(!!first.disabledReason).toBe(typed - 1 === current);
+      }
+    }
   });
   it('opening and closing command search preserves an existing preview', () => {
     const { store, before } = fixture(); store.dispatch('transform.preview', {});

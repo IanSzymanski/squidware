@@ -6,7 +6,7 @@ import { Tooltip } from '../components/Tooltip';
 import { HelpButton, useShowHints } from './ControlHelp';
 import { canChangeLayout } from './commands';
 import { useEditorSelector } from './react';
-import { matchingSets, openingMoveNote } from './setList';
+import { matchingSets } from './setList';
 import type { useEditorController } from './useEditorController';
 import './setList.css';
 
@@ -32,9 +32,8 @@ export function SetListPanel({ controller: c }: { controller: Controller }) {
     if (c.dispatch('set.select', { index: next }) && focus) rowButton(project.sets[next].id)?.focus();
   };
   const move = (request: Drag, to: number) => {
-    const from = project.sets.findIndex(set => set.id === request.id);
-    if (c.dispatch('set.move-to', { ...request, target: to })) c.notify(`Moved set to position ${to + 1}.${openingMoveNote(from, to)}`);
-    else c.notify(c.store.getState().ui.toast || 'The set order changed or an edit is pending. Try again.');
+    // The command confirms the move, including any change to the opening's timing.
+    if (!c.dispatch('set.move-to', { ...request, target: to })) c.notify(c.store.getState().ui.toast || 'The set order changed or an edit is pending. Try again.');
   };
   const elapsed = Math.round(countToSeconds(project, c.duration));
   return <aside className="set-panel set-list-panel" aria-label="Set list">

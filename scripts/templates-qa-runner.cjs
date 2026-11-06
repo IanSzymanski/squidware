@@ -156,7 +156,8 @@ app.whenReady().then(async () => { try {
   // Removal confirms in-app over the library; Escape cancels only the confirmation and keeps the template.
   const removeConfirmation = "document.querySelector('dialog.confirm-dialog[open] h2')?.textContent==='Remove “Renamed setup”?' && document.activeElement?.matches('.confirm-dialog__cancel') && !document.querySelector('.tooltip-panel')";
   await evaluate("window.__qaConfirmResponse='manual'"); await press('Remove saved template'); await wait(removeConfirmation, 'remove confirmation on Cancel');
-  await key(window, 'Escape'); await wait(`!document.querySelector('.confirm-dialog') && !!document.querySelector('.templates-modal[open]') && ${state}.ui.dialog==='templates'`, 'removal canceled');
+  // Cancel closes only the confirmation and returns focus to the control that asked, as window.confirm did.
+  await key(window, 'Escape'); await wait(`!document.querySelector('.confirm-dialog') && !!document.querySelector('.templates-modal[open]') && ${state}.ui.dialog==='templates' && document.activeElement===${node('Remove saved template')}`, 'removal canceled with focus restored');
   assert.equal(await evaluate("document.querySelectorAll('.template-list button').length"), 6); assert.equal((await readLibrary()).entries.length, 6);
   await press('Remove saved template'); await wait(removeConfirmation, 'second remove confirmation'); await press('Remove template'); await wait("document.querySelectorAll('.template-list button').length===5", 'removed');
   await evaluate('window.__qaConfirmResponse=true');

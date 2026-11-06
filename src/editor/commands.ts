@@ -25,7 +25,7 @@ import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
-import { currentFormationResult, formationSessionCurrent, formationProject, sessionAssignmentMode, sessionAssignmentOrder } from './formationSession';
+import { currentFormationResult, defaultAssignmentMode, formationSessionCurrent, formationProject, sessionAssignmentMode, sessionAssignmentOrder, shortestGeometryKey } from './formationSession';
 import { formationCenter } from '../formationAssignment';
 import type { FormationAssignmentMode } from '../formationPreview';
 import { defaultFormationOptions } from '../formationGeometry';
@@ -39,6 +39,7 @@ import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateS
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
 import type { SelectionSpec } from '../selectionTools';
 import { analysisCommands } from './analysisCommands';
+import { openingMoveNote } from './setList';
 import { projectPatches } from './history';
 import type { ProjectAnalysisRules, MarchingDirection } from '../types';
 import { rehearsalCommands } from './rehearsalCommands';
@@ -210,10 +211,13 @@ const selectSet = (context: CommandContext, index: number) => {
   context.patch('selection', { activeIndex: next }); context.patch('playback', { playing: false, count: setStartCount(project, next), seekVersion: context.getState().playback.seekVersion + 1 });
 };
 
-function reorderSet(c: CommandContext, id: string, target: number) {
+/** Direct moves always confirm; any move into or out of the opening says how show timing changed. */
+function reorderSet(c: CommandContext, id: string, target: number, announce = false) {
   const state = c.getState(), activeId = state.project.present.sets[state.selection.activeIndex].id;
+  const from = state.project.present.sets.findIndex(set => set.id === id), note = openingMoveNote(from, target);
   c.edit(p => moveSetTo(p, id, target));
   selectSet(c, c.getState().project.present.sets.findIndex(set => set.id === activeId));
+  if (announce || note) c.patch('ui', { toast: `Moved set to position ${target + 1}.${note}` });
 }
 
 const canOpenSetCreation = (s: EditorState) => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets;
@@ -421,13 +425,16 @@ export const commandRegistry = {
       // Session drafts and live edits win; a first use is sized from the selection and fit inside the field.
       const seeded: FormationOptions = saved || a.scaffold ? { assignment: 'position', ...(saved ?? preferred), center } : defaultFormationOptions(kind, positions, ids, preferred, s.project.present.field, (s.project.present.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES).minimumSpacing, previous?.options.center);
       const inherited = inherit ? sessionAssignmentMode(previous!) : undefined;
-      let mode = a.assignmentMode ?? inherited ?? (a.scaffold ? (seeded.assignment === 'roster' ? 'roster' : 'position') : s.ui.formationAssignmentModes[kind] ?? 'shortest');
+      const remembered = s.ui.formationAssignmentModes[kind];
+      let mode = a.assignmentMode ?? inherited ?? (a.scaffold ? (seeded.assignment === 'roster' ? 'roster' : 'position') : remembered && remembered !== 'shortest' ? remembered : defaultAssignmentMode(ids.length));
       if (a.scaffold && mode === 'shortest') mode = 'position'; // Scatter and Bézier slots are not the generated shape's slots.
       const options: FormationOptions = { ...seeded, assignment: mode === 'roster' ? 'roster' : 'position' };
       const assignmentRotation = previous?.kind === kind ? previous.assignmentRotation ?? options.rotation : options.rotation;
       // A live formation's member slots stay authoritative here; formation.update reassigns them explicitly.
-      const order = inherit && previous?.order && (inherited === mode || !!previous.live) ? previous.order : sessionAssignmentOrder(positions, ids, kind, options, mode);
-      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
+      const kept = inherit && !!previous?.order && (inherited === mode || !!previous.live);
+      const order = kept ? previous!.order! : sessionAssignmentOrder(positions, ids, kind, options, mode);
+      const assignmentSolvedFor = mode !== 'shortest' ? undefined : kept ? previous!.assignmentSolvedFor : shortestGeometryKey(kind, options);
+      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
   'formation.scatter': define({id:'formation.scatter',name:'Preview scatter formation',description:'Generate a seeded arrangement for explicitly selected performers, then review and Apply or Cancel.',arguments:{},
     enabled:s=>(editable(s)||formationSessionCurrent(s))&&!s.ui.pendingDraft&&!s.ui.dialog&&!s.project.transactionName&&s.selection.selectedIds.length>0,
@@ -490,7 +497,8 @@ export const commandRegistry = {
       const assignmentRotation = changedMode ? options.rotation : session.assignmentRotation ?? session.options.rotation;
       const reassign = changedMode || !session.order || (!session.live && session.kind === 'block' && options.columns !== session.options.columns);
       const order = reassign ? sessionAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, options, mode, assignmentRotation) : session.order;
-      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, assignmentMode: mode, assignmentReviewed:reassign?undefined:session.assignmentReviewed, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options }, ...(session.bezier ? {} : { formationAssignmentModes: { ...s.ui.formationAssignmentModes, [session.kind]: mode } }) });
+      const assignmentSolvedFor = mode !== 'shortest' ? undefined : reassign ? shortestGeometryKey(session.kind, options) : session.assignmentSolvedFor;
+      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:reassign?undefined:session.assignmentReviewed, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options }, ...(session.bezier ? {} : { formationAssignmentModes: { ...s.ui.formationAssignmentModes, [session.kind]: mode } }) });
     } }),
   'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
     execute: c => c.patch('ui', { formationPreview: null }) }),
@@ -548,7 +556,7 @@ export const commandRegistry = {
   'set.reorder': define({ id: 'set.reorder', name: 'Move set', description: 'Move a set earlier or later in the show. Incoming timing follows its destination.', arguments: { index: 'integer', direction: '-1 | 1' }, enabled: (s, a) => canNavigate(s) && !!a && [-1, 1].includes(a.direction) && setExists(s, a.index) && setExists(s, a.index + a.direction), execute: (c, a) => reorderSet(c, c.getState().project.present.sets[a.index].id, a.index + a.direction) }),
   'set.move-to': define({ id: 'set.move-to', name: 'Move set to position', description: 'Reorder a set directly in one undo action. Incoming timing follows its destination; the current set stays selected.', arguments: { id: 'stable set ID', target: 'final zero-based position', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => canNavigate(s) && !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && setExists(s, a.target) && s.project.present.sets.some((set, i) => set.id === a.id && i !== a.target),
-    execute: (c, a) => reorderSet(c, a.id, a.target) }),
+    execute: (c, a) => reorderSet(c, a.id, a.target, true) }),
   'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' }, enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers, execute: (c, a) => { c.edit(p => { const start = p.performers.length; return { ...p, performers: [...p.performers, ...a.performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...Object.fromEntries(a.performers.map((performer, i) => [performer.id, { x: 5 + ((start + i) % 40) * 2.3, y: Math.max(1, p.field.height - 3 - Math.floor((start + i) / 40) * 2.3) }])) } })) }; }); c.patch('selection', { selectedIds: a.performers.map(p => p.id) }); c.patch('ui', { dialog: null }); } }),
   'performers.remove': define({ id: 'performers.remove', name: 'Remove performers', description: 'Remove roster members and their positions in every set.', arguments: { ids: 'string[]' }, enabled: (s, a) => a.ids.some(id => s.project.present.performers.some(p => p.id === id)), execute: (c, a) => { if(c.getState().project.present.moves.some(m=>m.groupMotions?.some(g=>g.members.some(id=>a.ids.includes(id)))))throw Error('Remove these performers from group movement before deleting them from Cast.'); c.edit(p => ({ ...p, performers: p.performers.filter(person => !a.ids.includes(person.id)), ...(p.selectionGroups ? { selectionGroups: p.selectionGroups.map(g => ({ ...g, performerIds: g.performerIds.filter(id => !a.ids.includes(id)) })) } : {}), moves: p.moves.map(move => ({ ...move, ...(move.marchingDirections ? { marchingDirections: Object.fromEntries(Object.entries(move.marchingDirections).filter(([id]) => !a.ids.includes(id))) } : {}), paths: Object.fromEntries(Object.entries(move.paths).filter(([id]) => !a.ids.includes(id))) })), sets: p.sets.map(set => ({ ...set, positions: Object.fromEntries(Object.entries(set.positions).filter(([id]) => !a.ids.includes(id))) })) })); c.patch('selection', { selectedIds: [] }); c.patch('ui', { dialog: null }); } }),
   'performer.update': define({ id: 'performer.update', name: 'Edit performer', description: 'Update a performer name or section across the show.', arguments: { id: 'string', update: 'name? | sectionId?' }, enabled: (s, a) => s.project.present.performers.some(p => p.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, performers: p.performers.map(person => person.id === a.id ? { ...person, ...a.update } : person) })) }),

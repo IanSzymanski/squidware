@@ -117,6 +117,11 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('palette.open')`); await wait(`!!document.querySelector(${JSON.stringify(palette)})`, 'palette reopened');
     await type(palette, 'Move current set to position 999'); assert.equal(await evaluate("document.querySelectorAll('.palette-result').length"), 0);
     await key(window, 'Return'); await frames(); assert.equal(await evaluate(`${state}.project.past.length`), 1);
+    // Typing the current position selects that exact, unavailable row, never a longer number such as 120.
+    await type(palette, 'Move current set to position 12');
+    await wait(`(()=>{const input=document.querySelector(${JSON.stringify(palette)});const option=document.getElementById(input.getAttribute('aria-activedescendant'));return option?.querySelector('strong')?.textContent==='Move current set to position 12'&&option.getAttribute('aria-disabled')==='true'})()`, 'current position unavailable');
+    await key(window, 'Return'); await frames();
+    assert.equal(await evaluate(`${state}.project.past.length`), 1); assert.equal(await evaluate(`${state}.project.present.sets[11].id`), maximum.sets[39].id);
     await key(window, 'Escape'); await wait(`!document.querySelector(${JSON.stringify(palette)})`, 'palette closed');
     pass('set 40 moves to position 12 from the Command palette in one named undo; undo/redo preserve active identity and invalid positions cannot commit');
     await evaluate(`${editor}.dispatch('file.save-as')`); await wait(`${state}.fileSession.saveStatus==='Project file saved'`, 'saved native reordered show');

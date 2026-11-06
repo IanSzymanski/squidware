@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createDemoProject, parseProject, serializeProject } from '../domain';
 import type { FormationKind, Point } from '../types';
 import { createEditorStore } from './store';
-import { currentFormationResult } from './formationSession';
+import { currentFormationResult, SHORTEST_DEFAULT_LIMIT, shortestOrderStale } from './formationSession';
+import { createPerformanceFixture } from '../performanceFixtures';
 import { canEditPositions } from './editMode';
 import { hasUnsavedWork, markFileOpened } from './fileSession';
 
@@ -75,6 +76,37 @@ describe('formation preview commands', () => {
     expect(result.changed).toBe(kind!=='block'); if (kind==='block') return;
     expect(store.dispatch('formation.apply')).toBe(true);
     expect(store.getState().project.past[0].name).toContain(`Apply ${kind} to 24 performers (shortest-travel assignment)`);
+  });
+  it('starts very large selections in positional order so opening Shape never runs the cubic solver', () => {
+    const project=parseProject(JSON.stringify(createPerformanceFixture('maximum'))), store=createEditorStore(project), all=project.performers.map(p=>p.id);
+    expect(all.length).toBeGreaterThan(SHORTEST_DEFAULT_LIMIT);
+    // A small selection leaves Shortest remembered for arcs; that is not an explicit choice for 500 performers.
+    store.setValue('selection','selectedIds',all.slice(0,24)); store.dispatch('formation.preview',{kind:'arc'});
+    store.dispatch('formation.update',{options:{...store.getState().ui.formationPreview!.options,rotation:5}}); store.dispatch('formation.cancel');
+    expect(store.getState().ui.formationAssignmentModes.arc).toBe('shortest');
+    store.setValue('selection','selectedIds',all); const started=performance.now();
+    expect(store.dispatch('formation.preview',{kind:'arc'})).toBe(true);
+    expect(store.getState().ui.formationPreview!.assignmentMode).toBe('position'); expect(performance.now()-started).toBeLessThan(150);
+  });
+  it('labels a shortest-travel order kept through geometry edits as stale until it is re-solved', () => {
+    const project=createDemoProject(), store=createEditorStore(project), brass=project.performers.filter(p=>p.sectionId===project.sections[0].id).map(p=>p.id);
+    store.setValue('selection','selectedIds',brass); expect(store.dispatch('formation.preview',{})).toBe(true);
+    const session=()=>store.getState().ui.formationPreview!, solved=session().options;
+    expect(shortestOrderStale(session())).toBe(false);
+    // The order stays frozen while the shape turns, so it no longer claims to be the shortest-travel solution.
+    expect(store.dispatch('formation.update',{options:{...solved,rotation:180}})).toBe(true);
+    const frozen=session().order; expect(shortestOrderStale(session())).toBe(true);
+    expect(properCrossings(project.sets[0].positions,currentFormationResult(store.getState())!.updates)).toBeGreaterThan(0);
+    // Returning to the solved shape is current again; choosing Shortest travel re-solves for the turned shape.
+    expect(store.dispatch('formation.update',{options:solved})).toBe(true); expect(shortestOrderStale(session())).toBe(false);
+    expect(store.dispatch('formation.update',{options:{...solved,rotation:180}})).toBe(true); expect(session().order).toEqual(frozen);
+    expect(store.dispatch('formation.update',{options:{...solved,rotation:180},assignmentMode:'shortest'})).toBe(true);
+    expect(shortestOrderStale(session())).toBe(false); expect(properCrossings(project.sets[0].positions,currentFormationResult(store.getState())!.updates)).toBe(0);
+    // A kept order applies under a neutral history name.
+    expect(store.dispatch('formation.update',{options:{...solved,rotation:8}})).toBe(true); expect(shortestOrderStale(session())).toBe(true);
+    expect(currentFormationResult(store.getState())!.error).toBeNull();
+    expect(store.dispatch('formation.apply')).toBe(true);
+    expect(store.getState().project.past.at(-1)!.name).toContain('Apply arc to 24 performers (kept assignment)');
   });
   it('opens new shapes inside the field for a selection against the back sideline, while session drafts keep precedence', () => {
     const {store,ids}=setup(); const edge:Record<string,Point>={[ids[0]]:{x:40,y:1},[ids[1]]:{x:45,y:3},[ids[2]]:{x:50,y:5}};
