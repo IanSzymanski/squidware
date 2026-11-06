@@ -13,6 +13,15 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   await wait("document.querySelectorAll('.field-performer').length===3", 'placement fixture');
   // Snap mode has one persistent home, the status bar; nothing drawn at idle covers the playing surface.
   assert.ok(await evaluate("(() => {const surface=document.querySelector('.field-stage__background [data-field-surface]').getBoundingClientRect();const drawn=n=>{const s=getComputedStyle(n);return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)>0&&s.clipPath==='none'};return !document.querySelector('.field-snap-status') && /steps|Yard lines|Snap off/.test(document.querySelector('.statusbar-snap')?.textContent ?? '') && ['.field-legend','.field-topline','.field-keyboard-help'].every(selector=>{const n=document.querySelector(selector);if(!n||!drawn(n))return true;const b=n.getBoundingClientRect();return b.right<=surface.left||b.left>=surface.right||b.bottom<=surface.top||b.top>=surface.bottom})})()"), 'snap mode lives in the status bar and no idle overlay covers the drawn field');
+  // Exactly one snap location is visible and announced in narrow windows and in focus mode as well.
+  const snapHomes = () => evaluate("[...document.querySelectorAll('.statusbar-snap, .field-topline-snap')].filter(n => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && /steps|Yard lines|Snap off/.test(n.textContent); }).map(n => n.className)");
+  assert.deepEqual(await snapHomes(), ['statusbar-snap']);
+  window.setContentSize(1000, 700); await settleNativeViewport(window, 'narrow snap status');
+  assert.deepEqual(await snapHomes(), ['statusbar-snap'], 'snap status stays visible in narrow windows');
+  window.setContentSize(1366, 768); await settleNativeViewport(window, 'snapping baseline');
+  await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`${state}.ui.focusMode`, 'focus mode');
+  assert.deepEqual(await snapHomes(), ['field-topline-snap'], 'focus mode keeps one visible snap status');
+  await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode exited');
   const before = await evaluate(`${state}.project`);
   await capture('snapping-before.png');
   const control = async selector => { const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };

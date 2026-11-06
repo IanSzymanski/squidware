@@ -309,7 +309,7 @@ button:active:not(:disabled) { filter: brightness(.96); }
   .count-display strong { font-size: 14px; }
   .count-display > span { display: none; }
   .audio-attach { max-width: 48%; font-size: 12px; }
-  .statusbar > span:nth-child(2) { display: none; }
+  .statusbar > span:nth-child(2) > :not(.statusbar-snap) { display: none; }
   .mini-field { height: 53px; }
   .set-card { padding: 8px; }
   .tool-group { gap: 0; padding: 0 2px; }
