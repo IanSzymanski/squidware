@@ -40,7 +40,7 @@ async function capture(name) {
 app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'window'); await wait("!!document.querySelector('.set-card')", 'renderer');
-    window.show(); window.focus(); window.setContentSize(manifest.smallDesktop ? 1024 : 1366, manifest.smallDesktop ? 647 : 768); await settleNativeViewport(window, 'visible timeline');
+    window.setContentSize(1366, 768); await settleNativeViewport(window, 'review timeline');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'store and preferences');
@@ -52,7 +52,10 @@ app.whenReady().then(async () => {
     const original = await evaluate(`JSON.stringify(${state}.project.present)`);
     await capture('timeline-fit-dark.png');
     assert.match(await evaluate("document.querySelector('.move-count').textContent"), /Opening.*01.*Count 0/);
-    if (!manifest.smallDesktop) { const fit = viewports.at(-1); assert.ok(fit.timelineHeight <= 122 && fit.fieldHeight >= 470, JSON.stringify(fit)); }
+    // Measure the fixed 1366 x 768 review viewport while hidden. macOS constrains a shown window
+    // to its physical desktop, which can be smaller than this review viewport.
+    { const fit = viewports.at(-1); assert.deepEqual([fit.width, fit.height], [1366, 768]); assert.ok(fit.timelineHeight <= 122 && fit.fieldHeight >= 470, JSON.stringify(fit)); }
+    window.show(); window.focus(); if (manifest.smallDesktop) window.setContentSize(1024, 647); await settleNativeViewport(window, 'visible timeline');
     // Tab follows set order: the opening set comes first, the problem row adds at most one stop, then the playhead.
     await evaluate("document.querySelector('[aria-label=\"Timeline view\"]').focus()");
     const order = [];
