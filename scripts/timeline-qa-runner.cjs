@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { app, dialog } = require('electron');
+const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--timeline-manifest=')).slice('--timeline-manifest='.length));
@@ -8,6 +8,10 @@ const { root, output, profile, bundle } = manifest;
 const { fixture, setStartCount, totalCounts } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 dialog.showMessageBox = async () => ({ response: 1 });
+// Keep the window hidden until the fixed-viewport fit check: once shown, macOS
+// can constrain the native window to its shorter desktop work area.
+const showWindow = BrowserWindow.prototype.show;
+BrowserWindow.prototype.show = function () {};
 let window, failure; const checks = [], viewports = [];
 app.on('browser-window-created', (_e, w) => { window = w; w.webContents.setBackgroundThrottling(false); w.webContents.on('render-process-gone', (_e, d) => { failure = new Error(d.reason); }); });
 require(path.join(root, 'electron/main.cjs'));
@@ -55,7 +59,7 @@ app.whenReady().then(async () => {
     // Measure the fixed 1366 x 768 review viewport while hidden. macOS constrains a shown window
     // to its physical desktop, which can be smaller than this review viewport.
     { const fit = viewports.at(-1); assert.deepEqual([fit.width, fit.height], [1366, 768]); assert.ok(fit.timelineHeight <= 122 && fit.fieldHeight >= 470, JSON.stringify(fit)); }
-    window.show(); window.focus(); if (manifest.smallDesktop) window.setContentSize(1024, 647); await settleNativeViewport(window, 'visible timeline');
+    BrowserWindow.prototype.show = showWindow; window.show(); window.focus(); if (manifest.smallDesktop) window.setContentSize(1024, 647); await settleNativeViewport(window, 'visible timeline');
     // Tab follows set order: the opening set comes first, the problem row adds at most one stop, then the playhead.
     await evaluate("document.querySelector('[aria-label=\"Timeline view\"]').focus()");
     const order = [];
