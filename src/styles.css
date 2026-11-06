@@ -142,6 +142,8 @@ button:active:not(:disabled) { filter: brightness(.96); }
 .section-title > div { display: flex; gap: 0; }
 .section-title .icon-button { width: 23px; min-width: 23px; height: 23px; padding: 3px; }
 .form-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 12px; }
+/* Helper text has no bottom margin (global p reset); keep the next field from touching it. */
+.microcopy + .form-label, .microcopy + .form-row { margin-top: 12px; }
 .form-label > input, .form-label > select, .form-label > textarea { font-size: 12px; font-weight: 400; min-height: 33px; padding: 7px 9px; background: var(--surface); border-color: var(--border); }
 .form-label > textarea { font-size: 12px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

@@ -153,7 +153,12 @@ app.whenReady().then(async () => {
     await audit('settings'); await tabTo('.modal .modal-actions .button'); await key('Return');
     await tabTo('.header-actions > .button.primary'); await key('Return');
     await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
-    await audit('export'); await tabTo('.export-secondary > button:first-child'); await key('Return');
+    await audit('export');
+    // The contents choice belongs to the PDF section; the other formats form one full-width vertical list.
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('dialog[open] section[aria-labelledby]')].map(s => [document.getElementById(s.getAttribute('aria-labelledby')).textContent, [...s.querySelectorAll('[role=radiogroup][aria-label=\"PDF contents\"] strong, button')].map(n => n.textContent.trim())])"),
+      [['PDF drill book', ['Field charts', 'Performer coordinate sheets', 'Save PDF']], ['Other formats', ['Coordinates CSV', 'Current chart SVG', 'Portable production with audio…']]]);
+    assert.ok(await evaluate("(() => { const r = [...document.querySelectorAll('.export-secondary > button')].map(n => n.getBoundingClientRect()); return r.every((b, i) => Math.abs(b.left - r[0].left) < 1 && Math.abs(b.width - r[0].width) < 1 && (!i || b.top >= r[i - 1].bottom)); })()"), 'other export formats stack in one column');
+    await tabTo('.export-secondary > button:first-child'); await key('Return');
     await waitFor(async () => { try { return (await fs.stat(csvFile)).size > 0; } catch { return false; } }, 'CSV export');
     assert.equal((await fs.readFile(csvFile, 'utf8')).trim().split('\n').length, 500 * 128 + 1);
     pass('the 500-performer production completes a keyboard-only native save and coordinate export');

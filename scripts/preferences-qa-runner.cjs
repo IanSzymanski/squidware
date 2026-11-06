@@ -61,6 +61,25 @@ async function pdf(paper) {
   const expected = paper === 'a4' ? [841.89, 595.28] : [792, 612]; assert.ok(Math.abs(Number(match[1]) - expected[0]) < 1.5); assert.ok(Math.abs(Number(match[2]) - expected[1]) < 1.5);
 }
 
+async function checkSections() {
+  // One mounted fieldset holds four headed groups in this order; the former sub-heads are demoted within them.
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.preferences-fields > .preferences-section')].map(s => [s.querySelector('h3').textContent, [...s.querySelectorAll('h4')].map(h => h.textContent)])"),
+    [['Appearance', []], ['Field display', ['2D field display', 'Coordinates']], ['Editing', ['Editing increments', 'Set creation', 'Default formation tools', 'New production placement defaults', 'New production analysis defaults', 'Print defaults']], ['Shortcuts', []]]);
+  const groups = { Appearance: ['Interface theme', 'UI scale', 'Panel layout', 'Show hints'], 'Field display': ['Start view', 'Previous paths', 'Next paths', 'Field grid', 'Field zoom', 'Audience orientation', 'Label visibility', 'Coordinate precision'],
+    Editing: ['Nudge units', 'Rotate preset', 'Snap to grid', 'New move counts', 'Shape', 'Step grid', 'Spacing', 'Paper', 'Packet default'], Shortcuts: ['Find a shortcut'] };
+  for (const [title, labels] of Object.entries(groups)) for (const label of labels) assert.equal(await evaluate(`[...document.querySelectorAll('.preferences-fields label')].find(node => node.textContent.startsWith(${JSON.stringify(label)})).closest('.preferences-section').querySelector('h3').textContent`), title, label);
+  const pressed = "document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent";
+  assert.equal(await evaluate(pressed), 'Appearance'); assert.equal(await evaluate("document.querySelector('.shortcut-preferences').open"), false);
+  for (const title of ['Editing', 'Shortcuts', 'Field display', 'Appearance']) {
+    await click(`.preferences-nav [aria-label="${title}"]`);
+    await uiWait(`${pressed} === ${JSON.stringify(title)} && document.activeElement?.textContent === ${JSON.stringify(title)} && (() => { const nav = document.querySelector('.preferences-nav').getBoundingClientRect(), heading = document.activeElement.getBoundingClientRect(); return heading.top >= nav.bottom && heading.bottom <= document.querySelector('dialog[open]').getBoundingClientRect().bottom; })()`, 'section nav: ' + title);
+  }
+  assert.equal(await evaluate("document.querySelector('.shortcut-preferences').open"), true, 'jumping to Shortcuts opens the shortcut list');
+  await evaluate("document.querySelector('dialog[open]').scrollTop = 1e6"); await uiWait(`${pressed} === 'Shortcuts'`, 'scrolled to the last section');
+  await evaluate("document.querySelector('dialog[open]').scrollTop = 0"); await uiWait(`${pressed} === 'Appearance'`, 'scrolled back to the first section');
+  pass('Preferences groups Appearance, Field display, Editing and Shortcuts in one mounted form; the pinned section nav jumps, focuses and follows scrolling');
+}
+
 async function checkCoordinateOutput(project) {
   const previousDestination = savedFile;
   const id = project.performers[0].id;
@@ -143,6 +162,7 @@ app.whenReady().then(async () => {
     await openPreferences();
     if (phase === 'write') {
       assert.ok(before.preferences.error.includes('Older')); assert.equal(before.ui.zoom, 1.1);
+      await checkSections();
       await checkCoordinateOutput(original);
       await done();
       for (const section of ['Set properties', 'Formation tools', 'Transition check']) {

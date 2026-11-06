@@ -22,8 +22,11 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await capture('display-before.png');
   const initialCenter = await center(ids[212]);
   await evaluate(`${editor}.dispatch('dialog.open',{dialog:'preferences'})`);
-  await wait("!!document.querySelector('dialog[open] [aria-label=\"Audience orientation\"]')", 'visible display preferences');
-  await evaluate("(() => {const n=document.querySelector('[aria-label=\"Audience orientation\"]');n.scrollIntoView({block:'center'});n.focus()})()");
+  await wait("!!document.querySelector('dialog[open] [aria-label=\"Audience orientation\"]')", 'display preferences');
+  // The Field display section nav brings the 2D display choices into view below the pinned nav.
+  await clickControl('.preferences-nav [aria-label="Field display"]');
+  await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Field display' && document.querySelector('[aria-label=\"Audience orientation\"]').closest('.preferences-section')===document.activeElement?.parentElement && (()=>{const r=document.querySelector('[aria-label=\"Audience orientation\"]').getBoundingClientRect();return r.top>=document.querySelector('.preferences-nav').getBoundingClientRect().bottom && r.bottom<=innerHeight})()", 'visible display preferences');
+  await evaluate("document.querySelector('[aria-label=\"Audience orientation\"]').focus()");
   await wait("document.activeElement?.getAttribute('aria-label')==='Audience orientation'", 'orientation preference focused');
   // Use the same select change-event path as the Preferences suite. Native OS
   // select popups cannot be exercised consistently in hidden desktop windows.
