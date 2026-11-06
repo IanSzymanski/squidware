@@ -20,7 +20,7 @@ export function ShortcutPreferences({ preferences }: { preferences: EditorContro
     <p className="microcopy">Choose a binding, then press its new keys. Clear removes it; Reset restores it. Navigation keys, Alt+arrows, text editing and reserved browser/OS shortcuts are protected. Tab keeps normal focus navigation. Native menu commands require Ctrl/Cmd.</p>
     <label className="form-label">Find a shortcut<input type="search" aria-label="Find a shortcut" value={query} onChange={e => setQuery(e.target.value)} /></label>
     {error && <p className="field-error" role="alert">{error}</p>}
-    <div className="shortcut-bindings">{shortcutIds.filter(id => commandRegistry[id].name.toLowerCase().includes(query.toLowerCase())).map(id => <div className="shortcut-binding" key={id}>
+    <div className="shortcut-bindings">{shortcutIds.filter(id => (id !== 'view.popout' || !!window.squidware) && commandRegistry[id].name.toLowerCase().includes(query.toLowerCase())).map(id => <div className="shortcut-binding" key={id}>
       <span>{commandRegistry[id].name}</span>
       <button className="button subtle shortcut-record" aria-label={`Change shortcut: ${commandRegistry[id].name}`} aria-pressed={recording === id} onClick={() => { setRecording(recording === id ? null : id); setError(''); }} onBlur={() => { if (recording === id) setRecording(null); }} onKeyDown={event => {
         if (recording !== id || event.nativeEvent.isComposing) return;

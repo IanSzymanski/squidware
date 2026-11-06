@@ -154,5 +154,9 @@ export interface DesktopBridge extends RecoveryBridge, PreferencesBridge, Templa
   setDirty: (dirty: boolean) => void;
   setKeyboardContext: (context: 'editor' | 'text' | 'modal') => void;
   onMenuAction: (callback: (action: string) => void) => () => void;
+  /** Bring the separate 3D window to the front; main ignores the request when none is open. */
+  focusPreviewWindow: () => void;
+  /** Main reports the 3D window's geometry (with its display) after moves, resizes and close. */
+  onPreviewWindowBounds: (callback: (bounds: import('./popoutBounds').PopoutBounds) => void) => () => void;
 }
 declare global { interface Window { squidware?: DesktopBridge } }

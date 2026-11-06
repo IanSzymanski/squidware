@@ -44,3 +44,22 @@ it('stops after a graphics failure and delivers the error once', () => {
   expect(onError).toHaveBeenCalledExactlyOnceWith(error);
   expect(queue.callbacks.size).toBe(0);
 });
+
+it('uses the canvas window clock and pauses while that window is hidden or minimized', () => {
+  const callbacks = new Map<number, FrameRequestCallback>(); let next = 0;
+  const listeners = new Set<() => void>();
+  const host = { requestAnimationFrame: (callback: FrameRequestCallback) => { callbacks.set(++next, callback); return next; }, cancelAnimationFrame: (id: number) => { callbacks.delete(id); },
+    document: { visibilityState: 'visible' as DocumentVisibilityState, addEventListener: (_type: string, listener: () => void) => listeners.add(listener), removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener) } };
+  const change = (state: DocumentVisibilityState) => { host.document.visibilityState = state; listeners.forEach(listener => listener()); };
+  const tick = () => { const pending = [...callbacks.values()]; callbacks.clear(); pending.forEach(callback => callback(0)); };
+  const render = vi.fn().mockReturnValue(false);
+  const frames = createDemandFrames(render, vi.fn(), host as unknown as import('./demandFrames').FrameHost);
+  frames.invalidate(); expect(callbacks.size).toBe(1);
+  change('hidden'); expect(callbacks.size).toBe(0);
+  for (let i = 0; i < 5; i++) frames.invalidate();
+  expect(callbacks.size).toBe(0); expect(render).not.toHaveBeenCalled();
+  change('visible'); expect(callbacks.size).toBe(1); tick();
+  expect(render).toHaveBeenCalledTimes(1);
+  change('hidden'); change('visible'); expect(callbacks.size).toBe(0);
+  frames.dispose(); expect(listeners.size).toBe(0);
+});
