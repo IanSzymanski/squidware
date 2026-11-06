@@ -187,6 +187,8 @@ The window remembers its size, position and display on this device. It reopens o
 
 The Inspector analyzes the move into the selected set. Click an issue to select its performer or pair and show their paths.
 
+For the whole show, use the timeline’s problem row. Each marker names the problem type, performers and count, such as “Spacing 1.13 yd · B4, B5 · count 6”; nearby findings share a numbered marker that lists them. Arrow keys move along the row, and Enter goes to a finding or opens a group. The ⚠ count beside the row opens **Show-wide problems**, which lists every finding and opens **Analysis rules**.
+
 The current checks are:
 
 | Check | Warning | Higher-severity flag |

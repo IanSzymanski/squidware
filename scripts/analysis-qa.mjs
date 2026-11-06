@@ -5,7 +5,7 @@ const qa = await createQa('analysis', { timeoutMs: 240000 }), require = createRe
 const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
 const bundle = path.join(qa.output, 'fixtures.cjs');
 await esbuild.build({ stdin: { contents: `import {createBlankProject} from './src/domain';
-export {analyzeTransition} from './src/domain'; export {createPerformanceFixture} from './src/performanceFixtures';
+export {analyzeTransition} from './src/domain'; export {createPerformanceFixture} from './src/performanceFixtures'; export {findingName,performerLabels} from './src/editor/problemTrack';
 export function fixture() {
  const p=createBlankProject();p.performers=Array.from({length:16},(_,i)=>({id:'p'+i,label:'P'+i,name:'',sectionId:p.sections[0].id}));
  p.sets=Array.from({length:4},(_,i)=>({id:'s'+i,name:'Picture '+i,notes:'',positions:Object.fromEntries(p.performers.map((person,j)=>[person.id,{x:10+i*12,y:10+j*.2}]))}));

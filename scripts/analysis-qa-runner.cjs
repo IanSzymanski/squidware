@@ -5,7 +5,7 @@ const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, waitForProgress, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--analysis-manifest=')).slice('--analysis-manifest='.length));
 const { root, output, profile, bundle } = manifest;
-const { analyzeTransition, createPerformanceFixture, fixture } = require(bundle);
+const { analyzeTransition, createPerformanceFixture, fixture, findingName, performerLabels } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 const showWindow = BrowserWindow.prototype.show; BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
@@ -43,7 +43,28 @@ async function click(selector) {
   for(const type of ['mouseMoved','mousePressed','mouseReleased'])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,...(type==='mouseMoved'?{}:{button:'left',clickCount:1})});await frames();
 }
 async function capture(name) { await evaluate("document.activeElement?.blur()");await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height})`)); }
-async function openProblems() { await click('[aria-label="Timeline problems"]');await wait("!!document.querySelector('.problems-panel')",'problems dialog'); }
+async function openProblems() { await click('.problem-count-badge');await wait("!!document.querySelector('.problems-panel')",'problems dialog'); }
+// Timeline problem row: each marker's rectangle, Tab state and finding count (singles 1; groups lead with their size).
+const timelineRow = () => evaluate("[...document.querySelectorAll('.problem-track .problem-marker')].map(e=>{const r=e.getBoundingClientRect(),label=e.getAttribute('aria-label');return {label,tab:e.tabIndex,left:r.left,right:r.right,top:r.top,bottom:r.bottom,group:e.getAttribute('aria-haspopup')==='menu',expanded:e.getAttribute('aria-expanded'),size:e.getAttribute('aria-haspopup')==='menu'?Number(/^(\\d+) /.exec(label)[1]):1}})");
+const focusedLabel = () => evaluate("document.activeElement?.getAttribute('aria-label')");
+const focusReaches = label => wait(`document.activeElement?.getAttribute('aria-label')===${JSON.stringify(label)}`, 'keyboard focus '+label);
+const named = /^(Spacing|Stride)( \S+ (yd|yd\/count|steps per 5 yd))? · \S.* · count \d+$|^\d+ (spacing |stride )?problems( \(\d+ spacing, \d+ stride\))? · \S.* · counts? \d+(–\d+)?$/;
+function rowGeometry(row, trackWidth) {
+  assert.ok(row.length > 0 && row.length <= Math.ceil((trackWidth + 24) / 24), `bounded markers: ${row.length}`);
+  assert.equal(row.filter(m => m.tab === 0).length, 1, 'one roving Tab stop'); assert.equal(row.filter(m => m.tab !== 0 && m.tab !== -1).length, 0);
+  for (const [i, m] of row.entries()) {
+    assert.ok(m.right - m.left >= 23.99 && m.bottom - m.top >= 23.99, `24 px target: ${JSON.stringify(m)}`);
+    if (i) assert.ok(row[i - 1].right <= m.left + .5, `markers overlap: ${JSON.stringify([row[i - 1], m])}`);
+    assert.match(m.label, named); assert.doesNotMatch(m.label, /Problem marker|\d\.\d+ count|count \d+\.\d/);
+  }
+}
+// Group sizes stay inside their 24 px markers (no clipped digits).
+const badgesFit = async () => assert.deepEqual(await evaluate("[...document.querySelectorAll('.problem-marker-count')].filter(e=>{const m=e.parentElement.getBoundingClientRect(),r=e.getBoundingClientRect();return r.left<m.left-.1||r.right>m.right+.1||e.scrollWidth>e.clientWidth+.5}).map(e=>e.textContent)"),[]);
+async function tooltipInView(label) {
+  await wait(`document.querySelector('.tooltip-panel')?.textContent.startsWith(${JSON.stringify(label)})`, 'marker keyboard help');
+  const r = await evaluate("(()=>{const r=document.querySelector('.tooltip-panel').getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight}})()");
+  assert.ok(r.left >= 0 && r.top >= 0 && r.right <= r.width && r.bottom <= r.height, `help stays in the viewport: ${JSON.stringify(r)}`);
+}
 async function close() {
   // Screenshots blur the focused control while the native pointer can still
   // hover Close. Restore dialog focus and park the pointer on the heading before
@@ -94,8 +115,42 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(state+'.playback.count'),row.atCount);assert.equal(await evaluate(state+'.selection.activeIndex'),2);assert.deepEqual(await evaluate(state+'.selection.selectedIds'),['p15']);
     assert.equal(await evaluate(`JSON.stringify(${state}.project)`),before);assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-problem-performer]')].map(e=>e.dataset.problemPerformer)"),['p15']);
     await capture('problems-selected.png');
-    await evaluate(`${editor}.dispatch('set.select',{index:1})`);await click('.problem-marker');assert.ok(await evaluate(`${snapshot}.selected!==null`));assert.ok(await evaluate("document.querySelectorAll('[data-problem-performer]').length>0"));
-    pass('finding and timeline-marker input seeks the exact count, selects the right IDs and highlights paths without modifying project/history');
+    pass('finding input seeks the exact count, selects the right IDs and highlights paths without modifying project/history');
+    // Timeline problem row: one Tab stop, 24 px targets, descriptive names, every finding reachable by keyboard.
+    await evaluate(`${editor}.dispatch('set.select',{index:1});${editor}.setValue('selection','selectedIds',[])`);await frames();
+    const trackWidth=await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width");const markers=await timelineRow();rowGeometry(markers,trackWidth);await badgesFit();
+    assert.equal(markers.reduce((n,m)=>n+m.size,0),total);assert.ok(markers.some(m=>m.group));
+    assert.ok(await evaluate("(()=>{const r=document.querySelector('.problem-count-badge').getBoundingClientRect();return r.width>=24&&r.height>=24})()"));
+    assert.equal(await evaluate("document.querySelector('.problem-track').getAttribute('role')"),'toolbar');
+    await evaluate("[...document.querySelectorAll('.set-track > button')].at(-1).focus()");await key(window,'Tab');
+    assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker[tabindex=\\'0\\']')"),'Tab enters the problem row');
+    await key(window,'Tab');await focusReaches('Timeline playhead');await key(window,'Tab',['shift']);assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker')"));
+    await key(window,'Home');await focusReaches(markers[0].label);await tooltipInView(markers[0].label);
+    let reached=0;const unchanged=await evaluate(`JSON.stringify(${state}.project)`);
+    for(const m of markers){
+      await focusReaches(m.label);
+      if(m.group){await key(window,'Return');await wait(`document.activeElement?.getAttribute('role')==='menuitem' && document.querySelector('.problem-track .problem-marker[aria-expanded=true]')?.getAttribute('aria-label')===${JSON.stringify(m.label)}`,'cluster list');
+        const items=await evaluate("[...document.querySelectorAll('.problem-cluster-list [role=menuitem]')].map(e=>e.textContent)");assert.equal(items.length,m.size);reached+=items.length;
+        await key(window,'Down');await wait(`document.activeElement?.textContent===${JSON.stringify(items[1])}`,'Down moves within the list');
+        await key(window,'Escape');await wait(`!document.querySelector('.problem-cluster-list') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(m.label)}`,'Escape returns to the marker');
+      } else reached++;
+      await key(window,'Right');
+    }
+    await key(window,'End');await focusReaches(markers.at(-1).label);await tooltipInView(markers.at(-1).label);
+    assert.equal(reached,total);assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[]);assert.equal(await evaluate(`JSON.stringify(${state}.project)`),unchanged);
+    // Choosing from a group by keyboard and by pointer reviews that finding and returns focus to its marker.
+    const group=markers.find(m=>m.group);await evaluate(`[...document.querySelectorAll('.problem-track .problem-marker')].find(e=>e.getAttribute('aria-label')===${JSON.stringify(group.label)}).focus()`);
+    await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'cluster list');await key(window,'End');await wait("document.activeElement===[...document.querySelectorAll('.problem-cluster-list [role=menuitem]')].at(-1)",'End reaches the last finding');const last=await evaluate("document.activeElement.textContent");await key(window,'Return');
+    await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(group.label)}`,'keyboard group choice');
+    const chosen=await evaluate(snapshot+'.selected'),labels=performerLabels(project);assert.ok(last.startsWith(findingName(chosen.issue,labels)),last);
+    assert.equal(await evaluate(state+'.playback.count'),chosen.issue.atCount);assert.deepEqual(await evaluate(state+'.selection.selectedIds'),chosen.issue.performerIds);assert.ok(await evaluate("document.querySelectorAll('[data-problem-performer]').length>0"));
+    await evaluate(`${editor}.dispatch('set.select',{index:1})`);await frames();
+    await click('.problem-track .problem-marker[aria-haspopup=menu]');await wait("!!document.querySelector('.problem-cluster-list [role=menuitem]')",'pointer cluster list');await capture('problems-timeline-group.png');
+    const firstItem=await evaluate("document.querySelector('.problem-cluster-list [role=menuitem]').textContent");await click('.problem-cluster-list [role=menuitem]');
+    await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null`,'pointer group choice');assert.ok(firstItem.startsWith(findingName((await evaluate(snapshot+'.selected')).issue,labels)));
+    assert.equal(await evaluate(state+'.playback.count'),(await evaluate(snapshot+'.selected')).issue.atCount);
+    if(markers.some(m=>!m.group)){await evaluate(`${editor}.dispatch('set.select',{index:1})`);await click('.problem-track .problem-marker:not([aria-haspopup])');assert.ok(await evaluate(`${snapshot}.selected!==null`));}
+    pass('the problem row is one Tab stop of non-overlapping 24 px markers named by type, performers and whole count; arrows reach every finding, groups list theirs, Escape returns and choices seek and select');
     // Native drag: cancel with Escape, then repeat and commit one history entry.
     let point=await startDrag();const baseline=await evaluate(`JSON.stringify(${state}.project)`);
     await evaluate(`${qa}.hold=true`);await mouse('mouseMoved',{x:point.x+40,y:point.y+50},{button:'left',buttons:1});
@@ -128,6 +183,8 @@ app.whenReady().then(async () => {
     await evaluate(`new Promise(resolve=>{const times=[];let frame=0;function tick(){const t=performance.now();${editor}.dispatch('positions.move',{index:1,updates:{[${JSON.stringify(id)}]:{x:42+(frame%8)*.125,y:20}}});times.push(performance.now()-t);if(++frame<30)setTimeout(tick,0);else{${qa}.dispatchTimes=times;resolve();}}tick();})`);await ready();
     const current=await evaluate(state+'.project.present');for(const i of [1,2,127])assert.deepEqual(await evaluate(`${snapshot}.moves[${i-1}].issues`),analyzeTransition(current,i));metrics.rapidEditDispatchMs=await evaluate(qa+'.dispatchTimes');
     assert.equal(await evaluate(`${qa}.requests.filter(r=>r.input).every(r=>r.input.tracks.length<=500 && !r.input.sets)`),true);
+    const maximumTotal=await evaluate(`${snapshot}.moves.reduce((n,m)=>n+m.issues.length,0)`),maximumRow=await timelineRow();
+    if(maximumTotal){rowGeometry(maximumRow,await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width"));await badgesFit();assert.equal(maximumRow.reduce((n,m)=>n+m.size,0),maximumTotal);}metrics.maximum={findings:maximumTotal,markers:maximumRow.length};
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
     pass('127 moves with 500 performers complete with bounded DOM markers; rapid edits and same-ID project replacement keep reference-correct results');
     await openProblems();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await capture(`problems-${theme}.png`);}

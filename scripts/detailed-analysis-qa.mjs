@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createQa, root } from './testing/launcher.mjs';
 const qa=await createQa('detailed-analysis',{timeoutMs:240000}),require=createRequire(import.meta.url);
 const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]})),bundle=path.join(qa.output,'fixtures.cjs');
-await esbuild.build({stdin:{contents:`import {createBlankProject} from './src/domain';import {createPerformanceFixture} from './src/performanceFixtures';export {analyzeTransition,parseProject,sampleProject} from './src/domain';
+await esbuild.build({stdin:{contents:`import {createBlankProject} from './src/domain';import {createPerformanceFixture} from './src/performanceFixtures';export {analyzeTransition,parseProject,sampleProject} from './src/domain';export {findingName,performerLabels} from './src/editor/problemTrack';
 export function fixture(kind='crossing') {
  if(kind==='maximum'){const p=createPerformanceFixture('maximum');p.title='Maximum detailed analysis';const m=p.moves[0];m.paths=Object.fromEntries(p.performers.map(person=>{const a=p.sets[0].positions[person.id],b=p.sets[1].positions[person.id];return[person.id,{segments:[{id:'curve',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:a.x,y:Math.min(p.field.height,a.y+8)},control2:{x:b.x,y:Math.min(p.field.height,b.y+8)}}]}]}));return p;}
  const p=createBlankProject();p.title='Detailed movement checks';p.performers=['a','b'].map((id,i)=>({id,label:'A'+(i+1),name:'',sectionId:p.sections[0].id}));
