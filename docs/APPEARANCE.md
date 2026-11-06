@@ -8,7 +8,7 @@ Chrome uses shared neutral surface/text/border tokens, blue selection/focus, and
 
 New productions use gold Brass dots. Opening an existing production preserves its exact section colors, including the original lime Brass default. Other section defaults are unchanged. Theme and UI scale remain personal preferences, outside `.squid` data and edit history. The dark field artwork and independent dot/label pixel preferences remain stable across chrome themes. Print media resets UI scaling; existing print typography and geometry are retained.
 
-Scaling uses Chromium CSS zoom in both the desktop renderer and browser fallback. Tooltip placement, coordinate readouts, layout popovers and panel dragging convert screen coordinates to scaled layout coordinates. Small windows keep primary actions in a wrapping header, expose collapsed panes through their Show controls and scroll the workspace when necessary. Short fields suppress secondary metadata and show the keyboard hint when the field has focus.
+Scaling uses Chromium CSS zoom in both the desktop renderer and browser fallback. Tooltip placement, coordinate readouts, layout popovers and panel dragging convert screen coordinates to scaled layout coordinates. Layout breakpoints use the effective window size (window size ÷ UI scale). Small windows and large scales keep a one-row header and transport, fold secondary controls into Menu and **More playback options**, and tuck panels behind their Show controls; see [Small windows and UI scale](WORKSPACE_LAYOUT.md#small-windows-and-ui-scale). Short fields suppress secondary metadata and show the keyboard hint when the field has focus.
 
 ## Design review
 

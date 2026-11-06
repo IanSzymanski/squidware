@@ -134,6 +134,9 @@ async function openHistory() {
 
 async function checkActionClarity() {
   window.setContentSize(1366, 768);
+  // #178: the inventory depends on width (narrower windows fold controls into menus), so settle the 1366 × 768 layout first.
+  await settleNativeViewport(window, 'action clarity viewport');
+  await uiWait("document.querySelector('.studio').dataset.header === 'full' && document.querySelector('.studio').dataset.transport === 'full'", 'full header and transport at 1366 × 768');
   await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
   const inventory = await evaluate("[...document.querySelectorAll('button')].map(n=>({name:n.getAttribute('aria-label'),text:n.textContent.trim(),icon:n.querySelector('svg')?.getAttribute('class')}))");
   await fs.writeFile(path.join(output, 'control-inventory.json'), JSON.stringify(inventory, null, 2));
@@ -197,18 +200,28 @@ async function checkCompactChrome() {
     if (await evaluate("!!document.querySelector('[aria-label=\"Dismiss notification\"]')")) await clickSelector('[aria-label="Dismiss notification"]');
     const measure = await evaluate(`(() => {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
-      const required = ['Save','Undo','Export','Design','Cast','Production sheet','Help','Project menu','Play show','Add set','Fit field','2D field','3D preview'];
+      // #178: below the compact header breakpoint Help moves into Menu; a set list tucked by a narrow window keeps its Show button.
+      const compactHeader = document.querySelector('.studio').dataset.header !== 'full', setsTucked = document.querySelector('#workspace-pane-sets').hidden;
+      const required = ['Save','Undo','Redo','Export','Design','Cast','Production sheet','Project menu','Play show','First set','Last set','Fit field','2D field','3D preview', compactHeader ? 'Command palette' : 'Help', setsTucked ? 'Show Set list' : 'Add set'];
       const clipped = required.filter(name => { const node = document.querySelector('[aria-label="'+name+'"]'); if (!node) return true; const r=node.getBoundingClientRect(); const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2); return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !node.contains(top); });
-      return { viewport:{width:innerWidth,height:innerHeight}, header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), statusbar:rect('.statusbar'), clipped, emptyAudioLane:!!document.querySelector('.audio-track'), legendInField:!!document.querySelector('.field-container .field-legend') };
+      return { viewport:{width:innerWidth,height:innerHeight}, compactHeader, setsTucked, header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), statusbar:rect('.statusbar'), clipped, emptyAudioLane:!!document.querySelector('.audio-track'), legendInField:!!document.querySelector('.field-container .field-legend') };
     })()`);
     measurements.push({ width, scale, ...measure });
     assert.deepEqual(measure.clipped, [], `Required controls at ${width}px / ${scale}×`);
     assert.equal(measure.emptyAudioLane, false); assert.equal(measure.legendInField, true);
+    // The header stays one row at every width and browser zoom; effective widths below 1200 px fold Help into Menu.
+    assert.ok(measure.header.height <= 50, JSON.stringify(measure.header)); assert.equal(measure.compactHeader, !(width === 1366 && scale === 1));
+    if (measure.compactHeader) {
+      await clickSelector('[aria-label="Project menu"]'); await uiWait("!!document.querySelector('.dropdown [aria-label=\"Help\"]')", 'Help in compact Menu');
+      await clickSelector('.dropdown [aria-label="Help"]'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'Help from compact Menu');
+      await clickSelector('.modal [aria-label="Close dialog"]');
+    }
     if (width === 1366 && scale === 1) {
       assert.ok(measure.header.height <= 50); assert.ok(measure.field.height >= 470); assert.ok(measure.timeline.height <= 125);
     }
     await capture(`compact-${width}-${scale}.png`);
     // Exercise native input at both scales, including a narrow enlarged window.
+    if (measure.setsTucked) { await clickSelector('[aria-label="Show Set list"]'); await uiWait("!!document.querySelector('.workspace-pane--overlay [aria-label=\"Add set\"]')", 'tucked set list opens over the field'); }
     await clickSelector('[aria-label="Add set"]');
     await clickSelector('[aria-label="Apply set creation"]');
     const name = `Compact ${width} ${scale}`;

@@ -31,7 +31,6 @@
 @container (max-width: 650px) {
   .timeline .audio-attach .audio-file-label { display: none; }
   .timeline .audio-attach { width: 26px; max-width: 26px; justify-content: center; gap: 0; }
-  .timeline .play-controls .timeline-edge-set { display: none; }
   .timeline .count-display { gap: 4px; }
   .timeline .count-display .move-count { letter-spacing: 0; font-size: 11px; }
   .timeline .move-heading { max-width: 95px; }

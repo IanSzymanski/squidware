@@ -150,7 +150,7 @@ Ranges override base move tempos only within their intervals; musical anchors re
 
 ## Playback and audio
 
-Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome.
+Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome. On narrow windows or at large UI scales, speed, loop and metronome are under **More playback options** (⋯) in the transport, and Layout, Focus field, Help and History are in **Menu**.
 
 The displayed count is the cumulative show count. Written tempo can differ between moves; the total runtime accounts for those changes. The metronome accents every fourth cumulative count.
 

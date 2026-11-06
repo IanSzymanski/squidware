@@ -4,6 +4,7 @@ import { defaultPreferences, validatePreferences } from './preferences';
 import { createDemoProject, serializeProject } from './domain';
 import { createEditorStore } from './editor/store';
 import { startPreferencesController } from './editor/preferencesController';
+import { FIELD_RESERVE } from './editor/breakpoints';
 
 describe('workspace layout boundaries', () => {
   it('migrates older density choices and repairs layout fields without losing unrelated preferences', () => {
@@ -20,7 +21,7 @@ describe('workspace layout boundaries', () => {
       for (const available of [1920, 1366, 1000, 850, 683, 500, 320]) {
         const fitted = fitWorkspaceLayout(p, available, side);
         const used = (fitted.setsHidden ? 30 : fitted.widths.sets + 6) + (fitted.sideHidden ? 30 : fitted.widths[side] + 6);
-        expect(available - used).toBeGreaterThanOrEqual(Math.min(360, available - 60));
+        expect(available - used).toBeGreaterThanOrEqual(Math.min(FIELD_RESERVE, available - 60));
       }
       expect(fitWorkspaceLayout(p, 1920, side)).toMatchObject({ setsHidden: false, sideHidden: false });
     }
