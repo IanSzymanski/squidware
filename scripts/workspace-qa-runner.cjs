@@ -46,11 +46,21 @@ async function measure(label) {
 const presetState = "(()=>{const probe=document.createElement('i');probe.style.color='var(--accent)';document.body.append(probe);const accent=getComputedStyle(probe).color;probe.remove();return {custom:document.querySelector('.layout-custom')?.textContent??null,presets:[...document.querySelectorAll('.layout-presets .button')].map(b=>{const s=getComputedStyle(b);return [b.getAttribute('aria-label'),b.getAttribute('aria-pressed'),!!b.querySelector('.lucide-check'),s.borderTopColor===accent&&parseFloat(s.borderTopWidth)>=1.5]})}})()";
 const expectedPresets = current => ({ custom: current === 'custom' ? 'Custom layout: choose a preset to restore its panels and widths.' : null,
   presets: ['Write', 'Review', 'Rehearse'].map(name => { const on = name.toLowerCase() === current; return [`${name} preset`, String(on), on, on]; }) });
+// #178: below the compact header breakpoint, Layout opens from Menu and moves focus into its options.
+async function openLayout() {
+  if (await evaluate("document.querySelector('.studio').dataset.header === 'full'")) {
+    await control('[aria-label="Workspace layout"]');
+    assert.equal(await evaluate("document.querySelector('[aria-label=\"Workspace layout\"]').getAttribute('aria-expanded')"), 'true');
+  } else {
+    assert.equal(await evaluate("document.querySelector('.header-actions [aria-label=\"Workspace layout\"]')"), null, 'compact header folds Layout into Menu');
+    await control('[aria-label="Project menu"]'); await control('.dropdown [aria-label="Workspace layout"]');
+    await wait("!!document.querySelector('#workspace-layout-options') && document.activeElement?.getAttribute('aria-label')==='Close layout options'", 'layout options from Menu');
+  }
+}
 async function preset(name) {
-  await control('[aria-label="Workspace layout"]');
+  await openLayout();
   const current = await evaluate(`${state}.preferences.value.workspaceLayout.preset`);
   assert.deepEqual(await evaluate(presetState), expectedPresets(current), 'Layout popover shows the current preset');
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Workspace layout\"]').getAttribute('aria-expanded')"), 'true');
   await control(`[aria-label="${name} preset"]`);
   await wait(`${state}.preferences.value.workspaceLayout.preset==='${name.toLowerCase()}'`, name + ' preset applied');
   await wait(`document.querySelector('[aria-label="${name} preset"]')?.getAttribute('aria-pressed')==='true'`, name + ' preset pressed');
@@ -109,15 +119,25 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`${state}.selection.selectedIds.length`), 1);
       await key('F', [process.platform === 'darwin' ? 'meta' : 'control', 'shift']); await wait("!!document.querySelector('.studio--focus')", 'focus keyboard shortcut');
       await control('[aria-label="Exit focus"]'); pass('focus increases field space, preserves selection on Escape and has pointer/keyboard restore');
-      for (const [width, height, zoom] of [[1000, 700, 1], [850, 680, 1], [1366, 768, 2], [1000, 700, 2]]) {
+      // Narrow windows tuck the set list first, then the Inspector; opening one over the field never writes the saved layout.
+      const savedLayout = await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`);
+      const docked = await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]");
+      for (const [width, height, zoom, tucked] of [[1000, 700, 1, [false, false]], [850, 680, 1, [true, false]], [1366, 768, 2, [true, true]], [1000, 700, 2, [true, true]]]) {
         await viewport(width, height, zoom); await measure(`${width}x${height}@${zoom}`);
+        assert.deepEqual(await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]"), tucked, `${width}x${height}@${zoom} tucks the set list first`);
         const hiddenPane = await evaluate("document.querySelector('#workspace-pane-sets').hidden ? 'Set list' : document.querySelector('#workspace-pane-inspector').hidden ? 'Inspector' : null");
         if (hiddenPane) {
           await control(`[aria-label="Show ${hiddenPane}"]`);
           await wait("!!document.querySelector('.workspace-pane--overlay')", 'narrow pane overlay');
           await capture(`workspace-${width}-${zoom}.png`); await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'overlay Escape');
         } else await capture(`workspace-${width}-${zoom}.png`);
+        assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), savedLayout, 'auto-tucking and overlays leave the saved layout unchanged');
       }
+      await viewport(1366, 768);
+      assert.deepEqual(await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]"), docked, 'panels dock again when the window grows');
+      assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), savedLayout);
+      pass('narrow and zoomed windows tuck the set list, then the Inspector, open them over the field, and restore the unchanged saved layout when the window grows');
+      await viewport(1000, 700, 2);
       await preset('Write');
       await control('[aria-label="Show Inspector"]');
       await control('[aria-label="Rotate selection"]'); await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
@@ -135,7 +155,7 @@ app.whenReady().then(async () => {
       await control('.workspace-tab[aria-label="Cast"]');
       await control('[aria-label="Resize Cast"]'); await key('Left', ['shift']);
       await wait(`${state}.preferences.value.workspaceLayout.castWidth===340`, 'Cast keyboard resize');
-      await control('[aria-label="Workspace layout"]');
+      await openLayout();
       // Slider input receives native key events and exposes a precise pixel value.
       for (const [name, value] of [['Set list', 290], ['Inspector', 310], ['Cast', 360]]) {
         await control(`[aria-label="${name} width"]`); await key('Home');

@@ -172,7 +172,13 @@ app.whenReady().then(async () => {
     assert.equal(accessibility.nodes.filter(node => !node.ignored && node.role?.value === 'button' && !node.name?.value).length, 0);
     pass('enlarged UI text remains readable, keyboard controls stay reachable, and exposed buttons have accessible names');
 
-    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, audits, viewport: await evaluate('({ width: innerWidth, height: innerHeight })'), rendererNodeAccess: await evaluate('typeof window.require') }, null, 2));
+    // #178 UI-scale breakpoints: a self-contained block. Every size × scale keeps required controls visible, folded
+    // controls reachable through Menu, More playback options or tucked-panel overlays, and a logical keyboard order.
+    window.webContents.setZoomFactor(1);
+    const breakpoints = await require('./breakpoint-matrix-qa.cjs')({ window, evaluate, editor, state: `${editor}.getState()`, capture, pass, reachability: true });
+    await audit('design after the UI-scale breakpoint matrix');
+
+    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, audits, breakpoints, viewport: await evaluate('({ width: innerWidth, height: innerHeight })'), rendererNodeAccess: await evaluate('typeof window.require') }, null, 2));
      app.exit(0);
   } catch (error) {
      console.error(error);
