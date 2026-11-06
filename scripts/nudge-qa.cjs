@@ -15,7 +15,8 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   }
   async function focusField() { await evaluate("document.querySelector('.field-stage__svg').focus()"); }
   async function focusGlobal() { await evaluate('document.activeElement?.blur()'); }
-  async function button(selector,shift=false) { const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(p,shift?1:0); }
+  // Native input uses window (DIP) coordinates; getBoundingClientRect reports CSS pixels, which differ under page zoom.
+  async function button(selector,shift=false) { const zoom=window.webContents.getZoomFactor(); const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click({x:p.x*zoom,y:p.y*zoom},shift?1:0); }
   const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} vs ${b}`);
   await reset(); await capture('increments-before.png');
   for(const fast of [false,true]) {
@@ -78,6 +79,9 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   await button('.dropdown [aria-label="Preferences"]'); await wait("document.querySelector('.modal h2')?.textContent==='Preferences'",'increment preferences');
   for(const [width,zoom,name] of [[1366,1,'increments-preferences.png'],[1366,1.25,'increments-preferences-enlarged.png'],[1120,1,'increments-preferences-narrow.png']]) {
     window.setContentSize(width,768); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window,'increment preferences layout');
+    // Start each size from Appearance so the Editing jump below cannot pass on the previous iteration's state.
+    const section=title=>`document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent===${JSON.stringify(title)} && document.activeElement?.matches('.preferences-section > h3') && document.activeElement.textContent===${JSON.stringify(title)}`;
+    await button('.preferences-nav [aria-label="Appearance"]'); await wait(section('Appearance'),'Appearance preferences section');
     // The Editing section nav jumps past Appearance and Field display; increments lead that group, clear of the pinned nav.
     await button('.preferences-nav [aria-label="Editing"]');
     await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Editing' && document.activeElement?.matches('.preferences-section > h3') && document.activeElement.textContent==='Editing' && document.activeElement.parentElement.querySelector('h4')?.textContent==='Editing increments'",'Editing preferences section');
