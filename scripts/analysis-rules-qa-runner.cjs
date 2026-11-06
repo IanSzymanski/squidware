@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict'), { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--analysis-rules-manifest=')).slice('--analysis-rules-manifest='.length));
 const { root, output, profile, bundle } = manifest, { fixture, parseProject, analyzeTransition } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
@@ -21,7 +21,6 @@ const wait = (expression,label) => waitFor(()=>evaluate(expression),label,{timeo
 const frames = () => evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
 const pass = label => { checks.push(label); console.log('PASS '+label); };
 function instrument() {
- window.confirm=()=>true;
  const NativeWorker=window.Worker;
  window.Worker=class extends NativeWorker {
   constructor(...args){super(...args);window.__rulesQA.workers.push(this);this.addEventListener('message',event=>window.__rulesQA.responses.push(event.data));}
@@ -41,7 +40,7 @@ async function ready() { await wait("document.querySelector('[data-analysis-stat
 async function oracle() { await ready();const p=await evaluate(state+'.project.present'), index=await evaluate(state+'.selection.activeIndex');assert.deepEqual(await evaluate('window.__rulesQA.analysis.getSnapshot().moves['+(index-1)+'].issues'),analyzeTransition(p,index)); }
 app.whenReady().then(async()=>{try{
  await waitFor(()=>!!window,'window');await wait("!!document.querySelector('.set-card')",'renderer');window.setContentSize(1366,768);
- window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});window.webContents.reload();
+ window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});await installConfirmShim(source=>window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source}));window.webContents.reload();
  await wait(`!!${editor} && ${state}.preferences.status==='saved'`,'store');await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');
  const p=fixture();await evaluate(`${editor}.setValue('ui','dialog',null);${editor}.dispatch('project.load',{project:${JSON.stringify(p)}});${editor}.setValue('preferences','value',{...${state}.preferences.value,inspectorChecksOpen:true});${editor}.dispatch('set.select',{index:1});${editor}.setValue('selection','selectedIds',['a'])`);await frames();
  await ready();await evaluate("document.querySelector('.transition-check').scrollIntoView({block:'end'})");await capture(manifest.baseline?'analysis-rules-before.png':'analysis-rules-default.png');const layout=viewports.at(-1);assert.deepEqual([layout.width,layout.height],[1366,768]);assert.ok(layout.fieldHeight>=470,JSON.stringify(layout));if(manifest.baseline){app.exit(0);return;}
@@ -62,7 +61,7 @@ app.whenReady().then(async()=>{try{
  await evaluate(`${editor}.dispatch('file.save-as')`);await waitFor(async()=>{try{return(await fs.stat(savePath)).size>0;}catch{return false;}},'native save');const saved=parseProject(await fs.readFile(savePath,'utf8'));assert.deepEqual(saved.analysisRules,rules);assert.equal(saved.moves[0].marchingDirections.a,'backward');
  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(p)}});${editor}.dispatch('file.open')`);await wait(`${state}.project.present.analysisRules?.sections?.length===1`,'native reopen');await evaluate(`${editor}.dispatch('set.select',{index:1})`);await oracle();
  pass('native save/reopen preserves portable rules and direction declarations independently of local preferences');
- await click('[aria-label="Analysis rules"]');await selectNativeOption(window,'[aria-label="Rule scope"]','project');await text('[aria-label="Rule minimum spacing"]','-1');assert.equal(await evaluate("document.querySelector('[aria-label=\"Save rules\"]').disabled"),true);assert.match(await evaluate("document.querySelector('[role=\"alert\"]').textContent"),/0.1 to 5/);await key(window,'Escape');await wait("!document.querySelector('dialog')",'cancel rules');assert.deepEqual(await evaluate(state+'.project.present.analysisRules'),rules);await oracle();
+ await click('[aria-label="Analysis rules"]');await selectNativeOption(window,'[aria-label="Rule scope"]','project');await text('[aria-label="Rule minimum spacing"]','-1');assert.equal(await evaluate("document.querySelector('[aria-label=\"Save rules\"]').getAttribute('aria-disabled')"),'true');assert.match(await evaluate("document.querySelector('[role=\"alert\"]').textContent"),/0.1 to 5/);await key(window,'Escape');await wait("!document.querySelector('dialog')",'cancel rules');assert.deepEqual(await evaluate(state+'.project.present.analysisRules'),rules);await oracle();
  await click('[aria-label="Analysis rules"]');for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await frames();await capture('analysis-rules-'+theme+'.png');}
  window.setContentSize(1024,720);window.webContents.setZoomFactor(1.5);await settleNativeViewport(window,'enlarged rules editor');await capture('analysis-rules-enlarged.png');await evaluate("document.querySelector('[aria-label=\"Save rules\"]').focus()");assert.ok(await evaluate("(()=>{const r=document.querySelector('[aria-label=\"Save rules\"]').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()"));await key(window,'Escape');
  pass('invalid numeric rules are blocked, Escape discards drafts, and supported themes/enlarged layouts retain acceptance controls');

@@ -1,7 +1,7 @@
 import { compileScore, scoreSpanAt } from '../score';
 import { useState } from 'react';
 import { Modal } from '../components/Modal';
-import { projectMeter, validateMeter } from '../meter';
+import { meterText, projectMeter, validateMeter } from '../meter';
 import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
 import './metronome.css';
@@ -19,6 +19,7 @@ export function MetronomePanel({ controller }: { controller: EditorController })
     meter = validateMeter({ numerator, denominator, grouping: grouping.split('+').map(Number) });
     leadMeter = scoreSpanAt(compileScore({...controller.project,meter}),controller.store.getState().playback.count).meter;
   } catch (e) { error = (e as Error).message.replace('Invalid project: ', ''); }
+  const changed = meterText(meter) !== meterText(initial) || enabled !== playback.metronome || bars !== playback.countInBars || speed !== playback.speed;
   function preset(value: string) {
     const [n, d] = value.split('/').map(Number);
     setNumerator(n); setDenominator(d); setGrouping(n > 3 && d === 8 ? Array(n / 3).fill(3).join('+') : String(n));
@@ -36,6 +37,6 @@ export function MetronomePanel({ controller }: { controller: EditorController })
     <div className="form-row"><label className="form-label">Count-in<select aria-label="Count-in" value={bars} onChange={e => setBars(Number(e.target.value))}><option value="0">Off</option><option value="1">1 bar · {leadMeter.numerator} counts</option><option value="2">2 bars · {2 * leadMeter.numerator} counts</option></select></label><label className="form-label">Rehearsal speed<select aria-label="Rehearsal speed" value={speed} onChange={e => setSpeed(Number(e.target.value))}>{[.5, .75, 1, 1.25, 1.5].map(n => <option key={n} value={n}>{n}×</option>)}</select></label></div>
     <details><summary>Timing and saved settings</summary><p className="microcopy">One drill count is one denominator beat; written tempos are counts per minute. The opening meter applies until a Score map change. Pickups shift the first full bar; count-in uses the meter at the starting count. Productions without a meter use 4/4. Count-in uses the starting move tempo and holds the field and recording at the chosen count. Loops repeat without another lead-in. Meter saves with the production; click, count-in and speed settings last for this session.</p></details>
     </div>
-    <div className="modal-actions"><button className="button subtle" onClick={() => controller.setDialog(null)}>Cancel</button><button className="button primary" disabled={!!error} onClick={() => {if(controller.dispatch('metronome.configure', { meter, enabled, countInBars: bars, speed })!==true)setSubmitError(controller.store.getState().ui.toast);}}>Apply</button></div>
+    <div className="modal-actions"><button className="button subtle" onClick={() => controller.setDialog(null)}>Cancel</button><button className="button primary" disabled={!!error || !changed} onClick={() => {if(controller.dispatch('metronome.configure', { meter, enabled, countInBars: bars, speed })!==true)setSubmitError(controller.store.getState().ui.toast);}}>Apply</button></div>
   </Modal>;
 }

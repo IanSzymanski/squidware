@@ -73,6 +73,8 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await dragInterval(1,6.5,true);await wait(`Math.abs(${session}.options.interval-5.5)<1e-4`,'escape restores handle gesture');
   await edit('Interval · yards',3.5);await draft('Interval · yards',-2);await key('Return');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply spacing\"]').getAttribute('aria-disabled')"),'true');
+  // While a draft locks the choices, the chosen options keep a visible outline instead of looking like the others.
+  assert.ok(await evaluate("(()=>{const locked=[...document.querySelectorAll('.spacing-panel .spacing-choices .button')].filter(n=>n.getAttribute('aria-disabled')==='true'||n.disabled);const pressed=locked.filter(n=>n.getAttribute('aria-pressed')==='true'),other=locked.filter(n=>n.getAttribute('aria-pressed')!=='true');return pressed.length>0&&other.length>0&&pressed.every(n=>{const s=getComputedStyle(n);return s.borderStyle==='solid'&&s.boxShadow!=='none'})&&other.every(n=>getComputedStyle(n).borderStyle==='dashed')})()"),'locked spacing choices keep their pressed cue');
   await evaluate(`${number('Interval · yards')}.focus()`);await key('Escape');await wait(`!${state}.ui.pendingDraft`,'invalid draft canceled');
   near(await positions(),expected([39.5,43,46.5]));await edit('Interval · yards',1000);
   await wait("document.querySelector('.spacing-panel [role=status]').textContent.includes('field boundary')",'visible boundary error');

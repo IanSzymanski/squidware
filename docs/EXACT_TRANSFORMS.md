@@ -17,7 +17,7 @@ Dashed outlines show original selected positions. Previewed dots and the selecti
 
 Exact tools do not shift or shrink out-of-field results to fit. Such previews show a boundary error and cannot be applied. Only floating-point noise within `1e-8` yd is normalized at an edge. Invalid numbers, missing pivots and unknown selections cannot be committed. Existing translation nudges retain their group-stops-at-the-edge policy.
 
-One Apply commits the entire preview to the explicit selection/current set as one named undo entry. Releasing a handle leaves a preview to Apply or Cancel; Escape during a drag restores that gesture's starting parameters. Escape from the field or a non-input control cancels the whole preview and preserves selection. In text/numeric inputs, Escape retains the established field-draft cancellation behavior.
+One Apply commits the entire preview to the explicit selection/current set as one named undo entry. Releasing a handle leaves a preview to Apply or Cancel; Escape during a drag restores that gesture's starting parameters. Escape from the field, a non-input control or the Transform operation select cancels the whole preview and preserves selection, in the same press that closes any open help. In text/numeric inputs, Escape retains the established field-draft cancellation behavior.
 
 The preview captures the set ID, project revision and selection. Selection/set changes, playback/scrubbing, a different view/workspace, opening a dialog or any project revision change invalidate it synchronously. Other positional commands are disabled during preview. Apply validates the current session again and rejects pending numeric drafts or no-op geometry. Transient preview state never enters personal preferences or the `.squid` schema.
 
@@ -31,7 +31,7 @@ Source tests own inverse transforms, double mirrors, field/hash pivots, malforme
 
 Local Windows checks passed: production build, 240 source tests, 41 native/harness tests, 16 contract tests, and editor, accessibility, playback, tooltips, tooltips-fallback and field desktop suites. Pointer checks include scale at 160% field zoom and moving a pivot after panning. The full field suite retains dense-dot, touch, neighbor-overlay, 2× DPI and display-zoom checks. [Layout measurements](evidence/exact-transforms/transform-layouts.json) record no clipped Apply/Cancel or core file/history actions at 1366/1120 × 768 and 100/125% display zoom.
 
-Tooltip dismissal listeners now attach with the visible tooltip layout. This prevents a fast Escape from also dismissing the underlying Help dialog; the existing tooltip owner verifies the two separate dismissals.
+Tooltip dismissal listeners attach with the visible tooltip layout. Escape closes help without consuming the key, so one press also cancels the transform preview or closes the underlying dialog; the tooltip owner verifies both in a single press, including from the autofocused Transform operation select.
 
 | Before | Exact rotation preview |
 | --- | --- |

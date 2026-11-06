@@ -13,6 +13,8 @@ export interface Preferences {
   setThumbnails: boolean;
   showLabels: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; zoom: number;
   selectionHintDismissed: boolean; selectionLabelsOnly: boolean;
+  /** Show short instructional lines in panels; the same guidance stays in tooltips and Help when off. */
+  showHints: boolean;
   fieldOrientation: 'audience-bottom' | 'audience-top';
   fieldColorMode: 'section' | 'selection' | 'custom'; fieldCustomColor: string;
   fieldDotRadiusPx: number; fieldLabelSizePx: number;
@@ -33,7 +35,7 @@ export interface PreferencesBridge {
   resetPreferences: () => Promise<Preferences>;
 }
 export function defaultPreferences(): Preferences {
-  return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false,
+  return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
     selectionLabelsOnly: false, setThumbnails: false, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,

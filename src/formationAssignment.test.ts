@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formationAssignmentOrder, formationCenter } from './formationAssignment';
-import { generateFormation } from './domain';
+import { formationAssignmentOrder, formationCenter, shortestTravelOrder } from './formationAssignment';
+import { createDemoProject, generateFormation } from './domain';
 import { previewFormation } from './formationPreview';
 import type { FormationKind, FormationOptions, Point } from './types';
 
@@ -62,5 +62,60 @@ describe('identity-preserving formation assignment', () => {
     const result=previewFormation(source,[...names].reverse(),'block',{...options,columns:25},field);
     expect(result.error).toBeNull(); expect(Object.keys(result.updates)).toEqual(names); expect(Object.keys(result.updates)).toHaveLength(500);
     expect(source[names[0]]).toEqual({x:50,y:25});
+  });
+});
+
+/** Proper crossings only: shared endpoints and collinear overlaps do not count. */
+function properCrossings(from: Record<string, Point>, to: Record<string, Point>): number {
+  const side = (a: Point, b: Point, c: Point) => { const v = (b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x); return Math.abs(v) < 1e-9 ? 0 : Math.sign(v); };
+  const names = Object.keys(to); let count = 0;
+  names.forEach((a, i) => names.slice(i+1).forEach(b => {
+    const [p, q, r, t] = [from[a], to[a], from[b], to[b]];
+    const s1 = side(p,q,r), s2 = side(p,q,t), s3 = side(r,t,p), s4 = side(r,t,q);
+    if (s1 && s2 && s3 && s4 && s1 !== s2 && s3 !== s4) count++;
+  }));
+  return count;
+}
+const mapped = (order: readonly string[], points: readonly Point[]) => Object.fromEntries(order.map((id, i) => [id, points[i]]));
+const total = (from: Record<string, Point>, to: Record<string, Point>) => Object.keys(to).reduce((sum, id) => sum + Math.hypot(to[id].x-from[id].x, to[id].y-from[id].y), 0);
+
+describe('shortest-travel formation assignment', () => {
+  it('uncrosses reversed groups and the demo brass arc that positional order crosses', () => {
+    const line = generateFormation('line', 4, options);
+    expect(properCrossings(positions, mapped(shortestTravelOrder(positions, ids, line), line))).toBe(0);
+    expect(shortestTravelOrder(positions, ids, line)).toEqual(formationAssignmentOrder(positions, ids, 'line', options));
+    const project = createDemoProject(), brass = project.performers.filter(p => p.sectionId === project.sections[0].id).map(p => p.id), source = project.sets[0].positions;
+    const arc = { ...options, center: formationCenter(source, brass), width: 45, height: 22, columns: 8 }, slots = generateFormation('arc', brass.length, arc);
+    const positional = mapped(formationAssignmentOrder(source, brass, 'arc', arc), slots), shortest = mapped(shortestTravelOrder(source, brass, slots), slots);
+    expect(brass).toHaveLength(24); expect(properCrossings(source, positional)).toBeGreaterThan(0);
+    expect(properCrossings(source, shortest)).toBe(0); expect(total(source, shortest)).toBeLessThan(total(source, positional));
+  });
+  it('is invariant under roster and selection shuffles, including tied positions', () => {
+    for (const kind of ['line','arc','circle','block','curve'] as FormationKind[]) {
+      const slots = generateFormation(kind, 4, options);
+      for (const source of [positions, Object.fromEntries(ids.map(id=>[id,{x:50,y:25}])), { a:{x:40,y:20}, b:{x:40,y:20}, c:{x:60,y:30}, d:{x:60,y:30} }]) {
+        const expected = shortestTravelOrder(source, ids, slots);
+        for (const order of [['d','c','b','a'],['b','d','a','c']]) expect(shortestTravelOrder(source, order, slots)).toEqual(expected);
+      }
+    }
+    expect(shortestTravelOrder({ z:{x:5,y:5}, a:{x:5,y:5} }, ['z','a'], [{x:0,y:0},{x:10,y:10}])).toEqual(['a','z']);
+  });
+  it('matches exhaustive minimum totals for small selections', () => {
+    let seed = 7; const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+    const permutations = (items: string[]): string[][] => items.length < 2 ? [items] : items.flatMap((item, i) => permutations([...items.slice(0, i), ...items.slice(i+1)]).map(rest => [item, ...rest]));
+    for (let n = 1; n <= 6; n++) for (let fixture = 0; fixture < 5; fixture++) {
+      const names = Array.from({ length: n }, (_, i) => 'p' + i), source = Object.fromEntries(names.map(id => [id, { x: random()*100, y: random()*53 }]));
+      const slots = names.map(() => ({ x: random()*100, y: random()*53 }));
+      const best = Math.min(...permutations(names).map(order => total(source, mapped(order, slots))));
+      const order = shortestTravelOrder(source, names, slots);
+      expect(new Set(order).size).toBe(n); expect(total(source, mapped(order, slots))).toBeCloseTo(best, 9);
+      expect(properCrossings(source, mapped(order, slots))).toBe(0);
+    }
+  });
+  it('rejects incomplete plans and non-finite sources', () => {
+    expect(() => shortestTravelOrder(positions, ids, [{x:0,y:0}])).toThrow(/every selected performer/);
+    expect(() => shortestTravelOrder(positions, ['a','a'], [{x:0,y:0},{x:1,y:1}])).toThrow(/every selected performer/);
+    expect(() => shortestTravelOrder({ a:{x:NaN,y:0}, b:{x:1,y:1} }, ['a','b'], [{x:0,y:0},{x:1,y:1}])).toThrow(/finite/);
+    expect(shortestTravelOrder(positions, [], [])).toEqual([]);
   });
 });

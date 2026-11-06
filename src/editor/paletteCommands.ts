@@ -7,6 +7,7 @@ import { currentSpacingResult } from './spacingSession';
 import { currentTransformResult } from './transformSession';
 import type { EditorState } from './state';
 import { drillPlan, isDrillPhrase } from './drillCommands';
+import { openingMoveNote } from './setList';
 
 export type CommandInvocation = { [I in CommandId]: { id: I; args: CommandArguments[I] } }[CommandId];
 export interface PaletteEntry { key: string; name: string; description: string; keywords: string; invocation: CommandInvocation; disabledReason: string | null }
@@ -43,6 +44,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'set.next') return 'This is the last set.';
   if (['set.new', 'set.duplicate', 'set.insert-before', 'set.hold'].includes(id)) return 'The production has reached its set limit.';
   if (id === 'set.reorder') return 'The current set is already at this end of the set list.';
+  if (id === 'set.move-to') return state.project.present.sets[args.target]?.id === args.id ? `This set is already at position ${args.target + 1}.` : 'Pause playback and finish other input before reordering sets.';
   if (id === 'set.add') return 'The production has reached its set limit.';
   if (id === 'performers.add-dialog') return 'The production has reached its performer limit.';
   if (id === 'playback.toggle') return 'Add a second set with move counts before rehearsing.';
@@ -58,16 +60,20 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
 /** User commands and concrete variants. Parameter entry remains in its shared editor. */
 export function paletteEntries(state: EditorState): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
-  function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string) {
+  function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string, description = commandRegistry[id].description) {
     const invocation = { id, args } as CommandInvocation;
-    const keywords = id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
-    entries.push({ key, name: name ?? commandRegistry[id].name, description: commandRegistry[id].description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
+    const keywords = id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
+    entries.push({ key, name: name ?? commandRegistry[id].name, description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
   }
   for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && definition.id !== 'palette.open' && definition.id !== 'section.add' && definition.id !== 'selection.close') add(definition.id, undefined);
   add('coordinates.preview', {});
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
-  add('tempo.open', undefined);
-  add('audio.align-open', undefined);
+  const current = state.project.present.sets[state.selection.activeIndex];
+  // The current position stays listed (unavailable) so typing it never falls through to a longer number such as 10 or 120.
+  for (let target = 0; target < state.project.present.sets.length; target++) {
+    add('set.move-to', { id: current.id, target, revision: state.project.revision, epoch: state.ui.projectEpoch }, `Move current set to position ${target + 1}`, `move-to-${target}`,
+      `${commandRegistry['set.move-to'].description}${openingMoveNote(state.selection.activeIndex, target)}`);
+  }
   add('group.open',{},'Group route movement','group-movement-new');
   for(const group of state.project.present.moves[state.selection.activeIndex-1]?.groupMotions??[])add('group.open',{id:group.id},`Edit group movement: ${group.name}`,`group-movement-${group.id}`);
   add('transform.preview', {});
@@ -93,9 +99,11 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   return entries;
 }
 export function searchPalette(entries: PaletteEntry[], query: string): PaletteEntry[] {
-  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const q = query.toLowerCase().trim(), terms = q.split(/\s+/).filter(Boolean);
+  // An exact name outranks longer names that merely start with it ("position 1" before "position 10").
+  const rank = (entry: PaletteEntry) => entry.name.toLowerCase() === q ? 2 : entry.name.toLowerCase().startsWith(q) ? 1 : 0;
   return entries.filter(entry => terms.every(term => `${entry.name} ${entry.description} ${entry.keywords} ${entry.invocation.id}`.toLowerCase().includes(term)))
-    .sort((a, b) => Number(b.name.toLowerCase().startsWith(query.toLowerCase().trim())) - Number(a.name.toLowerCase().startsWith(query.toLowerCase().trim())) || (!terms.length ? Number(!!a.disabledReason) - Number(!!b.disabledReason) : 0) || a.name.localeCompare(b.name));
+    .sort((a, b) => rank(b) - rank(a) || (!terms.length ? Number(!!a.disabledReason) - Number(!!b.disabledReason) : 0) || a.name.localeCompare(b.name));
 }
 /** Valid drill phrases take precedence. Otherwise keep matching action names searchable. */
 export function paletteQuery(state: EditorState, query: string) {

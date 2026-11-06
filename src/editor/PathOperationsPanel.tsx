@@ -8,6 +8,7 @@ import { copyIntervals, resolveIntervals } from '../movementPathOperations';
 import type { PasteFrame } from '../movementPathOperations';
 import { movementSvg } from '../movementPaths';
 import { HelpButton } from './ControlHelp';
+import { projectPatches } from './history';
 import { pathOperationPlan } from './pathOperationReview';
 import type { PathOperationRequest, PathOperation } from './pathOperationReview';
 import type { EditorController } from './useEditorController';
@@ -24,8 +25,6 @@ export function PathOperationsPanel({ controller: c }: { controller: EditorContr
   const [selected,setSelected]=useState(source.map(r=>r.segment.id)),[whole,setWhole]=useState(true);
   const [at,setAt]=useState('0'),[duration,setDuration]=useState(String(move.counts)),[frame,setFrame]=useState<PasteFrame>('fit'),[accept,setAccept]=useState(false);
   const [progress,setProgress]=useState(25),[submitError,setSubmitError]=useState('');
-  const dirty=kind==='reverse'||kind==='paste'||kind==='resize'&&counts!==String(move.counts);
-  useEffect(()=>{c.setPendingDraft(dirty,'path-operations');return()=>c.setPendingDraft(false,'path-operations');},[dirty,c.setPendingDraft]);
   const op:PathOperation=kind==='resize'?{kind:'resize',counts:Number(counts)}:kind==='paste'?{kind:'paste',clipboardId:clipboard?.id??'',options:{performerId:ids[0],startCount:Number(at),duration:Number(duration),frame,seed:initial.seed,allowTargetTiming:accept}}:{kind:'reverse'};
   const request:PathOperationRequest={moveId:initial.moveId,activeSetId:initial.activeSetId,ids,revision:initial.revision,epoch:initial.epoch,operation:op};
   let candidate=project,error='',summary='';
@@ -39,6 +38,11 @@ export function PathOperationsPanel({ controller: c }: { controller: EditorContr
       const plan=pathOperationPlan(project,request,clipboard);candidate=plan.project;summary=plan.summary;validateProjectEdit(project,candidate);
     }
   }catch(e){error=(e as Error).message;}
+  // Only an edited input or a reviewable change is a pending draft; choosing an operation alone is not.
+  const changed=kind==='copy'||!error&&projectPatches(project,candidate).length>0;
+  const edited=kind==='resize'?counts!==String(move.counts):kind==='paste'&&(at!=='0'||duration!==String(move.counts)||frame!=='fit'||accept);
+  const dirty=edited||kind!=='copy'&&changed;
+  useEffect(()=>{c.setPendingDraft(dirty,'path-operations');return()=>c.setPendingDraft(false,'path-operations');},[dirty,c.setPendingDraft]);
   const s=c.store.getState(),stale=s.project.revision!==initial.revision||c.projectEpoch!==initial.epoch||project.sets[c.index]?.id!==initial.activeSetId||JSON.stringify(c.selectedIds)!==JSON.stringify(ids)||kind==='paste'&&s.ui.movementClipboard?.id!==clipboard?.id;
   const nextMove=candidate.moves[index],oldCount=move.counts*progress/100,newCount=nextMove.counts*progress/100;
   const before=sampleProject(project,setStartCount(project,index)+oldCount).positions,after=sampleProject(candidate,setStartCount(candidate,index)+newCount).positions;
@@ -68,5 +72,5 @@ export function PathOperationsPanel({ controller: c }: { controller: EditorContr
     {!error&&<><p role="status" aria-label="Move operation summary">{summary}</p><svg className="path-preview" viewBox={`-7 -8 114 ${project.field.height+16}`} role="img" aria-label="Move operation field preview"><FieldDrawing project={candidate} positions={after} selectedIds={ids} showLabels={false}/>{ids.map(id=><g key={id}><path className="path-original" d={movementSvg(project.sets[index].positions[id],project.sets[index+1].positions[id],effectiveMove(project,index).paths[id])}/><path className="path-proposed" d={movementSvg(candidate.sets[index].positions[id],candidate.sets[index+1].positions[id],effectiveMove(candidate,index).paths[id])}/><circle className="path-original" cx={before[id].x} cy={before[id].y} r="1.4"/></g>)}</svg>
       <label className="form-label">Preview progress · {progress}%<Tooltip name="Move operation preview progress" description="Compare the same fraction of the saved and proposed move without changing the production."><input type="range" aria-label="Move operation preview progress" value={progress} min={0} max={100} step={1} onChange={e=>setProgress(Number(e.target.value))}/></Tooltip></label><p className="microcopy">Saved count {oldCount.toFixed(3)} → proposed count {newCount.toFixed(3)}. Dashed paths/circles: saved. Solid paths/rings: proposed. Review adjacent moves after endpoint changes. Problems reports conservative spacing and peak-stride bounds.</p></>}
     <p className="microcopy">Apply is one named undo action. Cancel/Escape preserves the production. Detailed splits and timeline rewiring remain guarded; these operations never silently flatten custom movement.</p>
-  </div><div className="modal-actions"><HelpButton title="Cancel move operation" className="button subtle" onClick={close}>Cancel</HelpButton><HelpButton title={kind==='copy'?'Copy movement interval range':'Apply move operation'} description="Recheck the reviewed context before copying or applying the complete operation." disabled={!!error||stale||kind==='resize'&&Number(counts)===move.counts} disabledReason={error||'Change the operation or cancel and reopen stale context.'} className="button primary" onClick={apply}>{kind==='copy'?'Copy interval range':'Apply · one undo'}</HelpButton></div></Modal>;
+  </div><div className="modal-actions"><HelpButton title="Cancel move operation" className="button subtle" onClick={close}>Cancel</HelpButton><HelpButton title={kind==='copy'?'Copy movement interval range':'Apply move operation'} description="Recheck the reviewed context before copying or applying the complete operation." disabled={!!error||stale||!changed} disabledReason={error||(stale?'The production, selection or clipboard changed. Cancel and reopen.':kind==='resize'?`Enter counts other than ${move.counts} to resize this move.`:'This operation would not change the move.')} className="button primary" onClick={apply}>{kind==='copy'?'Copy interval range':'Apply · one undo'}</HelpButton></div></Modal>;
 }

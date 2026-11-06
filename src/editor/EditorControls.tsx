@@ -4,7 +4,7 @@ import type { MouseEventHandler, ReactNode } from 'react';
 
 import type { Point } from '../types';
 import type { ThumbnailDot } from './thumbnailRoster';
-import { HelpButton } from './ControlHelp';
+import { HelpButton, Hint } from './ControlHelp';
 import type { ControlHelpProps } from './ControlHelp';
 import { Tooltip } from '../components/Tooltip';
 
@@ -32,8 +32,9 @@ export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, 
     },
   };
   const input = multiline ? <textarea {...props} rows={2} /> : <input {...props} />;
-  const control = description ? <Tooltip name={label || 'Edit text'} description={description}>{input}</Tooltip> : input;
-  return multiline ? <>{control}<small className="microcopy">Enter applies · Shift+Enter adds a line · Escape cancels</small></> : control;
+  const help = description ?? (multiline ? 'Enter applies; Shift+Enter adds a line; Escape cancels.' : undefined);
+  const control = help ? <Tooltip name={label || 'Edit text'} description={help}>{input}</Tooltip> : input;
+  return multiline ? <>{control}<Hint>Enter applies · Shift+Enter adds a line · Escape cancels</Hint></> : control;
 }
 
 export function CommitColor({ value, label, onCommit, onDraftChange }: { value: string; label: string; onCommit: (value: string) => void; onDraftChange: (pending: boolean, fieldId: string) => void }) {

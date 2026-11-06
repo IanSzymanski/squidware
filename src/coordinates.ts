@@ -38,6 +38,9 @@ export function coordinateReferences(field: Project['field']) {
   ];
 }
 
+/** Display-only yards: at most three decimals (the CSV yard precision), trailing zeros trimmed, -0 as 0, non-finite as ''. */
+export const formatYards = (yards: number) => Number.isFinite(yards) ? String(Math.round(yards * 1000) / 1000 || 0) : '';
+
 /** Entry can choose a basis explicitly; existing readout/export calls retain 8-to-5. */
 export function coordinateDescription(point: Point, field: Project['field'], options: CoordinateOptions = {}, stepsPerFive: 6 | 8 | 12 = 8): string {
   const side = point.x <= field.width / 2 ? 1 : 2;

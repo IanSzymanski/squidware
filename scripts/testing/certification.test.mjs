@@ -22,7 +22,7 @@ test('macOS certification isolates the native desktop and audio output without c
     const workflows = plan.find(step => step.name === 'workflows');
     assert.deepEqual(workflows.args,
       ['scripts/run-desktop-regressions.mjs', index === 0 ? '--jobs=1' : '--jobs=2']);
-    assert.equal(workflows.timeoutMs, (index === 0 ? 20 : 15) * 60_000);
+    assert.equal(workflows.timeoutMs, 20 * 60_000);
     assert.deepEqual(plan.filter(step => step.name !== 'workflows'), plans[0].filter(step => step.name !== 'workflows'));
   }
 });

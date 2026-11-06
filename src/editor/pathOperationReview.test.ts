@@ -3,6 +3,7 @@ import wire from '../../format/examples/scheduled-v6.squid?raw';
 import { parseProject,serializeProject } from '../domain';
 import { createEditorStore } from './store';
 import { commandRegistry } from './commands';
+import { pathOperationPlan } from './pathOperationReview';
 import type { PathOperationRequest,PathCopyRequest } from './pathOperationReview';
 function setup(){const p=parseProject(wire),store=createEditorStore(p);store.dispatch('set.select',{index:1});store.setValue('selection','selectedIds',['a']);const s=store.getState();const context={moveId:p.moves[0].id,activeSetId:p.sets[1].id,ids:['a'],revision:s.project.revision,epoch:s.ui.projectEpoch};return{p,store,context};}
 describe('reviewed path operation commands',()=>{
@@ -11,6 +12,14 @@ describe('reviewed path operation commands',()=>{
   for(const patch of [{revision:-1},{epoch:-1},{activeSetId:'missing'},{ids:[]}])expect(store.dispatch('path.operation-apply',{...request,...patch})).toBe(false);
   expect(store.dispatch('path.operation-apply',request)).toBe(true);expect(store.getState().project.past).toHaveLength(1);expect(store.getState().playback.count).toBe(32);
   store.dispatch('history.undo');expect(store.getState().project.present).toEqual(p);store.dispatch('history.redo');expect(parseProject(serializeProject(store.getState().project.present))).toEqual(store.getState().project.present);
+ });
+ it('rejects an unchanged resize or a reverse that changes nothing without history, and never summarizes a same-count rescale',()=>{
+  const{p,store,context}=setup(),same:PathOperationRequest={...context,operation:{kind:'resize',counts:p.moves[0].counts}},present=store.getState().project.present;
+  expect(pathOperationPlan(p,same,null).summary).toBe('Enter new move counts to rescale this 16-count move.');expect(pathOperationPlan(p,{...same,operation:{kind:'resize',counts:32}},null).summary).toMatch(/from 16 to 32 counts/);
+  expect(store.dispatch('path.operation-apply',same)).toBe(false);expect(store.getState().ui.toast).toBe('The reviewed operation does not change the move.');
+  expect(store.getState().project.present).toBe(present);expect(store.getState().project.past).toHaveLength(0);expect(store.getState().project.revision).toBe(context.revision);
+  const still=structuredClone(p);still.sets[1].positions.a={...still.sets[0].positions.a};delete still.moves[0].paths.a;store.dispatch('project.load',{project:still});store.dispatch('set.select',{index:1});store.setValue('selection','selectedIds',['a']);const s=store.getState();
+  expect(store.dispatch('path.operation-apply',{...context,revision:s.project.revision,epoch:s.ui.projectEpoch,operation:{kind:'reverse'}})).toBe(false);expect(store.getState().ui.toast).toBe('The reviewed operation does not change the move.');expect(store.getState().project.present).toBe(s.project.present);expect(store.getState().project.past).toHaveLength(0);
  });
  it('copies without history or dirty revision, clones clipboard and clears it on project replacement',()=>{
   const{p,store,context}=setup(),request:PathCopyRequest={...context,performerId:'a',segmentIds:p.moves[0].paths.a.segments.map(s=>s.id),wholeMove:true};

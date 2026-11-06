@@ -3,7 +3,7 @@ import { fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from
 import { ScatterFormationHandles } from './ScatterFormationHandles';
 import { BezierFormationHandles } from './BezierFormationHandles';
 import { isNudgeKey, type NudgeKey } from '../editIncrements';
-import { DEFAULT_SNAPPING, gridInterval, hashLines, moveSelection, snapDescription } from '../snapping';
+import { DEFAULT_SNAPPING, gridInterval, hashLines, moveSelection } from '../snapping';
 import type { CoordinateOptions } from '../coordinates';
 import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
@@ -23,7 +23,7 @@ import { TransformHandles, type FieldTransformPreview } from './TransformHandles
 import { SpacingGuides, type FieldSpacingPreview } from './SpacingGuides';
 import { CoordinateGuides, type FieldCoordinatePreview } from './CoordinateGuides';
 import type { NeighborOverlay } from '../neighborPaths';
-import { fieldViewPoint, fieldViewTransform, type FieldOrientation } from './fieldOrientation';
+import { fieldViewBox, fieldViewPoint, fieldViewTransform, type FieldOrientation } from './fieldOrientation';
 
 interface DrawingProps {
   orientation?: FieldOrientation;
@@ -52,7 +52,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, he
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
   return <g data-field-markings="true" aria-hidden="true">
     <rect x={-2} y={-2} width={width + 4} height={height + 4} rx="0.5" fill="#273a34" stroke="#46574c" strokeWidth="0.12" />
-    <rect width={width} height={height} fill="#233c31" />
+    <rect data-field-surface="true" width={width} height={height} fill="#233c31" />
     {yardLines.filter((_, i) => i % 2 === 0).map(x => <rect key={`stripe-${x}`} x={x} width={Math.min(5, width - x)} height={height} fill="#294438" opacity="0.5" />)}
     {showGrid && <g stroke="#a3c0a4" strokeWidth="0.045" opacity="0.2">
       {Array.from({ length: Math.floor(width / interval) + 1 }, (_, i) => <line key={`gx-${i}`} x1={i * interval} x2={i * interval} y1={0} y2={height} />)}
@@ -180,6 +180,8 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   const keyboardHelpId = useId();
   const fieldHasFocus = useRef(false);
   const [keyboardFocus, setKeyboardFocus] = useState(false);
+  // Keyboard help is drawn only after a key press inside the field; pointer focus never shows it.
+  const [keyboardHelp, setKeyboardHelp] = useState(false);
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const hitCycle = useRef<HitCycle | null>(null);
@@ -194,9 +196,9 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   const width = project.field.width;
   const height = project.field.height;
   const safeZoom = clamp(zoom, 0.6, 3);
-  const viewWidth = (width + 14) / safeZoom;
-  const viewHeight = (height + 16) / safeZoom;
-  const viewport = `${width / 2 + pan.x - viewWidth / 2} ${height / 2 + pan.y - viewHeight / 2} ${viewWidth} ${viewHeight}`;
+  const view = fieldViewBox(project.field, safeZoom, pan);
+  const viewWidth = view.width, viewHeight = view.height;
+  const viewport = `${view.x} ${view.y} ${viewWidth} ${viewHeight}`;
   const displayedPositions = useMemo(() => Object.keys(preview).length ? { ...positions, ...preview } : positions, [positions, preview]);
   const wantsCanvas = readOnly || moving || !!selectionPreview || !!neighbors?.length;
   const canvasActive = wantsCanvas && canvasReady;
@@ -273,10 +275,11 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       const active = document.activeElement;
       const id = svgRef.current?.contains(active) ? active?.getAttribute('data-performer-id') : null;
       setKeyboardFocus(!!id);
+      setKeyboardHelp(!!active && !!svgRef.current?.contains(active));
       if (id) { fieldHasFocus.current = true; setRememberedFocus({ project: project.id, id }); }
       else fieldHasFocus.current = false;
     };
-    const pointer = () => setKeyboardFocus(false);
+    const pointer = () => { setKeyboardFocus(false); setKeyboardHelp(false); };
     document.addEventListener('keyup', keyboard);
     document.addEventListener('pointerdown', pointer);
     window.addEventListener('blur', pointer);
@@ -478,7 +481,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     }
   }
 
-  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}`}>
+  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`}>
     <svg className="field-stage__background" viewBox={viewport} aria-hidden="true">
       <g transform={fieldViewTransform(project.field, orientation)}><StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} /></g>
     </svg>
@@ -500,7 +503,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       </g>
     </svg>
     <div id={keyboardHelpId} className="field-keyboard-help">{coordinatePreview ? 'Enter: apply coordinates · Escape: cancel preview · Type the phrase in the Inspector.' : spacingPreview ? 'Enter: apply spacing · Escape: cancel preview · Use Inspector numbers or the interval handle to adjust.' : formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · {nudgeHelp} · Page Up/Down: roster · Home/End: first/last</>}</div>
-    <div className="field-snap-status" role="status">{coordinatePreview ? 'Exact coordinate entry · snapping bypassed' : spacingPreview ? 'Exact spacing · snapping bypassed' : snapDescription(project.snapping ?? DEFAULT_SNAPPING, snap)}{moving && Object.keys(preview).length ? " · Release to apply · Escape to cancel" : ""}</div>
+    {moving && Object.keys(preview).length > 0 && <div className="field-drag-status">Release to apply · Escape to cancel</div>}
     <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
     <div className="field-stage__hint">{coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : selectionPreview ? 'SELECTION PREVIEW · APPLY OR CANCEL' : tool === 'lasso' ? 'Draw lasso · Shift to add · Review before Apply' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>

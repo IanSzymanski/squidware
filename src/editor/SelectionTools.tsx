@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { type FocusEvent, useEffect, useId, useRef, useState } from 'react';
 import { ListFilter, X } from 'lucide-react';
 import type { Section } from '../types';
 import { PROJECT_LIMITS } from '../domain';
@@ -30,13 +30,22 @@ export function SelectionToolsButton({ controller }: { controller: EditorControl
   return <HelpButton pointerPassThrough command="selection.tools" title="Selection tools and groups" className="icon-button" disabled={!enabled} disabledReason="Finish or cancel the current input, position preview or gesture first." onClick={() => controller.dispatch('selection.tools')}><ListFilter size={17} /></HelpButton>;
 }
 
+/** Focus scrolling leaves a partly clipped control in place, so the compact legend reveals the focused chip fully. */
+export function revealFocusedChip(event: FocusEvent<HTMLElement>) {
+  const scroller = event.currentTarget, chip = (event.target as HTMLElement).closest('button');
+  if (!chip || !scroller.contains(chip)) return;
+  const inner = chip.getBoundingClientRect(), outer = scroller.getBoundingClientRect(), pad = 2;
+  if (inner.left < outer.left + pad) scroller.scrollLeft -= outer.left + pad - inner.left;
+  else if (inner.right > outer.right - pad) scroller.scrollLeft += inner.right - (outer.right - pad);
+}
+
 export function SectionSelectionButton({ section, controller }: { section: Section; controller: EditorController }) {
   const shift = useRef(false), ids = controller.sectionMembers.get(section.id) ?? [];
   const selected = ids.length > 0 && ids.every(id => controller.selectedSet.has(id));
   const enabled = useEditorSelector(canSelectSection);
   return <HelpButton pointerPassThrough command="selection.section" title={`Select all ${section.name}`} description={`Select ${ids.length} performers in the whole section. Shift-click or Shift-Enter adds them. Cast filters do not limit section buttons.`} active={selected} state={selected ? 'Selected' : 'Not selected'} disabled={!enabled} disabledReason="Finish the current gesture or selection review first." className={selected ? 'selected' : ''}
     onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') shift.current = event.shiftKey; }}
-    onClick={event => { controller.dispatch('selection.section', { id: section.id, additive: event.detail === 0 ? shift.current || event.shiftKey : event.shiftKey }); shift.current = false; }}><i style={{ background: section.color }} />Select {section.name}<span>{ids.length}</span></HelpButton>;
+    onClick={event => { controller.dispatch('selection.section', { id: section.id, additive: event.detail === 0 ? shift.current || event.shiftKey : event.shiftKey }); shift.current = false; }}><i style={{ background: section.color }} />{section.name}<span>{ids.length}</span></HelpButton>;
 }
 
 export function SelectionTools({ controller: c }: { controller: EditorController }) {

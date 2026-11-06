@@ -1,5 +1,5 @@
 'use strict';
-const { waitFor: waitUntil } = require('./testing/renderer.cjs');
+const { waitFor: waitUntil, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--thumbnail-manifest=')).slice('--thumbnail-manifest='.length));
@@ -20,7 +20,6 @@ function native(label) { function find(menu) { for (const item of menu?.items ||
 function instrument() {
   const qa = window.__thumbnailQA = { editor: null, thumbnails: 0, membershipBuilds: 0, membershipScans: 0, commits: 0, lastCommit: 0, mode: 'counts', errors: [] };
   const thumbnailFibers = new WeakMap();
-  window.confirm = () => true;
   window.addEventListener('error', event => qa.errors.push(event.message));
   window.addEventListener('unhandledrejection', event => qa.errors.push(String(event.reason)));
   const OriginalSet = window.Set;
@@ -62,7 +61,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); window.webContents.reload();
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source })); window.webContents.reload();
     await uiWait(`!!window.__thumbnailQA?.editor && ${state}.preferences.status !== 'loading'`, 'store');
     if (await evaluate("!!document.querySelector('dialog[open]')")) await evaluate(`${store}.setValue('ui','dialog',null)`);
     if (!baseline) await evaluate(`${store}.setValue('preferences','value',{...${state}.preferences.value,setThumbnails:true})`);

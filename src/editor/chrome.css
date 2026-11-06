@@ -11,8 +11,8 @@
 .workspace-tab { display: flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 9px; border: 2px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 12px; }
 .workspace-tab > span { display: flex; }
 .workspace-tab svg { width: 16px; height: 16px; }
-.workspace-tab:hover { background: var(--hover-bg); }
-.workspace-tab.active { background: var(--selected-bg); border-color: var(--accent); font-weight: 650; }
+.workspace-tab:hover { background: var(--hover-bg); color: var(--text); }
+.workspace-tab.active { background: var(--selected-bg); border-color: var(--accent); color: var(--text); font-weight: 650; }
 .header-actions { gap: 4px; margin-left: auto; }
 .header-actions > .header-divider { margin: 0 2px; }
 .help-action { padding: 7px; gap: 4px; }
@@ -34,13 +34,27 @@
 .field-container { margin: 0 12px 8px; min-height: 180px; }
 .field-container .field-stage, .field-container .stage-three,
 .field-container .field-stage__svg, .field-container .stage-three__canvas { min-height: 180px; }
-.field-legend { position: absolute; z-index: 4; top: 8px; left: 8px; right: 8px; min-height: 0; max-height: none; padding: 4px; gap: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); overflow: visible; }
-.field-legend-scroll { overflow-x: auto; flex-wrap: nowrap !important; min-width: 0; padding: 2px; scrollbar-width: thin; }
-.field-legend button { flex-shrink: 0; white-space: nowrap; padding: 4px 7px; font-size: 12px; }
-.field-legend > span { padding-right: 4px; }
-.field-topline { top: auto; bottom: 54px; left: 12px; right: 12px; font-size: 12px; letter-spacing: .3px; }
-.field-preview-banner { top: 60px; }
-.neighbor-legend { top: 60px; }
+/* A compact section legend in the top apron, left of the centered sideline label. It never spans the field. */
+.field-legend { position: absolute; z-index: 4; top: 8px; left: 8px; right: auto; max-width: calc(50% - 50px); min-height: 0; max-height: none; padding: 0; gap: 4px; border: 0; background: transparent; overflow: visible; transition: opacity .12s ease; }
+.field-legend > .field-legend-scroll { overflow-x: auto; flex-wrap: nowrap !important; min-width: 0; padding: 2px; gap: 4px; scrollbar-width: thin; }
+.field-legend button { flex-shrink: 0; white-space: nowrap; padding: 2px 5px; gap: 4px; min-height: 24px; font-size: 12px; }
+/* The legend steps aside while dragging; during previews it reappears on hover or keyboard focus. */
+.field-container:has(.field-stage--moving) .field-legend { opacity: 0; pointer-events: none; }
+.field-container--previewing .field-legend:not(:hover):not(:focus-within) { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .field-legend { transition: none; } }
+/* View state and roster count sit in the bottom apron corners, clear of the centered sideline label. */
+.field-topline { top: auto; bottom: 8px; left: 12px; right: 12px; font-size: 12px; letter-spacing: .3px; pointer-events: none; }
+.field-topline > span { max-width: calc(50% - 60px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.is-3d .field-topline { bottom: 36px; }
+/* Focus mode hides the status bar, so the field's own status line carries snap mode there (one visible home either way). */
+.field-topline-snap { display: none; }
+.studio--focus .field-container:not(.is-3d) .field-topline-snap { display: inline; }
+.field-container:has(.field-stage--keyboard) .field-topline { visibility: hidden; }
+/* With Show hints off, field keyboard help stays an accessible description only. */
+.field-container.field-container--no-hints .field-stage .field-keyboard-help { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.field-container--no-hints:has(.field-stage--keyboard) .field-topline { visibility: visible; }
+.field-preview-banner { top: 48px; }
+.neighbor-legend { top: 48px; }
 /* Keep camera actions below the floating section row, including its scrollbar. */
 .field-container .stage-three__controls { top: 72px; max-width: calc(100% - 24px); flex-wrap: wrap; }
 .field-container--preview .stage-three__controls { top: auto; bottom: 72px; }
@@ -107,9 +121,7 @@
   .app-header { gap: 6px 10px; }
   .brand > span:first-of-type { display: none; }
   .project-file-state { flex-basis: 120px; }
-  .inspector { width: 235px; min-width: 235px; }
   .audio-attach { max-width: 125px; }
-  .transport-options select { width: 65px; }
   .count-display { gap: 4px; }
   .count-display > span { display: none; }
 }
@@ -126,12 +138,27 @@
 }
 .field-container.is-3d { min-height: var(--camera-min-height, 180px); }
 .field-container.is-3d .stage-three__controls { top: var(--camera-top, 72px); bottom: auto; }
-.field-display-preferences > .microcopy { margin-bottom: 12px; }
 .formation-panel .preview-formation { width: 100%; margin-top: 8px; }
 .formation-parameters { margin-top: 10px; }
+.formation-assignment > :first-child { grid-column: 1 / -1; }
 .formation-panel .transform-result { margin-top: 8px; }
 .formation-handles { color: #8dc8ff; }
 .display-color-control { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
 .display-color-control input[type=color] { width: 48px; height: 34px; }
 .display-color-control input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
 .display-color-control input[type=color]::-webkit-color-swatch { border: 0; border-radius: 3px; }
+/* A clean production that was never saved is neutral, not a saved-file success. */
+.status-dot.idle { background: var(--muted); }
+/* Preferences: four headed groups, all mounted, under a jump nav pinned flush with the dialog top (-24px offsets .modal padding). */
+.preferences-nav { position: sticky; top: -24px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; margin: 0 -24px 18px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.preferences-nav .button { min-height: 30px; padding: 5px 11px; }
+.preferences-section + .preferences-section { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+.preferences-section > h3 { font-size: 15px; font-weight: 650; color: var(--text); margin-bottom: 14px; }
+.preferences-section > h3:focus { outline: none; }
+.preferences-section > h3:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.preferences-section > h3 + .modal-subtitle { margin-top: 0; }
+.preferences-section .shortcut-preferences { margin: 0 0 12px; padding-top: 0; border-top: 0; }
+/* Export: the PDF section owns its contents choice; other formats form a vertical list. */
+.export-pdf { margin: 12px 0 0; }
+.export-secondary { display: grid; gap: 8px; margin-bottom: 16px; }
+.export-secondary > button { justify-content: space-between; width: 100%; }

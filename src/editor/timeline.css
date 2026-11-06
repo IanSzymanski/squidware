@@ -24,7 +24,7 @@
 .timeline .count-display .move-count small { font-size: 11px; }
 /* Share the heading row so the score cannot add a third transport line. */
 .timeline .move-heading { display: flex; align-items: baseline; gap: 4px; max-width: 190px; }
-.timeline .move-heading > span { flex-shrink: 0; }
+.timeline .move-heading > span { flex-shrink: 0; color: var(--text); }
 .timeline .move-heading .score-readout { min-width: 0; }
 .timeline .count-display .show-count { display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
 .timeline .count-display .show-count strong { font-size: 16px; }

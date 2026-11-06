@@ -5,7 +5,7 @@ import type { EditorController } from './useEditorController';
 export function FieldDisplayPreferences({ preferences }: Pick<EditorController, 'preferences'>) {
   const { value: p, update } = preferences;
   return <section className="field-display-preferences" aria-label="2D field display preferences">
-    <h3 className="modal-subtitle">2D field display</h3>
+    <h4 className="modal-subtitle">2D field display</h4>
     <p className="microcopy">These choices affect the 2D view. Prints, exports and the 3D view keep their standard appearance.</p>
     <label className="form-label">Audience orientation<Tooltip name="Audience orientation" description="Turn the field view 180 degrees. Dragging and arrow keys follow the screen; drill coordinates and Inspector directions keep their field meaning."><select aria-label="Audience orientation" value={p.fieldOrientation} onChange={e => update({ fieldOrientation: e.target.value as typeof p.fieldOrientation })}>
       <option value="audience-bottom">Audience at bottom</option><option value="audience-top">Audience at top · flipped</option>

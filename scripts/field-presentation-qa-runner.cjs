@@ -94,11 +94,12 @@ async function checkNeighbors(project) {
   await input('mousePressed', dragPoint, {button:'left',clickCount:1});
   await input('mouseMoved', {x:dragPoint.x+12,y:dragPoint.y}, {button:'left',buttons:1});
   await wait("!!document.querySelector('.field-stage--moving') && !document.querySelector('[data-neighbor]')", 'drag ghosts hidden');
+  await wait("(()=>{const s=getComputedStyle(document.querySelector('.field-legend'));return Number(s.opacity)===0&&s.pointerEvents==='none'})()", 'section legend steps aside while dragging');
   assert.equal(await evaluate(`${state}.project.revision`), before.revision);
   // Return to the anchor before release so this probe makes no production edit.
   await input('mouseMoved', dragPoint, {button:'left',buttons:1});
   await input('mouseReleased', dragPoint, {button:'left',clickCount:1});
-  await wait("!!document.querySelector('[data-neighbor]')", 'drag review restored');
+  await wait("!!document.querySelector('[data-neighbor]') && Number(getComputedStyle(document.querySelector('.field-legend')).opacity)===1", 'drag review and legend restored');
   await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
   pass('uncommitted drag previews suppress ghosts and restore them on release');
   window.webContents.setZoomFactor(1.25); await capture('neighbors-enlarged.png');

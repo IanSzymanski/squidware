@@ -150,7 +150,7 @@ test('native dropdown uses acknowledged typeahead for numeric and Unicode labels
   await assert.rejects(renderer.selectNativeOption(window, 'select', 'unknown'), /Missing native option/);
   options.push({ value: 'duplicate', label: '125%' });
   await assert.rejects(renderer.selectNativeOption(window, 'select', '1.25'), /Ambiguous native option/);
-  options.splice(0, options.length, { value: '.5', label: '0.5×' }, { value: '1', label: '1× speed' }, { value: '1.25', label: '1.25×' });
+  options.splice(0, options.length, { value: '.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '1.25', label: '1.25×' });
   await renderer.selectNativeOption(window, 'select', '1'); assert.equal(selected, '1');
   assert.ok(events.some(event => event.type === 'char' && event.text === '×'));
   window.webContents.debugger.sendCommand = async () => {}; selected = '1.5';
@@ -336,4 +336,20 @@ test('serial progress retains an absolute deadline even when work keeps advancin
   await assert.rejects(renderer.waitForProgress(() => ({ progress: ++progress, done: false }), 'unbounded fixture',
     { idleTimeoutMs: 500, timeoutMs: 25, intervalMs: 1 }), /Timed out: unbounded fixture/);
   assert.ok(progress>1);
+});
+
+test('the confirmation shim answers each in-app confirmation once, like the window.confirm stubs it replaces', async () => {
+  let source; await renderer.installConfirmShim(async text => { source = text; });
+  const clicks = []; let notify; let open = null;
+  const dialog = title => ({ querySelector: selector => selector === 'h2' ? { textContent: title } : { click: () => clicks.push(`${title} ${selector}`) } });
+  const context = { document: { querySelector: selector => { assert.equal(selector, 'dialog.confirm-dialog[open]'); return open; } },
+    MutationObserver: class { constructor(callback) { notify = callback; } observe(target, options) { assert.equal(target, context.document); assert.deepEqual([...options.attributeFilter], ['open']); } } };
+  context.window = context;
+  vm.runInNewContext(source, context); vm.runInNewContext(source, context);
+  open = dialog('Replace'); notify(); notify();
+  context.__qaConfirmResponse = false; open = dialog('Open'); notify();
+  context.__qaConfirmResponse = 'manual'; open = dialog('Remove'); notify();
+  open = null; notify();
+  assert.deepEqual(clicks, ['Replace .confirm-dialog__confirm', 'Open .confirm-dialog__cancel']);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.__qaConfirmations)), [{ title: 'Replace', response: true }, { title: 'Open', response: false }, { title: 'Remove', response: 'manual' }]);
 });

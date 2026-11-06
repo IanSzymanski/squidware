@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {app,dialog}=require('electron');
 const fs=require('node:fs/promises'),path=require('node:path');
-const {capturePage,key,waitFor,waitForProgress,pause,settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
+const {capturePage,key,waitFor,waitForProgress,pause,settleNativeViewport,selectNativeOption,installConfirmShim}=require('./testing/renderer.cjs');
 const manifest=require(process.argv.find(a=>a.startsWith('--audio-alignment-manifest=')).slice('--audio-alignment-manifest='.length));
 const {root,output,profile,bundle,recording,files}=manifest,{fixture,parseProject,serializeProject,countToSeconds}=require(bundle);
 app.disableHardwareAcceleration();app.setPath('userData',profile);
@@ -17,7 +17,7 @@ const checks=[],measurements=[],viewports=[];const pass=s=>{checks.push(s);conso
 const anchors='4,2.9\n8,4.9\n12,7.9\n16,10.9';
 const at=c=>c<=4?c*.625:c<=8?2.5+(c-4)*.5:4.5+(c-8)*.75;
 function instrument(){
- const qa=window.__tempoQA={editor:null,clicks:[],plans:[],stops:[],errors:[]};window.confirm=()=>true;
+ const qa=window.__tempoQA={editor:null,clicks:[],plans:[],stops:[],errors:[]};
  const Original=window.AudioWorkletNode;window.AudioWorkletNode=class extends Original{constructor(context,name,options){super(context,name,options);if(name==='squidware-metronome'){qa.context=context;const post=this.port.postMessage.bind(this.port);this.port.postMessage=(data,...args)=>{if(data.type==='plan'){if(data.plan)qa.plans.push({...data.plan,issuedAt:context.currentTime});else qa.stops.push(context.currentTime);}return post(data,...args);};this.port.addEventListener('message',e=>{if(e.data.type==='click')qa.clicks.push(e.data);});this.port.start();this.port.postMessage({type:'diagnostics',diagnostics:true});}}};
  window.addEventListener('error',e=>qa.errors.push(e.message));window.addEventListener('unhandledrejection',e=>qa.errors.push(String(e.reason)));
  window.__REACT_DEVTOOLS_GLOBAL_HOOK__={supportsFiber:true,renderers:new Map(),inject(){return 1;},onCommitFiberRoot(_id,root){function visit(f){if(!f)return;const v=f.memoizedProps?.value;if(v?.getState&&v?.dispatch)qa.editor=v;visit(f.child);visit(f.sibling);}visit(root.current);},onCommitFiberUnmount(){},onPostCommitFiberRoot(){}};
@@ -52,7 +52,7 @@ async function openAlignment(){await evaluate(`${store}.dispatch('audio.align-op
 app.whenReady().then(async()=>{try{
  await waitFor(()=>!!window,'window');await wait("!!document.querySelector('.set-card')",'renderer');
  window.show();window.focus();window.setContentSize(1366,768);window.webContents.debugger.attach('1.3');
- await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});window.webContents.reload();
+ await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});await installConfirmShim(source=>window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source}));window.webContents.reload();
  await wait(`!!${store}&&${state}.preferences.status==='saved'`,'store');await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
  await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');
  const original=fixture();await evaluate(`${store}.dispatch('project.load',{project:${JSON.stringify({...original,sets:original.sets.slice(0,1),moves:[]})}})`);await openAlignment();assert.ok(await evaluate("document.querySelector('.score-fields').textContent.includes('Add a second set')"));await capture('alignment-empty.png');await press('Cancel');await wait(`${state}.ui.dialog===null`,'empty dialog closed');await evaluate(`${store}.dispatch('project.load',{project:${JSON.stringify(original)}})`);await capture('alignment-before.png');

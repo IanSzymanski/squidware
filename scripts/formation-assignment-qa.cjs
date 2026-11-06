@@ -17,10 +17,13 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   };
   const number=label=>`[...document.querySelectorAll('label.form-label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)}).querySelector('input')`;
   const edit=async(label,value)=>{await evaluate(`(()=>{const n=${number(label)};n.focus();n.select()})()`);await window.webContents.debugger.sendCommand('Input.insertText',{text:String(value)});await key('Return');await wait(`!${state}.ui.pendingDraft`,'committed '+label);};
+  const modes={shortest:'[aria-label="Shortest-travel assignment"]',position:'[aria-label="Positional assignment"]',roster:'[aria-label="Roster assignment"]'};
+  const pressed=()=>evaluate(`Object.fromEntries(Object.entries(${JSON.stringify(modes)}).map(([m,s])=>[m,document.querySelector(s).getAttribute('aria-pressed')]))`);
   const mode=async value=>{
-    const selector=value==='position'?'[aria-label="Positional assignment"]':'[aria-label="Roster assignment"]';
+    const selector=modes[value];
     await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);await key('Return');
-    await wait(`${state}.ui.formationPreview.options.assignment===${JSON.stringify(value)} && document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-pressed')==='true'`,'native assignment choice');
+    // Shortest travel keeps the persisted 'position' option underneath; the session mode is authoritative.
+    await wait(`${state}.ui.formationPreview.assignmentMode===${JSON.stringify(value)} && ${state}.ui.formationPreview.options.assignment===${JSON.stringify(value==='roster'?'roster':'position')} && document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-pressed')==='true'`,'native assignment choice');
   };
   const positions=()=>evaluate(`Object.fromEntries(${JSON.stringify(ids)}.map(id=>{const n=document.querySelector('[data-performer-id="'+id+'"]');const m=n.transform.baseVal.consolidate().matrix;return [id,{x:m.e,y:m.f}]}))`);
   function near(actual,expected){for(const id of ids)for(const axis of ['x','y'])assert.ok(Math.abs(actual[id][axis]-expected[id][axis])<1e-5,JSON.stringify({id,actual:actual[id],expected:expected[id]}));}
@@ -31,15 +34,23 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await capture('assignment-before.png');
   await control('[aria-label="Line formation"]');await edit('Width · yd',24);await edit('Center X · yd',50);await edit('Center Y · yd',25);
   await wait("document.querySelectorAll('[data-formation-path]').length===4",'four assignment paths');
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Positional assignment\"]').getAttribute('aria-pressed')"),'true');
+  // New previews default to shortest travel. On this reversed baseline it is the same uncrossed mapping as positional order.
+  assert.deepEqual(await pressed(),{shortest:'true',position:'false',roster:'false'});assert.equal(await evaluate(`${state}.ui.formationPreview.assignmentMode`),'shortest');
+  // The width/center edits keep the order solved for the seeded line, so the panel says so; choosing Shortest travel re-solves.
+  const summary=()=>evaluate("document.querySelector('.formation-panel .section-description').textContent");
+  assert.match(await summary(),/order kept from the earlier shape · choose Shortest travel to re-solve/);
+  await control('[aria-label="Shortest-travel assignment"]');await wait(`!document.querySelector('.formation-panel .section-description').textContent.includes('kept')`,'re-solved shortest travel');
+  assert.match(await summary(),/shortest-travel order/);assert.deepEqual(await pressed(),{shortest:'true',position:'false',roster:'false'});
   const positional=Object.fromEntries(ids.map((id,i)=>[id,{x:62-i*8,y:25}]));near(await positions(),positional);
   assert.deepEqual(await evaluate(`${state}.project.present`),project);assert.equal(await evaluate(`${state}.project.past.length`),0);
   await capture('assignment-positional.png');
   const positionalTravel=await evaluate("document.querySelector('.formation-travel').textContent");assert.match(positionalTravel,/21.86 yd/);
   await mode('roster');near(await positions(),Object.fromEntries(ids.map((id,i)=>[id,{x:38+i*8,y:25}])));
   const rosterTravel=await evaluate("document.querySelector('.formation-travel').textContent");assert.match(rosterTravel,/75.51 yd/);
-  await capture('assignment-roster.png');await mode('position');near(await positions(),positional);
-  pass('native keyboard assignment choice changes visible ID paths and travel; reversed groups retain positional order and preview adds no history');
+  await capture('assignment-roster.png');await mode('shortest');near(await positions(),positional);assert.match(await evaluate("document.querySelector('.formation-travel').textContent"),/21.86 yd/);
+  await mode('position');near(await positions(),positional);assert.deepEqual(await pressed(),{shortest:'false',position:'true',roster:'false'});
+  assert.equal(await evaluate(`${state}.project.past.length`),0);
+  pass('native keyboard assignment choice changes visible ID paths and travel; shortest travel is the default and reversed groups retain positional order; preview adds no history');
   await edit('Rotation · °',180);near(await positions(),Object.fromEntries(ids.map((id,i)=>[id,{x:38+i*8,y:25}])));await edit('Rotation · °',0);near(await positions(),positional);
   for(const [width,zoom] of [[1366,1],[1366,1.25],[1120,1],[1120,1.25]]){
     window.setContentSize(width,768);window.webContents.setZoomFactor(zoom);await settleNativeViewport(window,'assignment layout');

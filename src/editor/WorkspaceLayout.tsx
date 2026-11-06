@@ -1,6 +1,6 @@
 import { uiScale } from '../uiScale';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Columns2, Focus, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, RotateCcw, X } from 'lucide-react';
+import { Check, Columns2, Focus, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, RotateCcw, X } from 'lucide-react';
 import { fitWorkspaceLayout, paneLimits, paneNames, type PaneId, type WorkspaceLayout } from '../workspaceLayout';
 import { canChangeLayout } from './commands';
 import { HelpButton } from './ControlHelp';
@@ -71,6 +71,7 @@ export function useWorkspaceLayout(controller: EditorController) {
   return { body, available, overlay, setOverlay, menu, setMenu, layout, side, fit, focusMode, locked, reason, update, collapse, reveal, toggleFocus };
 }
 export type WorkspaceLayoutController = ReturnType<typeof useWorkspaceLayout>;
+const presetName = (preset: WorkspaceLayout['preset']) => preset[0].toUpperCase() + preset.slice(1);
 
 export function LayoutControls({ controller, layout: l }: { controller: EditorController; layout: WorkspaceLayoutController }) {
   const root = useRef<HTMLDivElement>(null);
@@ -83,11 +84,12 @@ export function LayoutControls({ controller, layout: l }: { controller: EditorCo
     return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('focusin', focus); };
   }, [l.menu]);
   return <div className="workspace-layout-controls" ref={root}>
-    <HelpButton pointerPassThrough title="Workspace layout" description="Choose Write, Review or Rehearse, resize panels, and restore hidden tools." className="button subtle" aria-expanded={l.menu} aria-controls="workspace-layout-options" onClick={() => l.setMenu(!l.menu)}><Columns2 size={16} />Layout</HelpButton>
+    <HelpButton pointerPassThrough title="Workspace layout" description="Choose Write, Review or Rehearse, resize panels, and restore hidden tools." state={presetName(l.layout.preset)} className="button subtle" aria-expanded={l.menu} aria-controls="workspace-layout-options" onClick={() => l.setMenu(!l.menu)}><Columns2 size={16} />Layout</HelpButton>
     <HelpButton pointerPassThrough command="layout.focus" title="Focus field" className="icon-button" disabled={controller.workspace !== 'design' || l.locked} disabledReason={l.reason} onClick={l.toggleFocus}><Focus size={17} /></HelpButton>
     {l.menu && <div id="workspace-layout-options" className="layout-popover" role="region" aria-label="Layout options" style={{ top: (root.current?.getBoundingClientRect().bottom ?? 48) / uiScale() + 6, left: Math.max(12, Math.min((root.current?.getBoundingClientRect().left ?? 12) / uiScale(), window.innerWidth / uiScale() - 402)), maxHeight: Math.max(120, (window.innerHeight - (root.current?.getBoundingClientRect().bottom ?? 48)) / uiScale() - 18) }}>
       <div className="layout-popover-heading"><strong>Workspace layout</strong><button aria-label="Close layout options" onClick={() => { l.setMenu(false); root.current?.querySelector('button')?.focus(); }}><X size={16} /></button></div>
-      <div className="layout-presets">{(['write', 'review', 'rehearse'] as const).map(preset => <HelpButton pointerPassThrough key={preset} title={`${preset[0].toUpperCase() + preset.slice(1)} preset`} command="layout.preset" className="button subtle" aria-pressed={l.layout.preset === preset} disabled={l.locked} disabledReason={l.reason} onClick={() => { controller.dispatch('layout.preset', { preset }); l.setOverlay(null); }}>{preset[0].toUpperCase() + preset.slice(1)}</HelpButton>)}</div>
+      <div className="layout-presets" role="group" aria-label="Layout presets">{(['write', 'review', 'rehearse'] as const).map(preset => <HelpButton pointerPassThrough key={preset} title={`${presetName(preset)} preset`} command="layout.preset" className="button subtle" aria-pressed={l.layout.preset === preset} disabled={l.locked} disabledReason={l.reason} onClick={() => { controller.dispatch('layout.preset', { preset }); l.setOverlay(null); }}>{l.layout.preset === preset && <Check size={14} aria-hidden="true" />}{presetName(preset)}</HelpButton>)}</div>
+      {l.layout.preset === 'custom' && <p className="layout-custom" role="status">Custom layout: choose a preset to restore its panels and widths.</p>}
       <p>Write: editing tools · Review: wider field · Rehearse: field and playback.</p>
       {(['sets', 'inspector', 'cast'] as const).map(pane => <div className="layout-pane-option" key={pane}>
         <label><input type="checkbox" disabled={l.locked} checked={!l.layout[`${pane}Collapsed`]} onChange={e => l.update({ [`${pane}Collapsed`]: !e.target.checked })} />{paneNames[pane]}</label>

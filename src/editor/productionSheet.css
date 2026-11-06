@@ -7,18 +7,22 @@
 .sheet-help summary{cursor:pointer}
 .sheet-help p{margin-top:6px}
 .sheet-scroll{overflow:auto;flex:1;min-height:0}
-.sheet-scroll table{min-width:880px;table-layout:fixed}
+/* 820px keeps every column, including Mark, in view beside the default panels at 1366 px. */
+.sheet-scroll table{min-width:820px;table-layout:fixed}
 .sheet-scroll th:first-child{width:120px}
-.sheet-scroll th:nth-child(2){width:18%}
+.sheet-scroll th:nth-child(2){width:16%}
 .sheet-scroll th:nth-child(3),.sheet-scroll th:nth-child(4){width:72px}
 .sheet-scroll td:first-child{display:table-cell}
 .sheet-scroll td,.sheet-scroll tbody th{padding:3px;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;letter-spacing:0}
 .sheet-scroll tbody th{position:static;text-align:left;font-weight:500;padding:4px 8px;font-variant-numeric:tabular-nums}
+/* Top-aligned cells keep single-line values on the first line of multi-line notes. */
+.sheet-scroll tbody td,.sheet-scroll tbody th{vertical-align:top}
 .sheet-current{display:block;font-size:11px;color:var(--accent)}
 .sheet-scroll .sheet-active>*{background:var(--selected-bg)}
 .sheet-scroll input,.sheet-scroll textarea{display:block;width:100%;min-width:0;min-height:32px;font-size:12px;color:var(--text);padding:7px 6px;background:transparent;border:1px solid transparent;border-radius:3px;font-variant-numeric:tabular-nums}
-.sheet-scroll textarea{resize:vertical;line-height:1.4}
-.sheet-scroll input:hover,.sheet-scroll textarea:hover{border-color:var(--border)}
+/* Notes grow to whole lines (up to three), then scroll; rows=1 remains the fallback height. */
+.sheet-scroll textarea{resize:vertical;line-height:1.4;field-sizing:content;max-height:calc(3lh + 16px);overflow-y:auto}
+.sheet-scroll input:hover,.sheet-scroll textarea:hover,.sheet-scroll .sheet-active :is(input,textarea):placeholder-shown{border-color:var(--border)}
 .sheet-scroll input:focus,.sheet-scroll textarea:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
 .sheet-scroll input[readonly]{color:var(--muted)}
 .sheet-scroll input,.sheet-scroll textarea{scroll-margin-top:44px}
@@ -38,5 +42,5 @@
 .sheet-paste-modal .modal-actions{margin-top:4px;flex-shrink:0;flex-wrap:wrap}
 
 .sheet-score-position{display:block;font-size:11px;color:var(--muted);white-space:nowrap}
-.sheet-scroll th:nth-child(6){width:115px}
+.sheet-scroll th:nth-child(6){width:108px}
 .sheet-scroll th:nth-child(7){width:100px}

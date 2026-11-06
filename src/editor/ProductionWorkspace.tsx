@@ -9,6 +9,7 @@ import type { EditorController } from './useEditorController';
 import './productionSheet.css';
 import { useMemo } from 'react';
 import { compileScore, scoreLabel, scorePosition } from '../score';
+import { meterText } from '../meter';
 
 type Cell = { row: number; column: number };
 type Draft = Cell & { text: string; revision: number; epoch: number };
@@ -108,20 +109,21 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
       <HelpButton command="sheet.append" title="Append sheet row" disabled={controller.pendingDraft || project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`Finish the pending input first. The sheet supports at most ${PROJECT_LIMITS.sets} sets.`} className="button subtle" onClick={() => { if (dispatch('sheet.append') === true) focus({ row: store.getState().project.present.sets.length - 1, column: 0 }); }}><Plus size={16} />Add row</HelpButton>
       <HelpButton title="Open sheet set on field" description="Open the active sheet row in Design." disabled={controller.pendingDraft} disabledReason="Apply or cancel the pending input first." className="button subtle" onClick={() => dispatch('workspace.show', { workspace: 'design' })}><ArrowRight size={16} />Field</HelpButton>
     </div>
-    <details className="sheet-help"><summary>Keyboard and paste help</summary><p id="sheet-help">Tab moves across · Enter or ↑ ↓ moves rows · Alt+← → moves columns · Shift+Enter adds a line to Notes · Escape cancels input. Counts arrive at each set; opening counts stay 0. Paste has a review step.</p></details>
+    <details className="sheet-help"><summary>Keyboard, paste and meter help</summary><p id="sheet-help">Tab moves across · Enter or ↑ ↓ moves rows · Alt+← → moves columns · Shift+Enter adds a line to Notes · Escape cancels input. Counts arrive at each set; opening counts stay 0. Paste has a review step.</p><p id="sheet-meter-help">Meter is a time signature such as 4/4 or 6/8. Accents fall on each bar, or in threes for 6/8, 9/8 and 12/8; write other accent groups after a colon, as in 7/8:2+2+3. A blank Meter cell inherits the meter before it.</p></details>
     {error && <div className="sheet-error" role="alert">{error}{draft && <><button className="button subtle" onClick={() => { const d = draftRef.current; if (d) focus(d); }}>Return to input</button><button className="button subtle" onClick={() => { setDraft(null); setPendingDraft(false, 'sheet-cell'); setError(''); }}>Cancel input</button></>}</div>}
     <div className="production-table sheet-scroll" ref={table}>
       <table aria-label="Production sheet cells" aria-describedby="sheet-help"><thead><tr><th scope="col">Set / score</th>{sheetLabels.map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>
-        {project.sets.map((set, row) => <tr key={set.id} className={controller.index === row ? 'sheet-active' : ''}>
-          <th scope="row" aria-current={controller.index === row ? 'step' : undefined}>{String(row + 1).padStart(2, '0')}<span className="sheet-score-position">{scoreLabel(score,project.moves.slice(0,row).reduce((n,m)=>n+m.counts,0))}</span>{controller.index === row && <span className="sheet-current">Current</span>}</th>
+        {project.sets.map((set, row) => { const start = project.moves.slice(0,row).reduce((n,m)=>n+m.counts,0), active = controller.index === row; return <tr key={set.id} className={active ? 'sheet-active' : ''}>
+          <th scope="row" aria-current={active ? 'step' : undefined}>{String(row + 1).padStart(2, '0')}<span className="sheet-score-position">{scoreLabel(score,start)}</span>{active && <span className="sheet-current">Current</span>}</th>
           {sheetLabels.map((label, column) => {
             const cell = { row, column }, editing = same(draft, cell);
             const props = {
               'aria-label': `${label} for set ${row + 1}`, 'aria-invalid': editing && !!error || undefined,
-              'aria-describedby': 'sheet-help', 'data-row': row, 'data-column': column,
+              'aria-describedby': column === 4 ? 'sheet-help sheet-meter-help' : 'sheet-help', 'data-row': row, 'data-column': column,
               tabIndex: same(current, cell) ? 0 : -1,
               value: editing ? draft!.text : sheetValue(project, row, column),
-              placeholder: column === 4 && row > 0 ? `inherit ${scorePosition(score,project.moves.slice(0,row).reduce((n,m)=>n+m.counts,0)).meter.numerator}/${scorePosition(score,project.moves.slice(0,row).reduce((n,m)=>n+m.counts,0)).meter.denominator}` : undefined,
+              // Empty Notes/Mark cells announce they are editable only in the active row, keeping 128 rows quiet.
+              placeholder: column === 4 && row > 0 ? `inherit ${meterText(scorePosition(score,start).meter)}` : active && (column === 3 || column === 5) ? (column === 3 ? 'Add note' : 'Add mark') : undefined,
               readOnly: row === 0 && column === 1,
               onFocus: () => begin(cell), onBlur: () => { commit(); },
               onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -138,7 +140,7 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
             };
             return <td key={label}>{column === 3 ? <textarea {...props} rows={1} onKeyDown={e => move(e, cell)} /> : <input {...props} inputMode={column === 1 || column === 2 ? 'decimal' : 'text'} onKeyDown={e => move(e, cell)} />}</td>;
           })}
-        </tr>)}
+        </tr>; })}
       </tbody></table>
     </div>
     {paste && controller.dialog === 'sheet-paste' && <Modal title="Review spreadsheet paste" onClose={closePaste} wide className="sheet-paste-modal">

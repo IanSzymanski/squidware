@@ -15,7 +15,8 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   }
   async function focusField() { await evaluate("document.querySelector('.field-stage__svg').focus()"); }
   async function focusGlobal() { await evaluate('document.activeElement?.blur()'); }
-  async function button(selector,shift=false) { const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(p,shift?1:0); }
+  // Native input uses window (DIP) coordinates; getBoundingClientRect reports CSS pixels, which differ under page zoom.
+  async function button(selector,shift=false) { const zoom=window.webContents.getZoomFactor(); const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click({x:p.x*zoom,y:p.y*zoom},shift?1:0); }
   const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} vs ${b}`);
   await reset(); await capture('increments-before.png');
   for(const fast of [false,true]) {
@@ -78,13 +79,21 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   await button('.dropdown [aria-label="Preferences"]'); await wait("document.querySelector('.modal h2')?.textContent==='Preferences'",'increment preferences');
   for(const [width,zoom,name] of [[1366,1,'increments-preferences.png'],[1366,1.25,'increments-preferences-enlarged.png'],[1120,1,'increments-preferences-narrow.png']]) {
     window.setContentSize(width,768); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window,'increment preferences layout');
-    await evaluate("[...document.querySelectorAll('.modal h3')].find(n=>n.textContent==='Editing increments').scrollIntoView({block:'start'})");
-    assert.ok(await evaluate("['Nudge ·','Fast nudge ·','Rotate preset ·','Scale preset ·'].every(label=>{const n=[...document.querySelectorAll('.preferences-fields label')].find(n=>n.textContent.startsWith(label)).querySelector('input');const r=n.getBoundingClientRect();return r.top>=0 && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth})"));
+    // Start each size from Appearance so the Editing jump below cannot pass on the previous iteration's state.
+    const section=title=>`document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent===${JSON.stringify(title)} && document.activeElement?.matches('.preferences-section > h3') && document.activeElement.textContent===${JSON.stringify(title)}`;
+    await button('.preferences-nav [aria-label="Appearance"]'); await wait(section('Appearance'),'Appearance preferences section');
+    // The Editing section nav jumps past Appearance and Field display; increments lead that group, clear of the pinned nav.
+    await button('.preferences-nav [aria-label="Editing"]');
+    await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Editing' && document.activeElement?.matches('.preferences-section > h3') && document.activeElement.textContent==='Editing' && document.activeElement.parentElement.querySelector('h4')?.textContent==='Editing increments'",'Editing preferences section');
+    assert.ok(await evaluate("(()=>{const nav=document.querySelector('.preferences-nav').getBoundingClientRect().bottom;return ['Nudge ·','Fast nudge ·','Rotate preset ·','Scale preset ·'].every(label=>{const n=[...document.querySelectorAll('.preferences-fields label')].find(n=>n.textContent.startsWith(label)).querySelector('input');const r=n.getBoundingClientRect();return r.top>=nav && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth})})()"));
     await capture(name);
   }
   await key('Escape'); window.webContents.setZoomFactor(1); window.setContentSize(1120,768); await settleNativeViewport(window,'step help layout');
   await reset({nudgeUnit:'steps',nudgeStep:1,fastNudgeStep:4});
-  assert.ok(await evaluate("(()=>{const help=document.querySelector('.field-keyboard-help').getBoundingClientRect();return ['.field-topline','.field-snap-status'].every(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return r.bottom<=help.top || help.bottom<=r.top})})()"),'step help must not overlap field information');
+  // Keyboard help is drawn only after a key press in the field, and then replaces the field status line.
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.field-keyboard-help')).clipPath"), 'inset(50%)', 'idle keyboard help is not drawn');
+  await focusField(); await key('Right');
+  assert.ok(await evaluate("(()=>{const n=document.querySelector('.field-keyboard-help');const r=n.getBoundingClientRect();return getComputedStyle(n).clipPath==='none'&&r.height>10&&/4 steps/.test(n.textContent)&&getComputedStyle(document.querySelector('.field-topline')).visibility==='hidden'&&!document.querySelector('.field-snap-status')})()"),'keyboard step help replaces field information');
   await capture('increments-field-narrow.png');
   pass('configured editing controls remain reachable at 1366/1120px and 125% UI zoom; step help stays separate from field information');
 };

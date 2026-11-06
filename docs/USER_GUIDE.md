@@ -22,7 +22,7 @@ Use **Grid and snapping** beside the field magnet to choose a production's step 
 
 **Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid`, JSON or portable `.squidpack` files; JSON and package imports receive a `.squid` destination when saved.
 
-**Unsaved changes** beside the production title includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
+A new or untouched production shows **No changes** beside its title until you edit it; its first Save still asks for a file name. **Unsaved changes** includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
 
 After a committed change, the desktop app writes recovery in the background to its application data folder. Open **Project menu → Recovery copies**, or click the recovery status at the bottom of the editor, to choose a dated copy. Up to 20 most recent copies or 100 MiB are kept across productions; the newest valid copy is always retained. Older copies expire. Save named project files and keep your usual rehearsal backups.
 
@@ -38,9 +38,9 @@ In browser preview, Save downloads a project and PDF export opens the browser pr
 
 ## Personal preferences
 
-The **2D field display** section sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
+In Preferences, **Field display → 2D field display** sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
 
-Open **Project menu → Preferences** for device settings: panel layout, 2D/3D view, labels, paths, grid visibility, snap, zoom, keyboard increments, formation tool defaults, coordinate decimals, paper size, packet type, and geometric check thresholds. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
+Open **Project menu → Preferences** for device settings, grouped as **Appearance** (theme, UI scale, panel layout, hints), **Field display** (2D/3D start view, paths, grid visibility, zoom, labels, coordinate precision), **Editing** (keyboard increments, snap, new move counts, formation tool defaults, new-production defaults, paper size and packet type) and **Shortcuts**. The section buttons at the top jump between them. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
 
 Choose **Reset defaults** to restore the personal settings. If storage is unavailable, your choices work for the session and Preferences shows the error with **Retry save**. Unsupported newer preferences remain preserved until you update the app or reset them. Invalid numeric entries stay in Preferences until corrected or canceled with Escape. Production settings still belong to each show. See [the persistence policy](PREFERENCES.md).
 
@@ -108,7 +108,7 @@ The Inspector's selection bar keeps the selected count, coordinates or group bou
 
 Formation tools provide **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select performers and choose a shape to open a [formation preview](FORMATION_PREVIEWS.md). Adjust width, depth/bulge, rotation, center and block columns with numbers or field handles. Each shape retains its own parameters for the session. **Apply formation**, or Enter on the field, accepts the visible positions as one undoable action. **Cancel**, or Escape outside an input, keeps the original positions. Shapes crossing a field boundary cannot apply. Choose **Select all** explicitly to reshape the ensemble.
 
-The initial formation center is the selected performers' center. **Positional order** preserves their spatial order; choose **Roster order** to use Cast order instead. Review the dashed paths and total/longest travel before applying. Assignment stays fixed as you move or rotate a preview, and each accepted edit can be undone. Pinning and a shortest-travel solver remain planned.
+A new shape starts at the selected performers' center, sized to their extent, at least the production's minimum spacing apart and inside the field. **Shortest travel** is the default assignment, so straight paths do not cross; choose **Positional** to preserve spatial order or **Roster** to use Cast order. Review the dashed paths and total/longest travel before applying. Assignment stays fixed as you move or rotate a preview (choose a mode again to recompute it), and each accepted edit can be undone. Use **Optimize assignment…** for pins and other constraints.
 
 Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 
@@ -192,14 +192,14 @@ Flags help identify moves to review. They do not certify safe movement, account 
 
 ## Export a rehearsal packet
 
-Open **Export** and choose one of the two PDF layouts:
+Open **Export**. Its **PDF drill book** section chooses one of two PDF layouts, then **Save PDF** saves it:
 
 - **Field charts:** a drawing for each set, with counts, cumulative arrival count, tempo, cast size, and rehearsal notes.
 - **Performer coordinate sheets:** an individual sheet for each performer listing their position in every set in 8-to-5 steps.
 
 The desktop app saves the chosen packet directly as a landscape Letter PDF. Browser preview uses Print / Save PDF. Long performer tables can span more than one page. Inspect a sample page before making rehearsal copies, particularly for long productions or unusually long labels and notes.
 
-Additional exports are:
+**Other formats** lists the remaining exports, one per row; hover or focus a row for its contents:
 
 | Format | Contents |
 | --- | --- |

@@ -1,4 +1,5 @@
 import type { FormationKind, FormationOptions, Point } from './types';
+import { solveAssignment } from './assignmentSolver';
 
 const compareId = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 // Quantized keys make ties transitive, including inverse-rotation roundoff.
@@ -32,4 +33,16 @@ export function formationAssignmentOrder(positions: Record<string, Point>, ids: 
     for (let index=0; index<points.length; index+=columns) points.splice(index,columns,...points.slice(index,index+columns).sort(across));
   } else points.sort(across);
   return points.map(point => point.id);
+}
+
+/** Minimum summed straight-line travel to the given destinations (index order). For Euclidean
+ * costs no two straight paths properly cross. Rows are sorted by stable ID, so ties do not depend on roster order. */
+export function shortestTravelOrder(positions: Record<string, Point>, ids: readonly string[], destinations: readonly Point[]): string[] {
+  const rows = [...ids].sort(compareId), n = rows.length;
+  if (n !== destinations.length || new Set(rows).size !== n) throw new Error('The assignment must include every selected performer exactly once.');
+  if (!rows.every(id => positions[id] && Number.isFinite(positions[id].x) && Number.isFinite(positions[id].y))) throw new Error('Formation source positions must be finite.');
+  if (n < 2) return rows;
+  const costs = new Float64Array(n * n);
+  rows.forEach((id, i) => destinations.forEach((p, j) => { costs[i * n + j] = Math.hypot(positions[id].x - p.x, positions[id].y - p.y); }));
+  return solveAssignment(costs, n, 'distance').map(row => rows[row]);
 }

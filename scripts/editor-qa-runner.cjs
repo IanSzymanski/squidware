@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, waitFor: waitUntil, key: sendKey, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, waitFor: waitUntil, key: sendKey, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -140,8 +140,10 @@ async function checkActionClarity() {
   assert.equal(inventory.filter(n => n.name === 'Add set').length, 1);
   assert.equal(inventory.filter(n => n.name === 'Help').length, 1);
   const icon = name => inventory.find(n => n.name === name)?.icon;
-  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome'].map(icon);
+  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome', 'First set', 'Previous set', 'Previous count', 'Next count', 'Next set', 'Last set'].map(icon);
   assert.ok(distinct.every(Boolean)); assert.equal(new Set(distinct).size, distinct.length);
+  // History is a clock-arrow glyph, distinct from the Undo/Redo arrows beside it; Recovery copies keeps RotateCcw.
+  assert.match(icon('History'), /lucide-history/); assert.equal(new Set(['History', 'Undo', 'Redo'].map(icon)).size, 3);
   await capture('action-clarity-design.png');
   for (const [action, heading] of [['New production', 'New production'], ['Production settings', 'Production settings'], ['Preferences', 'Preferences']]) {
     await evaluate('document.querySelector(\'[aria-label="Project menu"]\').focus()');
@@ -176,7 +178,8 @@ async function checkActionClarity() {
   await uiWait("!!document.querySelector('.canvas-toolbar [aria-label=\"Clear selection\"]')", 'select-all becomes clear');
   await evaluate('document.querySelector(\'.canvas-toolbar [aria-label="Clear selection"]\').focus()'); await sendKey(window, 'Return');
   await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
-  assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
+  // Selection is not an edit: the untouched demo still has nothing to save.
+  assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'No changes');
   await clickSelector('.workspace-tab[aria-label="Cast"]'); await uiWait("!!document.querySelector('.cast-dock h2') && !!document.querySelector('.field-stage__svg')", 'Cast beside field');
   await clickSelector('.workspace-tab[aria-label="Production sheet"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
   await clickSelector('.workspace-tab[aria-label="Design"]');
@@ -519,9 +522,16 @@ app.whenReady().then(async () => {
     window.webContents.debugger.attach('1.3');
     assert.equal(await evaluate('typeof window.require'), 'undefined');
     assert.equal(await evaluate('!!window.squidware'), true);
-    await evaluate('window.__qaConfirmResponse = true; window.confirm = () => window.__qaConfirmResponse; true');
-    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
-    pass('production renderer and actual isolated preload load');
+    await installConfirmShim(evaluate);
+    // The untouched startup demo is clean but never saved: neutral status, no Save marker and no close prompt.
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'No changes');
+    assert.equal(await evaluate("document.querySelector('.save-state .status-dot').classList.contains('idle')"), true);
+    assert.equal(await evaluate('document.querySelector(\'[aria-label="Save"]\').textContent'), 'Save');
+    const startupMessages = messages.length; let startupClosePrevented = false;
+    window.emit('close', { preventDefault() { startupClosePrevented = true; } });
+    await pause(60);
+    assert.equal(startupClosePrevented, false); assert.equal(messages.length, startupMessages);
+    pass('production renderer and actual isolated preload load; the untouched demo reports No changes and closes without an unsaved prompt');
     await checkActionClarity();
 
     menuAction('Open project…');
@@ -753,7 +763,11 @@ app.whenReady().then(async () => {
     let actions = await openHistory();
     assert.equal(actions.length, 1);
     assert.match(actions[0], /^Edit notes — Set 1/);
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.history-actions button')].map(b => [b.textContent.split(' ')[0], b.getAttribute('aria-disabled')])"), [['Undo', null], ['Redo', 'true']]);
     await clickSelector('.history-actions button:first-child');
+    // The emptied list is a sentence, not a bare bordered list; the now-unavailable Undo looks and reads unavailable.
+    await uiWait("!!document.querySelector('.history-empty')", 'history empty state after undo');
+    assert.deepEqual(await evaluate("({ list: !!document.querySelector('.history-list:not(.future)'), empty: document.querySelector('.history-empty')?.textContent, undo: [document.querySelector('.history-actions button:first-child').getAttribute('aria-disabled'), getComputedStyle(document.querySelector('.history-actions button:first-child')).borderTopStyle], redo: document.querySelector('.history-actions button:nth-child(2)').getAttribute('aria-label') })"), { list: false, empty: 'No actions to undo.', undo: ['true', 'dashed'], redo: `Redo ${actions[0]}` });
     assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), true);
     await clickSelector('.history-actions button:nth-child(2)');
     assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), false);
@@ -824,6 +838,8 @@ app.whenReady().then(async () => {
     await pause(100);
     actions = await openHistory(); assert.equal(actions.length, 0);
     assert.equal(await evaluate("document.querySelector('.history-policy').textContent.includes('80 actions')"), true);
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('.history-actions button')].map(b => b.getAttribute('aria-disabled'))"), ['true', 'true']);
+    assert.equal(await evaluate("document.querySelector('.history-empty')?.textContent"), 'No actions to undo.');
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('file loads clear history and the history panel exposes its retention policy');
 
@@ -892,20 +908,53 @@ app.whenReady().then(async () => {
     await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes'", 'redo away from saved snapshot');
     pass('edits during a native save stay unsaved after recovery; undo and redo compare the captured saved revision');
 
-    await evaluate('window.__qaConfirmResponse = false');
+    // Drive the in-app confirmation with real input instead of the shim.
+    await evaluate("window.__qaConfirmResponse = 'manual'");
+    const confirmations = await evaluate('window.__qaConfirmations.length');
+    const confirmOpen = async (title, label) => {
+      await uiWait(`document.querySelector('dialog.confirm-dialog[open] h2')?.textContent === ${JSON.stringify(title)}`, label);
+      await uiWait("document.activeElement?.matches('.confirm-dialog__cancel') && !document.querySelector('.tooltip-panel')", `${label} focuses Cancel without a tooltip`);
+    };
+    const newProductionOnly = "!document.querySelector('.confirm-dialog') && document.querySelectorAll('dialog[open]').length === 1 && document.querySelector('dialog[open] h2')?.textContent === 'New production'";
     openPath = historyFile;
     menuAction('Open project…');
-    await pause(60);
+    await confirmOpen('Open another project?', 'open confirmation');
+    await capture('file-confirm-open.png');
+    await sendKey(window, 'Escape');
+    await uiWait("!document.querySelector('dialog[open]')", 'Escape cancels the open confirmation');
     assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
+    assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'Unsaved changes');
     menuAction('New production');
     await uiWait("document.querySelector('.modal h2')?.textContent === 'New production'", 'new project prompt');
     await clickSelector('.new-options button:first-child');
-    assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
-    await evaluate('window.__qaConfirmResponse = true');
+    await confirmOpen('Replace this production?', 'replace confirmation');
+    assert.equal(await evaluate("document.querySelectorAll('dialog[open]').length"), 2);
+    await sendKey(window, 'Escape');
+    await uiWait(newProductionOnly, 'Escape cancels only the replace confirmation');
     await clickSelector('.new-options button:first-child');
-    await uiWait("document.querySelector('.save-state').textContent === 'Unsaved changes'", 'new production unsaved');
+    await confirmOpen('Replace this production?', 'second replace confirmation');
+    await clickSelector('.confirm-dialog__cancel');
+    await uiWait(newProductionOnly, 'Cancel keeps New production open');
+    assert.equal(await evaluate("document.querySelector('.inspector textarea').value"), 'A later edit during save');
+    await clickSelector('.new-options button:first-child');
+    await confirmOpen('Replace this production?', 'accepted replace confirmation');
+    await clickSelector('.confirm-dialog__confirm');
+    await uiWait("!document.querySelector('dialog[open]') && document.querySelector('.save-state').textContent === 'No changes'", 'new production has no changes');
     assert.equal(await evaluate("document.querySelector('.set-panel .count-badge').textContent"), '1');
-    pass('open and new-project cancellation preserve edits; a new production requires an explicit file save');
+    assert.equal(await evaluate("document.querySelector('.save-state .status-dot').classList.contains('idle')"), true);
+    assert.equal(await evaluate('window.__qaConfirmations.length'), confirmations + 4);
+    await evaluate('window.__qaConfirmResponse = true');
+    menuAction('New production');
+    await uiWait("document.querySelector('.modal h2')?.textContent === 'New production'", 'clean new project prompt');
+    await clickSelector('.new-options button:first-child');
+    await uiWait("!document.querySelector('dialog[open]') && document.querySelector('.save-state').textContent === 'No changes'", 'clean production replaced');
+    assert.equal(await evaluate('window.__qaConfirmations.length'), confirmations + 4);
+    const savesBefore = saves; destination = path.join(output, `new-production-${process.pid}.squid`);
+    menuAction('Save');
+    await savedProject(p => p.title === 'Untitled show' && p.sets.length === 1, destination);
+    assert.equal(saves, savesBefore + 1);
+    await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'new production saved');
+    pass('in-app confirmations focus Cancel; Escape and Cancel preserve edits and New production; confirming creates a production with no changes whose first save still asks for a destination');
     await clickText('Design');
     await capture('file-save-status.png');
 
