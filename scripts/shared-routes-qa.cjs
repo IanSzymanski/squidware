@@ -29,7 +29,9 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
     const item = find(Menu.getApplicationMenu()); assert.ok(item?.click); item.click(item, window, {});
   };
   const present = () => evaluate(`${state}.project.present`);
-  async function open() { await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
+  // Small or enlarged windows tuck the Inspector (#178); open it over the field, as a user would, before using its launchers.
+  const showInspector = async () => { if (await evaluate("!!document.querySelector('#workspace-pane-inspector')?.hidden")) { await click('Show Inspector'); await wait("!!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay:not([hidden])')", 'Inspector overlay'); } };
+  async function open() { await showInspector(); await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
   async function apply(count) { await click('Apply shared route'); await wait(`!${state}.ui.dialog && ${state}.project.present.sharedRoutes?.length===${count}`, 'accepted route'); }
 
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1); await settleNativeViewport(window, 'route baseline');
