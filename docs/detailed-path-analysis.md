@@ -1,6 +1,6 @@
 # Curved and independently timed movement checks
 
-Issue [#76](https://github.com/IanSzymanski/squidware/issues/76) extends the background spacing/stride analyzer to cubic paths, performer holds, delayed departures, intermediate arrivals, gaps and mixed straight/curved schedules. Open **Show-wide problems** from the timeline or Inspector. Existing section rules and explicitly declared marching directions apply. A pair uses its stricter spacing limit. Directions are never inferred from the curve or field axis.
+Issue [#76](https://github.com/IanSzymanski/squidware/issues/76) extends the background spacing/stride analyzer to cubic paths, performer holds, delayed departures, intermediate arrivals, gaps and mixed straight/curved schedules. Open **Show-wide problems** from the timeline’s ⚠ count badge or command search. Existing section rules and explicitly declared marching directions apply. A pair uses its stricter spacing limit. Directions are never inferred from the curve or field axis.
 
 Spacing means minimum center-to-center distance over a move, in yards. Stride means maximum instantaneous distance per **written count**, including one-sided travel velocities at interval boundaries. It uses each travel's own duration/easing, so a short fast submove cannot hide inside a long average. Gaps/holds have zero velocity. Musical fermatas freeze the shared count; written-count analysis does not treat their extra seconds as extra travel counts. These checks do not model body/prop extents or authored facing.
 

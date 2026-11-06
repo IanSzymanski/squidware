@@ -19,8 +19,6 @@ export function TransitionCheck({ controller }: { controller: EditorController }
   const Icon = pending ? LoaderCircle : failed || issues.length ? TriangleAlert : ShieldCheck;
   const currentPage = Math.min(page, Math.max(0, Math.ceil(issues.length / 12) - 1));
   return <div aria-busy={pending} data-analysis-status={analysis.status}>
-    <HelpButton command="analysis.problems-open" title="Show-wide problems" disabled={blocked} disabledReason="Finish or cancel the current input or preview before reviewing problems." className="button subtle" onClick={() => controller.dispatch('analysis.problems-open')}>Show-wide problems</HelpButton>
-    <HelpButton command="analysis.rules-open" title="Analysis rules" className="button subtle" disabled={controller.pendingDraft || !!controller.selectionPreview || !!controller.transformPreview || !!controller.formationPreview || !!controller.spacingPreview || !!controller.coordinatePreview} disabledReason="Finish or cancel the current input or preview before editing analysis rules." onClick={() => controller.dispatch('analysis.rules-open')}>Analysis rules</HelpButton>
     {index > 0 && <p className="microcopy">{Object.keys(project.moves[index - 1].marchingDirections ?? {}).length} declared · {project.performers.length - Object.keys(project.moves[index - 1].marchingDirections ?? {}).length} unknown. Facing is not authored; travel vectors do not establish marching direction.</p>}
     <div className="section-title">
       <span><Icon size={15} /> {issues.length ? 'Flags to review' : 'Current move'}</span>

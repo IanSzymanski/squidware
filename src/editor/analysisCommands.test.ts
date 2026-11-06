@@ -4,6 +4,7 @@ import { DEFAULT_ANALYSIS_RULES } from '../analysis/rules';
 import type { Project, ProjectAnalysisRules } from '../types';
 import { sameAnalysisRules } from './analysisCommands';
 import { createEditorStore } from './store';
+import { paletteEntries } from './paletteCommands';
 
 function fixture(): Project {
   const p = createBlankProject(); p.sections = [{ id: 'brass', name: 'Brass', color: '#aabbcc' }, { id: 'winds', name: 'Winds', color: '#ccbbff' }];
@@ -38,5 +39,16 @@ describe('unchanged analysis rules', () => {
     expect(store.getState().project.present.analysisRules).toEqual({ defaults: { minimumSpacing: 2, maximumStride: 1.25 } }); expect(store.getState().project.past).toHaveLength(2);
     expect(store.dispatch('analysis.rules-save', { rules: { defaults: { minimumSpacing: 2, maximumStride: 1.25 } } })).toBe(true);
     expect(store.getState().project.past).toHaveLength(2);
+  });
+
+  it('opens Analysis rules from Show-wide problems or the palette, never over another dialog', () => {
+    const store = createEditorStore(fixture());
+    const entry = () => paletteEntries(store.getState()).find(e => e.invocation.id === 'analysis.rules-open')!;
+    expect(entry()).toMatchObject({ name: 'Analysis rules', disabledReason: null });
+    expect(store.dispatch('analysis.problems-open')).toBe(true); expect(store.getState().ui.dialog).toBe('problems');
+    expect(store.dispatch('analysis.rules-open')).toBe(true); expect(store.getState().ui.dialog).toBe('analysis-rules');
+    expect(store.dispatch('analysis.problems-open')).toBe(false); expect(store.getState().ui.dialog).toBe('analysis-rules');
+    store.setValue('ui', 'dialog', 'export'); expect(store.dispatch('analysis.rules-open')).toBe(false);
+    store.setValue('ui', 'dialog', null); store.setValue('ui', 'pendingDraft', true); expect(store.dispatch('analysis.rules-open')).toBe(false); expect(entry().disabledReason).not.toBeNull();
   });
 });
