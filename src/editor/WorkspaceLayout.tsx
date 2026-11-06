@@ -31,18 +31,22 @@ export function useWorkspaceLayout(controller: EditorController) {
   const studioStyle = { '--field-min-width': `${FIELD_MIN.width}px`, '--field-min-height': `${FIELD_MIN.height}px`, '--field-reserve': `${FIELD_RESERVE}px` } as CSSProperties;
   const locked = !canChangeLayout(controller.store.getState()) || controller.preferences.status === 'loading';
   const reason = 'Finish or cancel the current input, preview or gesture before changing the layout.';
-  useLayoutEffect(() => {
-    const node = body.current; if (!node) return;
-    const observer = new ResizeObserver(() => setAvailable(node.clientWidth)); observer.observe(node);
-    setAvailable(node.clientWidth); return () => observer.disconnect();
-  }, []);
   // .studio fills the effective viewport (--viewport-width × --viewport-height), so CSS zoom from the UI scale and
   // browser zoom are both already divided out of its client size.
+  const measure = () => {
+    const node = body.current, root = studio.current;
+    if (node) setAvailable(node.clientWidth);
+    if (root) setViewport(current => current.width === root.clientWidth && current.height === root.clientHeight ? current : { width: root.clientWidth, height: root.clientHeight });
+  };
   useLayoutEffect(() => {
-    const node = studio.current; if (!node) return;
-    const measure = () => setViewport(current => current.width === node.clientWidth && current.height === node.clientHeight ? current : { width: node.clientWidth, height: node.clientHeight });
-    const observer = new ResizeObserver(measure); observer.observe(node); measure(); return () => observer.disconnect();
+    const observer = new ResizeObserver(measure);
+    for (const node of [body.current, studio.current]) if (node) observer.observe(node);
+    measure(); return () => observer.disconnect();
   }, []);
+  // A UI scale change re-measures in the same commit (its CSS zoom is applied by an earlier layout effect), so the
+  // header and panels never paint one frame at the previous scale's breakpoints.
+  const uiScale = controller.preferences.value.uiScale;
+  useLayoutEffect(measure, [uiScale]);
   // A pane that fits again docks: its temporary overlay ends and the saved layout shows as chosen.
   useEffect(() => { if (overlay && !(overlay === 'sets' ? fit.setsHidden : fit.sideHidden)) setOverlay(null); }, [overlay, fit.setsHidden, fit.sideHidden]);
   useEffect(() => { setOverlay(null); setMenu(false); }, [focusMode, controller.workspace, side]);
