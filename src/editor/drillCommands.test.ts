@@ -72,7 +72,9 @@ describe('drill commands through shared preview sessions', () => {
 describe('command search and enablement', () => {
   it('exposes every rebindable command and searchable set/section variants with useful disabled reasons', () => {
     const { store } = fixture(); const entries = paletteEntries(store.getState());
-    for (const id of shortcutIds.filter(id => id !== 'palette.open')) expect(entries.some(e => e.invocation.id === id)).toBe(true);
+    // The separate 3D window is desktop-only: hidden without the bridge, listed once it is available.
+    for (const id of shortcutIds.filter(id => id !== 'palette.open')) expect(entries.some(e => e.invocation.id === id)).toBe(id !== 'view.popout');
+    store.setValue('ui', 'popout3d', 'closed'); expect(paletteEntries(store.getState()).some(e => e.invocation.id === 'view.popout')).toBe(true);
     expect(searchPalette(entries, 'previous set')[0].disabledReason).toMatch(/first set/);
     expect(searchPalette(entries, 'Brass').some(e => e.name.includes('Select section'))).toBe(true);
     expect(searchPalette(entries, 'undo')[0].disabledReason).toMatch(/no earlier edits/);
