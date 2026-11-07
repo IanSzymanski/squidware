@@ -1,13 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { BREAKPOINTS, FIELD_MIN, FIELD_RESERVE, effectiveViewport, workspaceBreakpoints } from './breakpoints';
-import { fitWorkspaceLayout, paneLimits, workspacePreset } from '../workspaceLayout';
+import { BREAKPOINTS, DEMANDED_FIELD_RESERVE, FIELD_MIN, FIELD_RESERVE, effectiveViewport, fieldReserve, workspaceBreakpoints } from './breakpoints';
+import { fitWorkspaceLayout, paneLimits, workspacePreset, type WorkspaceLayout } from '../workspaceLayout';
 
 /** The issue's screenshot matrix: window sizes × UI scales, through the same fit the workspace renders. */
-function resolve(width: number, height: number, scale: number, layout = workspacePreset('write')) {
+function resolve(width: number, height: number, scale: number, layout = workspacePreset('write'), side: 'inspector' | 'cast' = 'inspector', demanded = false) {
   const viewport = effectiveViewport(width, height, scale);
-  const fit = fitWorkspaceLayout(layout, viewport.width, 'inspector');
-  const main = viewport.width - (fit.setsHidden ? 30 : fit.widths.sets + 6) - (fit.sideHidden ? 30 : fit.widths.inspector + 6);
+  const fit = fitWorkspaceLayout(layout, viewport.width, side, demanded);
+  const main = viewport.width - (fit.setsHidden ? 30 : fit.widths.sets + 6) - (fit.sideHidden ? 30 : fit.widths[side] + 6);
   return { viewport, fit, main, ...workspaceBreakpoints(viewport, main) };
+}
+/** The fit before #178 (a53139b): one 360 px reserve for every panel. A demanded side panel must dock wherever this did. */
+function preBreakpointFit(layout: WorkspaceLayout, available: number, side: 'inspector' | 'cast') {
+  const widths = { sets: layout.setsWidth, inspector: layout.inspectorWidth, cast: layout.castWidth };
+  let setsHidden = layout.setsCollapsed; let sideHidden = layout[`${side}Collapsed`];
+  const used = () => (setsHidden ? 30 : widths.sets + 6) + (sideHidden ? 30 : widths[side] + 6) + 360;
+  for (const pane of ['sets', side] as const) if (!(pane === 'sets' ? setsHidden : sideHidden)) widths[pane] = Math.max(paneLimits[pane][0], widths[pane] - Math.max(0, used() - available));
+  if (used() > available && !setsHidden) setsHidden = true;
+  if (used() > available && !sideHidden) sideHidden = true;
+  return { setsHidden, sideHidden };
 }
 
 describe('UI-scale-aware breakpoints', () => {
@@ -55,5 +65,39 @@ describe('UI-scale-aware breakpoints', () => {
     expect(fitWorkspaceLayout(layout, 700, 'inspector')).toMatchObject({ setsHidden: true, sideHidden: true });
     expect(fitWorkspaceLayout(layout, 1500, 'inspector')).toMatchObject({ setsHidden: false, sideHidden: false });
     expect(layout).toEqual(before);
+  });
+  it('docks a side panel the writer asked for beside a narrower field wherever it docked before #178', () => {
+    expect(DEMANDED_FIELD_RESERVE).toBeLessThan(FIELD_RESERVE);
+    expect([fieldReserve(false), fieldReserve(true)]).toEqual([FIELD_RESERVE, DEMANDED_FIELD_RESERVE]);
+    const layouts = [workspacePreset('write'), { ...workspacePreset('write'), setsWidth: 300, inspectorWidth: 400, castWidth: 420 }, { ...workspacePreset('rehearse'), inspectorCollapsed: false }];
+    for (const layout of layouts) for (const side of ['inspector', 'cast'] as const) for (let available = 400; available <= 1500; available += 7) {
+      const demanded = fitWorkspaceLayout(layout, available, side, true), idle = fitWorkspaceLayout(layout, available, side);
+      const context = `${side} at ${available} ${JSON.stringify(layout)}`;
+      expect(demanded.sideHidden, context).toBe(preBreakpointFit(layout, available, side).sideHidden);
+      // The set list still tucks first and at the full reserve; the demand only keeps the side panel docked.
+      expect(demanded.setsHidden, context).toBe(idle.setsHidden);
+      if (!idle.sideHidden) expect(demanded, context).toEqual(idle);
+      // The panel shrinks to its minimum before the field gives way, and the field keeps the smaller reserve.
+      const field = available - (demanded.setsHidden ? 30 : demanded.widths.sets + 6) - (demanded.sideHidden ? 30 : demanded.widths[side] + 6);
+      if (!demanded.sideHidden && field < FIELD_RESERVE) expect(demanded.widths[side], context).toBe(paneLimits[side][0]);
+      if (!demanded.sideHidden) expect(field, context).toBeGreaterThanOrEqual(DEMANDED_FIELD_RESERVE);
+    }
+  });
+  it('docks Cast and a preview\'s Inspector at matrix points where the field reserve alone would tuck them', () => {
+    // [window, scale] → tucked as [Cast, Cast shown, Inspector, Inspector for a preview]. Demanded panels dock down to
+    // 676 (Cast) and 631 (Inspector) effective px, as before #178.
+    const expected: Record<string, [boolean, boolean, boolean, boolean]> = {
+      '1024x700@1.25': [true, false, false, false], '900x650@1.25': [true, false, true, false], '800x600@1': [true, false, true, false],
+      '1280x720@1.5': [true, false, false, false], '1024x700@1.5': [true, false, true, false], '800x600@1.25': [true, true, true, false],
+      '900x650@1.5': [true, true, true, true], '800x600@1.5': [true, true, true, true],
+    };
+    for (const [key, tucked] of Object.entries(expected)) {
+      const [size, scale] = key.split('@'); const [width, height] = size.split('x').map(Number);
+      const runs = [['cast', false], ['cast', true], ['inspector', false], ['inspector', true]] as const;
+      const results = runs.map(([side, demanded]) => resolve(width, height, Number(scale), workspacePreset('write'), side, demanded));
+      expect(results.map(r => r.fit.sideHidden), key).toEqual(tucked);
+      // The set list tucks either way; a docked demanded panel leaves the field at least the smaller reserve.
+      for (const r of results) { expect(r.fit.setsHidden, key).toBe(true); if (!r.fit.sideHidden) expect(r.main, key).toBeGreaterThanOrEqual(DEMANDED_FIELD_RESERVE); }
+    }
   });
 });

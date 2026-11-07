@@ -25,6 +25,13 @@ export const FIELD_MIN = { width: 520, height: 150 } as const;
 export const FIELD_GUTTER = 24;
 /** Main workspace width kept for the field before side panels give way. */
 export const FIELD_RESERVE = FIELD_MIN.width + FIELD_GUTTER;
+/** Main workspace width kept for the field beside a side panel the writer asked for: Cast shown from the header tab,
+ * Dock Cast or the palette, or the Inspector a preview needs for its controls. Such a panel docks beside a narrower
+ * field down to this pre-#178 reserve, so it docks wherever it did before; the set list still tucks first, at
+ * FIELD_RESERVE. Below it Cast opens over the field, and a preview's Inspector opens over it without hiding the field. */
+export const DEMANDED_FIELD_RESERVE = 360;
+/** The main workspace width a side panel must leave the field before it tucks. */
+export const fieldReserve = (demanded: boolean) => demanded ? DEMANDED_FIELD_RESERVE : FIELD_RESERVE;
 
 export type HeaderMode = 'full' | 'compact' | 'narrow';
 export type TransportMode = 'full' | 'compact' | 'narrow';

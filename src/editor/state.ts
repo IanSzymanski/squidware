@@ -30,7 +30,8 @@ export interface EditorState {
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
     setCreationKind: SetCreationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
-    castPanelOpen: boolean; castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
+    /** Showing Cast beside the field (header tab, Dock Cast, palette) increments castReveal; a window too narrow to dock it opens it over the field. */
+    castPanelOpen: boolean; castReveal: number; castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
     printMode: 'charts' | 'coordinates'; printing: boolean;
     transformPreview: TransformSession | null;
     spacingPreview: SpacingSession | null;
@@ -62,7 +63,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     ui: { workspace: 'design', focusMode: false, view: '2d', popout3d: 'unavailable', popout3dFocus: 0, tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
       showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
       pendingDraft: false, menu: false, paletteOpen: false, toast: '', setCreationKind: 'new', formation: 'arc', formationWidth: 45,
-      formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castQuery: '',
+      formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castReveal: 0, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {}, formationAssignmentModes: {}, movementClipboard: null,
       confirmation: null },

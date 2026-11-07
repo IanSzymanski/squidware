@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { Check, Columns2, Focus, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, RotateCcw, X } from 'lucide-react';
 import { fitWorkspaceLayout, paneLimits, paneNames, type PaneId, type WorkspaceLayout } from '../workspaceLayout';
 import { canChangeLayout } from './commands';
-import { FIELD_MIN, FIELD_RESERVE, effectiveViewport, workspaceBreakpoints, type Viewport } from './breakpoints';
+import { FIELD_MIN, FIELD_RESERVE, effectiveViewport, fieldReserve, workspaceBreakpoints, type Viewport } from './breakpoints';
 import { HelpButton } from './ControlHelp';
 import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
@@ -23,12 +23,16 @@ export function useWorkspaceLayout(controller: EditorController) {
   const layout = controller.preferences.value.workspaceLayout;
   const preview = !!(controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview);
   const side: 'cast' | 'inspector' = controller.workspace === 'design' && controller.castPanelOpen && !preview ? 'cast' : 'inspector';
-  const fit = fitWorkspaceLayout(layout, available, side);
+  // Cast the writer showed, or the Inspector a preview needs, docks beside a narrower field before it tucks.
+  const demanded = side === 'cast' || preview;
+  const fit = fitWorkspaceLayout(layout, available, side, demanded);
   const focusMode = useEditorSelector(state => state.ui.focusMode) && controller.workspace === 'design';
   // The timeline spans the main workspace: the width left beside docked (or tucked) panels.
   const mainWidth = focusMode ? available : available - (fit.setsHidden ? 30 : fit.widths.sets + 6) - (fit.sideHidden ? 30 : fit.widths[side] + 6);
   const breakpoints = workspaceBreakpoints(viewport, mainWidth);
-  const studioStyle = { '--field-min-width': `${FIELD_MIN.width}px`, '--field-min-height': `${FIELD_MIN.height}px`, '--field-reserve': `${FIELD_RESERVE}px` } as CSSProperties;
+  // A pane open over the field covers its edge of the main workspace; during a preview the field fits beside it.
+  const overlayWidth = overlay ? Math.min(fit.widths[overlay], Math.max(paneLimits[overlay][0], available - 60)) : 0;
+  const studioStyle = { '--field-min-width': `${FIELD_MIN.width}px`, '--field-min-height': `${FIELD_MIN.height}px`, '--field-reserve': `${fieldReserve(demanded)}px`, '--overlay-width': `${overlayWidth}px` } as CSSProperties;
   const locked = !canChangeLayout(controller.store.getState()) || controller.preferences.status === 'loading';
   const reason = 'Finish or cancel the current input, preview or gesture before changing the layout.';
   // .studio fills the effective viewport (--viewport-width × --viewport-height), so CSS zoom from the UI scale and
@@ -50,10 +54,13 @@ export function useWorkspaceLayout(controller: EditorController) {
   // A pane that fits again docks: its temporary overlay ends and the saved layout shows as chosen.
   useEffect(() => { if (overlay && !(overlay === 'sets' ? fit.setsHidden : fit.sideHidden)) setOverlay(null); }, [overlay, fit.setsHidden, fit.sideHidden]);
   useEffect(() => { setOverlay(null); setMenu(false); }, [focusMode, controller.workspace, side]);
+  // Showing Cast (header tab, Dock Cast, palette) on a window too narrow to dock it opens it over the field.
+  const castReveal = useEditorSelector(state => state.ui.castReveal);
+  useEffect(() => { if (castReveal && side === 'cast' && fit.sideHidden) setOverlay('cast'); }, [castReveal]);
   useEffect(() => {
     if (!preview) return;
     if (layout.inspectorCollapsed) controller.dispatch('layout.update', { update: { inspectorCollapsed: false } });
-    if (fitWorkspaceLayout({ ...layout, inspectorCollapsed: false }, available, 'inspector').sideHidden) setOverlay('inspector');
+    if (fitWorkspaceLayout({ ...layout, inspectorCollapsed: false }, available, 'inspector', true).sideHidden) setOverlay('inspector');
   }, [preview]);
   useEffect(() => {
     function escape(event: KeyboardEvent) {
@@ -80,7 +87,9 @@ export function useWorkspaceLayout(controller: EditorController) {
   function update(update: Partial<WorkspaceLayout>) { controller.dispatch('layout.update', { update }); }
   function collapse(pane: PaneId) {
     if (locked) return;
-    update({ [`${pane}Collapsed`]: true }); setOverlay(null);
+    // Closing a pane the window tucked only ends its overlay; the saved layout and preset stay as chosen.
+    if (overlay !== pane || layout[`${pane}Collapsed`]) update({ [`${pane}Collapsed`]: true });
+    setOverlay(null);
     requestAnimationFrame(() => document.querySelector<HTMLElement>(`[aria-label="Show ${paneNames[pane]}"]`)?.focus());
   }
   function reveal(pane: PaneId) {
@@ -88,7 +97,7 @@ export function useWorkspaceLayout(controller: EditorController) {
     const next = { ...layout, [`${pane}Collapsed`]: false };
     // Only a pane the user collapsed changes the saved layout; a pane tucked away by a narrow window opens over the field.
     if (layout[`${pane}Collapsed`]) update({ [`${pane}Collapsed`]: false });
-    const resolved = fitWorkspaceLayout(next, available, side);
+    const resolved = fitWorkspaceLayout(next, available, side, demanded);
     setOverlay(pane === 'sets' ? resolved.setsHidden ? pane : null : resolved.sideHidden ? pane : null);
     requestAnimationFrame(() => document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus());
   }
@@ -100,7 +109,7 @@ export function useWorkspaceLayout(controller: EditorController) {
     controller.setMenu(false); setMenu(true);
     requestAnimationFrame(() => document.querySelector<HTMLElement>('#workspace-layout-options button')?.focus());
   }
-  return { body, studio, studioStyle, available, viewport, breakpoints, overlay, setOverlay, menu, setMenu, layout, side, fit, focusMode, locked, reason, update, collapse, reveal, toggleFocus, openFromMenu };
+  return { body, studio, studioStyle, available, viewport, breakpoints, overlay, overlayWidth, setOverlay, menu, setMenu, layout, side, preview, fit, focusMode, locked, reason, update, collapse, reveal, toggleFocus, openFromMenu };
 }
 export type WorkspaceLayoutController = ReturnType<typeof useWorkspaceLayout>;
 const presetName = (preset: WorkspaceLayout['preset']) => preset[0].toUpperCase() + preset.slice(1);
@@ -145,7 +154,7 @@ export function WorkspacePane({ pane, layout: l, children }: { pane: PaneId; lay
   const [draftWidth, setDraftWidth] = useState<number | null>(null);
   const drag = useRef<{ pointer: number; startX: number; width: number; current: number } | null>(null);
   const hidden = pane === 'sets' ? l.fit.setsHidden : l.fit.sideHidden;
-  const overlay = l.overlay === pane;
+  const overlay = l.overlay === pane; const tucked = hidden && !l.layout[`${pane}Collapsed`];
   const left = pane === 'sets'; const [min, max] = paneLimits[pane];
   const width = draftWidth ?? l.fit.widths[pane];
   const otherWidth = left ? l.fit.sideHidden ? 30 : l.fit.widths[l.side] + 6 : l.fit.setsHidden ? 30 : l.fit.widths.sets + 6;
@@ -153,9 +162,9 @@ export function WorkspacePane({ pane, layout: l, children }: { pane: PaneId; lay
   const resize = (value: number) => l.update({ [`${pane}Width`]: Math.round(Math.max(min, Math.min(max, value))) });
   const finish = (commit: boolean) => { if (!drag.current) return; if (commit) resize(drag.current.current); drag.current = null; setDraftWidth(null); };
   return <>
-    {hidden && <div className="workspace-pane-closed" data-tucked={!l.layout[`${pane}Collapsed`] || undefined}><HelpButton pointerPassThrough title={`Show ${paneNames[pane]}`} description={l.layout[`${pane}Collapsed`] ? `Restore ${paneNames[pane]}. On a narrow window it opens over the field.` : `This window is too narrow to dock ${paneNames[pane]} beside the field; it opens over the field. Your layout returns when the window grows.`} aria-expanded={overlay} aria-controls={`workspace-pane-${pane}`} onClick={() => l.reveal(pane)}>{left ? <PanelLeftOpen size={16} /> : <PanelRightOpen size={16} />}<span>{paneNames[pane]}</span></HelpButton></div>}
-    <section id={`workspace-pane-${pane}`} aria-label={`${paneNames[pane]} workspace panel`} data-pane={pane} className={`workspace-pane${overlay ? ' workspace-pane--overlay' : ''}${left ? ' workspace-pane--left' : ' workspace-pane--right'}`} hidden={hidden && !overlay} inert={hidden && !overlay} style={{ '--pane-width': `${overlay ? Math.min(width, Math.max(min, l.available - 60)) : width}px` } as CSSProperties}>
-      <div className="workspace-pane-heading"><strong>{paneNames[pane]}</strong><HelpButton pointerPassThrough title={`Collapse ${paneNames[pane]}`} description={`Hide ${paneNames[pane]} and keep a Show button available.`} className="icon-button" disabled={l.locked} disabledReason={l.reason} onClick={() => l.collapse(pane)}>{left ? <PanelLeftClose size={16} /> : <PanelRightClose size={16} />}</HelpButton></div>
+    {hidden && <div className="workspace-pane-closed" data-tucked={tucked || undefined}><HelpButton pointerPassThrough title={`Show ${paneNames[pane]}`} description={l.layout[`${pane}Collapsed`] ? `Restore ${paneNames[pane]}. On a narrow window it opens over the field.` : `This window is too narrow to dock ${paneNames[pane]} beside the field; it opens over the field. Your layout returns when the window grows.`} aria-expanded={overlay} aria-controls={`workspace-pane-${pane}`} onClick={() => l.reveal(pane)}>{left ? <PanelLeftOpen size={16} /> : <PanelRightOpen size={16} />}<span>{paneNames[pane]}</span></HelpButton></div>}
+    <section id={`workspace-pane-${pane}`} aria-label={`${paneNames[pane]} workspace panel`} data-pane={pane} className={`workspace-pane${overlay ? ' workspace-pane--overlay' : ''}${left ? ' workspace-pane--left' : ' workspace-pane--right'}`} hidden={hidden && !overlay} inert={hidden && !overlay} style={{ '--pane-width': `${overlay ? l.overlayWidth : width}px` } as CSSProperties}>
+      <div className="workspace-pane-heading"><strong>{paneNames[pane]}</strong><HelpButton pointerPassThrough title={`${overlay && tucked ? 'Close' : 'Collapse'} ${paneNames[pane]}`} description={overlay && tucked ? `Close this overlay. Your layout is unchanged: ${paneNames[pane]} docks again when the window is wide enough.` : `Hide ${paneNames[pane]} and keep a Show button available.`} className="icon-button" disabled={l.locked} disabledReason={l.reason} onClick={() => l.collapse(pane)}>{left ? <PanelLeftClose size={16} /> : <PanelRightClose size={16} />}</HelpButton></div>
       <div className="workspace-pane-content">{children}</div>
       {!overlay && <div className="workspace-resizer" role="separator" tabIndex={l.locked ? -1 : 0} aria-label={`Resize ${paneNames[pane]}`} aria-orientation="vertical" aria-valuemin={min} aria-valuemax={max} aria-valuenow={Math.round(width)} aria-valuetext={`${Math.round(width)} pixels. Left and right arrows resize; Home and End use limits; Enter collapses.`} aria-controls={`workspace-pane-${pane}`} aria-disabled={l.locked}
         onKeyDown={e => {
