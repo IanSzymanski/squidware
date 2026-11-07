@@ -14,7 +14,7 @@ export function SpacingPanel({ controller: c }: { controller: EditorController }
   const display = (n: number) => Number(n.toFixed(4));
   const gaps = result.groups.filter(g => g.ids.length > 1).map(g => g.interval);
   const gapSummary = !gaps.length ? 'none' : `${display(Math.min(...gaps))}–${display(Math.max(...gaps))} yd`;
-  const choice = (name: string, text: string, active: boolean, action: () => void, description: string) => <HelpButton title={name} description={description} aria-pressed={active} className={active ? 'button primary' : 'button subtle'} disabled={c.pendingDraft} disabledReason="Finish or cancel the pending input before changing spacing choices." onClick={action}>{text}</HelpButton>;
+  const choice = (name: string, text: string, active: boolean, action: () => void, description: string) => <HelpButton pointerPassThrough title={name} description={description} aria-pressed={active} className={active ? 'button primary' : 'button subtle'} disabled={c.pendingDraft} disabledReason="Finish or cancel the pending input before changing spacing choices." onClick={action}>{text}</HelpButton>;
   return <section ref={section} className="inspector-section transform-panel spacing-panel" aria-label="Spacing and alignment preview">
     <h3>Spacing and alignment</h3>
     <p className="section-description">{session.ids.length} selected · set {c.index + 1}. Only this selection changes after Apply.</p>

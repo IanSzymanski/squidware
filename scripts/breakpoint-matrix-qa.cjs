@@ -238,7 +238,10 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     // where it cannot it opens over the field without a scrim while the field fits beside it.
     const ids = await evaluate(`JSON.stringify(${state}.project.present.performers.map(p => p.id))`);
     const inspector = "document.querySelector('#workspace-pane-inspector')";
-    const ended = `(() => { const pane = ${inspector}; return pane.hidden && !document.querySelector('.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && !!document.activeElement?.closest('.field-stage__svg'); })()`;
+    // Focus Apply, Cancel or the preview's control held moves to the field area (never the field's performers, where
+    // Space would select one instead of playing) when the Inspector tucks again.
+    const fieldArea = "document.querySelector('.main-workspace > .field-container')";
+    const ended = `(() => { const pane = ${inspector}; return pane.hidden && !document.querySelector('.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && document.activeElement === ${fieldArea}; })()`;
     // 1000 × 650, 1014 × 650, 1200 × 650 and 1000 × 620 @150% are short windows outside the matrix where docking can
     // scroll the workspace (see checkShortWindow): whether it does depends on the platform's fonts, so either placement
     // passes there (`over` null) as long as the preview adds no scrolling. The Inspector over the field ends above the transport row, so the
@@ -261,12 +264,12 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       if (over === null) assert.ok(await evaluate(scrolled) <= idle + 1, `${label} the preview adds no workspace scrolling (${idle} px without it)`);
       await capture(`breakpoints-preview-${label}.png`);
       // The preview's placement ends with it: the Inspector the writer never opened tucks again, no scrim appears, and
-      // focus Cancel held moves to the field.
-      await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the preview's Inspector tucks when it ends, with focus on the field`);
+      // focus Cancel held moves to the field area.
+      await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the preview's Inspector tucks when it ends, with focus on the field area`);
       assert.equal(await savedLayout(), saved, `${label} the preview leaves the saved layout unchanged`);
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
     }
-    pass('transform previews keep the field, banner, Apply/Cancel and the whole transport row visible: the Inspector docks at 1024 × 700 @150%, 900 × 650 @125% and 800 × 600 @100% and opens over the field without a scrim, ending above the transport row, at 900 × 650 and 800 × 600 @150%, on the short 1000 × 650, 1014 × 650, 1200 × 650 and 1000 × 620 @150% docks only without adding scrolling and otherwise opens over the field the same way, and tucks again with focus on the field when the preview ends');
+    pass('transform previews keep the field, banner, Apply/Cancel and the whole transport row visible: the Inspector docks at 1024 × 700 @150%, 900 × 650 @125% and 800 × 600 @100% and opens over the field without a scrim, ending above the transport row, at 900 × 650 and 800 × 600 @150%, on the short 1000 × 650, 1014 × 650, 1200 × 650 and 1000 × 620 @150% docks only without adding scrolling and otherwise opens over the field the same way, and tucks again with focus on the field area when the preview ends');
     const openOver = `(() => { const pane = ${inspector}; return pane.classList.contains('workspace-pane--overlay') && !pane.hidden && !pane.inert && pane.contains(document.activeElement); })()`;
     const mirror = async label => {
       await evaluate(`${editor}.setValue('selection','selectedIds',${ids}); ${editor}.dispatch('transform.mirror')`);
@@ -288,6 +291,24 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
     }
     pass('during a preview with the Inspector over the field (900 × 650 and 800 × 600 @150%), Escape closes an open More playback options first, with focus on its trigger and the preview kept; the next Escape cancels the preview');
+    // The header Menu takes Escape first the same way.
+    await applySize(900, 650, 1.5); await mirror('900x650@1.5 Menu');
+    await nativeClick(byName('Project menu')); await wait("!!document.querySelector('.dropdown')", '900x650@1.5 Menu open during the preview');
+    await evaluate("document.querySelector('.dropdown button').focus()"); await key('Escape');
+    await wait(`!document.querySelector('.dropdown') && document.activeElement?.getAttribute('aria-label')==='Project menu' && !!${state}.ui.transformPreview`, '900x650@1.5 Escape in Menu closes it with focus on its button and keeps the preview');
+    await key('Escape'); await wait(`!${state}.ui.transformPreview && document.activeElement?.getAttribute('aria-label')==='Project menu'`, '900x650@1.5 the next Escape cancels the preview with focus kept on Menu');
+    // A preview started from the keyboard (here the Command palette) shows its first control's help, which never takes the
+    // click meant for Apply, wherever it is placed: one click applies.
+    for (const [phrase, name, apply, kind] of [['Mirror across 50', 'Transform operation', 'Apply transform', 'transformPreview'], ['Align and space selection', 'Align coordinates', 'Apply spacing', 'spacingPreview']]) {
+      const label = `900x650@1.5 palette ${kind}`, revision = await evaluate(`${state}.project.revision`);
+      await evaluate(`${editor}.setValue('selection','selectedIds',${ids}); document.activeElement?.blur()`); await key('K', [mod]);
+      await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", `${label} palette open`);
+      await window.webContents.debugger.sendCommand('Input.insertText', { text: phrase }); await key('Return');
+      await wait(`!!${state}.ui.${kind} && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(name)} && !!document.querySelector('[role=tooltip]')?.textContent.startsWith(${JSON.stringify(name)})`, `${label} focuses ${name} with its help`);
+      await nativeClick(byName(apply)); await wait(`!${state}.ui.${kind} && ${state}.project.revision !== ${revision}`, `${label} one click on ${apply} applies`);
+      await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision === ${revision}`, `${label} undone`);
+    }
+    pass('at 900 × 650 @150% Escape in an open Menu closes it first with focus on its button and the preview kept; a preview started from the Command palette shows its first control\'s help, and one click on Apply applies it');
     // At 1024 × 700 @150% the Inspector docks only for a preview. Play (which drops the preview), Escape and Apply all
     // end it with the Inspector tucked, no scrim, and the field and transport in view.
     await applySize(1024, 700, 1.5);
@@ -297,11 +318,11 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     assert.deepEqual(await reachableIn(['Pause playback'], 'document'), [], '1024x700@1.5 Pause is reachable during playback');
     await nativeClick(byName('Pause playback')); await wait(`!${state}.playback.playing`, '1024x700@1.5 paused');
     await evaluate(`${editor}.setValue('playback','playing',false); ${editor}.setValue('playback','count',0); ${editor}.setValue('selection','activeIndex',0)`);
-    await mirror('1024x700@1.5 Escape'); await key('Escape'); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Escape ends the preview with the Inspector tucked and focus on the field');
+    await mirror('1024x700@1.5 Escape'); await key('Escape'); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Escape ends the preview with the Inspector tucked and focus on the field area');
     await mirror('1024x700@1.5 Apply'); await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", '1024x700@1.5 help dismissed');
-    await nativeClick(byName('Apply transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Apply ends the preview with the Inspector tucked and focus on the field');
+    await nativeClick(byName('Apply transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Apply ends the preview with the Inspector tucked and focus on the field area');
     await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision === ${project}`, '1024x700@1.5 the applied mirror undone');
-    pass('at 1024 × 700 @150% a preview the writer started with the Inspector tucked ends, by Play, Escape or Apply, with the Inspector tucked again, no scrim, and the field, Pause or focus on the field');
+    pass('at 1024 × 700 @150% a preview the writer started with the Inspector tucked ends, by Play, Escape or Apply, with the Inspector tucked again, no scrim, and the field, Pause or focus on the field area');
     // An Inspector the writer opened over the field docks while a preview needs it and is still open over the field,
     // with focus inside it, when the preview ends: by Cancel, or by Escape in coordinate entry (which refocuses Place).
     for (const [width, height, scale] of [[1024, 700, 1.5], [900, 650, 1.25]]) {
@@ -310,10 +331,8 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await evaluate(`${editor}.setValue('selection','selectedIds',${ids})`);
       await nativeClick(byName('Show Inspector')); await wait(openOver, `${label} Show Inspector opens it over the field`);
       await nativeClick(byName('Mirror selection', inspector));
-      // The preview's panel scrolls into view and focuses its operation, whose help would cover Cancel: wait for that
-      // focus, then leave it before clicking Cancel.
+      // The preview's panel scrolls into view and focuses its operation; its help never takes the click meant for Cancel.
       await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden && !${inspector}.classList.contains('workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Transform operation'`, `${label} the preview docks the Inspector`);
-      await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", `${label} help dismissed`);
       await nativeClick(byName('Cancel transform'));
       await wait(`!${state}.ui.transformPreview && ${openOver}`, `${label} the Inspector stays open over the field after Cancel, with focus inside it`);
       await nativeClick(byName('Enter coordinates', inspector));
@@ -321,6 +340,16 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await key('Escape');
       await wait(`!${state}.ui.coordinatePreview && ${openOver} && document.activeElement?.getAttribute('aria-label')==='Enter coordinates'`, `${label} Escape in coordinate entry returns focus to Place in the still-open Inspector`);
       await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Inspector'", `${label} Escape then closes the Inspector overlay`);
+      if (scale === 1.5) {
+        // Play during a preview beside the Inspector the writer opened closes that pane rather than playing the show
+        // behind its scrim, and focus stays on Pause, so Space pauses.
+        await nativeClick(byName('Show Inspector')); await wait(openOver, `${label} Show Inspector again`);
+        await nativeClick(byName('Mirror selection', inspector)); await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden`, `${label} a preview beside the Inspector the writer opened`);
+        await nativeClick(byName('Play show'));
+        await wait(`${state}.playback.playing && !${state}.ui.transformPreview && ${inspector}.hidden && !document.querySelector('.workspace-pane--overlay, .workspace-overlay-dismiss') && document.activeElement?.getAttribute('aria-label')==='Pause playback'`, `${label} Play closes the Inspector over the field, focus kept on Pause`);
+        await key('Space'); await wait(`!${state}.playback.playing`, `${label} Space on Pause pauses`);
+        await evaluate(`${editor}.setValue('playback','count',0); ${editor}.setValue('selection','activeIndex',0)`);
+      }
       assert.equal(await savedLayout(), saved, `${label} the previews leave the saved layout unchanged`);
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
     }
@@ -335,7 +364,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await wait(`${inspector}.classList.contains('workspace-pane--overlay') && !${inspector}.hidden && !document.querySelector('.workspace-overlay-dismiss') && document.activeElement?.getAttribute('aria-label')==='Apply transform'`, `${label} shrinking during the preview opens the Inspector over the field, focus kept on Apply`);
       await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", `${label} help dismissed after shrinking`);
       assert.deepEqual(await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document'), [], `${label} Apply, Cancel and Play stay reachable after shrinking during the preview`);
-      await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the shrunken preview's Inspector tucks when it ends, with focus on the field`);
+      await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the shrunken preview's Inspector tucks when it ends, with focus on the field area`);
     }
     // A preview's Inspector takes the place of a Set list open over the field, with focus moved into it, so Apply and
     // Cancel stay reachable: when the preview starts on the short 1000 × 650 @150% and when the window shrinks to it
@@ -372,7 +401,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     await evaluate(`${editor}.dispatch('transform.cancel')`); await wait(`!${state}.ui.transformPreview`, 'preview in focus mode cancelled');
     await evaluate("document.querySelector('.field-stage__svg').focus()"); await key('Escape'); await wait("!document.querySelector('.studio--focus') && !document.querySelector('.workspace-overlay-dismiss')", 'one Escape leaves focus mode after the preview');
     await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
-    pass('an Inspector the writer opened over the field stays open with focus inside it after a preview that docked it (Cancel, coordinate Escape); shrinking during a preview (from 1366 × 768 or 1024 × 700 @150%) opens the Inspector over the field with Apply, Cancel and Play reachable and tucks it when the preview ends; a preview takes the place of a Set list open over the field at 1000 × 650 @150%, starting there or shrinking to it, and gives the Set list back afterwards; 1200 × 600 @150% opens the preview Inspector over the field; and focus mode never shows a scrim or overlay margin');
+    pass('an Inspector the writer opened over the field stays open with focus inside it after a preview that docked it (Cancel, coordinate Escape), and Play during such a preview at 1024 × 700 @150% closes it with focus on Pause; shrinking during a preview (from 1366 × 768 or 1024 × 700 @150%) opens the Inspector over the field with Apply, Cancel and Play reachable and tucks it when the preview ends; a preview takes the place of a Set list open over the field at 1000 × 650 @150%, starting there or shrinking to it, and gives the Set list back afterwards; 1200 × 600 @150% opens the preview Inspector over the field; and focus mode never shows a scrim or overlay margin');
   }
   for (const [width, height] of SIZES) for (const scale of SCALES) await verify(width, height, scale);
   pass('UI-scale matrix 900–1920 px × 100–150%: one-row header and transport, unobstructed Save/Undo/Redo/Export/play/set navigation/show count, no scrolling, and a drawn field ≥ 480 × 260 at 1366 × 768 @150% and 900 × 650 @100%');
@@ -456,9 +485,43 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     await nativeClick(plain); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text leaves More for the page');
     await key('Return'); await wait(`!${state}.ui.transformPreview && document.querySelector('.studio').dataset.transport==='compact'`, 'Enter applies the preview');
     assert.equal(await evaluate("!!document.activeElement?.closest('.transport-options')"), false, `Enter-apply keeps focus out of the transport: ${await active()}`);
+    await stays('a preview applied with Enter from the page keeps focus on the page');
+    await key('Space'); await wait(`${state}.playback.playing`, 'Space plays after Enter-apply'); await key('Space'); await wait(`!${state}.playback.playing`, 'Space pauses after Enter-apply');
     if (await evaluate("!!document.querySelector('.workspace-pane--overlay')")) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'Inspector overlay closed after the preview'); }
-    await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the applied preview undone');
+    await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the applied preview undone');
     pass('focus that left a transport option for the page stays there through a tier change, a dialog opened from the page and a preview applied with Enter, so Space plays and pauses');
+    // Focus a preview's Apply or Cancel held when it ended moves where Space plays and pauses, the selection stays and no
+    // performer readout appears: to the Inspector's Selection actions where the Inspector stays docked (1366 × 768 @100%),
+    // to the field area where it tucks again (1024 × 700 @150%); the focus outline shows only after a key. Enter on the
+    // page applies the preview and leaves focus there.
+    const all = await evaluate(`JSON.stringify(${state}.project.present.performers.map(p => p.id))`), count = JSON.parse(all).length;
+    for (const [width, height, scale, spot] of [[1366, 768, 1, '.selection-bar'], [1024, 700, 1.5, '.main-workspace > .field-container']]) {
+      await applySize(width, height, scale);
+      for (const end of ['pointer Apply', 'keyboard Apply', 'pointer Cancel', 'Enter on the page']) {
+        const label = `${width}x${height}@${scale} ${end}`, before = await evaluate(`${state}.project.revision`);
+        await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.setValue('selection','selectedIds',${all}); ${editor}.dispatch('transform.mirror')`);
+        await wait(`!!${state}.ui.transformPreview && document.activeElement?.getAttribute('aria-label')==='Transform operation'`, `${label} preview`);
+        const page = end === 'Enter on the page';
+        if (end === 'keyboard Apply') { await key('Tab', ['shift']); await key('Tab', ['shift']); assert.equal(await active(), 'Apply transform'); await key('Return'); }
+        else if (page) { await nativeClick(plain); await wait(onPage, `${label} focus on the page`); await key('Return'); }
+        else await nativeClick(byName(end === 'pointer Apply' ? 'Apply transform' : 'Cancel transform'));
+        await wait(`!${state}.ui.transformPreview && ${page ? onPage : `document.activeElement === document.querySelector(${JSON.stringify(spot)})`}`, `${label} ${page ? 'keeps focus on the page' : `moves focus to ${spot}`}`);
+        assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"), end === 'keyboard Apply', `${label} shows the focus outline only after a key`);
+        await key('Space'); await wait(`${state}.playback.playing`, `${label} Space plays`); await key('Space'); await wait(`!${state}.playback.playing`, `${label} Space pauses`);
+        assert.deepEqual(await evaluate(`[${state}.selection.selectedIds.length, !!document.querySelector('.field-readout')]`), [count, false], `${label} keeps the selection and shows no performer readout`);
+        await evaluate(`${editor}.dispatch('set.select',{index:${set}})${end === 'pointer Cancel' ? '' : `; ${editor}.dispatch('history.undo')`}`); await wait(`${state}.project.revision===${before}`, `${label} undone`);
+      }
+    }
+    // A formation preview started from the Command palette with focus on the page leaves it there, so Enter applies it.
+    await applySize(1366, 768, 1);
+    await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.setValue('selection','selectedIds',${state}.project.present.performers.slice(0,4).map(p=>p.id))`);
+    await nativeClick(plain); await wait(onPage, 'focus on the page for a palette preview'); await key('K', [mod]);
+    await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", 'palette for a formation preview');
+    await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Preview scatter formation' }); await key('Return');
+    await wait(`!!${state}.ui.formationPreview && !document.querySelector('dialog[open]') && ${onPage}`, 'a palette formation preview keeps focus on the page');
+    await key('Return'); await wait(`!${state}.ui.formationPreview && ${state}.project.revision!==${revision}`, 'Enter applies the palette formation preview');
+    await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the palette formation undone');
+    pass('when a preview ends by a pointer or keyboard Apply or by Cancel, focus moves to the Inspector\'s Selection actions at 1366 × 768 @100% and to the field area at 1024 × 700 @150%, with the outline only after a key, and Enter on the page applies it with focus kept there; Space then plays and pauses with the selection kept and no performer readout; a formation preview started from the Command palette keeps focus on the page, so Enter applies it');
   }
   // Auto-tucking and overlays are temporary: the saved layout and production are unchanged.
   assert.equal(await evaluate(`JSON.stringify({ layout: ${state}.preferences.value.workspaceLayout, cast: ${state}.preferences.value.castPanelOpen })`), layoutBefore);

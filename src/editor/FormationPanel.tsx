@@ -49,7 +49,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
       </div>)}
     </details>}
     <p className="section-description">{session ? `Preview · ${session.ids.length} selected · ${session.assignmentReviewed || session.assignmentConstraints ? 'reviewed mapping' : mode === 'shortest' ? stale ? 'order kept from the earlier shape · choose Shortest travel to re-solve' : 'shortest-travel order' : mode === 'position' ? 'positional order' : 'roster order'}` : 'Choose a shape to preview the explicit selection.'}</p>
-    <div className="formation-grid">{formations.map(f => <HelpButton key={f.kind} command="formation.preview" title={`${f.label} formation`}
+    <div className="formation-grid">{formations.map(f => <HelpButton pointerPassThrough key={f.kind} command="formation.preview" title={`${f.label} formation`}
       description={`Preview ${f.label.toLowerCase()} for the selected performers. Apply accepts; Cancel keeps their positions.`}
       aria-pressed={!session?.scatter && !session?.bezier && session?.kind === f.kind} className={!session?.scatter && !session?.bezier && session?.kind === f.kind ? 'active' : ''}
       disabled={c.pendingDraft || (!session && (c.readOnly || !c.selectedIds.length))} disabledReason={unavailable}

@@ -165,6 +165,12 @@ app.whenReady().then(async () => {
           await clickScrim();
           await wait(`!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}'`, 'a click beside the overlay closes it and focuses Show');
           assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"), false, 'a pointer click beside the overlay focuses Show without the keyboard focus style');
+          // So does a pointer click on the overlay's Close button after a keyboard open.
+          await key('Tab', ['shift']); await key('Tab'); await wait(`document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}' && document.activeElement.matches(':focus-visible')`, 'Show reached with Tab again');
+          await key('Return'); await wait("!!document.querySelector('.workspace-pane--overlay .workspace-pane-heading button:focus-visible')", 'narrow pane overlay from the keyboard for its Close button');
+          await control('.workspace-pane--overlay .workspace-pane-heading button');
+          await wait(`!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}'`, 'a click on Close closes the overlay and focuses Show');
+          assert.deepEqual(await evaluate(`[document.activeElement.matches(':focus-visible'), !!document.querySelector('[role=tooltip]')?.textContent.startsWith('Show ${hiddenPane}')]`), [false, false], 'a pointer click on Close focuses Show without the keyboard focus style or its help');
         } else await capture(`workspace-${width}-${zoom}.png`);
         if (castOverlay !== undefined) {
           await control('.workspace-tab[aria-label="Cast"]');
@@ -211,15 +217,16 @@ app.whenReady().then(async () => {
       await control('.workspace-pane--overlay .workspace-pane-heading button');
       await wait(`${state}.preferences.value.workspaceLayout.castCollapsed && !document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Cast'`, 'Collapse collapses the restored Cast again');
       await control('.workspace-tab[aria-label="Design"]'); await wait(`!${state}.ui.castPanelOpen`, 'Design after the restored Cast');
-      // A preview restores a collapsed Inspector in the saved layout and opens it over the field without a scrim; that
-      // placement ends with the preview, which leaves no overlay or scrim behind and focus on the field.
+      // A preview shows a collapsed Inspector over the field without a scrim, and without writing the saved layout; that
+      // placement ends with the preview, which leaves the Inspector collapsed, the Review preset chosen, no overlay or scrim
+      // behind and focus on the field area.
       await preset('Review');
       await evaluate(`${editor}.setValue('selection','selectedIds',[${state}.project.present.performers[0].id]); ${editor}.dispatch('transform.mirror')`);
-      await wait(`!!${state}.ui.transformPreview && !!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss')`, 'a preview restores the collapsed Inspector over the field');
+      await wait(`!!${state}.ui.transformPreview && !!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && ${state}.preferences.value.workspaceLayout.inspectorCollapsed`, 'a preview shows the collapsed Inspector over the field, leaving it collapsed in the saved layout');
       await control('[aria-label="Cancel transform"]');
-      await wait(`!${state}.ui.transformPreview && !document.querySelector('.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && !!document.activeElement?.closest('.field-stage__svg')`, 'the preview\'s Inspector placement ends with it, focus on the field');
-      assert.deepEqual(await evaluate(`(({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }) => ({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }))(${state}.preferences.value.workspaceLayout)`), { preset: 'custom', setsCollapsed: false, inspectorCollapsed: false, castCollapsed: false });
-      pass('a pane restored over the field by Show or the Cast tab offers Collapse, which restores the collapsed choice; a preview restores a collapsed Inspector over the field only while it runs');
+      await wait(`!${state}.ui.transformPreview && document.querySelector('#workspace-pane-inspector').hidden && !document.querySelector('.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && document.activeElement === document.querySelector('.main-workspace > .field-container')`, 'the preview\'s Inspector placement ends with it, focus on the field area');
+      assert.deepEqual(await evaluate(`(({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }) => ({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }))(${state}.preferences.value.workspaceLayout)`), { preset: 'review', setsCollapsed: false, inspectorCollapsed: true, castCollapsed: false });
+      pass('a pane restored over the field by Show or the Cast tab offers Collapse, which restores the collapsed choice; a preview shows a collapsed Inspector over the field only while it runs, leaving the Review preset unchanged');
       await viewport(1366, 768); await preset('Write');
       await control('.workspace-tab[aria-label="Cast"]');
       await control('[aria-label="Resize Cast"]'); await key('Left', ['shift']);

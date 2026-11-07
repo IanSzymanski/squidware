@@ -60,7 +60,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
   }
   return <aside className="inspector">
     <div className="inspector-header"><SlidersHorizontal size={16} /><h2>Inspector</h2><span>SET {String(index + 1).padStart(2, '0')}</span></div>
-    <div className="selection-bar" role="region" aria-label="Selection actions">
+    <div className="selection-bar" role="region" aria-label="Selection actions" tabIndex={-1}>
       <div className="selection-bar-heading"><strong className="selection-count" role="status">{selectedIds.length} selected</strong>
         {selectedIds.length > 0 ? <Button command="selection.clear" title="Clear selection" onClick={() => setSelectedIds([])}><X size={14} /></Button>
           : <HelpButton command="selection.all" title="Select all for editing" disabled={!project.performers.length} disabledReason="Add performers to the cast first." onClick={() => setSelectedIds(project.performers.map(p => p.id))}><Users size={13} />Select all</HelpButton>}
