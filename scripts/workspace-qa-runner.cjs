@@ -220,6 +220,17 @@ app.whenReady().then(async () => {
       await wait(`!${state}.ui.transformPreview && !document.querySelector('.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && !!document.activeElement?.closest('.field-stage__svg')`, 'the preview\'s Inspector placement ends with it, focus on the field');
       assert.deepEqual(await evaluate(`(({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }) => ({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }))(${state}.preferences.value.workspaceLayout)`), { preset: 'custom', setsCollapsed: false, inspectorCollapsed: false, castCollapsed: false });
       pass('a pane restored over the field by Show or the Cast tab offers Collapse, which restores the collapsed choice; a preview restores a collapsed Inspector over the field only while it runs');
+      // Unchecking a pane in the layout options collapses it, also Cast the writer showed where it docks only beside a
+      // narrower field: no overlay or scrim takes its place. Checking it again restores it by the same rules.
+      await viewport(1024, 700, 1.5);
+      const castDocked = "(p=>!!p&&!p.hidden&&!p.classList.contains('workspace-pane--overlay'))(document.querySelector('#workspace-pane-cast'))";
+      await control('.workspace-tab[aria-label="Cast"]'); await wait(`${castDocked} && document.querySelector('#workspace-pane-cast').contains(document.activeElement)`, 'the Cast tab docks Cast beside a narrower field');
+      const castOption = '#workspace-layout-options .layout-pane-option:has([aria-label="Cast width"]) input[type=checkbox]';
+      await openLayout(); await control(castOption);
+      await wait(`${state}.preferences.value.workspaceLayout.castCollapsed && document.querySelector('#workspace-pane-cast').hidden && !document.querySelector('.workspace-pane--overlay, .workspace-overlay-dismiss')`, 'unchecking Cast collapses it without an overlay or scrim');
+      await control(castOption); await wait(`!${state}.preferences.value.workspaceLayout.castCollapsed && ${castDocked}`, 'checking Cast again docks it');
+      await control('[aria-label="Close layout options"]'); await control('.workspace-tab[aria-label="Design"]'); await wait(`!${state}.ui.castPanelOpen`, 'Design after the layout options');
+      pass('unchecking Cast in the layout options collapses Cast the writer showed, with no overlay or scrim, and checking it docks it again');
       await viewport(1366, 768); await preset('Write');
       await control('.workspace-tab[aria-label="Cast"]');
       await control('[aria-label="Resize Cast"]'); await key('Left', ['shift']);

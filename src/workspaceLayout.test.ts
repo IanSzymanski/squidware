@@ -81,6 +81,8 @@ describe('workspace layout boundaries', () => {
     expect(isCrowded(nextCrowdingProbe(short, key, false, -30), key)).toBe(true);
     expect(nextCrowdingProbe(short, key, false, 40)).toEqual({ key, docked: 38, idle: 40 }); expect(isCrowded(nextCrowdingProbe(short, key, false, 40), key)).toBe(false);
     expect(nextCrowdingProbe(fits, key, true, 40)).toEqual({ key, docked: 40, idle: null });
+    // A smaller docked measurement (content that settled after the one that crowded it) leaves the decision as it was.
+    const grown = nextCrowdingProbe(fits, key, true, 40); expect(nextCrowdingProbe(grown, key, true, 20)).toBe(grown);
     // A 3D view whose camera controls settle a frame after each change: measurements that lag a frame behind settle on
     // one placement instead of alternating.
     let lagging: CrowdingProbe | null = null; const placements: boolean[] = [];
