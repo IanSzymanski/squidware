@@ -40,7 +40,9 @@
 .workspace-pane--overlay.workspace-pane--left { left: 30px; }
 .workspace-pane--overlay.workspace-pane--right { right: 30px; }
 .workspace-overlay-dismiss { position: absolute; inset: 0; z-index: 14; background: var(--surface-muted); }
-/* During a preview the field fits beside a panel open over it, so the whole preview stays in view (#178). */
+/* During a preview the field fits beside a panel open over it, and the panel ends above the transport row, so the
+   preview, its banner, Apply/Cancel and the whole transport row stay in view (#178). */
+.studio .studio-body[data-preview-overlay] .workspace-pane--overlay { bottom: var(--transport-height, 0px); }
 .studio .studio-body[data-preview-overlay=right] .field-container { margin-right: calc(var(--overlay-width) + 12px); }
 .studio .studio-body[data-preview-overlay=left] .field-container { margin-left: calc(var(--overlay-width) + 12px); }
 .studio--focus .app-header, .studio--focus .statusbar, .studio--focus .workspace-pane, .studio--focus .workspace-pane-closed, .studio--focus .canvas-toolbar, .studio--focus .field-legend { display: none; }

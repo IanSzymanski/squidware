@@ -89,6 +89,20 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`${state}.ui.castPanelOpen`), true); assert.equal(await evaluate(`${state}.ui.focusMode`), false);
       await wait("document.querySelector('.cast-dock')?.getBoundingClientRect().width===360", 'Cast width restored across process restart');
       await capture('workspace-restored.png'); pass('intentional widths, panel choice and collapse states survive a fresh desktop process; focus starts escapable');
+      // #178: Cast restored at startup beside the 3D view of a 1024 × 700 window at 150% (a matrix size) never opens a
+      // scrim: it docks without scrolling the workspace or starts tucked behind Show Cast. Choosing 2D, where it fits,
+      // then docks it with no scrolling: the crowding decision belongs to the view it was measured in.
+      await viewport(1024, 700);
+      await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1.5})); ${editor}.setValue('ui','view','3d')`);
+      await wait(`${state}.preferences.status==='saved'`, '150% UI scale and the 3D view saved');
+      window.webContents.reload();
+      await wait(`!!${editor} && ${state}.preferences.status==='saved' && ${state}.ui.castPanelOpen && ${state}.ui.view==='3d' && !!document.querySelector('.field-container.is-3d') && document.querySelector('.studio').clientWidth<700`, 'Cast, the 3D view and 150% restored at startup');
+      const cast = "(()=>{const p=document.querySelector('#workspace-pane-cast'),b=document.querySelector('.studio-body'),s=document.querySelector('[aria-label=\"Show Cast\"]')?.getBoundingClientRect(),hit=s&&document.elementFromPoint(s.x+s.width/2,s.y+s.height/2);return [p.hidden?'tucked':p.classList.contains('workspace-pane--overlay')?'over':'docked',b.scrollHeight-b.clientHeight<=1,!!hit?.closest('[aria-label=\"Show Cast\"]'),!!document.querySelector('.workspace-overlay-dismiss')].join()})()";
+      const settled = await evaluate(`new Promise(resolve=>{const out=[];const tick=()=>{out.push(${cast});if(out.length<6)requestAnimationFrame(tick);else resolve(out)};requestAnimationFrame(tick)})`);
+      assert.ok(['docked,true,false,false', 'tucked,true,true,false', 'tucked,false,true,false'].includes(settled.at(-1)) && new Set(settled.slice(-3)).size === 1, `Cast restored beside the 3D view docks without scrolling or starts tucked behind Show Cast, with no scrim: ${settled.join(' | ')}`);
+      await control('[aria-label="2D field"]');
+      await wait(`${cast}==='docked,true,false,false'`, 'choosing 2D docks the restored Cast without scrolling the workspace');
+      await capture('workspace-restored-cast-2d.png'); pass('Cast restored at startup beside the 3D view at 1024 × 700 @150% shows no scrim and docks without scrolling once 2D is chosen');
     } else {
       const original = await evaluate(`${state}.project`);
       const initial = await measure('write'); assert.ok(initial.fieldHeight >= 470, JSON.stringify(initial)); await capture('workspace-write.png');

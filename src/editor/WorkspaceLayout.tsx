@@ -85,12 +85,15 @@ export function useWorkspaceLayout(controller: EditorController) {
   // Measured where the demand decides whether the panel docks: after every render, and whenever the workspace content
   // changes size, since a 3D view or the timeline can grow after the render that docked the panel. `need` is how far
   // the content overflows once the field is at its floor (negative: room to spare). Cast that holds focus opens over
-  // the field when it becomes crowded, rather than tucking away with focus inside it.
+  // the field when it becomes crowded, rather than tucking away with focus inside it. The same measurement gives the
+  // transport row's height, above which a panel open over the field during a preview ends.
   const docksOnDemand = (side === 'cast' || preview) && !focusMode && !fitWorkspaceLayout(layout, available, side, true).sideHidden && idle.sideHidden;
   const crowding = useRef(() => {});
   useLayoutEffect(() => {
     crowding.current = () => {
-      const node = body.current; if (!node || !docksOnDemand) return;
+      const node = body.current; if (!node) return;
+      if (preview && overlay) node.style.setProperty('--transport-height', `${node.querySelector<HTMLElement>('.main-workspace > .timeline > .transport')?.offsetHeight ?? 0}px`);
+      if (!docksOnDemand) return;
       const field = node.querySelector<HTMLElement>('.main-workspace > .field-container');
       const need = node.scrollHeight - node.clientHeight - (field ? field.offsetHeight - (parseFloat(getComputedStyle(field).minHeight) || 0) : 0);
       const next = nextCrowdingProbe(probe, crowdingKey, demanded, need);
@@ -123,6 +126,9 @@ export function useWorkspaceLayout(controller: EditorController) {
   useEffect(() => {
     function escape(event: KeyboardEvent) {
       if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.paletteOpen || controller.store.getState().ui.dialog || controller.store.getState().ui.selectionToolsOpen) return;
+      if (event.target instanceof Element && event.target.closest('.field-stage__svg')?.querySelector('[data-selection-lasso]')) return;
+      // An open overflow menu closes first and returns focus to its trigger, also during a preview.
+      if (event.target instanceof Element && event.target.closest('[data-overflow-open], [data-escape-scope]')) return;
       if (overlay && !menu && !canChangeLayout(controller.store.getState())) {
         const s = controller.store.getState();
         const input = event.target instanceof HTMLElement && (event.target.matches('input, textarea, select') || event.target.isContentEditable);
@@ -130,9 +136,6 @@ export function useWorkspaceLayout(controller: EditorController) {
         if (cancel && !input && !s.ui.pendingDraft) { event.preventDefault(); event.stopPropagation(); controller.dispatch(cancel); }
         return;
       }
-      if (event.target instanceof Element && event.target.closest('.field-stage__svg')?.querySelector('[data-selection-lasso]')) return;
-      // An open overflow menu closes first and returns focus to its trigger.
-      if (event.target instanceof Element && event.target.closest('[data-overflow-open], [data-escape-scope]')) return;
       if (menu || overlay || controller.store.getState().ui.focusMode) {
         event.preventDefault(); event.stopPropagation();
         if (menu) { setMenu(false); requestAnimationFrame(() => focusFirst(...layoutTrigger)); }
