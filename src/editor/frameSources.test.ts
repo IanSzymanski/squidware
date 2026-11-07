@@ -74,6 +74,57 @@ it('lets a visible 3D window drive frames while the editor window is stopped or 
   loop.cancel(); remove();
 });
 
+it('lets a slow 3D window drive frames while a throttled editor still paints about once a second', () => {
+  const editor = queue(), popout = queue(), remove = addFrameSource(popout);
+  const loop = playback(editor);
+  for (let frame = 1; frame <= 3; frame++) { clock += 16; popout.tick(); editor.tick(); }
+  expect(loop.runs).toBe(3);
+  /** Runs per frame over one second: the 3D window paints `frames` times, then the throttled editor paints once. */
+  const second = (frames: number) => {
+    const runs: number[] = [], step = (tick: () => void) => { const before = loop.runs; tick(); runs.push(loop.runs - before); };
+    for (let i = 0; i < frames; i++) step(() => { clock += 1000 / frames; popout.tick(); });
+    step(() => { clock += 3; editor.tick(); });
+    return runs;
+  };
+  // A heavy 3D window paints five frames a second while the editor gets one: the 3D window takes over within that second
+  // (THROTTLED_FRAMES frames over EDITOR_THROTTLED_MS), then every 3D frame shows a new count and editor frames run none.
+  expect(second(5)).toEqual([0, 0, 0, 1, 1, 0]);
+  for (let i = 0; i < 3; i++) expect(second(5)).toEqual([1, 1, 1, 1, 1, 0]);
+  // Shown again: the editor takes the clock back at its first frame, and no vsync runs twice.
+  const perVsync: number[] = [];
+  for (let frame = 0; frame < 10; frame++) { const start = loop.runs; clock += 16.7; popout.tick(); clock += 3; editor.tick(); perVsync.push(loop.runs - start); }
+  expect(perVsync).toEqual(Array(10).fill(1));
+  // Throttled again, the editor hands over the same way.
+  expect(second(5)).toEqual([0, 0, 0, 1, 1, 0]);
+  // Slowing down, the 3D window keeps the clock while it paints at least twice per throttled editor frame.
+  expect(second(3)).toEqual([1, 1, 1, 0]); expect(second(2)).toEqual([1, 1, 0]);
+  // The 3D window stops painting (hidden) while the editor stays throttled: each editor frame runs again.
+  for (let frame = 1; frame <= 3; frame++) { const before = loop.runs; clock += 1000; editor.tick(); expect(loop.runs).toBe(before + 1); }
+  // A 3D window nearly as slow as the throttled editor leaves the editor the clock.
+  for (let i = 0; i < 3; i++) expect(second(3)).toEqual([0, 0, 0, 1]);
+  loop.cancel(); remove();
+});
+
+it('starts each playback loop with the editor as the clock, whatever a 3D window drove before the pause', () => {
+  const editor = queue(), popout = queue(), remove = addFrameSource(popout);
+  let loop = playback(editor);
+  clock += 16; editor.tick();
+  // Minimized during playback: the 3D window drives, then playback pauses and the editor is shown again.
+  for (let frame = 0; frame < 20; frame++) { clock += 16; popout.tick(); }
+  expect(loop.runs).toBeGreaterThan(10);
+  loop.cancel(); clock += 2000;
+  // Resumed with a heavy show: the editor paints every 270 ms, the 3D window every 200 ms. Only editor frames run.
+  loop = playback(editor);
+  const next = { editor: clock + 270, popout: clock + 200 }, ran: string[] = [];
+  for (let event = 0; event < 30; event++) {
+    const which = next.editor <= next.popout ? 'editor' : 'popout', before = loop.runs;
+    clock = next[which]; next[which] += which === 'editor' ? 270 : 200;
+    (which === 'editor' ? editor : popout).tick(); if (loop.runs > before) ran.push(which);
+  }
+  expect(ran.length).toBeGreaterThan(10); expect(ran).toEqual(ran.map(() => 'editor'));
+  loop.cancel(); remove();
+});
+
 it('cancels every pending request, including a 3D window frame re-requested after the editor ran', () => {
   const editor = queue(), popout = queue(), remove = addFrameSource(popout), callback = vi.fn();
   clock += 16; const first = requestFrame(callback, editor); editor.tick(); first();
