@@ -37,7 +37,7 @@ Persisted choices:
 | Editing | Print defaults: paper; rehearsal packet | Letter landscape; field charts; A4 and coordinate sheets also available |
 | Shortcuts | Keyboard shortcut overrides | Standard bindings; conflict/reserved-key checks, clear and reset. [Details](COMMAND_PALETTE.md). |
 
-The desktop app also remembers the [3D window's](USER_GUIDE.md#3d-window) position, size and display. Main places those bounds fully on a connected display before opening the window, or centers it on the main display when the saved display is gone. Without a usable display id it uses the display under the saved window. Reset defaults forgets them.
+The desktop app also remembers the [3D window's](USER_GUIDE.md#3d-window) position, size and display. Main places those bounds fully on a connected display before opening the window, or centers it on the main display when the saved display is gone. Reset defaults forgets them.
 
 Toolbar changes to the persisted view, toggles, zoom and selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
 

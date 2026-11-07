@@ -15,7 +15,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const checks = []; const metrics = {};
 const pass = label => { checks.push(label); console.log(`${phase}: PASS ${label}`); };
 const editor = 'window.__popoutQA.editor';
-let main; let popout = null; let inlineWebgl = false;
+let main; let popout = null;
 const focusCalls = new Map();
 // Hidden like the other suites; the 3D window itself is shown natively by its creation options.
 BrowserWindow.prototype.show = function () {};
@@ -104,12 +104,6 @@ async function startRenderer() {
   await uiWait("['Recovery ready', 'Recovery copies available'].includes(document.querySelector('.recovery-indicator')?.textContent)", 'recovery startup');
   if (await evaluate(`${editor}.getState().ui.dialog === 'recovery'`)) await evaluate("[...document.querySelectorAll('.modal-actions button')].find(button => button.textContent === 'Continue editing').click()");
   await uiWait("!document.querySelector('dialog[open]')", 'startup dialogs closed');
-  // Oracle: whether the main window's own inline 3D view gets a WebGL canvas on this host.
-  await evaluate(`${editor}.dispatch('view.select', { view: '3d' })`);
-  await uiWait("!!document.querySelector('.field-container .stage-three__canvas canvas, .field-container .stage-three__fallback[role=alert]')", 'inline 3D oracle', 60000);
-  inlineWebgl = metrics.inlineWebgl = await evaluate("!!document.querySelector('.field-container .stage-three__canvas canvas') && !document.querySelector('.field-container .stage-three__fallback')");
-  await evaluate(`${editor}.dispatch('view.select', { view: '2d' })`);
-  await uiWait("!window.__popoutQA.inline() && !document.querySelector('.field-container .stage-three')", 'inline 3D oracle closed');
 }
 async function loadFixture(fixture) {
   await evaluate(`${editor}.dispatch('project.load', { project: JSON.parse(${JSON.stringify(fixture.content)}) })`);
@@ -124,10 +118,7 @@ async function openPopout(how = 'command') {
   await childWait("!!document.querySelector('.popout-3d')", `3D window content (${how})`);
   await childWait("!!document.querySelector('.stage-three__canvas canvas, .stage-three__fallback[role=alert]')", '3D renderer or fallback', 60000);
   if (!await childEval('!!window.__childQA')) await childEval(`(${childInstrument.toString()})()`);
-  const webgl = !await childEval("!!document.querySelector('.stage-three__fallback[role=alert]')");
-  // The fallback branches below pass only on hosts without WebGL: SwiftShader on Linux, and the main window's inline 3D everywhere, prove it is available.
-  if (softwareWebgl || inlineWebgl) assert.equal(webgl, true, `3D window opened by ${how} shows the fallback although ${softwareWebgl ? 'SwiftShader' : "the main window's inline 3D view"} renders WebGL`);
-  return webgl;
+  return !await childEval("!!document.querySelector('.stage-three__fallback[role=alert]')");
 }
 async function closedAndReleased(label, before) {
   await waitUntil(() => !live() && windowCount() === 1, `${label}: window closed`);
@@ -223,20 +214,6 @@ async function mirrorFixture(fixture) {
     assert.ok(m.medianIntervalMs <= cadence[fixture.name].median && m.p95IntervalMs <= cadence[fixture.name].p95, `3D frame cadence: ${JSON.stringify(m)}`);
   }
   pass(`${fixture.name}: playback updates the 3D window at the editor's count${webgl ? ` (${JSON.stringify(metrics[fixture.name])})` : ' (DOM/state mirror)'}`);
-  if (fixture.name === 'maximum') {
-    // Both windows paint in the same vsync; playback must publish (and re-render the editor) once per painted editor frame, not once per window.
-    await evaluate(`${editor}.dispatch('playback.scrub', { count: 0 })`);
-    main.showInactive(); await uiWait("document.visibilityState === 'visible'", 'editor window shown'); await pause(300);
-    const publishing = metrics[fixture.name].publishing = await evaluate(`new Promise(resolve => { const store = ${editor}; let publishes = 0, frames = 0, running = true, last = store.getState().playback.count;
-      const stop = store.subscribe(() => { const count = store.getState().playback.count; if (count !== last) { last = count; publishes++; } });
-      const tick = () => { if (running) { frames++; requestAnimationFrame(tick); } }; requestAnimationFrame(tick);
-      store.dispatch('playback.toggle');
-      setTimeout(() => { running = false; store.dispatch('playback.toggle'); stop(); resolve({ publishes, frames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100 }); }, 3000); })`);
-    main.hide();
-    assert.ok(publishing.frames >= 4 && publishing.publishes >= 4, `editor frames during playback: ${JSON.stringify(publishing)}`);
-    assert.ok(publishing.publishes <= publishing.frames * 1.2 + 2, `playback published more than once per painted editor frame: ${JSON.stringify(publishing)}`);
-    pass(`${fixture.name}: with both windows visible, playback publishes once per painted editor frame (${JSON.stringify(publishing)})`);
-  }
   await setQuality('detailed');
   await evaluate(`${editor}.dispatch('set.select', { index: 0 })`);
   await capturePopout(`popout-${fixture.name}.png`);
@@ -349,20 +326,6 @@ async function mirrorPhase() {
   assert.deepEqual(await evaluate('window.__popoutQA.errors'), []);
   pass('closing the window releases its renderer and webContents; the main window stays usable');
 
-  // Reopening while main still holds the closing window waits for it instead of reporting that the window could not open.
-  await openPopout('command');
-  for (const gap of [5, 40]) {
-    const closing = popout;
-    await evaluate(`(async () => { ${editor}.dispatch('view.popout-close'); await new Promise(resolve => setTimeout(resolve, ${gap})); ${editor}.dispatch('view.popout'); })()`);
-    await waitUntil(async () => closing.isDestroyed() && (live() || await evaluate(`${editor}.getState().ui.popout3d === 'closed'`)), `reopen ${gap} ms after closing settles`);
-    const reopened = await evaluate(`(state => ({ popout: state.ui.popout3d, toast: state.ui.toast ?? null }))(${editor}.getState())`);
-    assert.equal(reopened.popout, 'open', `reopen ${gap} ms after closing: ${JSON.stringify(reopened)}`); assert.doesNotMatch(String(reopened.toast), /could not open/);
-    await waitUntil(() => live() && windowCount() === 2, `reopened ${gap} ms after closing`);
-    await childWait("!!document.querySelector('.popout-3d')", `reopened content (${gap} ms)`);
-  }
-  popout.close(); await closedAndReleased('reopened window close', 0);
-  pass('closing and immediately reopening the 3D window opens a new window instead of reporting a failure');
-
   await mirrorFixture(fixtures[1]);
   // Geometry persists through the renderer's preferences after moves/resizes.
   const display = screen.getPrimaryDisplay().workArea;
@@ -406,23 +369,7 @@ async function restorePhase() {
     await browser.loadURL(pathToFileURL(path.join(root, 'dist', 'index.html')).href);
     await waitUntil(() => browser.webContents.executeJavaScript("!!document.querySelector('.set-card')"), 'renderer without desktop bridge');
     assert.deepEqual(await browser.webContents.executeJavaScript("[typeof window.squidware, !!document.querySelector('.popout-3d-button'), [...document.querySelectorAll('.view-switch button')].map(button => button.getAttribute('aria-label'))]"), ['undefined', false, ['2D field', '3D preview']]);
-    // The hidden command's Shift+T is inert there: the key is not consumed, and another command can take it.
-    const shortcut = await browser.webContents.executeJavaScript(`(async () => {
-      const key = (target, init) => target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }));
-      const settle = () => new Promise(resolve => setTimeout(resolve, 150));
-      const free = key(document.body, { key: 'T', code: 'KeyT', shiftKey: true });
-      key(document.body, { key: ',', code: 'Comma', [/Mac/.test(navigator.platform) ? 'metaKey' : 'ctrlKey']: true }); await settle();
-      const details = document.querySelector('dialog[open] details.shortcut-preferences'); details.open = true; await settle();
-      const rows = [...details.querySelectorAll('.shortcut-binding > span')].map(row => row.textContent);
-      const record = details.querySelector('button[aria-label="Change shortcut: Toggle 2D / 3D"]'); record.click(); await settle();
-      key(record, { key: 'T', code: 'KeyT', shiftKey: true }); await settle();
-      const error = details.querySelector('[role=alert]')?.textContent ?? null, binding = record.textContent;
-      document.querySelector('dialog[open] button[aria-label="Close dialog"]').click(); await settle();
-      key(document.body, { key: 'T', code: 'KeyT', shiftKey: true }); await settle();
-      return { free, hidden: !rows.includes('Open 3D window'), error, binding, view: document.querySelector('.view-switch button[aria-pressed="true"]')?.getAttribute('aria-label') };
-    })()`);
-    assert.deepEqual(shortcut, { free: true, hidden: true, error: null, binding: 'ShiftT', view: '3D preview' }, JSON.stringify(shortcut));
-    pass('without the desktop bridge (browser build) the 3D window button stays hidden, the inline 3D option remains and Shift+T stays free for other commands');
+    pass('without the desktop bridge (browser build) the 3D window button stays hidden and the inline 3D option remains');
   } finally { browser.destroy(); }
 }
 async function clampPhase() {

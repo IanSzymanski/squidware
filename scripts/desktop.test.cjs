@@ -343,25 +343,6 @@ test('3D window geometry is placed on a connected display; focus requests need t
   assert.deepEqual(JSON.parse(JSON.stringify(h.messages.filter(([channel]) => channel === 'squidware:preview-bounds'))), [['squidware:preview-bounds', { x: 1500, y: 40, width: 800, height: 500, displayId: 20 }]]);
 });
 
-test('3D window geometry survives X11 display ids above 2^53, including identical monitors that share a rounded id', async t => {
-  // Electron 44 on X11 reports EDID-derived ids such as Samsung's 21442280834799420; 2^54 and 2^54 + 1 round to the same double.
-  const samsung = 21442280834799420, twin = 2 ** 54;
-  const displays = [{ id: twin, workArea: { x: 0, y: 0, width: 1920, height: 1080 } }, { id: twin + 1, workArea: { x: 1920, y: 0, width: 1920, height: 1080 } }, { id: samsung, workArea: { x: 3840, y: 0, width: 2560, height: 1440 } }];
-  const h = await harness(t, { displays });
-  const open = () => (({ x, y, width, height }) => ({ x, y, width, height }))(h.window.openWindowHandler({ url: 'about:blank', frameName: 'squidware-3d-preview', features: 'popup', disposition: 'new-window' }).overrideBrowserWindowOptions);
-  const { child, details } = previewChild();
-  h.window.contentsEvents.get('did-create-window')(child, details);
-  child.bounds = { x: 4000, y: 120, width: 900, height: 600 };
-  child.events.get('close')(); child.events.get('closed')();
-  assert.deepEqual(JSON.parse(JSON.stringify(h.messages.at(-1))), ['squidware:preview-bounds', { x: 4000, y: 120, width: 900, height: 600, displayId: samsung }]);
-  const { defaultPreferences } = require('../electron/preferences-codec.cjs');
-  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 4000, y: 120, width: 900, height: 600, displayId: samsung } });
-  assert.deepEqual((await h.invoke('read-preferences')).preferences.popout3dBounds, { x: 4000, y: 120, width: 900, height: 600, displayId: samsung }, 'the saved id is kept');
-  assert.deepEqual(open(), { x: 4000, y: 120, width: 900, height: 600 }, 'the window reopens where it was');
-  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 2400, y: 200, width: 800, height: 500, displayId: twin + 1 } });
-  assert.deepEqual(open(), { x: 2400, y: 200, width: 800, height: 500 }, 'the twin under the saved window wins');
-});
-
 test('unsaved close guard respects cancel and explicit discard', async t => {
   const h = await harness(t);
   h.send('set-dirty', true);
@@ -447,9 +428,7 @@ test('preload exposes only fixed methods and strips Electron event objects from 
   const stopBounds = bridge.onPreviewWindowBounds(value => bounds.push(value));
   listener({ secret: 'native event' }, { x: 1, y: 2, width: 800, height: 600, displayId: 3, extra: 'dropped' });
   listener({}, { x: 'far', y: 2, width: 800, height: 600 }); listener({}, null); listener({}, { x: 1, y: 2, width: 800, height: 600, displayId: 1.5 });
-  // X11 display ids derived from a monitor's EDID exceed 2^53; Electron reports them as rounded integers.
-  listener({}, { x: 5, y: 6, width: 900, height: 600, displayId: 21442280834799420 });
-  assert.deepEqual(JSON.parse(JSON.stringify(bounds)), [{ x: 1, y: 2, width: 800, height: 600, displayId: 3 }, { x: 1, y: 2, width: 800, height: 600 }, { x: 5, y: 6, width: 900, height: 600, displayId: 21442280834799420 }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(bounds)), [{ x: 1, y: 2, width: 800, height: 600, displayId: 3 }]);
   stopBounds(); assert.equal(removed, true);
   assert.throws(() => bridge.onPreviewWindowBounds('not a function'), /callback/);
 });

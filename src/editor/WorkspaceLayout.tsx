@@ -74,7 +74,7 @@ export function useWorkspaceLayout(controller: EditorController) {
       }
       if (event.target instanceof Element && event.target.closest('.field-stage__svg')?.querySelector('[data-selection-lasso]')) return;
       // An open overflow menu closes first and returns focus to its trigger.
-      if (event.target instanceof Element && event.target.closest('[data-overflow-open], [data-escape-scope]')) return;
+      if (event.target instanceof Element && event.target.closest('[data-overflow-open]')) return;
       if (menu || overlay || controller.store.getState().ui.focusMode) {
         event.preventDefault(); event.stopPropagation();
         if (menu) { setMenu(false); requestAnimationFrame(() => focusFirst(...layoutTrigger)); }

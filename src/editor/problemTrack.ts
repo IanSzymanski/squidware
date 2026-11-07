@@ -99,22 +99,20 @@ export function findingName(issue: TransitionIssue, labels: PerformerLabels): st
   return `${typeName(issue)}${quantity ? ` ${quantity}` : ''} · ${issue.performerIds.map(id => label(id, labels)).join(', ')} · count ${wholeCount(at(issue))}`;
 }
 const countRange = (first: number, last: number) => wholeCount(first) === wholeCount(last) ? `count ${wholeCount(first)}` : `counts ${wholeCount(first)}–${wholeCount(last)}`;
-/** “12 problems (9 spacing, 3 stride) · B4, B5, W2 and others · counts 30–34”; a single finding uses its own name.
- * An abbreviated badge leads the name (“12k · 12345 spacing problems · …”), so the visible label is in the name (WCAG 2.5.3). */
+/** “12 problems (9 spacing, 3 stride) · B4, B5, W2 and others · counts 30–34”; a single finding uses its own name. */
 export function clusterName(cluster: ProblemCluster, labels: PerformerLabels): string {
   if (cluster.size === 1) return findingName(cluster.parts[0].issues[cluster.parts[0].from], labels);
-  const stride = cluster.size - cluster.spacing, badge = clusterBadge(cluster.size);
+  const stride = cluster.size - cluster.spacing;
   const kinds = !stride ? `${cluster.size} spacing problems` : !cluster.spacing ? `${cluster.size} stride problems` : `${cluster.size} problems (${cluster.spacing} spacing, ${stride} stride)`;
-  return `${badge === String(cluster.size) ? '' : `${badge} · `}${kinds} · ${cluster.people.map(id => label(id, labels)).join(', ')}${cluster.others ? ' and others' : ''} · ${countRange(cluster.first, cluster.last)}`;
+  return `${kinds} · ${cluster.people.map(id => label(id, labels)).join(', ')}${cluster.others ? ' and others' : ''} · ${countRange(cluster.first, cluster.last)}`;
 }
 /** Severity text, the non-color counterpart of the marker glyph or badge. */
 export function clusterSeverity(cluster: ProblemCluster): string {
   const warnings = cluster.size - cluster.danger;
   return cluster.size === 1 ? cluster.danger ? 'Danger' : 'Warning' : [cluster.danger && `${cluster.danger} danger`, warnings && `${warnings} warning`].filter(Boolean).join(', ');
 }
-/** Visible group size that fits one target: exact below 1000, whole thousands (rounded down) below 100,000, then “99k+”,
- * so it is never numerically wrong. The name starts with an abbreviated badge and carries the exact size. */
-export const clusterBadge = (size: number) => size < 1000 ? String(size) : size < 100000 ? `${Math.floor(size / 1000)}k` : '99k+';
+/** Visible group size in at most three characters, so it fits one target; the name carries the exact size. */
+export const clusterBadge = (size: number) => size < 1000 ? String(size) : `${Math.min(99, Math.floor(size / 1000))}k`;
 
 /** Roving focus within the problem row (horizontal) or a group's list (vertical). Null leaves the key to the browser. */
 export function rovingIndex(key: string, index: number, count: number, orientation: 'horizontal' | 'vertical'): number | null {
