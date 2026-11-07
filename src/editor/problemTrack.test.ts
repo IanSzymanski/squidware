@@ -3,7 +3,7 @@ import { analyzeTransition, createBlankProject } from '../domain';
 import type { MoveCheck } from '../analysis/show';
 import type { TransitionIssue } from '../types';
 import type { Finding } from '../analysis/show';
-import { BADGE_CAP, CAPPED_TARGET, PROBLEM_TARGET, activeCluster, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, findingQuantity, performerLabels, problemClusters, rovingIndex, wholeCount, type ProblemCluster } from './problemTrack';
+import { BADGE_CAP, CAPPED_TARGET, PROBLEM_TARGET, activeCluster, awaitsRecheck, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, findingQuantity, performerLabels, problemClusters, rovingIndex, wholeCount, type ProblemCluster } from './problemTrack';
 
 const issue = (atCount: number, severity: 'danger' | 'warning' = 'warning', type: 'collision' | 'stride' = 'collision', ids = type === 'collision' ? ['a', 'b'] : ['a']): TransitionIssue =>
   ({ type, severity, performerIds: ids, message: type === 'collision' ? `A / B: 0.75 yards apart near count ${atCount}.` : 'A: 6.0 yards in 2 counts; 1.7 steps per 5 yards. Limit 1.25 yd/count (minimum 4 steps per 5 yd); base.', atCount });
@@ -89,6 +89,25 @@ describe('timeline problem clusters', () => {
     expect(problemClusters(at(BADGE_CAP - 1), 0, 64, 640).map(c => [c.width, c.size])).toEqual([[PROBLEM_TARGET, BADGE_CAP - 1], [34, 2], [PROBLEM_TARGET, 1]]);
   });
 
+  // The timeline viewport pads the track by 14 px and clips there: 32 px markers centered on the window's ends would lose
+  // 2 px and the outer side of their focus outline, so they stop half a 24 px target past the track, as 24 px markers do.
+  // (At 1366 px the capped group already spans 32 px, so that row keeps its 24 px tiling.)
+  it('keeps the wider markers of a capped row within half a target of the track at the ends of the count window', () => {
+    const capped = Array.from({ length: BADGE_CAP }, (_, i) => ({ ...issue(0), performerIds: [`p${i % 9}`, `p${(i + 1) % 9}`] }));
+    const moves = [move(1, [...capped, issue(.5), issue(30)]), move(2, [issue(63.8, 'danger'), issue(64)])];
+    for (const width of [320, 640, 1366]) {
+      const row = problemClusters(moves, 0, 64, width);
+      expect(row.reduce((n, c) => n + c.size, 0)).toBe(BADGE_CAP + 4);
+      expect(row[0].left).toBeCloseTo(-PROBLEM_TARGET / 2); expect(row.at(-1)!.left + row.at(-1)!.width).toBeCloseTo(width + PROBLEM_TARGET / 2);
+      for (const [i, c] of row.entries()) {
+        expect(c.width).toBeGreaterThanOrEqual((c.size >= BADGE_CAP || width < 1000 ? CAPPED_TARGET : PROBLEM_TARGET) - 1e-9);
+        expect(c.left).toBeGreaterThanOrEqual(-PROBLEM_TARGET / 2 - 1e-9); expect(c.left + c.width).toBeLessThanOrEqual(width + PROBLEM_TARGET / 2 + 1e-9);
+        if (i) expect(row[i - 1].left + row[i - 1].width).toBeLessThanOrEqual(c.left + 1e-9);
+        expect(clusterFindings(c).map(f => f.issue.atCount! / 64 * width).filter(x => x < c.left - 1e-9 || x > c.left + c.width + 1)).toEqual([]);
+      }
+    }
+  });
+
   it('bounds markers for very dense shows', () => {
     const moves = show(20000), clusters = problemClusters(moves, 0, 192, 769);
     expect(clusters.reduce((n, c) => n + c.size, 0)).toBe(20000);
@@ -171,5 +190,15 @@ describe('problem row keyboard', () => {
     const restored = narrow[activeCluster(narrow, { key: 'gone', count: target.first })];
     expect(restored.first <= target.first && restored.last >= target.first || narrow.every(c => Math.min(Math.abs(c.first - target.first), Math.abs(c.last - target.first)) >= Math.min(Math.abs(restored.first - target.first), Math.abs(restored.last - target.first)))).toBe(true);
     expect(activeCluster(wide, { key: 'gone', count: 1e6 })).toBe(wide.length - 1);
+  });
+  // An empty row keeps focus for the remembered marker only while its own moves are rechecked: a count window scrolled
+  // past every finding (playback) leaves it empty too, while other moves are pending, and must let focus go.
+  it('waits for a recheck only under the remembered marker', () => {
+    const [group] = problemClusters([move(1, [issue(2)]), move(2, [issue(2.2)]), move(3, [issue(60)])], 0, 64, 640), moves = (pending: string[]) => ['m1', 'm2', 'm3', 'm4'].map((id, i) => ({ ...move(i + 1, []), status: pending.includes(id) ? 'pending' as const : id === 'm4' ? 'error' as const : 'ready' as const }));
+    const remembered = { key: group.key, count: group.first, moves: group.parts.map(p => p.move.moveId) };
+    expect(remembered.moves).toEqual(['m1', 'm2']);
+    expect([awaitsRecheck(moves(['m1', 'm2', 'm3']), remembered), awaitsRecheck(moves(['m2']), remembered)]).toEqual([true, true]);
+    expect([awaitsRecheck(moves(['m3']), remembered), awaitsRecheck(moves([]), remembered), awaitsRecheck(moves(['m1']), null)]).toEqual([false, false, false]);
+    expect(awaitsRecheck(moves([]), { ...remembered, moves: ['m4'] })).toBe(false);
   });
 });

@@ -397,6 +397,35 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     await wait("document.querySelector('.studio').dataset.transport==='compact' && document.activeElement?.getAttribute('aria-label')==='Rehearsal passages' && !!document.activeElement.closest('.transport-options') && !document.querySelector('.overflow-menu-panel')", 'focus follows Rehearsal passages out of More on a tier change');
     await applySize(...MINIMUM);
     pass('a dialog opened from More playback options returns focus to its opener inside More, Escape then returns to the More trigger, and focus follows the opener, or a focused folded control, when a UI scale change moves it to the transport');
+    // Focus that left an option for the page (a press on plain text) stays there: a later tier change, a dialog opened and
+    // closed from the page, or a preview's Enter-apply never pulls it back into the transport, where Space would open More.
+    const plain = "document.querySelector('.show-count small')", onPage = "document.activeElement===document.body", mod = process.platform === 'darwin' ? 'meta' : 'control';
+    const stays = async label => assert.equal(await evaluate(onPage), true, `${label}: ${await active()}`), set = await evaluate(`${state}.selection.activeIndex`);
+    await applySize(1366, 768, 1);
+    await nativeClick(byName('Loop show')); await wait(`${state}.playback.loop && document.activeElement?.getAttribute('aria-label')==='Loop show'`, 'Loop show by pointer');
+    await nativeClick(plain); await wait(onPage, 'a press on plain text leaves focus on the page');
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1.5}))`); await wait("document.querySelector('.studio').dataset.transport==='compact'", 'Loop show folds into More');
+    await stays('a tier change after focus left Loop show keeps focus on the page');
+    await key('Space'); await wait(`${state}.playback.playing`, 'Space plays after the tier change'); await key('Space'); await wait(`!${state}.playback.playing`, 'Space pauses');
+    await nativeClick(byName('More playback options')); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options by pointer');
+    await nativeClick(byName('Loop show', "document.querySelector('.overflow-menu-panel')")); await wait(`!${state}.playback.loop && document.activeElement?.getAttribute('aria-label')==='Loop show'`, 'Loop show in More by pointer');
+    await nativeClick(plain); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text closes More and leaves focus on the page');
+    await key('K', [mod]); await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", 'palette from the page');
+    await key('Escape'); await wait(`!${state}.ui.paletteOpen && !document.querySelector('dialog[open]')`, 'palette closed'); await stays('closing a dialog opened from the page keeps focus there');
+    // A preview in the band docks the Inspector and folds rehearsal passages and audio away until Enter applies it
+    // (at a set again: playback paused between sets, where positions are read-only).
+    const revision = await evaluate(`${state}.project.revision`);
+    await applySize(1024, 700, 1.5);
+    await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.setValue('selection','selectedIds',${state}.project.present.performers.slice(0,4).map(p=>p.id)); ${editor}.dispatch('transform.mirror')`);
+    await wait(`!!${state}.ui.transformPreview && document.querySelector('.studio').dataset.transport==='narrow'`, 'a preview narrows the transport');
+    await nativeClick(byName('More playback options')); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options during the preview');
+    await evaluate(`${byName('Rehearsal passages', "document.querySelector('.overflow-menu-panel')")}.focus()`);
+    await nativeClick(plain); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text leaves More for the page');
+    await key('Return'); await wait(`!${state}.ui.transformPreview && document.querySelector('.studio').dataset.transport==='compact'`, 'Enter applies the preview');
+    assert.equal(await evaluate("!!document.activeElement?.closest('.transport-options')"), false, `Enter-apply keeps focus out of the transport: ${await active()}`);
+    if (await evaluate("!!document.querySelector('.workspace-pane--overlay')")) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'Inspector overlay closed after the preview'); }
+    await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the applied preview undone');
+    pass('focus that left a transport option for the page stays there through a tier change, a dialog opened from the page and a preview applied with Enter, so Space plays and pauses');
   }
   // Auto-tucking and overlays are temporary: the saved layout and production are unchanged.
   assert.equal(await evaluate(`JSON.stringify({ layout: ${state}.preferences.value.workspaceLayout, cast: ${state}.preferences.value.castPanelOpen })`), layoutBefore);

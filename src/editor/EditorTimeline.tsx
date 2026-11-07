@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { Fragment, useLayoutEffect, useMemo, useRef } from 'react';
 import { compileScore, scoreLabel, scorePosition } from '../score';
 import './score.css';
 import { timelineReadout, transportCount, formatTimelineCount as fmt } from './timelineNavigation';
@@ -32,17 +32,17 @@ export function EditorTimeline({ controller, transport = 'full' }: { controller:
   const folded = (transport === 'full' ? [] : transport === 'compact' ? ['loop', 'metronome', 'speed'] : ['rehearsal', 'audio', 'loop', 'metronome', 'speed']).map(key => <Fragment key={key}>{{ rehearsal, audio, loop: loopButton, metronome: metronomeButton, speed: speedSelect }[key]}</Fragment>);
   // A tier change (a resize, a UI scale change or a panel docking beside the field) moves options between the transport
   // and More playback options, also under a dialog opened from one. Focus on a moved option then follows it to where it
-  // is now, or to More when it is folded away, instead of falling to the page.
-  const opener = useRef<Element | null>(null);
+  // is now, or to More when it is folded away, instead of falling to the page. Only focus held as the change renders
+  // counts: each render while no dialog is shown notes the focused option (a tier change and an opening dialog render
+  // here before their commit), and a shown dialog keeps the option it opened from. Focus that left for the page stays.
+  const moving = useRef<{ modal: boolean; node: Element | null }>({ modal: false, node: null }), focus = document.activeElement;
+  if (!moving.current.modal) moving.current.node = focus?.closest('.timeline .transport-options') ? focus : null;
   const modal = useEditorSelector(state => !!state.ui.dialog || state.ui.paletteOpen);
-  useEffect(() => {
-    const track = (event: FocusEvent) => { const target = event.target as Element; if (!target.closest?.('dialog')) opener.current = target.closest?.('.timeline .transport-options') ? target : null; };
-    document.addEventListener('focusin', track); return () => document.removeEventListener('focusin', track);
-  }, []);
   useLayoutEffect(() => {
-    const label = opener.current?.getAttribute('aria-label');
-    if (modal || !label || opener.current?.isConnected || document.activeElement !== document.body) return;
-    opener.current = null;
+    const { node } = moving.current, label = node?.getAttribute('aria-label');
+    moving.current.modal = modal;
+    if (modal || !label || node?.isConnected || document.activeElement !== document.body) return;
+    moving.current.node = null;
     const options = [...document.querySelectorAll<HTMLElement>('.timeline .transport-options [aria-label]')];
     (options.find(node => node.getAttribute('aria-label') === label) ?? options.find(node => node.getAttribute('aria-label') === 'More playback options'))?.focus();
   }, [modal, transport]);

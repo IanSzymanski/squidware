@@ -59,19 +59,22 @@ export function problemClusters(moves: readonly MoveCheck[], start: number, span
     for (const b of buckets) all.push({ ...b, move, issues: sorted });
   }
   for (let i = 1; i < all.length; i++) if (all[i].x0 < all[i - 1].x0) { all.sort((a, b) => a.x0 - b.x0 || a.move.index - b.move.index); break; }
-  const clusters = tileChains(all, target);
+  const clusters = tileChains(all, width, target);
   // “99k+” is wider than one target: a row holding a capped group tiles again with markers wide enough for it.
-  return target < CAPPED_TARGET && clusters.some(c => c.size >= BADGE_CAP && c.width < CAPPED_TARGET) ? tileChains(all, CAPPED_TARGET) : clusters;
+  return target < CAPPED_TARGET && clusters.some(c => c.size >= BADGE_CAP && c.width < CAPPED_TARGET) ? tileChains(all, width, CAPPED_TARGET) : clusters;
 }
-function tileChains(all: Placed[], target: number) {
+/** Markers wider than one target center on findings at most half a target inside the track's ends, so none reaches
+ * further past the track than a 24 px marker does (the padded timeline viewport shows that much, focus ring included). */
+function tileChains(all: Placed[], width: number, target: number) {
+  const inset = (target - PROBLEM_TARGET) / 2, x0 = (b: Placed) => Math.min(Math.max(b.x0, inset), width - inset), x1 = (b: Placed) => Math.min(Math.max(b.x1, inset), width - inset);
   const clusters: ProblemCluster[] = [];
   for (let i = 0; i < all.length;) {
     let j = i + 1;
-    while (j < all.length && all[j].x0 - all[j - 1].x1 < target) j++;
-    const left = all[i].x0 - target / 2, total = all[j - 1].x1 - all[i].x0 + target, tiles = Math.max(1, Math.floor(total / target + 1e-9)), tile = total / tiles;
+    while (j < all.length && x0(all[j]) - x1(all[j - 1]) < target) j++;
+    const left = x0(all[i]) - target / 2, total = x1(all[j - 1]) - x0(all[i]) + target, tiles = Math.max(1, Math.floor(total / target + 1e-9)), tile = total / tiles;
     for (let t = 0, k = i; t < tiles && k < j; t++) {
       const from = k, right = t === tiles - 1 ? Infinity : left + (t + 1) * tile;
-      while (k < j && all[k].x0 < right) k++;
+      while (k < j && x0(all[k]) < right) k++;
       if (k === from) continue;
       const group = all.slice(from, k), head = group[0], firstIssue = head.issues[head.from], tail = group[group.length - 1], ids: string[] = [];
       let others = false;
@@ -134,6 +137,11 @@ export function rovingIndex(key: string, index: number, count: number, orientati
   const current = Math.max(0, Math.min(count - 1, index));
   return key === forward ? Math.min(count - 1, current + 1) : key === back ? Math.max(0, current - 1) : key === 'Home' ? 0 : key === 'End' ? count - 1 : null;
 }
+/** The marker the row last focused: its group, first count and moves. */
+export interface Remembered { key: string; count: number; moves: readonly string[] }
+/** A recheck emptied the row under the remembered marker while one of its moves is pending again; an empty row with
+ * only other moves pending (a count window without findings) is not the row's to wait for. */
+export const awaitsRecheck = (moves: readonly MoveCheck[], remembered: Remembered | null) => !!remembered && moves.some(m => m.status === 'pending' && remembered.moves.includes(m.moveId));
 /** The remembered marker after regrouping: the same group, else the group nearest its count, else the first. */
 export function activeCluster(clusters: readonly ProblemCluster[], remembered: { key: string; count: number } | null): number {
   if (!clusters.length) return -1;
