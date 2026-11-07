@@ -1,7 +1,8 @@
 /** A yield for long, budgeted jobs in a background worker that does not wait on a timer. Each worker that runs one
  * creates a single instance and passes it to every pause of its job: the movement and assignment comparison workers
  * (`formationTransition.worker.ts`, `assignment.worker.ts`, 20-second budget) and the per-move check worker
- * (`analysis/analysis.worker.ts`, behind AnalysisClient's 15-second watchdog). `src/workerWiring.test.ts` proves each one.
+ * (`analysis/analysis.worker.ts`, behind AnalysisClient's 15-second watchdog). `src/workerWiring.test.ts` proves each one,
+ * and that a newer request already queued cancels a paused job.
  *
  * A zero-delay setTimeout is clamped to at least 4 ms once nested, and macOS can coalesce worker timers far more, so
  * a job that yields often spent most of its wall-clock budget waiting: the group movement check ran at about 10% CPU
