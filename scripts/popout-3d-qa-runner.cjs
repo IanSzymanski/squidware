@@ -224,22 +224,51 @@ async function mirrorFixture(fixture) {
   }
   pass(`${fixture.name}: playback updates the 3D window at the editor's count${webgl ? ` (${JSON.stringify(metrics[fixture.name])})` : ' (DOM/state mirror)'}`);
   if (fixture.name === 'maximum') {
-    // Both windows paint in the same vsync; playback must publish (and re-render the editor) once per painted editor frame, not once per window.
-    // An editor painting under three frames a second nears the 2.5 at which it counts as throttled (frameSources.ts), so a faster 3D
-    // window may take the clock and publish once per painted 3D frame instead.
+    // Both windows paint, side by side (a covered window is occluded on macOS and paints nothing). Playback must never run
+    // a frame from one window after another window ran one since that window's previous frame (frameSources.ts): a double
+    // run breaks that at once, at any frame rates. A shown editor painting at least three frames a second (2.5 is the
+    // throttle boundary) also keeps the clock, about one publish per painted editor frame from its first frame: before it,
+    // the 3D window fills in for an editor that has painted nothing. A slower editor may give the clock to a faster 3D window.
     await evaluate(`${editor}.dispatch('playback.scrub', { count: 0 })`);
-    main.showInactive(); await uiWait("document.visibilityState === 'visible'", 'editor window shown'); await pause(300);
-    const publishing = metrics[fixture.name].publishing = await evaluate(`new Promise(resolve => { const store = ${editor}, child = window.__popoutQA.child(); let publishes = 0, frames = 0, childFrames = 0, running = true, last = store.getState().playback.count;
-      const stop = store.subscribe(() => { const count = store.getState().playback.count; if (count !== last) { last = count; publishes++; } });
+    const area = screen.getPrimaryDisplay().workArea, width = Math.floor((area.width - 8) / 2), height = Math.min(area.height, 768);
+    const restore = { bounds: main.getBounds(), editor: main.getMinimumSize(), popout: popout.getMinimumSize() };
+    main.setMinimumSize(320, 240); popout.setMinimumSize(320, 240);
+    main.setBounds({ x: area.x, y: area.y, width, height }); popout.setBounds({ x: area.x + width + 8, y: area.y, width, height });
+    main.showInactive(); popout.showInactive(); await uiWait("document.visibilityState === 'visible'", 'editor window shown'); await pause(300);
+    // Every frame callback of either window, playback's included, records whose frame it runs in, so each publish has a window.
+    const { log, ...publishing } = await evaluate(`new Promise(resolve => { const store = ${editor}, child = window.__popoutQA.child(), log = [], seen = {}, undo = [];
+      let publishes = 0, frames = 0, childFrames = 0, running = true, current = null, last = store.getState().playback.count;
+      for (const [target, name] of [[window, 'E'], [child, 'C']]) {
+        const own = Object.getOwnPropertyDescriptor(target, 'requestAnimationFrame'), original = target.requestAnimationFrame;
+        target.requestAnimationFrame = callback => original.call(target, time => { if (running && seen[name] !== time) { seen[name] = time; log.push(name); } const outer = current; current = name; try { callback(time); } finally { current = outer; } });
+        undo.push(() => own ? Object.defineProperty(target, 'requestAnimationFrame', own) : delete target.requestAnimationFrame);
+      }
+      const stop = store.subscribe(() => { const count = store.getState().playback.count; if (count !== last) { last = count; publishes++; if (running) log.push(current ? current.toLowerCase() : 'x'); } });
       const tick = () => { if (running) { frames++; requestAnimationFrame(tick); } }; requestAnimationFrame(tick);
       const childTick = () => { if (running) { childFrames++; child.requestAnimationFrame(childTick); } }; child.requestAnimationFrame(childTick);
       store.dispatch('playback.toggle');
-      setTimeout(() => { running = false; store.dispatch('playback.toggle'); stop(); resolve({ publishes, frames, childFrames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100 }); }, 3000); })`);
-    main.hide();
-    assert.ok(publishing.frames >= 4 && publishing.publishes >= 4, `editor frames during playback: ${JSON.stringify(publishing)}`);
+      setTimeout(() => { running = false; store.dispatch('playback.toggle'); stop(); undo.forEach(step => step());
+        // A publish in a window's frame breaks the rule if another window published since that window's previous frame.
+        const fresh = {}, othersSince = {}; let violations = 0, beforeEditor = 0, editorRuns = 0, childRuns = 0, outside = 0, painted = false;
+        for (const event of log) {
+          if (event === 'E' || event === 'C') { painted ||= event === 'E'; fresh[event] = !othersSince[event]; othersSince[event] = false; continue; }
+          if (!painted) beforeEditor++;
+          if (event === 'x') { outside++; continue; }
+          const name = event.toUpperCase(); if (name === 'E') editorRuns++; else childRuns++;
+          if (!fresh[name]) violations++; fresh[name] = false; othersSince[name === 'E' ? 'C' : 'E'] = true;
+        }
+        resolve({ publishes, frames, childFrames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100, editorRuns, childRuns, outside, violations, fromFirstEditorFrame: publishes - beforeEditor, log: log.join('') }); }, 3000); })`);
+    metrics[fixture.name].publishing = { ...publishing, log, placement: { editor: main.getBounds(), popout: popout.getBounds() } };
+    main.hide(); main.setMinimumSize(...restore.editor); popout.setMinimumSize(...restore.popout); main.setBounds(restore.bounds);
+    const exercised = publishing.childFrames >= 4, counts = JSON.stringify(publishing), summary = `${counts} ${log}`;
+    assert.ok(publishing.frames >= 4 && publishing.publishes >= 4, `editor frames during playback: ${summary}`);
+    // Linux always paints both windows; elsewhere a platform that still hides the 3D window is reported, not passed as checked.
+    if (process.platform === 'linux') assert.ok(exercised, `the 3D window painted too few frames beside the editor: ${summary}`);
+    if (exercised) assert.equal(publishing.violations, 0, `a window ran a playback frame after another window ran one since its previous frame (double run): ${summary}`);
     const clockFrames = publishing.frames >= 9 ? publishing.frames : Math.max(publishing.frames, publishing.childFrames);
-    assert.ok(publishing.publishes <= clockFrames * 1.2 + 2, `playback published more than once per painted frame of its clock window: ${JSON.stringify(publishing)}`);
-    pass(`${fixture.name}: with both windows visible, playback publishes once per painted editor frame (${JSON.stringify(publishing)})`);
+    assert.ok((publishing.frames >= 9 ? publishing.fromFirstEditorFrame : publishing.publishes) <= clockFrames * 1.2 + 2, `playback published more than once per painted frame of its clock window: ${summary}`);
+    if (exercised) pass(`${fixture.name}: with the editor and the 3D window side by side, no window's frame runs playback after another's since its previous frame, and the clock window publishes about once per painted frame (${counts})`);
+    else { console.log(`${phase}: NOT EXERCISED ${fixture.name}: the 3D window painted ${publishing.childFrames} frames beside the editor, so two windows painting together were not checked (${counts})`); pass(`${fixture.name}: with only the editor painting, playback publishes about once per painted editor frame (${counts})`); }
   }
   await setQuality('detailed');
   await evaluate(`${editor}.dispatch('set.select', { index: 0 })`);

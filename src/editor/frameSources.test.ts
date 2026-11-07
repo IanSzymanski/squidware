@@ -256,7 +256,9 @@ it('keeps a 3D window that drove before a pause as the clock on resume, until th
   expect(loop.runs).toBeGreaterThan(10);
   loop.cancel(); clock += 2000;
   // Resumed with a heavy show: the editor paints every 270 ms, the 3D window every 200 ms. The 3D window runs its first
-  // frame at once; after two editor frames show it painting again, only editor frames run.
+  // frame at once. The editor's first frame measures the pause as one long interval; its third (810 ms) is its second
+  // in a row less than 400 ms apart, so it takes the clock there, after the 3D window's fourth frame ran, and every
+  // later frame is the editor's. (Before, its second frame ended the stop on one short interval: two 3D frames ran.)
   loop = playback(editor);
   const next = { editor: clock + 270, popout: clock + 200 }, ran: string[] = [];
   for (let event = 0; event < 30; event++) {
@@ -264,9 +266,47 @@ it('keeps a 3D window that drove before a pause as the clock on resume, until th
     clock = next[which]; next[which] += which === 'editor' ? 270 : 200;
     (which === 'editor' ? editor : popout).tick(); if (loop.runs > before) ran.push(which);
   }
-  expect(ran.slice(0, 2)).toEqual(['popout', 'popout']);
-  expect(ran.length).toBeGreaterThan(10); expect(ran.slice(2)).toEqual(ran.slice(2).map(() => 'editor'));
+  expect(ran.slice(0, 4)).toEqual(['popout', 'popout', 'popout', 'popout']);
+  expect(ran.length).toBeGreaterThan(10); expect(ran.slice(4)).toEqual(ran.slice(4).map(() => 'editor'));
   loop.cancel(); remove();
+});
+
+it('hands the clock to a shown editor at its third frame after a resume, whatever history it had', () => {
+  // The popout-3d suite's sequence: playback with the editor hidden (Chromium's uneven one frame a second) while the 3D
+  // window drives, a pause, then the editor shown, painting every 270 or 350 ms beside a 3D window painting every 200 ms.
+  // The throttled history (a smoothed interval near 600 ms) used to keep the 3D window driving for five to eight editor
+  // frames, re-rendering both windows each time. Two editor intervals in a row under 400 ms now end it at once.
+  for (const period of [270, 350]) {
+    const resumed = 4900, shown = every(period, 9000, { from: 5020, jitter: period / 5 });
+    const runs = simulate([...every(16.7, 500), ...pattern([1000, 760, 240], 4000, 1500), ...shown],
+      [...every(263, 4000, { jitter: 60 }), ...every(200, 9000, { from: 4960, jitter: 30, seed: 3 })], [[4000, 'pause'], [resumed, 'resume']]);
+    // The 3D window runs no frame after the editor's third; the editor runs from its third or fourth, then every frame.
+    expect(runs.filter(run => run.by === '3d' && run.at > shown[2])).toEqual([]);
+    const ran = runs.filter(run => run.by === 'editor' && run.at > resumed).map(run => run.at);
+    expect(shown.indexOf(ran[0])).toBeGreaterThanOrEqual(0); expect(shown.indexOf(ran[0])).toBeLessThanOrEqual(3);
+    expect(ran).toEqual(shown.slice(shown.indexOf(ran[0])));
+    for (let from = resumed; from + 3000 <= 9000; from += 500) {
+      const frames = shown.filter(at => at >= from && at < from + 3000).length;
+      expect(runs.filter(run => run.at >= from && run.at < from + 3000).length).toBeLessThanOrEqual(frames * 1.2 + 2);
+    }
+  }
+});
+
+it('keeps a 3D window driving through a resume or a stop while the editor stays throttled, also through a short interval', () => {
+  // Chromium's throttled editor paints an early frame 240 ms after the previous one now and then, never two in a row. A
+  // single short interval must not hand the clock back (the 3D window would then wait about four of them, a second).
+  const popout = every(200, 9000, { jitter: 5 }), resumed = 4100;
+  const cases: [string, number[], [number, Control][]][] = [
+    // Throttled history, resumed while the editor is still hidden: its first intervals after the resume are 760 and 240 ms.
+    ['throttled history', [...every(16.7, 500), ...pattern([1000, 760, 240], 9000, 1500)], [[4000, 'pause'], [resumed, 'resume']]],
+    // Minimized (no editor frames), resumed while still throttled: the pause, then 240 ms, then 1000 ms.
+    ['stopped history', [...every(16.7, 500), ...pattern([760, 240, 1000], 9000, resumed + 300)], [[4000, 'pause'], [resumed, 'resume']]],
+    // Minimized during playback: the 60 Hz editor's next frames come 600, 250 and 1000 ms apart.
+    ['stop during playback', [...every(16.7, 1000), ...pattern([760, 250, 1000], 9000, 1583)], []],
+  ];
+  for (const [label, editorTimes, controls] of cases) {
+    expect(cadence(simulate(editorTimes, popout, controls), controls.length ? resumed : 1100, 9000).maxGap, label).toBeLessThanOrEqual(210);
+  }
 });
 
 it('cancels every pending request, including a 3D window frame re-requested after the editor ran', () => {
