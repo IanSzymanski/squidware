@@ -33,9 +33,11 @@ contextBridge.exposeInMainWorld('squidware', Object.freeze({
   focusPreviewWindow: () => ipcRenderer.send('squidware:focus-preview'),
   onPreviewWindowBounds: (callback) => {
     if (typeof callback !== 'function') throw new TypeError('A bounds callback is required.');
+    // Display ids are int64 values carried as doubles: X11 ids derived from a monitor's EDID exceed 2^53, so any
+    // integer is kept. An unusable id is dropped on its own; main then places the window by its geometry.
     const listener = (_event, bounds) => {
-      if (bounds && ['x', 'y', 'width', 'height'].every(key => Number.isFinite(bounds[key])) && (bounds.displayId === undefined || Number.isSafeInteger(bounds.displayId))) {
-        callback({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, ...(bounds.displayId === undefined ? {} : { displayId: bounds.displayId }) });
+      if (bounds && ['x', 'y', 'width', 'height'].every(key => Number.isFinite(bounds[key]))) {
+        callback({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, ...(Number.isInteger(bounds.displayId) ? { displayId: bounds.displayId } : {}) });
       }
     };
     ipcRenderer.on('squidware:preview-bounds', listener);
