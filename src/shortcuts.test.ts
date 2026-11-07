@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bindingFor, bindingFromEvent, bindingKeycaps, defaultShortcuts, nativeAccelerator, shortcutForEvent, textEditAction, validateShortcutBindings } from './shortcuts';
+import { assignShortcut, bindingFor, bindingFromEvent, bindingKeycaps, defaultShortcuts, nativeAccelerator, shortcutConflict, shortcutForEvent, textEditAction, validateShortcutBindings } from './shortcuts';
 import { validatePreferences } from './preferences';
 
 const event = (key: string, extra = {}) => ({ key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...extra });
@@ -41,6 +41,26 @@ describe('portable shortcut bindings', () => {
     expect(shortcutForEvent(event('p', { ctrlKey: true }), {}, 'other', false)).toBeUndefined();
     expect(shortcutForEvent(event('p', { ctrlKey: true }), {}, 'other', true)).toBe('file.export');
     expect(validateShortcutBindings(Object.fromEntries(Object.entries(defaultShortcuts)))).toEqual({});
+  });
+  it('keeps the desktop-only 3D window binding inert in the browser, so Shift+T stays assignable there', () => {
+    const shiftT = event('T', { shiftKey: true });
+    // Desktop: Shift+T opens the 3D window and another command cannot take it.
+    expect(shortcutConflict('view.toggle', 'Shift+T', {}, true)).toBe('view.popout');
+    expect(shortcutForEvent(shiftT, {}, 'other', true)).toBe('view.popout');
+    expect(assignShortcut('view.toggle', 'F2', {}, true)).toEqual({ 'view.toggle': 'F2' });
+    // Browser: the hidden command claims no key and is unbound when another command takes its key.
+    expect(shortcutConflict('view.toggle', 'Shift+T', {}, false)).toBeUndefined();
+    expect(shortcutForEvent(shiftT, {}, 'other', false)).toBeUndefined();
+    const bindings = assignShortcut('view.toggle', 'Shift+T', {}, false);
+    expect(bindings).toEqual({ 'view.toggle': 'Shift+T', 'view.popout': null });
+    expect(validateShortcutBindings(bindings)).toEqual(bindings);
+    expect(shortcutForEvent(shiftT, bindings, 'other', false)).toBe('view.toggle');
+    expect(shortcutForEvent(shiftT, bindings, 'other', true)).toBe('view.toggle');
+    expect(assignShortcut('view.toggle', 'T', bindings, false)).toEqual({ 'view.popout': null });
+    // Other conflicts and unrelated keys behave as on the desktop.
+    expect(shortcutConflict('view.toggle', 'P', {}, false)).toBe('display.paths');
+    expect(assignShortcut('view.toggle', 'F2', {}, false)).toEqual({ 'view.toggle': 'F2' });
+    expect(assignShortcut('view.toggle', null, {}, false)).toEqual({ 'view.toggle': null });
   });
   it('keeps native text editing on standard keys independently of rebindings', () => {
     expect(textEditAction(event('c', { metaKey: true }), 'mac')).toBe('copy');

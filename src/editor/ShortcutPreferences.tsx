@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Keycaps } from '../components/Tooltip';
-import { bindingError, bindingFor, bindingFromEvent, bindingKeycaps, defaultShortcuts, shortcutConflict, shortcutIds, type ShortcutId } from '../shortcuts';
+import { assignShortcut, bindingError, bindingFor, bindingFromEvent, bindingKeycaps, defaultShortcuts, shortcutConflict, shortcutIds, type ShortcutId } from '../shortcuts';
 import { commandRegistry } from './commands';
 import { shortcutPlatform } from './shortcutDisplay';
 import type { EditorController } from './useEditorController';
@@ -8,19 +8,17 @@ import './commands.css';
 
 export function ShortcutPreferences({ preferences }: { preferences: EditorController['preferences'] }) {
   const [query, setQuery] = useState(''); const [recording, setRecording] = useState<ShortcutId | null>(null); const [error, setError] = useState('');
-  const bindings = preferences.value.shortcutBindings; const platform = shortcutPlatform();
+  const bindings = preferences.value.shortcutBindings; const platform = shortcutPlatform(); const desktop = !!window.squidware;
   function assign(id: ShortcutId, value: string | null) {
-    const invalid = bindingError(id, value); const conflict = shortcutConflict(id, value, bindings);
+    const invalid = bindingError(id, value); const conflict = shortcutConflict(id, value, bindings, desktop);
     if (invalid || conflict) { setError(invalid ?? `Already used by ${commandRegistry[conflict!].name}. Clear that binding first.`); setRecording(null); return; }
-    const next = { ...bindings, [id]: value };
-    if (value === defaultShortcuts[id]) delete next[id];
-    preferences.update({ shortcutBindings: next }); setRecording(null); setError('');
+    preferences.update({ shortcutBindings: assignShortcut(id, value, bindings, desktop) }); setRecording(null); setError('');
   }
   return <details className="shortcut-preferences"><summary>Keyboard shortcuts</summary>
     <p className="microcopy">Choose a binding, then press its new keys. Clear removes it; Reset restores it. Navigation keys, Alt+arrows, text editing and reserved browser/OS shortcuts are protected. Tab keeps normal focus navigation. Native menu commands require Ctrl/Cmd.</p>
     <label className="form-label">Find a shortcut<input type="search" aria-label="Find a shortcut" value={query} onChange={e => setQuery(e.target.value)} /></label>
     {error && <p className="field-error" role="alert">{error}</p>}
-    <div className="shortcut-bindings">{shortcutIds.filter(id => (id !== 'view.popout' || !!window.squidware) && commandRegistry[id].name.toLowerCase().includes(query.toLowerCase())).map(id => <div className="shortcut-binding" key={id}>
+    <div className="shortcut-bindings">{shortcutIds.filter(id => (id !== 'view.popout' || desktop) && commandRegistry[id].name.toLowerCase().includes(query.toLowerCase())).map(id => <div className="shortcut-binding" key={id}>
       <span>{commandRegistry[id].name}</span>
       <button className="button subtle shortcut-record" aria-label={`Change shortcut: ${commandRegistry[id].name}`} aria-pressed={recording === id} onClick={() => { setRecording(recording === id ? null : id); setError(''); }} onBlur={() => { if (recording === id) setRecording(null); }} onKeyDown={event => {
         if (recording !== id || event.nativeEvent.isComposing) return;

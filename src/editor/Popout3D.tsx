@@ -14,6 +14,8 @@ import './popout3d.css';
 
 /** Main allows exactly this about:blank frame name; every other window request is denied. */
 export const POPOUT_FRAME = 'squidware-3d-preview';
+/** A closed window can hold main's single slot this long (usually under 0.2 s; slow teardowns approach 1 s). */
+const CLOSING_MS = 2000;
 const stylesheets = 'link[rel~="stylesheet"], style';
 
 /** Give the empty same-origin window the app's CSP and styles, following later additions (lazy chunks, Vite). */
@@ -56,6 +58,7 @@ export function Popout3D({ controller }: { controller: EditorController }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const update = useRef(controller.preferences.update); update.current = controller.preferences.update;
   const retained = useRef<{ child: Window; timer: number } | null>(null);
+  const closedAt = useRef(-Infinity); const [attempt, setAttempt] = useState(0);
   // Desktop only: the browser build keeps the feature hidden.
   useEffect(() => { if (typeof window.squidware?.focusPreviewWindow === 'function' && store.getState().ui.popout3d === 'unavailable') store.setValue('ui', 'popout3d', 'closed'); }, [store]);
   useEffect(() => window.squidware?.onPreviewWindowBounds?.(bounds => update.current({ popout3dBounds: bounds })), []);
@@ -66,7 +69,11 @@ export function Popout3D({ controller }: { controller: EditorController }) {
     const kept = retained.current; retained.current = null;
     if (kept) clearTimeout(kept.timer);
     const child = kept && !kept.child.closed ? kept.child : window.open('', POPOUT_FRAME, 'popup');
-    if (!child) { store.setValue('ui', 'popout3d', 'closed'); store.setValue('ui', 'toast', 'The 3D window could not open. Use 3D preview in the field instead.'); return; }
+    if (!child) {
+      // Main keeps its single window slot until a closing 3D window is gone; reopening right after a close waits for it.
+      if (performance.now() - closedAt.current < CLOSING_MS) { const retry = window.setTimeout(() => setAttempt(value => value + 1), 50); return () => clearTimeout(retry); }
+      store.setValue('ui', 'popout3d', 'closed'); store.setValue('ui', 'toast', 'The 3D window could not open. Use 3D preview in the field instead.'); return;
+    }
     const stopStyles = prepareWindow(child);
     const root = child.document.createElement('div');
     root.className = 'popout-3d-root';
@@ -77,7 +84,7 @@ export function Popout3D({ controller }: { controller: EditorController }) {
     // Closing the window unmounts the scene while its document exists, releasing the renderer.
     const finish = () => {
       if (closed) return;
-      closed = true; removeFrames(); flushSync(() => setHost(null)); stopStyles();
+      closed = true; closedAt.current = performance.now(); removeFrames(); flushSync(() => setHost(null)); stopStyles();
       if (store.getState().ui.popout3d === 'open') store.setValue('ui', 'popout3d', 'closed');
     };
     child.addEventListener('pagehide', finish);
@@ -87,9 +94,9 @@ export function Popout3D({ controller }: { controller: EditorController }) {
     return () => {
       removeFrames(); window.clearInterval(poll); window.removeEventListener('pagehide', unload); child.removeEventListener('pagehide', finish);
       stopStyles(); setHost(null);
-      if (!closed) retained.current = { child, timer: window.setTimeout(() => { retained.current = null; child.close(); }, 0) };
+      if (!closed) retained.current = { child, timer: window.setTimeout(() => { retained.current = null; closedAt.current = performance.now(); child.close(); }, 0) };
     };
-  }, [popout, store]);
+  }, [popout, store, attempt]);
   useLayoutEffect(() => {
     if (!host) return;
     const root = host.ownerDocument.documentElement;
