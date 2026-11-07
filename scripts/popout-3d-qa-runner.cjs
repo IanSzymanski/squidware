@@ -225,16 +225,20 @@ async function mirrorFixture(fixture) {
   pass(`${fixture.name}: playback updates the 3D window at the editor's count${webgl ? ` (${JSON.stringify(metrics[fixture.name])})` : ' (DOM/state mirror)'}`);
   if (fixture.name === 'maximum') {
     // Both windows paint in the same vsync; playback must publish (and re-render the editor) once per painted editor frame, not once per window.
+    // An editor painting under three frames a second nears the 2.5 at which it counts as throttled (frameSources.ts), so a faster 3D
+    // window may take the clock and publish once per painted 3D frame instead.
     await evaluate(`${editor}.dispatch('playback.scrub', { count: 0 })`);
     main.showInactive(); await uiWait("document.visibilityState === 'visible'", 'editor window shown'); await pause(300);
-    const publishing = metrics[fixture.name].publishing = await evaluate(`new Promise(resolve => { const store = ${editor}; let publishes = 0, frames = 0, running = true, last = store.getState().playback.count;
+    const publishing = metrics[fixture.name].publishing = await evaluate(`new Promise(resolve => { const store = ${editor}, child = window.__popoutQA.child(); let publishes = 0, frames = 0, childFrames = 0, running = true, last = store.getState().playback.count;
       const stop = store.subscribe(() => { const count = store.getState().playback.count; if (count !== last) { last = count; publishes++; } });
       const tick = () => { if (running) { frames++; requestAnimationFrame(tick); } }; requestAnimationFrame(tick);
+      const childTick = () => { if (running) { childFrames++; child.requestAnimationFrame(childTick); } }; child.requestAnimationFrame(childTick);
       store.dispatch('playback.toggle');
-      setTimeout(() => { running = false; store.dispatch('playback.toggle'); stop(); resolve({ publishes, frames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100 }); }, 3000); })`);
+      setTimeout(() => { running = false; store.dispatch('playback.toggle'); stop(); resolve({ publishes, frames, childFrames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100 }); }, 3000); })`);
     main.hide();
     assert.ok(publishing.frames >= 4 && publishing.publishes >= 4, `editor frames during playback: ${JSON.stringify(publishing)}`);
-    assert.ok(publishing.publishes <= publishing.frames * 1.2 + 2, `playback published more than once per painted editor frame: ${JSON.stringify(publishing)}`);
+    const clockFrames = publishing.frames >= 9 ? publishing.frames : Math.max(publishing.frames, publishing.childFrames);
+    assert.ok(publishing.publishes <= clockFrames * 1.2 + 2, `playback published more than once per painted frame of its clock window: ${JSON.stringify(publishing)}`);
     pass(`${fixture.name}: with both windows visible, playback publishes once per painted editor frame (${JSON.stringify(publishing)})`);
   }
   await setQuality('detailed');
