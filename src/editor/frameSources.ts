@@ -1,16 +1,18 @@
 type FrameWindow = Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
 const sources = new Set<FrameWindow>();
 /** The editor counts as throttled while its smoothed frame interval is at least this long, while it has painted nothing
- * for this long or for four smoothed intervals, and after an interval of four smoothed intervals (a stop) until it paints
- * one shorter than this. Chromium gives a minimized, covered or hidden editor about one frame a second, unevenly, or
- * none. A shown editor painting faster than this keeps the clock however fast a 3D window paints; one painting slower
- * cannot show smooth playback, and the 3D window can. */
+ * for four smoothed intervals (67 ms at 60 Hz), and after such an interval (a stop) until it paints one shorter than this.
+ * Chromium gives a minimized, covered or hidden editor about one frame a second, unevenly, or none. A shown editor
+ * painting faster than this keeps the clock however fast a 3D window paints, also through its occasional slow frames:
+ * on a slow host a heavy show paints every 250-300 ms with stalls of 700 ms, and filling those in from the 3D window
+ * would render both windows more often than the editor paints. One painting slower cannot show smooth playback, and the
+ * 3D window can. */
 export const EDITOR_THROTTLED_MS = 400;
 /** The window whose frame ran the latest playback frame; the editor's latest frame time, its smoothed frame interval
  * (each interval, capped at twice the threshold, moves it a quarter of the way, or half while stopped) and whether it
  * stopped. */
 let last: FrameWindow | null = null, editorAt = 0, editorGap = EDITOR_THROTTLED_MS / 4, editorStopped = false, looping = false;
-const throttled = (now: number) => editorGap >= EDITOR_THROTTLED_MS || editorStopped || now - editorAt >= Math.min(EDITOR_THROTTLED_MS, 4 * editorGap);
+const throttled = (now: number) => editorGap >= EDITOR_THROTTLED_MS || editorStopped || now - editorAt >= 4 * editorGap;
 /** A visible 3D window keeps playback frames coming while the editor window is minimized or covered (#181). */
 export function addFrameSource(view: FrameWindow): () => void {
   sources.add(view);

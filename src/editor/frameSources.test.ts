@@ -107,16 +107,30 @@ it('keeps a slow but painting editor as the clock while a faster 3D window paint
 
 it('publishes about once per editor frame beside a faster 3D window while a shown editor paints about four times a second', () => {
   // The popout-3d suite's software-rendered editor beside a lightweight 3D window. Once the editor's first two frames
-  // show its pace, only the editor runs; an editor frame 540 ms late (every two seconds) lets the 3D window fill in that
-  // stall and the next interval, within the suite's limit for any three seconds (1.2 runs per editor frame, plus two).
+  // show its pace, only the editor runs, also through an editor frame 540 ms late every two seconds: that stall is
+  // shorter than four of its frame intervals, so the 3D window does not fill it in.
   const steady = every(250, 15000, { jitter: 60 }), stalling = steady.map((at, i) => at + Math.floor(i / 8) * 290);
   for (const editorTimes of [steady, stalling]) {
     const runs = simulate(editorTimes, every(110, 20000, { jitter: 20, seed: 3 }));
     if (editorTimes === steady) expect(runs.filter(run => run.at > editorTimes[1] && run.at <= editorTimes.at(-1)!).every(run => run.by === 'editor')).toBe(true);
     for (let from = 1000; from + 3000 <= 15000; from += 500) {
       const frames = editorTimes.filter(at => at >= from && at < from + 3000).length, published = runs.filter(run => run.at >= from && run.at < from + 3000).length;
-      expect(published).toBeLessThanOrEqual(editorTimes === steady ? frames : frames * 1.2 + 2);
+      expect(published).toBeLessThanOrEqual(frames);
     }
+  }
+});
+
+it('keeps a slow shown editor with frequent long frames as the clock, publishing once per editor frame', () => {
+  // Measured on a slow CI host: the 500-performer show paints the shown editor every 250 ms or so with frames of 640-700
+  // ms between (11 frames in three seconds), beside a 3D window painting five times a second. Filling each long frame in
+  // from the 3D window published 16 times in those three seconds, 1.45 per editor frame, rendering both windows each time.
+  // Dropping from 60 Hz, the first long frame still looks like a stop (as above); after that only the editor runs.
+  const editorTimes = pattern([220, 260, 690, 240, 280, 640, 230, 300, 250, 700, 260, 240], 15000);
+  const runs = simulate(editorTimes, every(200, 15000, { jitter: 40, seed: 5 }));
+  expect(runs.filter(run => run.at > 2000).every(run => run.by === 'editor')).toBe(true);
+  for (let from = 2000; from + 3000 <= 15000; from += 500) {
+    const frames = editorTimes.filter(at => at >= from && at < from + 3000).length;
+    expect(runs.filter(run => run.at >= from && run.at < from + 3000).length).toBeLessThanOrEqual(frames);
   }
 });
 
