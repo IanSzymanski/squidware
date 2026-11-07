@@ -1,4 +1,4 @@
-import { FIELD_RESERVE } from './editor/breakpoints';
+import { FIELD_RESERVE, fieldReserve } from './editor/breakpoints';
 export type WorkspacePreset = 'write' | 'review' | 'rehearse';
 export type PaneId = 'sets' | 'inspector' | 'cast';
 export interface WorkspaceLayout {
@@ -26,19 +26,21 @@ export function validateWorkspaceLayout(input: unknown): WorkspaceLayout {
   return result;
 }
 /** Favor the field over panel widths: open panels shrink toward their minimums, then the set list and finally the
- * side panel tuck away until the field keeps `reserve`. Tucking is temporary; the saved layout is never changed. */
-export function fitWorkspaceLayout(layout: WorkspaceLayout, available: number, side: 'inspector' | 'cast', reserve = FIELD_RESERVE) {
+ * side panel tuck away until the field keeps FIELD_RESERVE. A side panel the writer `demanded` (Cast shown, or the
+ * Inspector a preview needs) stays docked down to the smaller DEMANDED_FIELD_RESERVE. Tucking is temporary; the saved
+ * layout is never changed. */
+export function fitWorkspaceLayout(layout: WorkspaceLayout, available: number, side: 'inspector' | 'cast', demanded = false) {
   let setsHidden = layout.setsCollapsed; let sideHidden = layout[`${side}Collapsed`];
   const attempt = () => {
     const widths = { sets: layout.setsWidth, inspector: layout.inspectorWidth, cast: layout.castWidth };
-    const used = () => (setsHidden ? 30 : widths.sets + 6) + (sideHidden ? 30 : widths[side] + 6) + reserve;
+    const used = (reserve: number = FIELD_RESERVE) => (setsHidden ? 30 : widths.sets + 6) + (sideHidden ? 30 : widths[side] + 6) + reserve;
     for (const pane of ['sets', side] as const) {
       if (!(pane === 'sets' ? setsHidden : sideHidden)) widths[pane] = Math.max(paneLimits[pane][0], widths[pane] - Math.max(0, used() - available));
     }
-    return { widths, fits: used() <= available };
+    return { widths, fits: used() <= available, sideFits: used(fieldReserve(demanded)) <= available };
   };
   let fitted = attempt();
   if (!fitted.fits && !setsHidden) { setsHidden = true; fitted = attempt(); }
-  if (!fitted.fits && !sideHidden) { sideHidden = true; fitted = attempt(); }
+  if (!fitted.sideFits && !sideHidden) { sideHidden = true; fitted = attempt(); }
   return { widths: fitted.widths, setsHidden, sideHidden };
 }

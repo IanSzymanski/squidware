@@ -4,7 +4,7 @@ import { defaultPreferences, validatePreferences } from './preferences';
 import { createDemoProject, serializeProject } from './domain';
 import { createEditorStore } from './editor/store';
 import { startPreferencesController } from './editor/preferencesController';
-import { FIELD_RESERVE } from './editor/breakpoints';
+import { fieldReserve } from './editor/breakpoints';
 
 describe('workspace layout boundaries', () => {
   it('migrates older density choices and repairs layout fields without losing unrelated preferences', () => {
@@ -17,13 +17,13 @@ describe('workspace layout boundaries', () => {
   it('fits a useful field at narrow and scaled widths without overwriting the saved layout', () => {
     const p = { ...workspacePreset('write'), setsWidth: 360, inspectorWidth: 420, castWidth: 480 };
     const before = structuredClone(p);
-    for (const side of ['inspector', 'cast'] as const) {
+    for (const side of ['inspector', 'cast'] as const) for (const demanded of [false, true]) {
       for (const available of [1920, 1366, 1000, 850, 683, 500, 320]) {
-        const fitted = fitWorkspaceLayout(p, available, side);
+        const fitted = fitWorkspaceLayout(p, available, side, demanded);
         const used = (fitted.setsHidden ? 30 : fitted.widths.sets + 6) + (fitted.sideHidden ? 30 : fitted.widths[side] + 6);
-        expect(available - used).toBeGreaterThanOrEqual(Math.min(FIELD_RESERVE, available - 60));
+        expect(available - used).toBeGreaterThanOrEqual(Math.min(fieldReserve(demanded), available - 60));
       }
-      expect(fitWorkspaceLayout(p, 1920, side)).toMatchObject({ setsHidden: false, sideHidden: false });
+      expect(fitWorkspaceLayout(p, 1920, side, demanded)).toMatchObject({ setsHidden: false, sideHidden: false });
     }
     expect(p).toEqual(before);
   });
@@ -45,6 +45,18 @@ describe('workspace layout boundaries', () => {
     next.dispatch('layout.focus'); expect(next.getState().ui.focusMode).toBe(true);
     next.dispatch('layout.focus'); expect(next.getState().ui.focusMode).toBe(false);
     restored.stop();
+  });
+  it('counts each request to show Cast beside the field without saving it', async () => {
+    const store = createEditorStore(createDemoProject()); let durable = defaultPreferences();
+    const controller = startPreferencesController(store, { readPreferences: async () => ({ preferences: durable }), savePreferences: async (value: typeof durable) => { durable = value; }, resetPreferences: async () => defaultPreferences() });
+    await controller.ready;
+    const reveals = () => store.getState().ui.castReveal;
+    expect(reveals()).toBe(0);
+    // The header Cast tab, Dock Cast and the palette all show the panel; repeating it while Cast is current still asks again.
+    store.dispatch('cast.show', { mode: 'panel' }); store.dispatch('cast.show', { mode: 'panel' }); expect(reveals()).toBe(2);
+    store.dispatch('cast.show', { mode: 'table' }); store.dispatch('cast.show', { mode: 'closed' }); expect(reveals()).toBe(2);
+    await controller.flush(); expect(durable).not.toHaveProperty('castReveal');
+    controller.stop();
   });
   it('keeps active drafts and previews reachable and always permits leaving focus', () => {
     const s = createEditorStore(createDemoProject());
