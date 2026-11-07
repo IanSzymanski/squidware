@@ -27,12 +27,20 @@ export function ProblemTimelineLabel() {
 export function ProblemTimeline({ start, span, width }: { start: number; span: number; width: number }) {
   const checks = useShowChecks(), service = useShowAnalysis(), store = useEditorStore();
   const available = useEditorSelector(canReviewProblems);
+  // Focus mode, the workspace and the side panel move or hide the marker an open group list hangs from.
+  const layout = useEditorSelector(s => `${s.ui.focusMode}:${s.ui.workspace}:${s.ui.castPanelOpen}`);
   const labels = useMemo(() => performerLabels(checks.project), [checks.project]);
   const clusters = useMemo(() => problemClusters(checks.moves,start,span,width),[checks.moves,start,span,width]);
-  const track = useRef<HTMLDivElement>(null), opener = useRef<HTMLElement | null>(null), hint = useId();
+  const track = useRef<HTMLDivElement>(null), opener = useRef<HTMLElement | null>(null), focused = useRef<Element | null>(null), hint = useId();
   const [remembered, setRemembered] = useState<{ key: string; count: number } | null>(null), [expanded, setExpanded] = useState<string | null>(null);
   const active = activeCluster(clusters, remembered), open = clusters.find(c => c.key === expanded);
   useEffect(() => { if (expanded && !open) setExpanded(null); }, [expanded, open]);
+  useEffect(() => { setExpanded(null); }, [layout, start, span, width]);
+  // Regrouping (a review switching the side panel, a resize, a worker reply) can replace the focused marker or close the
+  // focused list; keyboard focus then stays in the row on the remembered marker instead of falling to the document.
+  useLayoutEffect(() => {
+    if (focused.current && !focused.current.isConnected && (!document.activeElement || document.activeElement === document.body)) track.current?.querySelectorAll<HTMLElement>('.problem-marker')[active]?.focus();
+  });
   if (!clusters.length) return <div className="problem-track" />;
   function keyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (!(event.target as Element).classList.contains('problem-marker') || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -41,7 +49,11 @@ export function ProblemTimeline({ start, span, width }: { start: number; span: n
     event.preventDefault(); track.current?.querySelectorAll<HTMLElement>('.problem-marker')[next]?.focus();
   }
   function close(refocus: boolean) { setExpanded(null); if (refocus && opener.current?.isConnected) opener.current.focus(); }
-  return <div ref={track} className="problem-track" role="toolbar" aria-label="Problem markers" aria-describedby={hint} onKeyDown={keyDown}>
+  // Focus within the row or its list (React focus events bubble out of the list's portal). Focus that leaves for the
+  // document while its control remains (a click on empty space, a scripted blur) is no longer the row's to restore.
+  return <div ref={track} className="problem-track" role="toolbar" aria-label="Problem markers" aria-describedby={hint} onKeyDown={keyDown}
+    onFocus={event => { focused.current = event.target; }} onBlur={event => { const from = event.target, to = event.relatedTarget;
+      if (to ? !track.current?.contains(to) && !to.closest('.problem-cluster-list') : from.isConnected && document.activeElement !== from) focused.current = null; }}>
     <span id={hint} className="sr-only">Arrow keys, Home and End move between markers. Enter goes to a finding or lists a group.</span>
     {clusters.map((c,i) => { const single = c.size === 1 ? clusterFindings(c)[0] : undefined;
       return <HelpButton key={c.key} title={clusterName(c, labels)} tabIndex={i === active ? 0 : -1} disabled={!available} disabledReason={blocked}
@@ -49,13 +61,14 @@ export function ProblemTimeline({ start, span, width }: { start: number; span: n
         className={`problem-marker ${c.danger ? 'danger' : 'warning'}${single ? '' : ' problem-cluster'}`} aria-haspopup={single ? undefined : 'menu'} aria-expanded={single ? undefined : expanded === c.key}
         style={{ left: c.left, width: c.width }} onFocus={() => setRemembered({ key: c.key, count: c.first })}
         onClick={event => { if (single) { reviewProblem(service, store, single); return; } opener.current = event.currentTarget; setExpanded(expanded === c.key ? null : c.key); }}>
-        {single ? <SeverityIcon danger={!!c.danger} /> : <span className="problem-marker-count">{clusterBadge(c.size)}</span>}
+        {single ? <SeverityIcon danger={!!c.danger} /> : <span className={`problem-marker-count${c.size >= 100000 ? ' problem-marker-count--capped' : ''}`}>{clusterBadge(c.size)}</span>}
       </HelpButton>; })}
     {open && <ProblemClusterList key={open.key} cluster={open} labels={labels} available={available} anchor={opener} onClose={close}
       onChoose={finding => { close(true); if (finding) reviewProblem(service, store, finding); else store.dispatch('analysis.problems-open'); }} />}
   </div>;
 }
-/** Every finding in a group as a menu above its marker. Up/Down/Home/End move, Enter chooses, Escape or Tab returns to the marker. */
+/** Every finding in a group as a menu above its marker. Up/Down/Home/End move, Enter chooses and Escape returns to the marker;
+ * Tab closes the list and continues from the marker, as from a menu button. Focus leaving for anything else closes it. */
 function ProblemClusterList({ cluster, labels, available, anchor, onClose, onChoose }: { cluster: ProblemCluster; labels: PerformerLabels; available: boolean; anchor: { current: HTMLElement | null }; onClose: (refocus: boolean) => void; onChoose: (finding: Finding | null) => void }) {
   // Very dense groups list their first findings and hand the rest to Show-wide problems, which pages through all of them.
   const findings = useMemo(() => clusterFindings(cluster, GROUP_LIST_LIMIT), [cluster]), more = cluster.size - findings.length, items = findings.length + Number(more > 0);
@@ -84,8 +97,10 @@ function ProblemClusterList({ cluster, labels, available, anchor, onClose, onCho
     if (next === null || event.altKey || event.ctrlKey || event.metaKey) return;
     event.preventDefault(); event.stopPropagation(); panel.current?.querySelectorAll<HTMLElement>('[role=menuitem]')[next]?.focus();
   }
-  // Items carry their severity and move as text instead of hover help, which would cover the next items.
-  return createPortal(<div ref={panel} className="problem-cluster-list" onKeyDown={keyDown}>
+  // Items carry their severity and move as text instead of hover help, which would cover the next items. The escape scope
+  // keeps workspace Escape (focus mode, tucked-panel overlays) from acting before the list closes.
+  return createPortal(<div ref={panel} className="problem-cluster-list" data-escape-scope="" onKeyDown={keyDown}
+    onBlur={event => { const to = event.relatedTarget; if (to && !panel.current?.contains(to) && !anchor.current?.contains(to)) onClose(false); }}>
     <p id={heading}><strong>{clusterName(cluster, labels)}</strong> · {clusterSeverity(cluster)}</p>
     {!available && <p className="tooltip-reason">Unavailable: {blocked}</p>}
     <div role="menu" aria-labelledby={heading}>{findings.map((f, i) => <button key={i} type="button" role="menuitem" tabIndex={i === current ? 0 : -1} aria-disabled={!available || undefined}
