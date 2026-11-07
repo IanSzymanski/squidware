@@ -249,7 +249,8 @@ async function mirrorFixture(fixture) {
       const tick = () => { if (running) { frames++; requestAnimationFrame(tick); } }; requestAnimationFrame(tick);
       const childTick = () => { if (running) { childFrames++; child.requestAnimationFrame(childTick); } }; child.requestAnimationFrame(childTick);
       store.dispatch('playback.toggle');
-      setTimeout(() => { running = false; store.dispatch('playback.toggle'); stop(); undo.forEach(step => step());
+      // A starved host can paint only a frame or two a second: keep measuring, up to 10 s, until both windows painted four.
+      const started = performance.now(); const finish = () => { if ((childFrames < 4 || frames < 4) && performance.now() - started < 10000) { setTimeout(finish, 500); return; } running = false; store.dispatch('playback.toggle'); stop(); undo.forEach(step => step());
         // A publish in a window's frame breaks the rule if another window published since that window's previous frame.
         const fresh = {}, othersSince = {}; let violations = 0, beforeEditor = 0, editorRuns = 0, childRuns = 0, outside = 0, painted = false;
         for (const event of log) {
@@ -259,7 +260,7 @@ async function mirrorFixture(fixture) {
           const name = event.toUpperCase(); if (name === 'E') editorRuns++; else childRuns++;
           if (!fresh[name]) violations++; fresh[name] = false; othersSince[name === 'E' ? 'C' : 'E'] = true;
         }
-        resolve({ publishes, frames, childFrames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100, editorRuns, childRuns, outside, violations, fromFirstEditorFrame: publishes - beforeEditor, log: log.join('') }); }, 3000); })`);
+        resolve({ publishes, frames, childFrames, perFrame: Math.round(publishes / Math.max(frames, 1) * 100) / 100, editorRuns, childRuns, outside, violations, fromFirstEditorFrame: publishes - beforeEditor, ms: Math.round(performance.now() - started), log: log.join('') }); }; setTimeout(finish, 3000); })`);
     metrics[fixture.name].publishing = { ...publishing, log, placement: { editor: main.getBounds(), popout: popout.getBounds() } };
     main.hide(); main.setMinimumSize(...restore.editor); popout.setMinimumSize(...restore.popout); main.setBounds(restore.bounds);
     const exercised = publishing.childFrames >= 4, counts = JSON.stringify(publishing), summary = `${counts} ${log}`;
@@ -267,8 +268,8 @@ async function mirrorFixture(fixture) {
     // Linux always paints both windows; elsewhere a platform that still hides the 3D window is reported, not passed as checked.
     if (process.platform === 'linux') assert.ok(exercised, `the 3D window painted too few frames beside the editor: ${summary}`);
     if (exercised) assert.equal(publishing.violations, 0, `a window ran a playback frame after another window ran one since its previous frame (double run): ${summary}`);
-    const clockFrames = publishing.frames >= 9 ? publishing.frames : Math.max(publishing.frames, publishing.childFrames);
-    assert.ok((publishing.frames >= 9 ? publishing.fromFirstEditorFrame : publishing.publishes) <= clockFrames * 1.2 + 2, `playback published more than once per painted frame of its clock window: ${summary}`);
+    const steady = publishing.frames * 1000 / publishing.ms >= 3, clockFrames = steady ? publishing.frames : Math.max(publishing.frames, publishing.childFrames);
+    assert.ok((steady ? publishing.fromFirstEditorFrame : publishing.publishes) <= clockFrames * 1.2 + 2 * publishing.ms / 3000, `playback published more than once per painted frame of its clock window: ${summary}`);
     if (exercised) pass(`${fixture.name}: with the editor and the 3D window side by side, no window's frame runs playback after another's since its previous frame, and the clock window publishes about once per painted frame (${counts})`);
     else { console.log(`${phase}: NOT EXERCISED ${fixture.name}: the 3D window painted ${publishing.childFrames} frames beside the editor, so two windows painting together were not checked (${counts})`); pass(`${fixture.name}: with only the editor painting, playback publishes about once per painted editor frame (${counts})`); }
   }
