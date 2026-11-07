@@ -6,6 +6,11 @@ import type { Project, TransitionIssue } from '../types';
 export const PROBLEM_TARGET = 24;
 /** A group list renders at most this many findings; Show-wide problems pages through the rest. */
 export const GROUP_LIST_LIMIT = 500;
+/** Groups this large show the capped four-character badge “99k+”. */
+export const BADGE_CAP = 100000;
+/** Marker width for a row holding a capped group: at 11 px, “99k+” needs about 28 px in DejaVu Sans Bold, the widest
+ * common fallback face, and 24 px in Inter. */
+export const CAPPED_TARGET = 32;
 interface Part { move: MoveCheck; issues: TransitionIssue[]; from: number; to: number }
 /** A marker covers `left`…`left + width` track pixels and every finding drawn inside that span.
  * `people` holds up to three performer IDs in order of appearance; `others` marks more. */
@@ -13,6 +18,7 @@ export interface ProblemCluster { key: string; left: number; width: number; size
 export type PerformerLabels = ReadonlyMap<string, string>;
 /** Findings within one track pixel of a move: counts, severity/type totals and up to four distinct performers. */
 interface Bucket { from: number; to: number; x0: number; x1: number; danger: number; spacing: number; ids: string[] }
+type Placed = Bucket & { move: MoveCheck; issues: TransitionIssue[] };
 
 const at = (issue: TransitionIssue) => issue.atCount ?? 0;
 const cache = new WeakMap<TransitionIssue[], { issues: TransitionIssue[]; min: number; max: number; view?: { start: number; span: number; width: number; buckets: Bucket[] } }>();
@@ -46,13 +52,18 @@ function moveBuckets(issues: TransitionIssue[], start: number, span: number, wid
  * Markers therefore never overlap, each is at least `target` wide, and each contains its findings' positions
  * (to within the one-pixel buckets that keep dense shows cheap). Moves are sequential, so their buckets concatenate in order. */
 export function problemClusters(moves: readonly MoveCheck[], start: number, span: number, width: number, target = PROBLEM_TARGET): ProblemCluster[] {
-  const all: (Bucket & { move: MoveCheck; issues: TransitionIssue[] })[] = [];
+  const all: Placed[] = [];
   for (const move of moves) {
     if (move.status !== 'ready' || !move.issues.length) continue;
     const { sorted, buckets } = moveBuckets(move.issues, start, span, width);
     for (const b of buckets) all.push({ ...b, move, issues: sorted });
   }
   for (let i = 1; i < all.length; i++) if (all[i].x0 < all[i - 1].x0) { all.sort((a, b) => a.x0 - b.x0 || a.move.index - b.move.index); break; }
+  const clusters = tileChains(all, target);
+  // “99k+” is wider than one target: a row holding a capped group tiles again with markers wide enough for it.
+  return target < CAPPED_TARGET && clusters.some(c => c.size >= BADGE_CAP && c.width < CAPPED_TARGET) ? tileChains(all, CAPPED_TARGET) : clusters;
+}
+function tileChains(all: Placed[], target: number) {
   const clusters: ProblemCluster[] = [];
   for (let i = 0; i < all.length;) {
     let j = i + 1;
@@ -112,9 +123,9 @@ export function clusterSeverity(cluster: ProblemCluster): string {
   const warnings = cluster.size - cluster.danger;
   return cluster.size === 1 ? cluster.danger ? 'Danger' : 'Warning' : [cluster.danger && `${cluster.danger} danger`, warnings && `${warnings} warning`].filter(Boolean).join(', ');
 }
-/** Visible group size that fits one target: exact below 1000, whole thousands (rounded down) below 100,000, then “99k+”,
+/** Visible group size that fits its marker: exact below 1000, whole thousands (rounded down) below 100,000, then “99k+”,
  * so it is never numerically wrong. The name starts with an abbreviated badge and carries the exact size. */
-export const clusterBadge = (size: number) => size < 1000 ? String(size) : size < 100000 ? `${Math.floor(size / 1000)}k` : '99k+';
+export const clusterBadge = (size: number) => size < 1000 ? String(size) : size < BADGE_CAP ? `${Math.floor(size / 1000)}k` : '99k+';
 
 /** Roving focus within the problem row (horizontal) or a group's list (vertical). Null leaves the key to the browser. */
 export function rovingIndex(key: string, index: number, count: number, orientation: 'horizontal' | 'vertical'): number | null {
