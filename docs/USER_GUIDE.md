@@ -150,7 +150,7 @@ Ranges override base move tempos only within their intervals; musical anchors re
 
 ## Playback and audio
 
-Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome.
+Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome. On narrow windows or at large UI scales, speed, loop and metronome are under **More playback options** (⋯) in the transport, and Layout, Focus field, Help and History are in **Menu**.
 
 The displayed count is the cumulative show count. Written tempo can differ between moves; the total runtime accounts for those changes. The metronome accents every fourth cumulative count.
 
@@ -175,9 +175,19 @@ Click a performer to select them; Shift-click modifies the selection. Selection 
 
 The 3D performers are section-colored rehearsal markers. Their appearance does not model actual uniforms, instruments, guard equipment, body orientation, or marching technique. If a graphics context cannot initialize, the app shows a fallback message. Switch to 2D to continue designing; after a temporary graphics interruption, leave and reopen 3D to retry.
 
+### 3D window
+
+In the desktop app, choose **Open 3D window** (the arrow-out-of-a-box button beside **3D preview**), its command palette entry, or `Shift+T` to show the 3D preview in a separate window, for example on a second display. It follows the editor's set, count, playback, selection highlighting, previews and any 2D drag in progress, and its top bar shows the set, count and mode. The window is read-only: its camera buttons, quality choice and orbit/pan/zoom work, but clicking a performer does not change the selection. Edit positions in the main window.
+
+Only one 3D window exists. Choosing the command again brings it to the front. While it is open, the field area shows a placeholder instead of a second 3D view: **Show 3D window** brings it forward and **Return 3D here** closes it. Opening the window from the inline 3D view switches the field back to 2D. Closing the window releases its graphics resources and returns the 3D option to the field.
+
+The window remembers its size, position and display on this device. It reopens on that display, moved fully on screen if needed; if the display is disconnected, it opens centered on the main display. It stops drawing while minimized or hidden, and it keeps playback moving while the main window is minimized. If its graphics context fails, choose **Reload 3D preview** or **Close 3D window**; editing in the main window continues. The browser preview does not offer the 3D window, and `Shift+T` is free there for other commands.
+
 ## Transition checks
 
 The Inspector analyzes the move into the selected set. Click an issue to select its performer or pair and show their paths.
+
+For the whole show, use the timeline’s problem row. Each marker names the problem type, performers and count, such as “Spacing 1.13 yd · B4, B5 · count 6”; nearby findings share a numbered marker that lists them. Arrow keys move along the row, and Enter goes to a finding or opens a group. The ⚠ count beside the row opens **Show-wide problems**, which lists every finding and opens **Analysis rules**.
 
 The current checks are:
 

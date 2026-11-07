@@ -205,7 +205,9 @@ app.whenReady().then(async () => {
     await checkNeighbors(project);
     await require('./snapping-qa.cjs')({project,editor,state,evaluate,wait,click,key,input,capture,window,pass});
     await require('./nudge-qa.cjs')({project,editor,state,evaluate,wait,click,key,capture,window,pass});
-    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
+    // #178: header, transport and drawn-field bounds across 900–1920 px windows at 100/125/150% UI scale.
+    const breakpoints = await require('./breakpoint-matrix-qa.cjs')({window,evaluate,editor,state,capture,pass});
+    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, breakpoints, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
      app.exit(0);
   } catch (error) {  console.error(error); if (window && !window.isDestroyed()) await capture('failure.png').catch(() => {}); app.exit(1); }
 });

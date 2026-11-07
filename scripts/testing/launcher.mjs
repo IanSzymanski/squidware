@@ -34,7 +34,8 @@ export async function createQa(name, { defaultOutput = path.join(root, '.qa', na
         if (data.build && path.resolve(data.build) !== path.join(root, 'dist') && !data.baseline) throw new Error('Alternate build snapshots require --baseline and cannot certify the current source.');
         const build = data.baseline ? null : await verifyBuild(root, source);
         const scope = data.baseline ? 'baseline-comparison' : 'targeted';
-        await fs.writeFile(manifest, JSON.stringify({ root, output, profile, ...data, source, build, scope, runtime: runtimeIdentity() }));
+        // `build` stays the directory runners load (stage3d, perf:electron); the verified stamp has its own key.
+        await fs.writeFile(manifest, JSON.stringify({ root, output, profile, ...data, build: data.build ?? path.join(root, 'dist'), buildStamp: build, source, scope, runtime: runtimeIdentity() }));
         for (const phase of phases) {
           await status('running', { phase, results });
           results.push(await requireProcess(require('electron'), [path.join(root, 'scripts', runner), `--${flag}=${manifest}`, ...(phase ? [`--phase=${phase}`] : [])],

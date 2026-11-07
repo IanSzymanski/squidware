@@ -8,7 +8,7 @@ export const defaultShortcuts = {
   'preferences.open': 'Primary+,',
   'tool.box': 'V', 'tool.pan': 'H', 'tool.lasso': 'L',
   'performers.add-dialog': 'A', 'set.new': 'N', 'set.duplicate': 'D', 'set.insert-before': 'Shift+N', 'set.hold': 'Shift+D', 'transform.mirror': 'M',
-  'view.toggle': 'T', 'display.paths': 'P', 'display.labels': 'J',
+  'view.toggle': 'T', 'view.popout': 'Shift+T', 'display.paths': 'P', 'display.labels': 'J',
   'field.zoom-in': '=', 'field.zoom-out': '-', 'field.fit': '0',
   'set.previous': '[', 'set.next': ']',
   'playback.toggle': 'Space', 'playback.count-previous': ',', 'playback.count-next': '.',
@@ -57,8 +57,18 @@ export function bindingError(id: ShortcutId, binding: string | null): string | n
   if (nativeIds.has(id) && !binding.startsWith('Primary+') && !(id === 'help.open' && binding === 'F1')) return 'Native menu commands require Ctrl/Cmd so they cannot intercept ordinary typing.';
   return null;
 }
-export function shortcutConflict(id: ShortcutId, binding: string | null, bindings: ShortcutBindings): ShortcutId | undefined {
-  return binding === null ? undefined : shortcutIds.find(other => other !== id && bindingFor(other, bindings) === binding);
+/** The separate 3D window exists only in the desktop app; elsewhere its binding is inert and claims no key. */
+const active = (id: ShortcutId, desktop: boolean) => desktop || id !== 'view.popout';
+export function shortcutConflict(id: ShortcutId, binding: string | null, bindings: ShortcutBindings, desktop = true): ShortcutId | undefined {
+  return binding === null ? undefined : shortcutIds.find(other => other !== id && active(other, desktop) && bindingFor(other, bindings) === binding);
+}
+/** Bindings after giving `id` a new key. Outside the desktop app a key taken from the hidden 3D window command
+ * also unbinds it there, so the stored bindings stay conflict-free for validation. */
+export function assignShortcut(id: ShortcutId, binding: string | null, bindings: ShortcutBindings, desktop: boolean): ShortcutBindings {
+  const next: ShortcutBindings = { ...bindings, [id]: binding };
+  if (binding === defaultShortcuts[id]) delete next[id];
+  if (!desktop && id !== 'view.popout' && binding !== null && bindingFor('view.popout', bindings) === binding) next['view.popout'] = null;
+  return next;
 }
 export function validateShortcutBindings(input: unknown): ShortcutBindings {
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length > shortcutIds.length) throw new Error('Invalid shortcut bindings.');
@@ -72,7 +82,7 @@ export function validateShortcutBindings(input: unknown): ShortcutBindings {
   }
   // These defaults were added after shortcut customization shipped. Keep an
   // older user's explicit binding rather than rejecting their preferences.
-  for (const id of ['set.new', 'set.insert-before', 'set.hold'] as const) {
+  for (const id of ['set.new', 'set.insert-before', 'set.hold', 'view.popout'] as const) {
     if (!Object.hasOwn(input, id) && Object.entries(result).some(([other, value]) => other !== id && value === defaultShortcuts[id])) result[id] = null;
   }
   for (const id of shortcutIds) if (shortcutConflict(id, bindingFor(id, result), result)) throw new Error(`Shortcut conflict: ${id}. Clear the other binding first.`);
@@ -97,5 +107,5 @@ export function shortcutForEvent(event: ShortcutEvent, bindings: ShortcutBinding
   const chord = bindingFromEvent(event, platform);
   if (platform === 'other' && chord === 'Primary+Y' && nativeRedoAlias(bindings)) return 'history.redo';
   // Preserve browser printing. A different export binding still opens the app's export dialog.
-  return shortcutIds.find(id => bindingFor(id, bindings) === chord && (desktop || id !== 'file.export' || chord !== 'Primary+P'));
+  return shortcutIds.find(id => bindingFor(id, bindings) === chord && active(id, desktop) && (desktop || id !== 'file.export' || chord !== 'Primary+P'));
 }

@@ -100,7 +100,7 @@ export interface CommandArguments {
   'performers.add-dialog': undefined; 'set.new': undefined; 'set.duplicate': undefined; 'set.insert-before': undefined; 'set.hold': undefined; 'set.previous': undefined; 'set.next': undefined;
   'transform.mirror': undefined; 'view.toggle': undefined; 'display.paths': undefined; 'display.labels': undefined;
   'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
-  'view.select': { view: '2d' | '3d' }; 'workspace.show': { workspace: Workspace };
+  'view.select': { view: '2d' | '3d' }; 'view.popout': undefined; 'view.popout-close': undefined; 'workspace.show': { workspace: Workspace };
   'playback.count-previous': undefined; 'playback.count-next': undefined;
   'selection.tools': undefined; 'selection.close': undefined;
   'selection.section': { id: string; additive?: boolean }; 'selection.invert': undefined;
@@ -342,6 +342,10 @@ export const commandRegistry = {
   'transform.mirror': simple('transform.mirror', 'Mirror across 50', 'Preview a physical midfield mirror on the selected performers.', canIncrement, c => beginTransform(c, { operation: 'across-50' })),
   'view.toggle': simple('view.toggle', 'Toggle 2D / 3D', 'Switch between field editing and the 3D rehearsal preview.', canNavigate, c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: s.ui.view === '2d' ? '3d' : '2d' }); }),
   'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Open the 2D field or 3D rehearsal view.', arguments: { view: '2d | 3d' }, enabled: (s, a) => canNavigate(s) && !!a && ['2d', '3d'].includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
+  // Opening moves an inline 3D view back to 2D so only one renderer runs; the window itself never edits.
+  'view.popout': simple('view.popout', 'Open 3D window', 'Show the 3D preview in its own window that follows this editor’s set, count, playback and selection. If it is open, bring it to the front.', s => s.ui.popout3d !== 'unavailable',
+    c => { const s = c.getState(); c.patch('ui', s.ui.popout3d === 'open' ? { popout3dFocus: s.ui.popout3dFocus + 1 } : { popout3d: 'open', ...(s.ui.view === '3d' ? { view: '2d' } : {}) }); }),
+  'view.popout-close': simple('view.popout-close', 'Close 3D window', 'Close the separate 3D window. The 3D preview option returns to the field area.', s => s.ui.popout3d === 'open', c => c.patch('ui', { popout3d: 'closed' })),
   'workspace.show': define({ id: 'workspace.show', name: 'Show workspace', description: 'Open Design, Cast or the Production sheet.', arguments: { workspace: 'design | cast | production' }, enabled: (s, a) => canNavigate(s) && !!a && ['design', 'cast', 'production'].includes(a.workspace), execute: (c, a) => c.patch('ui', { workspace: a.workspace, castPanelOpen: false }) }),
   'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', idle, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
   'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle all labels, selected/focused labels and hidden labels.', idle, c => { const u = c.getState().ui; c.patch('ui', !u.showLabels ? { showLabels: true, selectionLabelsOnly: false } : !u.selectionLabelsOnly ? { selectionLabelsOnly: true } : { showLabels: false }); }),
@@ -358,7 +362,7 @@ export const commandRegistry = {
     execute: c => c.patch('ui', { focusMode: !c.getState().ui.focusMode, menu: false }) }),
   'cast.show': define({ id: 'cast.show', name: 'Show Cast', description: 'Dock the Cast beside the field, expand its table or return to the Inspector without changing selection.', arguments: { mode: 'panel | table | closed' },
     enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview,
-    execute: (c, a) => { if (a.mode === 'panel') { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: false } } }); } c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }); } }),
+    execute: (c, a) => { const p = c.getState().preferences.value, restored = a.mode === 'panel' && p.workspaceLayout.castCollapsed; if (a.mode === 'panel') c.patch('preferences', { value: { ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: false } } }); c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel', ...(a.mode === 'panel' ? { castReveal: c.getState().ui.castReveal + 1, castRevealRestored: restored, focusMode: false } : {}) }); } }),
   'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' },
     enabled: (s, a) => canIncrement(s) && !!a && isNudgeKey(a.key) && (a.fast === undefined || typeof a.fast === 'boolean') && (a.fieldRelative === undefined || typeof a.fieldRelative === 'boolean'),
     execute: (c, a) => { const s = c.getState(); const delta = nudgeDelta(s.preferences.value, s.project.present, a); const index = s.selection.activeIndex;

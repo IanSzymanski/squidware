@@ -38,6 +38,8 @@ async function click(selector) {
   await frames();
 }
 const button = name => `[aria-label=${JSON.stringify(name)}]`;
+// Small or enlarged windows tuck the Inspector (#178); open it over the field, as a user would, before using its launchers.
+async function showInspector() { if (await evaluate("!!document.querySelector('#workspace-pane-inspector')?.hidden")) { await click(button('Show Inspector')); await wait("!!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay:not([hidden])')", 'Inspector overlay'); } }
 async function type(selector, text) {
   await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.focus();e.select();})()`);
   await window.webContents.debugger.sendCommand('Input.insertText', { text: String(text) }); await frames();
@@ -50,7 +52,7 @@ async function capture(name) {
 }
 const present=()=>evaluate(state+'.project.present');
 const apply=button('Apply move operation');
-async function open(){await evaluate('document.activeElement?.blur()');await click(button('Move operations'));await wait(`${state}.ui.dialog==='path-operations'`,'move operations');}
+async function open(){await evaluate('document.activeElement?.blur()');await showInspector();await click(button('Move operations'));await wait(`${state}.ui.dialog==='path-operations'`,'move operations');}
 async function choose(value){await selectNativeOption(window,button('Move operation'),value);await frames();}
 async function applyPlan(){await click(apply);await wait(`${state}.ui.dialog===null`,'operation applied');}
 app.whenReady().then(async()=>{try{

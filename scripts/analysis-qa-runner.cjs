@@ -5,7 +5,7 @@ const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, waitForProgress, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--analysis-manifest=')).slice('--analysis-manifest='.length));
 const { root, output, profile, bundle } = manifest;
-const { analyzeTransition, createPerformanceFixture, fixture } = require(bundle);
+const { analyzeTransition, createPerformanceFixture, fixture, findingName, performerLabels } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 const showWindow = BrowserWindow.prototype.show; BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
@@ -43,7 +43,31 @@ async function click(selector) {
   for(const type of ['mouseMoved','mousePressed','mouseReleased'])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,...(type==='mouseMoved'?{}:{button:'left',clickCount:1})});await frames();
 }
 async function capture(name) { await evaluate("document.activeElement?.blur()");await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height})`)); }
-async function openProblems() { await click('[aria-label="Timeline problems"]');await wait("!!document.querySelector('.problems-panel')",'problems dialog'); }
+async function openProblems() { await click('.problem-count-badge');await wait("!!document.querySelector('.problems-panel')",'problems dialog'); }
+// Timeline problem row: each marker's rectangle, Tab state, visible badge and finding count (singles 1; groups lead with
+// their size, after the badge when it abbreviates thousands).
+const timelineRow = () => evaluate("[...document.querySelectorAll('.problem-track .problem-marker')].map(e=>{const r=e.getBoundingClientRect(),label=e.getAttribute('aria-label');return {label,tab:e.tabIndex,left:r.left,right:r.right,top:r.top,bottom:r.bottom,group:e.getAttribute('aria-haspopup')==='menu',expanded:e.getAttribute('aria-expanded'),badge:e.textContent.trim(),size:e.getAttribute('aria-haspopup')==='menu'?Number(/^(?:\\d+k\\+? · )?(\\d+) /.exec(label)[1]):1}})");
+const focusedLabel = () => evaluate("document.activeElement?.getAttribute('aria-label')");
+const focusReaches = label => wait(`document.activeElement?.getAttribute('aria-label')===${JSON.stringify(label)}`, 'keyboard focus '+label);
+const named = /^(Spacing|Stride)( \S+ (yd|yd\/count|steps per 5 yd))? · \S.* · count \d+$|^(\d+k\+? · )?\d+ (spacing |stride )?problems( \(\d+ spacing, \d+ stride\))? · \S.* · counts? \d+(–\d+)?$/;
+function rowGeometry(row, trackWidth) {
+  assert.ok(row.length > 0 && row.length <= Math.ceil((trackWidth + 24) / 24), `bounded markers: ${row.length}`);
+  assert.equal(row.filter(m => m.tab === 0).length, 1, 'one roving Tab stop'); assert.equal(row.filter(m => m.tab !== 0 && m.tab !== -1).length, 0);
+  for (const [i, m] of row.entries()) {
+    assert.ok(m.right - m.left >= 23.99 && m.bottom - m.top >= 23.99, `24 px target: ${JSON.stringify(m)}`);
+    if (i) assert.ok(row[i - 1].right <= m.left + .5, `markers overlap: ${JSON.stringify([row[i - 1], m])}`);
+    assert.match(m.label, named); assert.doesNotMatch(m.label, /Problem marker|\d\.\d+ count|count \d+\.\d/);
+    // Label in Name (WCAG 2.5.3): a group's only visible text, its badge, starts its accessible name.
+    if (m.group) assert.ok(m.badge && m.label.startsWith(m.badge), `visible badge in name: ${JSON.stringify(m)}`);
+  }
+}
+// Group sizes stay inside their 24 px markers (no clipped digits).
+const badgesFit = async () => assert.deepEqual(await evaluate("[...document.querySelectorAll('.problem-marker-count')].filter(e=>{const m=e.parentElement.getBoundingClientRect(),r=e.getBoundingClientRect();return r.left<m.left-.1||r.right>m.right+.1||e.scrollWidth>e.clientWidth+.5}).map(e=>e.textContent)"),[]);
+async function tooltipInView(label) {
+  await wait(`document.querySelector('.tooltip-panel')?.textContent.startsWith(${JSON.stringify(label)})`, 'marker keyboard help');
+  const r = await evaluate("(()=>{const r=document.querySelector('.tooltip-panel').getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight}})()");
+  assert.ok(r.left >= 0 && r.top >= 0 && r.right <= r.width && r.bottom <= r.height, `help stays in the viewport: ${JSON.stringify(r)}`);
+}
 async function close() {
   // Screenshots blur the focused control while the native pointer can still
   // hover Close. Restore dialog focus and park the pointer on the heading before
@@ -94,8 +118,109 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(state+'.playback.count'),row.atCount);assert.equal(await evaluate(state+'.selection.activeIndex'),2);assert.deepEqual(await evaluate(state+'.selection.selectedIds'),['p15']);
     assert.equal(await evaluate(`JSON.stringify(${state}.project)`),before);assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-problem-performer]')].map(e=>e.dataset.problemPerformer)"),['p15']);
     await capture('problems-selected.png');
-    await evaluate(`${editor}.dispatch('set.select',{index:1})`);await click('.problem-marker');assert.ok(await evaluate(`${snapshot}.selected!==null`));assert.ok(await evaluate("document.querySelectorAll('[data-problem-performer]').length>0"));
-    pass('finding and timeline-marker input seeks the exact count, selects the right IDs and highlights paths without modifying project/history');
+    pass('finding input seeks the exact count, selects the right IDs and highlights paths without modifying project/history');
+    // Timeline problem row: one Tab stop, 24 px targets, descriptive names, every finding reachable by keyboard.
+    await evaluate(`${editor}.dispatch('set.select',{index:1});${editor}.setValue('selection','selectedIds',[])`);await frames();
+    const trackWidth=await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width");const markers=await timelineRow();rowGeometry(markers,trackWidth);await badgesFit();
+    assert.equal(markers.reduce((n,m)=>n+m.size,0),total);assert.ok(markers.some(m=>m.group));
+    assert.ok(await evaluate("(()=>{const r=document.querySelector('.problem-count-badge').getBoundingClientRect();return r.width>=24&&r.height>=24})()"));
+    assert.equal(await evaluate("document.querySelector('.problem-track').getAttribute('role')"),'toolbar');
+    await evaluate("[...document.querySelectorAll('.set-track > button')].at(-1).focus()");await key(window,'Tab');
+    assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker[tabindex=\\'0\\']')"),'Tab enters the problem row');
+    await key(window,'Tab');await focusReaches('Timeline playhead');await key(window,'Tab',['shift']);assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker')"));
+    // Tab and Shift+Tab in an open group list close it and move on from the group marker, as from a menu button: they
+    // reach what the same key reaches from the marker, and the opposite key comes back to that marker. A later group
+    // than the first marker (the row's default stop) shows that the row remembers it.
+    const tabbed=markers.filter(m=>m.group).at(-1),at=markers.indexOf(tabbed);assert.ok(at>0,`a group marker after the first: ${at}`);
+    const reachTabbed=async()=>{await key(window,'Home');await focusReaches(markers[0].label);for(let i=0;i<at;i++)await key(window,'Right');await focusReaches(tabbed.label);};
+    await reachTabbed();await key(window,'Tab',['shift']);await wait(`!document.activeElement?.closest('.problem-track')`,'Shift+Tab leaves the row');const behind=await focusedLabel();assert.ok(behind);
+    await key(window,'Tab');await focusReaches(tabbed.label);
+    for(const [mods,back,reaches] of [[[],['shift'],'Timeline playhead'],[['shift'],[],behind]]){
+      await reachTabbed();await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before Tab');await key(window,'Down');await wait("document.activeElement===document.querySelectorAll('.problem-cluster-list [role=menuitem]')[1]",'Down before Tab');
+      await key(window,'Tab',mods);await wait(`!document.querySelector('.problem-cluster-list') && !document.querySelector('.problem-marker[aria-expanded=true]') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(reaches)}`,`${mods.length?'Shift+Tab':'Tab'} from the group list moves on from its marker`);
+      await key(window,'Tab',back);await focusReaches(tabbed.label);
+    }
+    await key(window,'Home');await focusReaches(markers[0].label);await tooltipInView(markers[0].label);
+    let reached=0;const unchanged=await evaluate(`JSON.stringify(${state}.project)`);
+    for(const m of markers){
+      await focusReaches(m.label);
+      if(m.group){await key(window,'Return');await wait(`document.activeElement?.getAttribute('role')==='menuitem' && document.querySelector('.problem-track .problem-marker[aria-expanded=true]')?.getAttribute('aria-label')===${JSON.stringify(m.label)}`,'cluster list');
+        const items=await evaluate("[...document.querySelectorAll('.problem-cluster-list [role=menuitem]')].map(e=>e.textContent)");assert.equal(items.length,m.size);reached+=items.length;
+        await key(window,'Down');await wait(`document.activeElement?.textContent===${JSON.stringify(items[1])}`,'Down moves within the list');
+        await key(window,'Escape');await wait(`!document.querySelector('.problem-cluster-list') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(m.label)}`,'Escape returns to the marker');
+      } else reached++;
+      await key(window,'Right');
+    }
+    await key(window,'End');await focusReaches(markers.at(-1).label);await tooltipInView(markers.at(-1).label);
+    assert.equal(reached,total);assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[]);assert.equal(await evaluate(`JSON.stringify(${state}.project)`),unchanged);
+    // Choosing from a group by keyboard and by pointer reviews that finding and returns focus to its marker.
+    const group=markers.find(m=>m.group);await evaluate(`[...document.querySelectorAll('.problem-track .problem-marker')].find(e=>e.getAttribute('aria-label')===${JSON.stringify(group.label)}).focus()`);
+    await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'cluster list');await key(window,'End');await wait("document.activeElement===[...document.querySelectorAll('.problem-cluster-list [role=menuitem]')].at(-1)",'End reaches the last finding');const last=await evaluate("document.activeElement.textContent");await key(window,'Return');
+    await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(group.label)}`,'keyboard group choice');
+    const chosen=await evaluate(snapshot+'.selected'),labels=performerLabels(project);assert.ok(last.startsWith(findingName(chosen.issue,labels)),last);
+    assert.equal(await evaluate(state+'.playback.count'),chosen.issue.atCount);assert.deepEqual(await evaluate(state+'.selection.selectedIds'),chosen.issue.performerIds);assert.ok(await evaluate("document.querySelectorAll('[data-problem-performer]').length>0"));
+    await evaluate(`${editor}.dispatch('set.select',{index:1})`);await frames();
+    await click('.problem-track .problem-marker[aria-haspopup=menu]');await wait("!!document.querySelector('.problem-cluster-list [role=menuitem]')",'pointer cluster list');await capture('problems-timeline-group.png');
+    const firstItem=await evaluate("document.querySelector('.problem-cluster-list [role=menuitem]').textContent");await click('.problem-cluster-list [role=menuitem]');
+    await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null`,'pointer group choice');assert.ok(firstItem.startsWith(findingName((await evaluate(snapshot+'.selected')).issue,labels)));
+    assert.equal(await evaluate(state+'.playback.count'),(await evaluate(snapshot+'.selected')).issue.atCount);
+    pass('the problem row is one Tab stop of non-overlapping 24 px markers named by type, performers and whole count; arrows reach every finding, groups list theirs, Escape returns, Tab and Shift+Tab move on from the marker and choices seek and select');
+    // Escape in a group list closes only the list, also in focus mode and over a tucked-panel overlay (the workspace
+    // handles Escape in the capture phase); the next Escape then belongs to the workspace.
+    await evaluate(`${editor}.dispatch('set.select',{index:1});${analysis}.clearSelection()`);await frames();
+    async function escapeFromGroup(label) {
+      const marker=await evaluate("document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').getAttribute('aria-label')");
+      await evaluate(`[...document.querySelectorAll('.problem-track .problem-marker')].find(e=>e.getAttribute('aria-label')===${JSON.stringify(marker)}).focus()`);await key(window,'Return');
+      await wait("document.activeElement?.getAttribute('role')==='menuitem'",label+' group list');await key(window,'Escape');
+      await wait(`!document.querySelector('.problem-cluster-list') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(marker)}`,label+': Escape returns to the group marker');
+    }
+    await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`${state}.ui.focusMode && !!document.querySelector('.studio--focus')`,'focus mode');await frames();
+    await escapeFromGroup('focus mode');assert.equal(await evaluate(`${state}.ui.focusMode`),true,'Escape in the list keeps focus mode');
+    await key(window,'Escape');await wait(`!${state}.ui.focusMode && !!document.activeElement?.matches('[aria-label="Focus field"],[aria-label="Project menu"]')`,'the next Escape exits focus mode and returns focus to the header');await frames();
+    window.setContentSize(900,650);await settleNativeViewport(window,'tucked analysis layout');
+    await click('[aria-label="Show Set list"]');await wait("!!document.querySelector('.workspace-pane--overlay[data-pane=sets]')",'Set list overlay');
+    await escapeFromGroup('overlay');assert.ok(await evaluate("!!document.querySelector('.workspace-pane--overlay[data-pane=sets]')"),'Escape in the list keeps the overlay');
+    // Escape closes the overlay and returns focus to its Show button on the next frame; wait for it so that late focus cannot close the next list.
+    await key(window,'Escape');await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Set list'",'the next Escape closes the overlay and returns focus to Show Set list');
+    // A layout change closes an open list instead of leaving it over a moved marker; focus stays on the row.
+    await evaluate("document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').focus()");await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before focus mode');
+    await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`${state}.ui.focusMode && !document.querySelector('.problem-cluster-list') && document.activeElement?.matches('.problem-track .problem-marker')`,'focus mode closes the list and keeps focus on the row');
+    await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`!${state}.ui.focusMode`,'focus mode restored');
+    window.setContentSize(1366,768);await settleNativeViewport(window,'analysis window restored');
+    pass('Escape in a group list returns to its marker in focus mode and over a tucked-panel overlay before the workspace handles Escape; layout changes close an open list and keep focus in the row');
+    // The row restores focus in the commit that removes its focused marker or list; a recheck that empties the row (a
+    // keyboard edit from it) restores it when its results arrive, unless the user pressed a key or clicked meanwhile.
+    // Markers that return to a row emptied otherwise, or after such input, never take focus back, where Space would open
+    // a group list instead of playing or pausing. A press outside an open list does not pass focus through its marker.
+    const rowFocus="document.activeElement?.matches('.problem-track .problem-marker[tabindex=\"0\"]')";
+    const onDocument=async label=>assert.equal(await evaluate("document.activeElement===document.body"),true,`${label}: ${await evaluate("document.activeElement?.outerHTML.slice(0,120)")}`);
+    async function focusMarker() { await evaluate(`${editor}.dispatch('set.select',{index:1});document.querySelector('.problem-track .problem-marker[tabindex="0"]').focus()`);await wait(rowFocus,'marker focused before its moves are rechecked'); }
+    async function emptyRowFromMarker(edit) {
+      await focusMarker();
+      await evaluate(`${qa}.hold=true;${editor}.dispatch('positions.move',{index:1,updates:{p0:{x:22,y:${10+edit*.05}}}});${editor}.dispatch('set.select',{index:2});${editor}.dispatch('positions.move',{index:2,updates:{p0:{x:34,y:${10+edit*.05}}}});${editor}.dispatch('set.select',{index:1})`);
+      await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'the row empties while every move is rechecked');
+    }
+    async function markersReturn() { await evaluate(`${qa}.release()`);await ready();await wait("!!document.querySelector('.problem-track .problem-marker')",'markers return');await frames();await frames(); }
+    const edited=await evaluate(state+'.project.past.length');await emptyRowFromMarker(1);await markersReturn();await wait(rowFocus,'focus returns to the row when its recheck ends');
+    const spot=await evaluate("(()=>{const e=document.elementFromPoint(5,5);return {x:5,y:5,focusable:!!e?.closest('button,input,select,textarea,a[href],[tabindex]'),element:e?.outerHTML.slice(0,120)}})()");assert.equal(spot.focusable,false,spot.element);
+    await emptyRowFromMarker(2);for(const type of ['mouseMoved','mousePressed','mouseReleased'])await mouse(type,spot,type==='mouseMoved'?{}:{button:'left',clickCount:1});await frames();
+    await markersReturn();await onDocument('a click elsewhere during the recheck keeps focus out of the row');
+    await emptyRowFromMarker(3);await key(window,'Space');await wait(`${state}.playback.playing`,'Space plays while the row is empty');
+    await markersReturn();await onDocument('markers that return during playback leave focus on the document');
+    await key(window,'Space');await wait(`!${state}.playback.playing`,'Space pauses once markers return');assert.equal(await evaluate("!!document.querySelector('.problem-cluster-list')"),false);
+    while(await evaluate(state+'.project.past.length')>edited)await evaluate(`${editor}.dispatch('history.undo')`);await oracle();assert.deepEqual(await evaluate(state+'.project.present.sets'),project.sets);
+    // Rules with no findings empty the row after the recheck: focus goes at once, and undoing them later brings back markers, not focus.
+    await focusMarker();await evaluate(`${editor}.dispatch('analysis.rules-save',{rules:{defaults:{minimumSpacing:.1,maximumStride:5}}})`);await ready();
+    await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'rules without findings empty the row');
+    await evaluate(`${editor}.dispatch('history.undo')`);await ready();await wait("!!document.querySelector('.problem-track .problem-marker')",'findings return');await frames();await frames();
+    await onDocument('markers that return to a row left empty leave focus on the document');assert.equal(await evaluate(state+'.project.past.length'),edited);
+    await key(window,'Space');await wait(`${state}.playback.playing`,'Space plays once markers return');assert.equal(await evaluate("!!document.querySelector('.problem-cluster-list')"),false);await key(window,'Space');await wait(`!${state}.playback.playing`,'Space pauses');
+    await evaluate(`${editor}.dispatch('set.select',{index:1});document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').focus()`);await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before a press outside');
+    await evaluate(`${qa}.focused=[];document.addEventListener('focusin',${qa}.logFocus=e=>${qa}.focused.push(e.target.getAttribute('aria-label')||e.target.tagName),true)`);
+    for(const type of ['mouseMoved','mousePressed','mouseReleased'])await mouse(type,spot,type==='mouseMoved'?{}:{button:'left',clickCount:1});
+    await wait("!document.querySelector('.problem-cluster-list') && document.activeElement===document.body",'a press outside closes the list');await frames();
+    assert.deepEqual(await evaluate(`(document.removeEventListener('focusin',${qa}.logFocus,true),${qa}.focused)`),[],'a press outside the list does not focus its marker on the way out');
+    pass('the row keeps focus through a recheck that empties it unless the user acts first; markers returning to a row left empty or after a key or click, and presses outside a list, leave focus where it went, so Space plays and pauses');
     // Native drag: cancel with Escape, then repeat and commit one history entry.
     let point=await startDrag();const baseline=await evaluate(`JSON.stringify(${state}.project)`);
     await evaluate(`${qa}.hold=true`);await mouse('mouseMoved',{x:point.x+40,y:point.y+50},{button:'left',buttons:1});
@@ -128,8 +253,38 @@ app.whenReady().then(async () => {
     await evaluate(`new Promise(resolve=>{const times=[];let frame=0;function tick(){const t=performance.now();${editor}.dispatch('positions.move',{index:1,updates:{[${JSON.stringify(id)}]:{x:42+(frame%8)*.125,y:20}}});times.push(performance.now()-t);if(++frame<30)setTimeout(tick,0);else{${qa}.dispatchTimes=times;resolve();}}tick();})`);await ready();
     const current=await evaluate(state+'.project.present');for(const i of [1,2,127])assert.deepEqual(await evaluate(`${snapshot}.moves[${i-1}].issues`),analyzeTransition(current,i));metrics.rapidEditDispatchMs=await evaluate(qa+'.dispatchTimes');
     assert.equal(await evaluate(`${qa}.requests.filter(r=>r.input).every(r=>r.input.tracks.length<=500 && !r.input.sets)`),true);
+    const maximumTotal=await evaluate(`${snapshot}.moves.reduce((n,m)=>n+m.issues.length,0)`),maximumRow=await timelineRow();
+    if(maximumTotal){rowGeometry(maximumRow,await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width"));await badgesFit();assert.equal(maximumRow.reduce((n,m)=>n+m.size,0),maximumTotal);}metrics.maximum={findings:maximumTotal,markers:maximumRow.length};
+    // Choosing from a group beside Cast returns to Design and the Inspector: the track widens and dense groups regroup,
+    // replacing the focused marker. Keyboard focus stays on the row's remembered marker, never the document body.
+    assert.ok(maximumRow.filter(m=>m.group).length>=4,'dense maximum groups');
+    const designWidth=await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width");let regrouped=0;
+    for(const index of [1,2,3]){
+      await evaluate(`${editor}.dispatch('cast.show',{mode:'panel'})`);await wait(`${state}.ui.castPanelOpen && document.querySelector('.problem-track').getBoundingClientRect().width<${designWidth}`,'Cast beside the field');await frames();
+      await evaluate(`(()=>{const m=[...document.querySelectorAll('.problem-track .problem-marker[aria-haspopup=menu]')][${index}];window.__chosenMarker=m;m.focus();})()`);await key(window,'Return');
+      await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list beside Cast');await key(window,'Return');
+      await wait(`!${state}.ui.castPanelOpen && ${snapshot}.selected!==null && !document.querySelector('.problem-cluster-list') && document.querySelector('.problem-track').getBoundingClientRect().width===${designWidth}`,'review from Cast');await frames();await frames();
+      regrouped+=await evaluate('Number(!window.__chosenMarker.isConnected)');
+      assert.ok(await evaluate("document.activeElement?.matches('.problem-track .problem-marker[tabindex=\"0\"]')"),`focus stays on the problem row: ${await evaluate("document.activeElement?.outerHTML.slice(0,120)")}`);
+      await evaluate(`${analysis}.clearSelection();${editor}.dispatch('set.select',{index:1})`);await frames();
+    }
+    assert.ok(regrouped>0,'reviews from Cast regroup the row');metrics.castReviewsRegrouped=regrouped;
+    // 500 performers on one spot make about 125,000 findings at one count: a “99k+” group. Its badge fits in the app font
+    // and in the widest common fallback faces, DejaVu Sans (Linux without the app's fonts) or Verdana (macOS, Windows).
+    const stacked=createPerformanceFixture('maximum'),spot0=Object.values(stacked.sets[0].positions)[0];stacked.sets=stacked.sets.slice(0,2);stacked.moves=stacked.moves.slice(0,1);
+    for(const set of stacked.sets)for(const id of Object.keys(set.positions))set.positions[id]={...spot0};
+    await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(stacked)}});${editor}.dispatch('set.select',{index:1})`);await ready();await frames();
+    const cappedRow=await timelineRow(),capped=cappedRow.find(m=>m.badge==='99k+');assert.ok(capped&&capped.size>=100000,JSON.stringify(cappedRow));
+    rowGeometry(cappedRow,await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width"));await badgesFit();
+    // The wider markers at the window's ends stay whole inside the viewport that clips the timeline, focus outline included.
+    assert.deepEqual(await evaluate("(()=>{const v=document.querySelector('.timeline-viewport').getBoundingClientRect();return [...document.querySelectorAll('.problem-track .problem-marker')].filter(e=>{const r=e.getBoundingClientRect();return r.left<v.left-.1||r.right>v.right+.1}).map(e=>e.getAttribute('aria-label'))})()"),[],'capped-row markers stay inside the timeline viewport');
+    const wide=await evaluate(`(()=>{const width=font=>{const s=document.createElement('span');s.style.cssText='position:absolute;white-space:nowrap;font:700 11px '+font;s.textContent='99k+';document.body.append(s);const w=s.getBoundingClientRect().width;s.remove();return w};const style=document.createElement('style');style.id='qa-badge-font';style.textContent='.problem-marker-count{font-family:"DejaVu Sans",Verdana,monospace!important}';document.head.append(style);return {wide:width('"DejaVu Sans",Verdana,monospace'),mono:width('monospace')};})()`);
+    // CI images carry one of the faces; elsewhere a machine without both skips this check rather than failing the suite.
+    const wideFont=wide.wide!==wide.mono;if(process.env.CI)assert.ok(wideFont,'DejaVu Sans or Verdana is installed');
+    if(wideFont){await frames();await badgesFit();}else console.log('SKIP wide-fallback badge check: neither DejaVu Sans nor Verdana is installed (required when CI is set)');
+    await evaluate("document.getElementById('qa-badge-font').remove()");metrics.capped={size:capped.size,width:capped.right-capped.left,wideFontText:wideFont?wide.wide:null};
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
-    pass('127 moves with 500 performers complete with bounded DOM markers; rapid edits and same-ID project replacement keep reference-correct results');
+    pass(`127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast keeps focus in the regrouped row; a 99k+ badge fits${wideFont?' in wide fallback faces':''} and its row stays inside the timeline; rapid edits and same-ID project replacement keep reference-correct results`);
     await openProblems();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await capture(`problems-${theme}.png`);}
     await close();
     window.setContentSize(1024,720);window.webContents.setZoomFactor(1.25);await settleNativeViewport(window,'enlarged analysis');await openProblems();await capture('problems-enlarged.png');

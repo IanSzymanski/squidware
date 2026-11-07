@@ -32,6 +32,13 @@ async function control(selector) {
   await wait('!!window.__workspaceClick', 'native click ' + selector);
   assert.ok(await evaluate('window.__workspaceExpected.contains(window.__workspaceClick)'), selector + ' receives native input');
 }
+// Clicks the scrim beside an open overlay, on the side away from the pane.
+async function clickScrim() {
+  const point = await evaluate("(()=>{const s=document.querySelector('.workspace-overlay-dismiss').getBoundingClientRect(),p=document.querySelector('.workspace-pane--overlay').getBoundingClientRect();const x=Math.round(p.left>s.left+s.width/2?s.left+20:s.right-20),y=Math.round(s.top+s.height/2);return {x,y,hit:document.elementFromPoint(x,y)?.classList.contains('workspace-overlay-dismiss')}})()");
+  assert.ok(point.hit, 'the scrim is clickable beside the overlay');
+  await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
+  for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
+}
 async function viewport(width, height, zoom = 1) {
   window.setContentSize(width, height); window.webContents.setZoomFactor(zoom);
   await settleNativeViewport(window, 'workspace display change');
@@ -46,11 +53,21 @@ async function measure(label) {
 const presetState = "(()=>{const probe=document.createElement('i');probe.style.color='var(--accent)';document.body.append(probe);const accent=getComputedStyle(probe).color;probe.remove();return {custom:document.querySelector('.layout-custom')?.textContent??null,presets:[...document.querySelectorAll('.layout-presets .button')].map(b=>{const s=getComputedStyle(b);return [b.getAttribute('aria-label'),b.getAttribute('aria-pressed'),!!b.querySelector('.lucide-check'),s.borderTopColor===accent&&parseFloat(s.borderTopWidth)>=1.5]})}})()";
 const expectedPresets = current => ({ custom: current === 'custom' ? 'Custom layout: choose a preset to restore its panels and widths.' : null,
   presets: ['Write', 'Review', 'Rehearse'].map(name => { const on = name.toLowerCase() === current; return [`${name} preset`, String(on), on, on]; }) });
+// #178: below the compact header breakpoint, Layout opens from Menu and moves focus into its options.
+async function openLayout() {
+  if (await evaluate("document.querySelector('.studio').dataset.header === 'full'")) {
+    await control('[aria-label="Workspace layout"]');
+    assert.equal(await evaluate("document.querySelector('[aria-label=\"Workspace layout\"]').getAttribute('aria-expanded')"), 'true');
+  } else {
+    assert.equal(await evaluate("document.querySelector('.header-actions [aria-label=\"Workspace layout\"]')"), null, 'compact header folds Layout into Menu');
+    await control('[aria-label="Project menu"]'); await control('.dropdown [aria-label="Workspace layout"]');
+    await wait("!!document.querySelector('#workspace-layout-options') && document.activeElement?.getAttribute('aria-label')==='Close layout options'", 'layout options from Menu');
+  }
+}
 async function preset(name) {
-  await control('[aria-label="Workspace layout"]');
+  await openLayout();
   const current = await evaluate(`${state}.preferences.value.workspaceLayout.preset`);
   assert.deepEqual(await evaluate(presetState), expectedPresets(current), 'Layout popover shows the current preset');
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Workspace layout\"]').getAttribute('aria-expanded')"), 'true');
   await control(`[aria-label="${name} preset"]`);
   await wait(`${state}.preferences.value.workspaceLayout.preset==='${name.toLowerCase()}'`, name + ' preset applied');
   await wait(`document.querySelector('[aria-label="${name} preset"]')?.getAttribute('aria-pressed')==='true'`, name + ' preset pressed');
@@ -72,6 +89,20 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`${state}.ui.castPanelOpen`), true); assert.equal(await evaluate(`${state}.ui.focusMode`), false);
       await wait("document.querySelector('.cast-dock')?.getBoundingClientRect().width===360", 'Cast width restored across process restart');
       await capture('workspace-restored.png'); pass('intentional widths, panel choice and collapse states survive a fresh desktop process; focus starts escapable');
+      // #178: Cast restored at startup beside the 3D view of a 1024 × 700 window at 150% (a matrix size) never opens a
+      // scrim: it docks without scrolling the workspace or starts tucked behind Show Cast. Choosing 2D, where it fits,
+      // then docks it with no scrolling: the crowding decision belongs to the view it was measured in.
+      await viewport(1024, 700);
+      await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1.5})); ${editor}.setValue('ui','view','3d')`);
+      await wait(`${state}.preferences.status==='saved'`, '150% UI scale and the 3D view saved');
+      window.webContents.reload();
+      await wait(`!!${editor} && ${state}.preferences.status==='saved' && ${state}.ui.castPanelOpen && ${state}.ui.view==='3d' && !!document.querySelector('.field-container.is-3d') && document.querySelector('.studio').clientWidth<700`, 'Cast, the 3D view and 150% restored at startup');
+      const cast = "(()=>{const p=document.querySelector('#workspace-pane-cast'),b=document.querySelector('.studio-body'),s=document.querySelector('[aria-label=\"Show Cast\"]')?.getBoundingClientRect(),hit=s&&document.elementFromPoint(s.x+s.width/2,s.y+s.height/2);return [p.hidden?'tucked':p.classList.contains('workspace-pane--overlay')?'over':'docked',b.scrollHeight-b.clientHeight<=1,!!hit?.closest('[aria-label=\"Show Cast\"]'),!!document.querySelector('.workspace-overlay-dismiss')].join()})()";
+      const settled = await evaluate(`new Promise(resolve=>{const out=[];const tick=()=>{out.push(${cast});if(out.length<6)requestAnimationFrame(tick);else resolve(out)};requestAnimationFrame(tick)})`);
+      assert.ok(['docked,true,false,false', 'tucked,true,true,false', 'tucked,false,true,false'].includes(settled.at(-1)) && new Set(settled.slice(-3)).size === 1, `Cast restored beside the 3D view docks without scrolling or starts tucked behind Show Cast, with no scrim: ${settled.join(' | ')}`);
+      await control('[aria-label="2D field"]');
+      await wait(`${cast}==='docked,true,false,false'`, 'choosing 2D docks the restored Cast without scrolling the workspace');
+      await capture('workspace-restored-cast-2d.png'); pass('Cast restored at startup beside the 3D view at 1024 × 700 @150% shows no scrim and docks without scrolling once 2D is chosen');
     } else {
       const original = await evaluate(`${state}.project`);
       const initial = await measure('write'); assert.ok(initial.fieldHeight >= 470, JSON.stringify(initial)); await capture('workspace-write.png');
@@ -109,19 +140,54 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate(`${state}.selection.selectedIds.length`), 1);
       await key('F', [process.platform === 'darwin' ? 'meta' : 'control', 'shift']); await wait("!!document.querySelector('.studio--focus')", 'focus keyboard shortcut');
       await control('[aria-label="Exit focus"]'); pass('focus increases field space, preserves selection on Escape and has pointer/keyboard restore');
-      for (const [width, height, zoom] of [[1000, 700, 1], [850, 680, 1], [1366, 768, 2], [1000, 700, 2]]) {
+      // Narrow windows tuck the set list first, then the Inspector; opening one over the field never writes the saved layout.
+      const savedLayout = await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`);
+      const docked = await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]");
+      // castOverlay: whether Cast shown from its header tab docks beside a narrower field (false) or opens over it (true).
+      // 1366 × 768 at zoom 2 (683 × 384, below the smallest supported height) already scrolls; docking Cast beside the
+      // narrower field would scroll it further, so Cast opens over the field there.
+      for (const [width, height, zoom, tucked, castOverlay] of [[1000, 700, 1, [false, false]], [850, 680, 1, [true, false]], [1366, 768, 2, [true, true], true], [1000, 700, 2, [true, true], true]]) {
         await viewport(width, height, zoom); await measure(`${width}x${height}@${zoom}`);
+        assert.deepEqual(await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]"), tucked, `${width}x${height}@${zoom} tucks the set list first`);
         const hiddenPane = await evaluate("document.querySelector('#workspace-pane-sets').hidden ? 'Set list' : document.querySelector('#workspace-pane-inspector').hidden ? 'Inspector' : null");
         if (hiddenPane) {
           await control(`[aria-label="Show ${hiddenPane}"]`);
           await wait("!!document.querySelector('.workspace-pane--overlay')", 'narrow pane overlay');
           await capture(`workspace-${width}-${zoom}.png`); await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'overlay Escape');
+          // Its heading button closes a tucked pane without collapsing it or making the layout Custom.
+          await control(`[aria-label="Show ${hiddenPane}"]`); await wait("!!document.querySelector('.workspace-pane--overlay')", 'narrow pane overlay again');
+          await control('.workspace-pane--overlay .workspace-pane-heading button');
+          await wait(`!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}'`, 'heading button closes the overlay');
+          // A click on the field around the overlay closes it like Escape and returns focus to Show, without the keyboard
+          // focus style (and its help) even when the overlay was opened from the keyboard.
+          await key('Tab', ['shift']); await key('Tab'); await wait(`document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}' && document.activeElement.matches(':focus-visible')`, 'Show reached with Tab');
+          await key('Return'); await wait("!!document.querySelector('.workspace-pane--overlay')", 'narrow pane overlay from the keyboard for a click beside it');
+          await clickScrim();
+          await wait(`!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}'`, 'a click beside the overlay closes it and focuses Show');
+          assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"), false, 'a pointer click beside the overlay focuses Show without the keyboard focus style');
         } else await capture(`workspace-${width}-${zoom}.png`);
+        if (castOverlay !== undefined) {
+          await control('.workspace-tab[aria-label="Cast"]');
+          await wait("(()=>{const p=document.querySelector('#workspace-pane-cast');return !!p&&!p.hidden&&!p.inert&&p.contains(document.activeElement)})()", 'Cast tab shows Cast with focus inside');
+          assert.equal(await evaluate("document.querySelector('#workspace-pane-cast').classList.contains('workspace-pane--overlay')"), castOverlay, `${width}x${height}@${zoom} Cast ${castOverlay ? 'opens over' : 'docks beside'} the field`);
+          assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'), true, 'Cast fits without overflow');
+          await capture(`workspace-cast-${width}-${zoom}.png`);
+          await control('.workspace-tab[aria-label="Design"]'); await wait(`!${state}.ui.castPanelOpen && !document.querySelector('.workspace-pane--overlay')`, 'Design returns to the Inspector');
+        }
+        assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), savedLayout, 'auto-tucking and overlays leave the saved layout unchanged');
       }
+      await viewport(1366, 768);
+      assert.deepEqual(await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]"), docked, 'panels dock again when the window grows');
+      assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), savedLayout);
+      pass('narrow and zoomed windows tuck the set list, then the Inspector, open them over the field (closing with Escape or the heading button), show Cast docked or over the field from its tab, and restore the unchanged saved layout when the window grows');
+      await viewport(1000, 700, 2);
       await preset('Write');
       await control('[aria-label="Show Inspector"]');
       await control('[aria-label="Rotate selection"]'); await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
-      assert.equal(await evaluate("document.querySelector('[aria-label=\"Collapse Inspector\"]').getAttribute('aria-disabled')"), 'true');
+      assert.equal(await evaluate("document.querySelector('[aria-label=\"Close Inspector\"]').getAttribute('aria-disabled')"), 'true');
+      // No scrim hides the preview, and the field fits beside the overlay (this window is below the supported minimum,
+      // so the workspace scrolls under the pinned timeline; the matrix checks hit-testing at supported sizes).
+      assert.deepEqual(await evaluate("(()=>{const f=document.querySelector('.field-container').getBoundingClientRect(),o=document.querySelector('.workspace-pane--overlay').getBoundingClientRect();return [!!document.querySelector('.workspace-overlay-dismiss'),f.width>100&&f.right<=o.left+1]})()"), [false, true], 'preview field stays visible beside the narrow Inspector overlay');
       // Opening a transform focuses its operation select. Leave that native
       // control before asserting the editor's Escape shortcut.
       await wait("document.activeElement.getAttribute('aria-label')==='Transform operation'", 'preview operation focus');
@@ -131,11 +197,34 @@ app.whenReady().then(async () => {
       assert.ok(await evaluate("!!document.querySelector('.workspace-pane--overlay')"));
       await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'second Escape dismisses overlay');
       pass('narrow overlays preserve preview controls and let Escape cancel the edit before dismissing the panel');
+      // A pane the user collapsed and then restored over the field, by Show or by a preview, offers Collapse there, which
+      // collapses it again; Close (layout unchanged) is only for panes the window tucked.
+      await preset('Rehearse');
+      await control('[aria-label="Show Set list"]'); await wait("!!document.querySelector('#workspace-pane-sets.workspace-pane--overlay')", 'restored Set list over the field');
+      assert.equal(await evaluate("document.querySelector('.workspace-pane--overlay .workspace-pane-heading button').getAttribute('aria-label')"), 'Collapse Set list');
+      await control('.workspace-pane--overlay .workspace-pane-heading button');
+      await wait(`${state}.preferences.value.workspaceLayout.setsCollapsed && !document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Set list'`, 'Collapse collapses the restored Set list again');
+      // The header Cast tab restores a collapsed Cast the same way.
+      await evaluate(`${editor}.dispatch('layout.update', { update: { castCollapsed: true } })`);
+      await control('.workspace-tab[aria-label="Cast"]'); await wait("!!document.querySelector('#workspace-pane-cast.workspace-pane--overlay')", 'the Cast tab restores the collapsed Cast over the field');
+      assert.equal(await evaluate("document.querySelector('.workspace-pane--overlay .workspace-pane-heading button').getAttribute('aria-label')"), 'Collapse Cast');
+      await control('.workspace-pane--overlay .workspace-pane-heading button');
+      await wait(`${state}.preferences.value.workspaceLayout.castCollapsed && !document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Cast'`, 'Collapse collapses the restored Cast again');
+      await control('.workspace-tab[aria-label="Design"]'); await wait(`!${state}.ui.castPanelOpen`, 'Design after the restored Cast');
+      // A preview restores a collapsed Inspector in the saved layout and opens it over the field without a scrim; that
+      // placement ends with the preview, which leaves no overlay or scrim behind and focus on the field.
+      await preset('Review');
+      await evaluate(`${editor}.setValue('selection','selectedIds',[${state}.project.present.performers[0].id]); ${editor}.dispatch('transform.mirror')`);
+      await wait(`!!${state}.ui.transformPreview && !!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss')`, 'a preview restores the collapsed Inspector over the field');
+      await control('[aria-label="Cancel transform"]');
+      await wait(`!${state}.ui.transformPreview && !document.querySelector('.workspace-pane--overlay') && !document.querySelector('.workspace-overlay-dismiss') && !!document.activeElement?.closest('.field-stage__svg')`, 'the preview\'s Inspector placement ends with it, focus on the field');
+      assert.deepEqual(await evaluate(`(({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }) => ({ preset, setsCollapsed, inspectorCollapsed, castCollapsed }))(${state}.preferences.value.workspaceLayout)`), { preset: 'custom', setsCollapsed: false, inspectorCollapsed: false, castCollapsed: false });
+      pass('a pane restored over the field by Show or the Cast tab offers Collapse, which restores the collapsed choice; a preview restores a collapsed Inspector over the field only while it runs');
       await viewport(1366, 768); await preset('Write');
       await control('.workspace-tab[aria-label="Cast"]');
       await control('[aria-label="Resize Cast"]'); await key('Left', ['shift']);
       await wait(`${state}.preferences.value.workspaceLayout.castWidth===340`, 'Cast keyboard resize');
-      await control('[aria-label="Workspace layout"]');
+      await openLayout();
       // Slider input receives native key events and exposes a precise pixel value.
       for (const [name, value] of [['Set list', 290], ['Inspector', 310], ['Cast', 360]]) {
         await control(`[aria-label="${name} width"]`); await key('Home');

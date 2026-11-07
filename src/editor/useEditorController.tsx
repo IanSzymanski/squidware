@@ -44,8 +44,11 @@ export function useEditorController() {
   const castPanelOpen = useEditorSelector(state => state.ui.castPanelOpen);
   function showCast(mode: 'panel' | 'table' | 'closed') {
     flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
-    if (dispatch('cast.show', { mode }) === true) requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(mode === 'closed' ? '.selection-bar button' : '[aria-label="Find a performer"]')?.focus();
+    // Cast beside the field takes focus once it docks or opens over the field (useWorkspaceLayout), on every route.
+    if (dispatch('cast.show', { mode }) === true && mode !== 'panel') requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(mode === 'closed' ? '.selection-bar button' : '[aria-label="Find a performer"]');
+      // Never focus into a tucked (hidden, inert) pane, which would drop focus to the page: its Show button opens it.
+      (target && !target.closest('[inert], [hidden]') ? target : document.querySelector<HTMLElement>(`[aria-label="Show ${mode === 'closed' ? 'Inspector' : 'Cast'}"]`))?.focus();
     });
   }
   const projectEpoch = useEditorSelector(state => state.ui.projectEpoch);
