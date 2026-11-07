@@ -186,7 +186,8 @@
 .overflow-menu { position: relative; display: flex; }
 /* Below the smallest supported layout the workspace scrolls; the timeline stays pinned so playback never leaves view. */
 .studio .timeline { position: sticky; bottom: 0; z-index: 5; }
-.studio .timeline:has(.overflow-menu[data-overflow-open]) { z-index: 16; }
+/* An open More playback options stays above a notification toast (z-index 100), which would otherwise cover its options. */
+.studio .timeline:has(.overflow-menu[data-overflow-open]) { z-index: 101; }
 .overflow-menu-panel { position: absolute; z-index: 40; display: flex; flex-direction: column; gap: 2px; min-width: 220px; padding: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 10px 35px var(--shadow); }
 .overflow-menu-panel--above { bottom: calc(100% + 6px); left: 0; }
 .overflow-menu-panel--below { top: calc(100% + 6px); right: 0; }

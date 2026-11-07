@@ -111,9 +111,11 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
         await nativeClick("document.querySelector('.menu-dismiss')"); await wait("!document.querySelector('.dropdown')", `${label} Menu closed`);
       }
       if (transportFolded.length) {
+        // A notification toast (bottom center, above the transport) must not cover the open menu's options.
+        await evaluate(`${editor}.setValue('ui','toast','Notification over More playback options')`); await wait("!!document.querySelector('.toast')", `${label} toast shown`);
         await nativeClick(byName('More playback options')); await wait("!!document.querySelector('.overflow-menu-panel')", `${label} More playback options open`);
-        assert.deepEqual(await reachableIn(transportFolded, "document.querySelector('.overflow-menu-panel')"), [], `${label} folded transport controls are reachable`);
-        await key('Escape'); await wait("!document.querySelector('.overflow-menu-panel') && document.activeElement?.getAttribute('aria-label')==='More playback options'", `${label} Escape closes More and restores focus`);
+        assert.deepEqual(await reachableIn(transportFolded, "document.querySelector('.overflow-menu-panel')"), [], `${label} folded transport controls are reachable, also under a notification toast`);
+        await evaluate(`${editor}.setValue('ui','toast','')`); await key('Escape'); await wait("!document.querySelector('.overflow-menu-panel') && document.activeElement?.getAttribute('aria-label')==='More playback options'", `${label} Escape closes More and restores focus`);
       }
       for (const [pane, name, inside] of [['sets', 'Set list', 'Add set'], ['side', 'Inspector', 'Close Inspector']]) {
         if (!m.panes[pane]) continue;
