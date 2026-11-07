@@ -24,6 +24,20 @@ async function runFrozen(load: () => Promise<unknown>, data: unknown) {
   await Promise.race([scope.onmessage!({ data }), new Promise(resolve => realTimeout(resolve, 3000))]);
   return posted;
 }
+/** Load a worker module against a stand-in global scope and deliver each request as its own task, all queued before the
+ * first one runs, as a newer request posted while a job runs reaches the worker. Each setImmediate task queued here runs
+ * in this turn of the event loop, ahead of a message the job posts to yield, so a message yield lets the newer request
+ * cancel the job; a yield that never leaves the task (a microtask, or a busy wait) lets the job finish and post first. */
+async function runQueued(load: () => Promise<unknown>, requests: unknown[]) {
+  const posted: unknown[] = [], scope = { onmessage: null as null | ((event: { data: unknown }) => Promise<void>), postMessage: (message: unknown) => { posted.push(message); } };
+  vi.resetModules(); vi.stubGlobal('self', scope); await load();
+  const jobs = await new Promise<Promise<void>[]>(resolve => {
+    const started: Promise<void>[] = [];
+    requests.forEach((data, index) => setImmediate(() => { started.push(scope.onmessage!({ data })); if (index === requests.length - 1) resolve(started); }));
+  });
+  await Promise.race([Promise.all(jobs), new Promise(resolve => realTimeout(resolve, 5000))]);
+  return posted;
+}
 
 describe('budgeted worker jobs yield with a message, so clamped or coalesced worker timers cannot stretch them', () => {
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -50,5 +64,30 @@ describe('budgeted worker jobs yield with a message, so clamped or coalesced wor
     const { project } = curvedShow(), input = transitionInput(project, 2, 0)!;
     const posted = await runFrozen(() => import('./analysis/analysis.worker'), { revision: 7, input });
     expect(posted).toEqual([{ revision: 7, result: expect.objectContaining({ issues: expect.any(Array) }) }]);
+  }, 10000);
+});
+
+describe('a newer request the worker has already received runs before a paused job resumes, so it cancels that job', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('the per-move check worker posts only the newer revision', async () => {
+    const { project } = curvedShow(), input = transitionInput(project, 2, 0)!;
+    const posted = await runQueued(() => import('./analysis/analysis.worker'), [{ revision: 1, input }, { revision: 2, input }]);
+    expect(posted).toEqual([{ revision: 2, result: expect.objectContaining({ issues: expect.any(Array) }) }]);
+  }, 10000);
+
+  it('the movement comparison worker posts only the newer generation', async () => {
+    const { project, ids } = curvedShow(), input = transitionInput(project, 2, 0)!;
+    const posted = await runQueued(() => import('./formationTransition.worker'), [1, 2].map(generation => ({ generation, current: input, proposed: input, ids })));
+    expect(posted).toEqual([{ generation: 2, result: expect.objectContaining({ issueCount: expect.any(Number) }) }]);
+  }, 10000);
+
+  it('the assignment comparison worker posts only the newer generation', async () => {
+    const { project, ids } = curvedShow(), store = createEditorStore(project);
+    store.dispatch('set.select', { index: 1 }); store.setValue('selection', 'selectedIds', ids); store.dispatch('formation.preview', { kind: 'line' });
+    store.dispatch('formation.update', { options: { center: { x: 50, y: 25 }, width: 60, height: 0, columns: 4, rotation: 0, assignment: 'roster' } });
+    const problem = assignmentProblem(project, store.getState().ui.formationPreview!, 0);
+    const posted = await runQueued(() => import('./assignment.worker'), [1, 2].map(generation => ({ generation, problem, constraints: emptyAssignmentConstraints() })));
+    expect(posted).toEqual([{ generation: 2, result: expect.objectContaining({ proposals: expect.any(Array) }) }]);
   }, 10000);
 });

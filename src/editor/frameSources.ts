@@ -1,13 +1,15 @@
 type FrameWindow = Pick<Window, 'requestAnimationFrame' | 'cancelAnimationFrame'>;
 const sources = new Set<FrameWindow>();
 /** The editor counts as throttled while its smoothed frame interval is at least this long, while it has painted nothing
- * for more than four smoothed intervals (67 ms at 60 Hz), and after such an interval (a stop) until it paints two frames
- * in a row less than this apart. Chromium gives a minimized, covered or hidden editor about one frame a second, unevenly
- * (now and then an early frame 240 ms after the previous one, in the runs measured never two in a row), or none. A shown
- * editor painting faster than this keeps the clock however fast a 3D window paints, also through its occasional slow
- * frames: on a slow host a heavy show paints every 250-300 ms with stalls of 700 ms, and filling those in from the 3D
- * window would render both windows more often than the editor paints. One painting slower cannot show smooth playback,
- * and the 3D window can. */
+ * for more than four smoothed intervals (67 ms at 60 Hz), and while it is stopped: a frame more than four smoothed
+ * intervals after the one before starts a stop, which lasts until a frame that starts none ends the second interval in a
+ * row shorter than this. Chromium gives a minimized, covered or hidden editor about one frame a second, unevenly (now and
+ * then an early frame 240 ms after the previous one, in the runs measured never two in a row), or none. Once it has the
+ * clock, a shown editor keeps it however fast a 3D window paints through every frame that neither comes more than four
+ * smoothed intervals after the one before nor lifts the smoothed interval to this, also an occasional long frame: on a
+ * slow host a heavy show paints every 250-300 ms with frames of 700 ms between, and filling those in from the 3D window
+ * would render both windows more often than the editor paints. One painting slower cannot show smooth playback, and the
+ * 3D window can. */
 export const EDITOR_THROTTLED_MS = 400;
 /** The window whose frame ran the latest playback frame; the editor's latest frame time, its latest frame interval (capped
  * at twice the threshold), its smoothed frame interval (each interval moves it a quarter of the way, or half while
@@ -22,15 +24,16 @@ export function addFrameSource(view: FrameWindow): () => void {
 }
 /** Run one playback frame per painted frame of the clock window (#181). A window's frame runs it only when no other
  * window ran one since that window's previous frame, so two windows painting in the same vsync, or alternately, never
- * run two; a 3D window's frame also needs a throttled editor. The editor is the clock while it paints normally; a 3D
- * window drives at its own rate while the editor is throttled or stopped, through uneven editor frames, and the editor
- * takes the clock back once it paints two frames in a row less than EDITOR_THROTTLED_MS apart, whatever its history.
+ * run two; a 3D window's frame also needs a throttled editor. So a 3D window drives at its own rate while the editor is
+ * throttled, through uneven editor frames, and the editor takes the clock back at its second interval in a row shorter
+ * than EDITOR_THROTTLED_MS (unless that frame starts a new stop), whatever its history.
  * With no 3D window this is requestAnimationFrame. Returns a cancel function. */
 export function requestFrame(callback: () => void, primary: FrameWindow = window): () => void {
   if (!sources.size) { const handle = primary.requestAnimationFrame(callback); return () => primary.cancelAnimationFrame(handle); }
   // A new loop (play, resume, or a restart after an edit) leaves a driving 3D window driving: the editor's first frame
-  // measures the interval across the pause, so a shown editor takes the clock at its third frame and a still throttled
-  // one does not. If the editor ran the last frame, its silence counts from now, so a pause never looks like a stop.
+  // measures the interval across the pause, so a shown editor whose frames come less than EDITOR_THROTTLED_MS apart takes
+  // the clock by its third frame and a still throttled one does not. If the editor ran the last frame, its silence counts
+  // from now, so a pause never looks like a stop.
   if (!looping && !(last && sources.has(last))) editorAt = performance.now();
   let done = false; const handles = new Map<FrameWindow, number>(), waited = new Set<FrameWindow>();
   // A closing 3D window can refuse frame calls; the editor window still delivers the frame.

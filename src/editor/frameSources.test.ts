@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { addFrameSource, requestFrame } from './frameSources';
 
 function queue() {
   const callbacks = new Map<number, FrameRequestCallback>(); let next = 0;
   return { callbacks, requestAnimationFrame: (callback: FrameRequestCallback) => { callbacks.set(++next, callback); return next; }, cancelAnimationFrame: (id: number) => { callbacks.delete(id); },
     tick() { const pending = [...callbacks.values()]; callbacks.clear(); pending.forEach(callback => callback(0)); } };
 }
-let clock = 0;
-beforeEach(() => {
-  clock += 100000; vi.spyOn(performance, 'now').mockImplementation(() => clock);
-  // Frame history is module state: editor frames at 60 Hz beside an open 3D window give every test the editor as its clock.
+let clock = 0, { addFrameSource, requestFrame } = {} as typeof import('./frameSources');
+beforeEach(async () => {
+  // Frame history is module state: every test gets a fresh module and clock, so no test depends on the one before it
+  // (or on a source a failed one left open), then editor frames at 60 Hz beside an open 3D window make the editor its clock.
+  vi.resetModules(); ({ addFrameSource, requestFrame } = await import('./frameSources'));
+  clock = 100000; vi.spyOn(performance, 'now').mockImplementation(() => clock);
   const settle = queue(), idle = queue(), remove = addFrameSource(idle);
   for (let i = 0; i < 30; i++) { requestFrame(() => {}, settle); clock += 16; settle.tick(); }
   remove();
@@ -289,6 +290,24 @@ it('hands the clock to a shown editor at its third frame after a resume, whateve
       const frames = shown.filter(at => at >= from && at < from + 3000).length;
       expect(runs.filter(run => run.at >= from && run.at < from + 3000).length).toBeLessThanOrEqual(frames * 1.2 + 2);
     }
+  }
+});
+
+it('hands the clock to an editor uncovered during playback at its third frame, from 2.9 to 144 frames a second', () => {
+  // No pause: the editor is covered (Chromium's uneven one frame a second) while the 3D window drives, then uncovered.
+  // A throttled history (a smoothed interval near 600 ms) used to keep a heavy show's 3D window driving for eight to
+  // eleven editor frames, publishing from each 3D frame. Now its third frame takes the clock whatever the 3D window's rate,
+  // as long as its frames come less than 400 ms apart.
+  const uncovered = 7000;
+  for (const [period, jitter, popout] of [[270, 50, 200], [350, 20, 200], [350, 20, 100], [16.7, 2, 6.94], [6.94, 1, 16.7]]) {
+    const shown = every(period, 11000, { from: uncovered + period, jitter, seed: 5 });
+    const runs = simulate([...every(16.7, 500), ...pattern([1000, 760, 240], uncovered, 1500), ...shown], every(popout, 11000, { jitter: popout / 10, seed: 3 }));
+    expect(runs.filter(run => run.by === '3d' && run.at > 2000 && run.at < uncovered).length, `${period}`).toBeGreaterThan(20);
+    // The 3D window runs no frame after the editor's third; the editor runs from its third or fourth, then every frame.
+    expect(runs.filter(run => run.by === '3d' && run.at > shown[2]), `${period}`).toEqual([]);
+    const ran = runs.filter(run => run.by === 'editor' && run.at > uncovered).map(run => run.at);
+    expect(shown.indexOf(ran[0]), `${period}`).toBeGreaterThanOrEqual(0); expect(shown.indexOf(ran[0]), `${period}`).toBeLessThanOrEqual(3);
+    expect(ran).toEqual(shown.slice(shown.indexOf(ran[0])));
   }
 });
 

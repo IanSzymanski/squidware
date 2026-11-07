@@ -226,9 +226,11 @@ async function mirrorFixture(fixture) {
   if (fixture.name === 'maximum') {
     // Both windows paint, side by side (a covered window is occluded on macOS and paints nothing). Playback must never run
     // a frame from one window after another window ran one since that window's previous frame (frameSources.ts): a double
-    // run breaks that at once, at any frame rates. A shown editor painting at least three frames a second (2.5 is the
-    // throttle boundary) also keeps the clock, about one publish per painted editor frame from its first frame: before it,
-    // the 3D window fills in for an editor that has painted nothing. A slower editor may give the clock to a faster 3D window.
+    // run breaks that at once, at any frame rates. A shown editor whose frames come less than 400 ms apart (the throttle
+    // threshold) takes the clock by its third painted frame, so from its first frame playback publishes at most 1.2 times
+    // per painted editor frame plus two: the 3D window fills in before that frame and until the third. An editor painting
+    // more slowly may give the clock to a faster 3D window, so below nine editor frames all publishes count against the
+    // frames of whichever window painted more.
     await evaluate(`${editor}.dispatch('playback.scrub', { count: 0 })`);
     const area = screen.getPrimaryDisplay().workArea, width = Math.floor((area.width - 8) / 2), height = Math.min(area.height, 768);
     const restore = { bounds: main.getBounds(), editor: main.getMinimumSize(), popout: popout.getMinimumSize() };
