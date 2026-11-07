@@ -9,7 +9,7 @@ import { useShowAnalysis, useShowChecks, reviewProblem } from './ShowAnalysis';
 import { canReviewProblems } from './analysisCommands';
 import { useEditorSelector, useEditorStore } from './react';
 import { HelpButton } from './ControlHelp';
-import { BADGE_CAP, GROUP_LIST_LIMIT, activeCluster, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, performerLabels, problemClusters, rovingIndex, type PerformerLabels, type ProblemCluster } from './problemTrack';
+import { BADGE_CAP, GROUP_LIST_LIMIT, activeCluster, awaitsRecheck, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, performerLabels, problemClusters, rovingIndex, type PerformerLabels, type ProblemCluster, type Remembered } from './problemTrack';
 const blocked = 'Finish or cancel the current input or preview before navigating to a problem.';
 const SeverityIcon = ({ danger }: { danger: boolean }) => danger ? <OctagonAlert size={14} aria-hidden="true" /> : <TriangleAlert size={14} aria-hidden="true" />;
 /** Severity, move and destination, matching the Show-wide problems row; the name carries type, performers and count. */
@@ -33,15 +33,16 @@ export function ProblemTimeline({ start, span, width }: { start: number; span: n
   const labels = useMemo(() => performerLabels(checks.project), [checks.project]);
   const clusters = useMemo(() => problemClusters(checks.moves,start,span,width),[checks.moves,start,span,width]);
   const track = useRef<HTMLDivElement>(null), opener = useRef<HTMLElement | null>(null), focused = useRef<Element | null>(null), hint = useId();
-  const [remembered, setRemembered] = useState<{ key: string; count: number } | null>(null), [expanded, setExpanded] = useState<{ key: string; place: string } | null>(null);
+  const [remembered, setRemembered] = useState<Remembered | null>(null), [expanded, setExpanded] = useState<{ key: string; place: string } | null>(null);
   const active = activeCluster(clusters, remembered), open = expanded?.place === place ? clusters.find(c => c.key === expanded.key) : undefined;
   useEffect(() => { if (expanded && !open) setExpanded(null); }, [expanded, open]);
   // Regrouping (a review switching the side panel, a resize, a worker reply, a scrolled count window) can remove the
   // focused marker, and a layout change or resize closes the focused list. In that commit, and only while focus fell to
   // the document, keyboard focus moves to the remembered marker. A recheck that empties the row (a keyboard edit from it)
-  // keeps the claim until its results arrive, unless the user types, presses or focuses anything first; any other empty
-  // row lets focus go, so the row never takes it back later. No other commit makes the row do work.
-  const rechecking = checks.moves.some(m => m.status === 'pending');
+  // keeps the claim while a move under the remembered marker is rechecked, unless the user types, presses or focuses
+  // anything first; any other empty row (a count window without findings, say while playback scrolls it, even as other
+  // moves are checked) lets focus go, so the row never takes it back later. No other commit makes the row do work.
+  const rechecking = awaitsRecheck(checks.moves, remembered);
   useLayoutEffect(() => {
     if (!focused.current || focused.current.isConnected) return;
     const free = !document.activeElement || document.activeElement === document.body;
@@ -73,7 +74,7 @@ export function ProblemTimeline({ start, span, width }: { start: number; span: n
       return <HelpButton key={c.key} title={clusterName(c, labels)} tabIndex={i === active ? 0 : -1} disabled={!available} disabledReason={blocked}
         description={single ? findingDescription(single, checks.project, labels) : `${clusterSeverity(c)}. Lists ${c.size > GROUP_LIST_LIMIT ? `the first ${GROUP_LIST_LIMIT} of ${c.size}` : `all ${c.size}`} findings; choose one to pause at its count, select its performers and highlight their paths.`}
         className={`problem-marker ${c.danger ? 'danger' : 'warning'}${single ? '' : ' problem-cluster'}`} aria-haspopup={single ? undefined : 'menu'} aria-expanded={single ? undefined : open === c}
-        style={{ left: c.left, width: c.width }} onFocus={() => setRemembered({ key: c.key, count: c.first })}
+        style={{ left: c.left, width: c.width }} onFocus={() => setRemembered({ key: c.key, count: c.first, moves: c.parts.map(p => p.move.moveId) })}
         onClick={event => { if (single) { reviewProblem(service, store, single); return; } opener.current = event.currentTarget; setExpanded(open === c ? null : { key: c.key, place }); }}>
         {single ? <SeverityIcon danger={!!c.danger} /> : <span className={`problem-marker-count${c.size >= BADGE_CAP ? ' problem-marker-count--capped' : ''}`}>{clusterBadge(c.size)}</span>}
       </HelpButton>; })}

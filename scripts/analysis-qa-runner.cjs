@@ -129,11 +129,14 @@ app.whenReady().then(async () => {
     assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker[tabindex=\\'0\\']')"),'Tab enters the problem row');
     await key(window,'Tab');await focusReaches('Timeline playhead');await key(window,'Tab',['shift']);assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker')"));
     // Tab and Shift+Tab in an open group list close it and move on from the group marker, as from a menu button: they
-    // reach what the same key reaches from the marker, and the opposite key comes back to that marker.
-    const tabbed=markers.find(m=>m.group),focusTabbed=`[...document.querySelectorAll('.problem-track .problem-marker')].find(e=>e.getAttribute('aria-label')===${JSON.stringify(tabbed.label)}).focus()`;
-    await evaluate(focusTabbed);await focusReaches(tabbed.label);await key(window,'Tab',['shift']);await wait(`!document.activeElement?.closest('.problem-track')`,'Shift+Tab leaves the row');const behind=await focusedLabel();assert.ok(behind);
+    // reach what the same key reaches from the marker, and the opposite key comes back to that marker. A later group
+    // than the first marker (the row's default stop) shows that the row remembers it.
+    const tabbed=markers.filter(m=>m.group).at(-1),at=markers.indexOf(tabbed);assert.ok(at>0,`a group marker after the first: ${at}`);
+    const reachTabbed=async()=>{await key(window,'Home');await focusReaches(markers[0].label);for(let i=0;i<at;i++)await key(window,'Right');await focusReaches(tabbed.label);};
+    await reachTabbed();await key(window,'Tab',['shift']);await wait(`!document.activeElement?.closest('.problem-track')`,'Shift+Tab leaves the row');const behind=await focusedLabel();assert.ok(behind);
+    await key(window,'Tab');await focusReaches(tabbed.label);
     for(const [mods,back,reaches] of [[[],['shift'],'Timeline playhead'],[['shift'],[],behind]]){
-      await evaluate(focusTabbed);await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before Tab');await key(window,'Down');await wait("document.activeElement===document.querySelectorAll('.problem-cluster-list [role=menuitem]')[1]",'Down before Tab');
+      await reachTabbed();await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before Tab');await key(window,'Down');await wait("document.activeElement===document.querySelectorAll('.problem-cluster-list [role=menuitem]')[1]",'Down before Tab');
       await key(window,'Tab',mods);await wait(`!document.querySelector('.problem-cluster-list') && !document.querySelector('.problem-marker[aria-expanded=true]') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(reaches)}`,`${mods.length?'Shift+Tab':'Tab'} from the group list moves on from its marker`);
       await key(window,'Tab',back);await focusReaches(tabbed.label);
     }
@@ -273,10 +276,15 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(stacked)}});${editor}.dispatch('set.select',{index:1})`);await ready();await frames();
     const cappedRow=await timelineRow(),capped=cappedRow.find(m=>m.badge==='99k+');assert.ok(capped&&capped.size>=100000,JSON.stringify(cappedRow));
     rowGeometry(cappedRow,await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width"));await badgesFit();
+    // The wider markers at the window's ends stay whole inside the viewport that clips the timeline, focus outline included.
+    assert.deepEqual(await evaluate("(()=>{const v=document.querySelector('.timeline-viewport').getBoundingClientRect();return [...document.querySelectorAll('.problem-track .problem-marker')].filter(e=>{const r=e.getBoundingClientRect();return r.left<v.left-.1||r.right>v.right+.1}).map(e=>e.getAttribute('aria-label'))})()"),[],'capped-row markers stay inside the timeline viewport');
     const wide=await evaluate(`(()=>{const width=font=>{const s=document.createElement('span');s.style.cssText='position:absolute;white-space:nowrap;font:700 11px '+font;s.textContent='99k+';document.body.append(s);const w=s.getBoundingClientRect().width;s.remove();return w};const style=document.createElement('style');style.id='qa-badge-font';style.textContent='.problem-marker-count{font-family:"DejaVu Sans",Verdana,monospace!important}';document.head.append(style);return {wide:width('"DejaVu Sans",Verdana,monospace'),mono:width('monospace')};})()`);
-    assert.notEqual(wide.wide,wide.mono,'DejaVu Sans or Verdana is installed');await frames();await badgesFit();await evaluate("document.getElementById('qa-badge-font').remove()");metrics.capped={size:capped.size,width:capped.right-capped.left,wideFontText:wide.wide};
+    // CI images carry one of the faces; elsewhere a machine without both skips this check rather than failing the suite.
+    const wideFont=wide.wide!==wide.mono;if(process.env.CI)assert.ok(wideFont,'DejaVu Sans or Verdana is installed');
+    if(wideFont){await frames();await badgesFit();}else console.log('SKIP wide-fallback badge check: neither DejaVu Sans nor Verdana is installed (required when CI is set)');
+    await evaluate("document.getElementById('qa-badge-font').remove()");metrics.capped={size:capped.size,width:capped.right-capped.left,wideFontText:wideFont?wide.wide:null};
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
-    pass('127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast keeps focus in the regrouped row; a 99k+ badge fits in wide fallback faces; rapid edits and same-ID project replacement keep reference-correct results');
+    pass(`127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast keeps focus in the regrouped row; a 99k+ badge fits${wideFont?' in wide fallback faces':''} and its row stays inside the timeline; rapid edits and same-ID project replacement keep reference-correct results`);
     await openProblems();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await capture(`problems-${theme}.png`);}
     await close();
     window.setContentSize(1024,720);window.webContents.setZoomFactor(1.25);await settleNativeViewport(window,'enlarged analysis');await openProblems();await capture('problems-enlarged.png');
