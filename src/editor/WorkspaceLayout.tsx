@@ -27,15 +27,17 @@ export function useWorkspaceLayout(controller: EditorController) {
   const [menu, setMenu] = useState(false);
   const layout = controller.preferences.value.workspaceLayout;
   const preview = !!(controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview);
+  // A preview shows an Inspector the writer collapsed for as long as it runs; the saved layout and preset stay as chosen.
+  const placed = preview && layout.inspectorCollapsed ? { ...layout, inspectorCollapsed: false } : layout;
   const side: 'cast' | 'inspector' = controller.workspace === 'design' && controller.castPanelOpen && !preview ? 'cast' : 'inspector';
   // Cast the writer showed, or the Inspector a preview needs, docks beside a narrower field before it tucks, unless
   // docking would crowd the workspace (nextCrowdingProbe): then it opens over the field instead.
   const [probe, setProbe] = useState<CrowdingProbe | null>(null);
   const crowdingKey = `${viewport.width}x${viewport.height}:${side}:${controller.view}:${controller.workspace}`;
   const demanded = (side === 'cast' || preview) && !isCrowded(probe, crowdingKey);
-  const fit = fitWorkspaceLayout(layout, available, side, demanded);
+  const fit = fitWorkspaceLayout(placed, available, side, demanded);
   // Without demand: a writer's pane that docks this way no longer needs its overlay.
-  const idle = fitWorkspaceLayout(layout, available, side);
+  const idle = fitWorkspaceLayout(placed, available, side);
   const focusMode = useEditorSelector(state => state.ui.focusMode) && controller.workspace === 'design';
   // Focus mode hides every panel, so nothing opens over the field there: no overlay, scrim or preview margin. A
   // preview's Inspector is over the field wherever it does not dock, ahead of any other pane so Apply and Cancel stay
@@ -80,14 +82,12 @@ export function useWorkspaceLayout(controller: EditorController) {
     const search = findPerformer.current && document.querySelector<HTMLElement>('#workspace-pane-cast [aria-label="Find a performer"]');
     if (search && !search.closest('[hidden], [inert]')) { findPerformer.current = false; search.focus(); }
   });
-  // A preview restores a collapsed Inspector in the saved layout, as before #178; in focus mode once it ends.
-  useLayoutEffect(() => { if (preview && !focusMode && layout.inspectorCollapsed) controller.dispatch('layout.update', { update: { inspectorCollapsed: false } }); }, [preview, focusMode]);
   // Measured where the demand decides whether the panel docks: after every render, and whenever the workspace content
   // changes size, since a 3D view or the timeline can grow after the render that docked the panel. `need` is how far
   // the content overflows once the field is at its floor (negative: room to spare). Cast that holds focus opens over
   // the field when it becomes crowded, rather than tucking away with focus inside it. The same measurement gives the
   // transport row's height, above which a panel open over the field during a preview ends.
-  const docksOnDemand = (side === 'cast' || preview) && !focusMode && !fitWorkspaceLayout(layout, available, side, true).sideHidden && idle.sideHidden;
+  const docksOnDemand = (side === 'cast' || preview) && !focusMode && !fitWorkspaceLayout(placed, available, side, true).sideHidden && idle.sideHidden;
   const crowding = useRef(() => {});
   useLayoutEffect(() => {
     crowding.current = () => {
@@ -109,20 +109,29 @@ export function useWorkspaceLayout(controller: EditorController) {
     for (const node of [main, ...main.children]) observer.observe(node);
     return () => observer.disconnect();
   }, [controller.workspace]);
-  // Focus never stays on <body>, in a hidden pane or under the scrim when a preview starts or ends (its controls leave
-  // with it) or a pane opens over the field: it moves, in the same commit, into the Inspector during a preview, and
-  // otherwise to the heading of the pane open over the field, or else to the field. (Closing a pane returns focus to
-  // its Show button.)
+  // When a preview starts or ends, a pane opens over the field or playback closes one, focus moves only where the
+  // writer lost it: held in the workspace as this update renders (EditorTimeline notes it the same way) on a control the
+  // commit removed or hid, such as a preview's Apply or Cancel or a pane that tucks, or left under the scrim. In the same
+  // commit it moves to the heading of the pane open over the scrim, else to the Inspector's Selection actions, else to
+  // the field area: Space plays and pauses from both, and Tab continues with Clear selection or into the field. Focus
+  // elsewhere, including on the page, stays. (Closing a pane returns focus to its Show button.)
+  const held = useRef<Element | null>(null);
+  held.current = body.current?.contains(document.activeElement) ? document.activeElement : null;
+  const playing = useEditorSelector(state => state.playback.playing);
   const rescueFocus = () => {
-    const active = document.activeElement, pane = overlay && document.getElementById(`workspace-pane-${overlay}`);
-    if (focusMode || active && active !== document.body && !active.closest('[hidden], [inert]') && (preview || !pane || !body.current?.contains(active) || pane.contains(active))) return;
-    if (preview) focusFirst('#workspace-pane-inspector:not([hidden]) .workspace-pane-heading button');
-    else if (overlay) focusFirst(`#workspace-pane-${overlay} .workspace-pane-heading button`);
-    else focusFirst('.field-stage__svg [tabindex="0"]', '.field-stage__svg', '.field-container canvas[tabindex="0"]');
+    const active = document.activeElement, was = held.current, pane = overlay && !preview && !playing && document.getElementById(`workspace-pane-${overlay}`);
+    const lost = !!active?.closest('[hidden], [inert]') || active === document.body && !!was && (!was.isConnected || !!was.closest('[hidden], [inert]'));
+    const covered = !!pane && !!active && active !== document.body && !!body.current?.contains(active) && !pane.contains(active);
+    if (focusMode || !lost && !covered) return;
+    if (pane) focusFirst(`#workspace-pane-${overlay} .workspace-pane-heading button`);
+    else focusFirst('#workspace-pane-inspector:not([hidden]) .selection-bar', '.main-workspace > .field-container');
   };
   const previewed = useRef(preview);
   useLayoutEffect(() => { if (previewed.current !== preview) { previewed.current = preview; rescueFocus(); } }, [preview]);
-  useLayoutEffect(() => { if (overlay) rescueFocus(); }, [overlay]);
+  // Playback shows the field: starting it closes a pane open over the field, also one a preview it ends gives back, so
+  // no scrim hides the show and Space on Pause still pauses.
+  useLayoutEffect(() => { if (playing && overlay && !preview) setOverlay(null); }, [playing, preview]);
+  useLayoutEffect(() => { if (overlay || playing) rescueFocus(); }, [overlay]);
   useEffect(() => {
     function escape(event: KeyboardEvent) {
       if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.paletteOpen || controller.store.getState().ui.dialog || controller.store.getState().ui.selectionToolsOpen) return;
@@ -146,24 +155,26 @@ export function useWorkspaceLayout(controller: EditorController) {
     window.addEventListener('keydown', escape, true); return () => window.removeEventListener('keydown', escape, true);
   }, [menu, overlay, controller.store]);
   function update(update: Partial<WorkspaceLayout>) { controller.dispatch('layout.update', { update }); }
-  function collapse(pane: PaneId) {
+  /** A pointer click (on Close, Collapse or Show, or on the field around an overlay) moves focus without the keyboard
+   * focus style and its help, which a click does not call for; Enter, Space and Escape keep them. */
+  const clicked = (pointer: boolean) => pointer ? { focusVisible: false } as FocusOptions : undefined;
+  function collapse(pane: PaneId, pointer = false) {
     if (locked) return;
     // Closing a pane the window tucked only ends its overlay; the saved layout and preset stay as chosen. A pane the
     // user had collapsed, restored by Show or the Cast tab, collapses again.
     if (overlay !== pane || layout[`${pane}Collapsed`] || restored === pane) update({ [`${pane}Collapsed`]: true });
-    setOverlay(null); focusShow(pane);
+    setOverlay(null); focusShow(pane, clicked(pointer));
   }
-  /** A click on the field around an overlay closes it like Escape: focus returns to the pane's Show button, without the
-   * keyboard focus style (and its help) a pointer click does not call for. */
-  function dismiss() { if (!overlay || locked) return; setOverlay(null); focusShow(overlay, { focusVisible: false } as FocusOptions); }
-  function reveal(pane: PaneId) {
+  /** A click on the field around an overlay closes it like Escape and returns focus to the pane's Show button. */
+  function dismiss() { if (!overlay || locked) return; setOverlay(null); focusShow(overlay, clicked(true)); }
+  function reveal(pane: PaneId, pointer = false) {
     if (controller.preferences.status === 'loading') return;
     const collapsed = layout[`${pane}Collapsed`];
     // Only a pane the user collapsed changes the saved layout; a pane tucked away by a small window opens over the
     // field (where it docks once restored, the overlay ends at once).
     if (collapsed) update({ [`${pane}Collapsed`]: false });
     setOverlay(pane, collapsed);
-    requestAnimationFrame(() => document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus());
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus(clicked(pointer)));
   }
   function toggleFocus() {
     if (controller.dispatch('layout.focus')) requestAnimationFrame(() => focusMode ? focusFirst('[aria-label="Focus field"]', '[aria-label="Project menu"]') : focusFirst('[aria-label="Exit focus"]'));
@@ -228,9 +239,9 @@ export function WorkspacePane({ pane, layout: l, children }: { pane: PaneId; lay
   const resize = (value: number) => l.update({ [`${pane}Width`]: Math.round(Math.max(min, Math.min(max, value))) });
   const finish = (commit: boolean) => { if (!drag.current) return; if (commit) resize(drag.current.current); drag.current = null; setDraftWidth(null); };
   return <>
-    {hidden && <div className="workspace-pane-closed" data-tucked={tucked || undefined}><HelpButton pointerPassThrough title={`Show ${paneNames[pane]}`} description={l.layout[`${pane}Collapsed`] ? `Restore ${paneNames[pane]}. On a small window it opens over the field.` : `This window is too small to dock ${paneNames[pane]} beside the field; it opens over the field. Your layout returns when the window grows.`} disabled={blocked} disabledReason="Apply or cancel the preview first: its Inspector is open over the field." aria-expanded={overlay} aria-controls={`workspace-pane-${pane}`} onClick={() => l.reveal(pane)}>{left ? <PanelLeftOpen size={16} /> : <PanelRightOpen size={16} />}<span>{paneNames[pane]}</span></HelpButton></div>}
+    {hidden && <div className="workspace-pane-closed" data-tucked={tucked || undefined}><HelpButton pointerPassThrough title={`Show ${paneNames[pane]}`} description={l.layout[`${pane}Collapsed`] ? `Restore ${paneNames[pane]}. On a small window it opens over the field.` : `This window is too small to dock ${paneNames[pane]} beside the field; it opens over the field. Your layout returns when the window grows.`} disabled={blocked} disabledReason="Apply or cancel the preview first: its Inspector is open over the field." aria-expanded={overlay} aria-controls={`workspace-pane-${pane}`} onClick={e => l.reveal(pane, e.detail > 0)}>{left ? <PanelLeftOpen size={16} /> : <PanelRightOpen size={16} />}<span>{paneNames[pane]}</span></HelpButton></div>}
     <section id={`workspace-pane-${pane}`} aria-label={`${paneNames[pane]} workspace panel`} data-pane={pane} className={`workspace-pane${overlay ? ' workspace-pane--overlay' : ''}${left ? ' workspace-pane--left' : ' workspace-pane--right'}`} hidden={hidden && !overlay} inert={hidden && !overlay} style={{ '--pane-width': `${overlay ? l.overlayWidth : width}px` } as CSSProperties}>
-      <div className="workspace-pane-heading"><strong>{paneNames[pane]}</strong><HelpButton pointerPassThrough title={`${overlay && tucked ? 'Close' : 'Collapse'} ${paneNames[pane]}`} description={overlay && tucked ? `Close this overlay. Your layout is unchanged: ${paneNames[pane]} docks again when the window is wide enough.` : `Hide ${paneNames[pane]} and keep a Show button available.`} className="icon-button" disabled={l.locked} disabledReason={l.reason} onClick={() => l.collapse(pane)}>{left ? <PanelLeftClose size={16} /> : <PanelRightClose size={16} />}</HelpButton></div>
+      <div className="workspace-pane-heading"><strong>{paneNames[pane]}</strong><HelpButton pointerPassThrough title={`${overlay && tucked ? 'Close' : 'Collapse'} ${paneNames[pane]}`} description={overlay && tucked ? `Close this overlay. Your layout is unchanged: ${paneNames[pane]} docks again when the window is wide enough.` : `Hide ${paneNames[pane]} and keep a Show button available.`} className="icon-button" disabled={l.locked} disabledReason={l.reason} onClick={e => l.collapse(pane, e.detail > 0)}>{left ? <PanelLeftClose size={16} /> : <PanelRightClose size={16} />}</HelpButton></div>
       <div className="workspace-pane-content">{children}</div>
       {!overlay && <div className="workspace-resizer" role="separator" tabIndex={l.locked ? -1 : 0} aria-label={`Resize ${paneNames[pane]}`} aria-orientation="vertical" aria-valuemin={min} aria-valuemax={max} aria-valuenow={Math.round(width)} aria-valuetext={`${Math.round(width)} pixels. Left and right arrows resize; Home and End use limits; Enter collapses.`} aria-controls={`workspace-pane-${pane}`} aria-disabled={l.locked}
         onKeyDown={e => {
