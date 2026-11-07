@@ -164,11 +164,12 @@ app.whenReady().then(async () => {
     }
     await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`${state}.ui.focusMode && !!document.querySelector('.studio--focus')`,'focus mode');await frames();
     await escapeFromGroup('focus mode');assert.equal(await evaluate(`${state}.ui.focusMode`),true,'Escape in the list keeps focus mode');
-    await key(window,'Escape');await wait(`!${state}.ui.focusMode`,'the next Escape exits focus mode');await frames();
+    await key(window,'Escape');await wait(`!${state}.ui.focusMode && !!document.activeElement?.matches('[aria-label="Focus field"],[aria-label="Project menu"]')`,'the next Escape exits focus mode and returns focus to the header');await frames();
     window.setContentSize(900,650);await settleNativeViewport(window,'tucked analysis layout');
     await click('[aria-label="Show Set list"]');await wait("!!document.querySelector('.workspace-pane--overlay[data-pane=sets]')",'Set list overlay');
     await escapeFromGroup('overlay');assert.ok(await evaluate("!!document.querySelector('.workspace-pane--overlay[data-pane=sets]')"),'Escape in the list keeps the overlay');
-    await key(window,'Escape');await wait("!document.querySelector('.workspace-pane--overlay')",'the next Escape closes the overlay');
+    // Escape closes the overlay and returns focus to its Show button on the next frame; wait for it so that late focus cannot close the next list.
+    await key(window,'Escape');await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Set list'",'the next Escape closes the overlay and returns focus to Show Set list');
     // A layout change closes an open list instead of leaving it over a moved marker; focus stays on the row.
     await evaluate("document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').focus()");await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before focus mode');
     await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`${state}.ui.focusMode && !document.querySelector('.problem-cluster-list') && document.activeElement?.matches('.problem-track .problem-marker')`,'focus mode closes the list and keeps focus on the row');
