@@ -18,10 +18,14 @@ export function useWorkspaceLayout(controller: EditorController) {
   const studio = useRef<HTMLDivElement>(null);
   const [available, setAvailable] = useState(() => effectiveViewport(window.innerWidth, window.innerHeight, controller.preferences.value.uiScale).width);
   const [viewport, setViewport] = useState<Viewport>(() => effectiveViewport(window.innerWidth, window.innerHeight, controller.preferences.value.uiScale));
+  // The window size and the height the header and status bar leave for the workspace (it settles after startup).
+  const [height, setHeight] = useState(0);
+  const size = `${viewport.width}x${viewport.height}/${height}`;
   // The pane the writer opened over the field (Show <pane>, or Cast shown from its tab, Dock Cast or the palette). It
   // shows as an overlay only while it does not dock, and stays open until closed or until it docks without demand.
-  // `restored` marks a pane the user had collapsed: its overlay offers Collapse rather than Close.
-  const [opened, setOpened] = useState<{ pane: PaneId; restored: boolean } | null>(null);
+  // `restored` marks a pane the user had collapsed: its overlay offers Collapse rather than Close. `docked` is the size
+  // at which Cast docked on demand: only a change at that size opens it over the field, so a resize tucks it.
+  const [opened, setOpened] = useState<{ pane: PaneId; restored: boolean; docked?: string } | null>(null);
   const setOverlay = (pane: PaneId | null, restored = false) => setOpened(pane && { pane, restored });
   const focusShow = (pane: PaneId, options?: FocusOptions) => requestAnimationFrame(() => document.querySelector<HTMLElement>(`[aria-label="Show ${paneNames[pane]}"]`)?.focus(options));
   const [menu, setMenu] = useState(false);
@@ -33,7 +37,7 @@ export function useWorkspaceLayout(controller: EditorController) {
   // Cast the writer showed, or the Inspector a preview needs, docks beside a narrower field before it tucks, unless
   // docking would crowd the workspace (nextCrowdingProbe): then it opens over the field instead.
   const [probe, setProbe] = useState<CrowdingProbe | null>(null);
-  const crowdingKey = `${viewport.width}x${viewport.height}:${side}:${controller.view}:${controller.workspace}`;
+  const crowdingKey = `${size}:${side}:${controller.view}:${controller.workspace}`;
   const demanded = (side === 'cast' || preview) && !isCrowded(probe, crowdingKey);
   const fit = fitWorkspaceLayout(placed, available, side, demanded);
   // Without demand: a writer's pane that docks this way no longer needs its overlay.
@@ -42,7 +46,8 @@ export function useWorkspaceLayout(controller: EditorController) {
   // Focus mode hides every panel, so nothing opens over the field there: no overlay, scrim or preview margin. A
   // preview's Inspector is over the field wherever it does not dock, ahead of any other pane so Apply and Cancel stay
   // reachable; that placement is derived, so it ends with the preview.
-  const overlay = focusMode ? null : preview && fit.sideHidden ? 'inspector' : opened && (opened.pane === 'sets' ? fit.setsHidden : opened.pane === side && fit.sideHidden) ? opened.pane : null;
+  const writer = opened && (!opened.docked || opened.docked === size) ? opened : null;
+  const overlay = focusMode ? null : preview && fit.sideHidden ? 'inspector' : writer && (writer.pane === 'sets' ? fit.setsHidden : writer.pane === side && fit.sideHidden) ? writer.pane : null;
   const restored = opened?.restored ? opened.pane : null;
   // The timeline spans the main workspace: the width left beside docked (or tucked) panels.
   const mainWidth = focusMode ? available : available - (fit.setsHidden ? 30 : fit.widths.sets + 6) - (fit.sideHidden ? 30 : fit.widths[side] + 6);
@@ -56,8 +61,11 @@ export function useWorkspaceLayout(controller: EditorController) {
   // browser zoom are both already divided out of its client size.
   const measure = () => {
     const node = body.current, root = studio.current;
-    if (node) setAvailable(node.clientWidth);
+    if (node) { setAvailable(node.clientWidth); setHeight(node.offsetHeight); }
     if (root) setViewport(current => current.width === root.clientWidth && current.height === root.clientHeight ? current : { width: root.clientWidth, height: root.clientHeight });
+    // Cast that holds focus opens over the field when a resize leaves it no room to dock; Cast the writer showed
+    // otherwise tucks there (`docked`). Focus left in Cast once it is hidden (closed with Escape) does not count.
+    setOpened(current => document.querySelector('#workspace-pane-cast:not([hidden])')?.contains(document.activeElement) ? { pane: 'cast', restored: current?.pane === 'cast' && current.restored } : current);
   };
   useLayoutEffect(() => {
     const observer = new ResizeObserver(measure);
@@ -70,9 +78,10 @@ export function useWorkspaceLayout(controller: EditorController) {
   useLayoutEffect(measure, [uiScale]);
   // A pane that fits again without a preview's demand docks: its overlay ends and the saved layout shows as chosen.
   // These run as layout effects, in this order, so an overlay is on screen before the next paint or animation frame.
-  useLayoutEffect(() => { if (opened && !(opened.pane === 'sets' ? idle.setsHidden : idle.sideHidden)) setOverlay(null); }, [opened, idle.setsHidden, idle.sideHidden]);
+  useLayoutEffect(() => { if (opened && (opened.pane === 'sets' ? !idle.setsHidden : opened.pane === side && !idle.sideHidden)) setOverlay(null); }, [opened, idle.setsHidden, idle.sideHidden, side]);
   const findPerformer = useRef(false);
-  useLayoutEffect(() => { setOverlay(null); setMenu(false); findPerformer.current = false; }, [focusMode, controller.workspace, side]);
+  // A preview borrows the side panel for the Inspector: the panels the writer opened are back when it ends.
+  useLayoutEffect(() => { setOverlay(null); setMenu(false); findPerformer.current = false; }, [focusMode, controller.workspace, controller.castPanelOpen]);
   // Showing Cast (header tab, Dock Cast, palette) opens it for the writer in place of any other pane over the field:
   // it docks, or opens over the field where it does not fit or would crowd the workspace. Focus then moves to its
   // search as soon as it is on screen. A Cast the writer had collapsed offers Collapse, as from Show Cast.
@@ -89,17 +98,27 @@ export function useWorkspaceLayout(controller: EditorController) {
   // transport row's height, above which a panel open over the field during a preview ends.
   const docksOnDemand = (side === 'cast' || preview) && !focusMode && !fitWorkspaceLayout(placed, available, side, true).sideHidden && idle.sideHidden;
   const crowding = useRef(() => {});
+  const placedAt = useRef<string | null>(null);
   useLayoutEffect(() => {
     crowding.current = () => {
       const node = body.current; if (!node) return;
       if (preview && overlay) node.style.setProperty('--transport-height', `${node.querySelector<HTMLElement>('.main-workspace > .timeline > .transport')?.offsetHeight ?? 0}px`);
-      if (!docksOnDemand) return;
+      // During a preview a control focused in a panel stays in view when the Inspector moves over the field or docks
+      // again, or the panel's height changes with the window or the transport row: the first preview in a newly measured
+      // situation docks the Inspector for one commit (while the panel focuses its control) before crowding moves it.
+      const place = preview ? `${overlay}:${overlay ? node.style.getPropertyValue('--transport-height') : ''}:${node.clientHeight}` : null;
+      if (place !== placedAt.current) { placedAt.current = place; const active = document.activeElement; if (place && active?.closest('.workspace-pane')) active.scrollIntoView({ block: 'nearest' }); }
+      // A measurement belongs to the situation rendered: during a resize the observers report the new size before its
+      // render, and measuring then would decide for the previous size.
+      const root = studio.current;
+      if (!docksOnDemand || root?.clientWidth !== viewport.width || root.clientHeight !== viewport.height || node.offsetHeight !== height) return;
       const field = node.querySelector<HTMLElement>('.main-workspace > .field-container');
       const need = node.scrollHeight - node.clientHeight - (field ? field.offsetHeight - (parseFloat(getComputedStyle(field).minHeight) || 0) : 0);
       const next = nextCrowdingProbe(probe, crowdingKey, demanded, need);
-      if (next === probe) return;
+      // Cast the writer showed that docks here opens over the field if a later change in this situation crowds it.
+      if (next === probe) { if (demanded && side === 'cast' && opened?.pane === 'cast' && opened.docked !== size) setOpened({ ...opened, docked: size }); return; }
       setProbe(next);
-      if (side === 'cast' && isCrowded(next, crowdingKey) && document.getElementById('workspace-pane-cast')?.contains(document.activeElement)) setOpened(current => current?.pane === 'cast' ? current : { pane: 'cast', restored: false });
+      if (side === 'cast' && isCrowded(next, crowdingKey) && document.querySelector('#workspace-pane-cast:not([hidden])')?.contains(document.activeElement)) setOpened(current => current?.pane === 'cast' ? current : { pane: 'cast', restored: false });
     };
     crowding.current();
   });
@@ -154,7 +173,8 @@ export function useWorkspaceLayout(controller: EditorController) {
     }
     window.addEventListener('keydown', escape, true); return () => window.removeEventListener('keydown', escape, true);
   }, [menu, overlay, controller.store]);
-  function update(update: Partial<WorkspaceLayout>) { controller.dispatch('layout.update', { update }); }
+  /** Collapsing a pane, for example from the layout options, also closes it when the writer had opened it. */
+  function update(update: Partial<WorkspaceLayout>) { if (controller.dispatch('layout.update', { update }) === true && opened && update[`${opened.pane}Collapsed`]) setOverlay(null); }
   /** A pointer click (on Close, Collapse or Show, or on the field around an overlay) moves focus without the keyboard
    * focus style and its help, which a click does not call for; Enter, Space and Escape keep them. */
   const clicked = (pointer: boolean) => pointer ? { focusVisible: false } as FocusOptions : undefined;
