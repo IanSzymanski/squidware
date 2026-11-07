@@ -44,3 +44,18 @@ export function fitWorkspaceLayout(layout: WorkspaceLayout, available: number, s
   if (!fitted.sideFits && !sideHidden) { sideHidden = true; fitted = attempt(); }
   return { widths: fitted.widths, setsHidden, sideHidden };
 }
+/** Docking a demanded panel beside a narrower field wraps the field toolbar, which can make a short window's workspace
+ * scroll. A probe records, for the measured situation (`key`: window size, panel, 2D/3D view and workspace), how far
+ * the workspace content overflows with the panel docked and, once measured, without it; a negative value is room to
+ * spare. Docking is crowded when its overflow exceeds the overflow without the panel by more than 1 px. */
+export interface CrowdingProbe { key: string; docked: number; idle: number | null }
+export const isCrowded = (probe: CrowdingProbe | null, key: string) => probe?.key === key && (probe.idle === null || Math.max(0, probe.docked) > Math.max(0, probe.idle) + 1);
+/** The probe after measuring `need` with the panel docked or not; the same probe when nothing changed. A docked panel
+ * is probed when the workspace scrolls, and again whenever it needs more room; while it does not dock, the measurement
+ * without it follows the content, so it docks again once docking no longer adds overflow. Docked measurements only
+ * grow, so content that settles a frame late (the 3D view's camera controls) cannot make the panel alternate. */
+export function nextCrowdingProbe(probe: CrowdingProbe | null, key: string, docked: boolean, need: number): CrowdingProbe | null {
+  const current = probe?.key === key ? probe : null;
+  if (docked) return need > 1 && (!current || need > current.docked + 1) ? { key, docked: need, idle: null } : probe;
+  return current && (current.idle === null || Math.abs(current.idle - need) > 1) ? { ...current, idle: need } : probe;
+}
