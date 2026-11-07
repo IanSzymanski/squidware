@@ -39,9 +39,10 @@ export function ProblemTimeline({ start, span, width }: { start: number; span: n
   // Regrouping (a review switching the side panel, a resize, a worker reply, a scrolled count window) can remove the
   // focused marker, and a layout change or resize closes the focused list. In that commit, and only while focus fell to
   // the document, keyboard focus moves to the remembered marker. A recheck that empties the row (a keyboard edit from it)
-  // keeps the claim while a move under the remembered marker is rechecked, unless the user types, presses or focuses
-  // anything first; any other empty row (a count window without findings, say while playback scrolls it, even as other
-  // moves are checked) lets focus go, so the row never takes it back later. No other commit makes the row do work.
+  // keeps the claim while a move under the remembered marker is rechecked, or any move once an undo or redo left none of
+  // its moves (undoing a split), unless the user types, presses or focuses anything first; any other empty row (a count
+  // window without findings, say while playback scrolls it, even as other moves are checked) lets focus go, so the row
+  // never takes it back later. No other commit makes the row do work.
   const rechecking = awaitsRecheck(checks.moves, remembered);
   useLayoutEffect(() => {
     if (!focused.current || focused.current.isConnected) return;

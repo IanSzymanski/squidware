@@ -108,6 +108,14 @@ describe('timeline problem clusters', () => {
     }
   });
 
+  // Findings within 4 px of a window end count as 4 px inside it before markers form, so an end finding can share a
+  // neighbor's marker: at 10 px per count, findings at 0 and 34 px (and 606 and 640 px) are 30 px apart once placed.
+  it('places findings near the window ends of a capped row 4 px inside before chaining', () => {
+    const row = problemClusters([move(1, [issue(0), issue(3.4), ...Array.from({ length: BADGE_CAP }, () => issue(32)), issue(60.6), issue(64)])], 0, 64, 640);
+    expect(row.map(c => c.size)).toEqual([2, BADGE_CAP, 2]);
+    expect([row[0].left, row[0].width, row[2].left + row[2].width].map(x => Math.round(x * 1e6) / 1e6)).toEqual([-12, 62, 652]);
+  });
+
   it('bounds markers for very dense shows', () => {
     const moves = show(20000), clusters = problemClusters(moves, 0, 192, 769);
     expect(clusters.reduce((n, c) => n + c.size, 0)).toBe(20000);
@@ -200,5 +208,9 @@ describe('problem row keyboard', () => {
     expect([awaitsRecheck(moves(['m1', 'm2', 'm3']), remembered), awaitsRecheck(moves(['m2']), remembered)]).toEqual([true, true]);
     expect([awaitsRecheck(moves(['m3']), remembered), awaitsRecheck(moves([]), remembered), awaitsRecheck(moves(['m1']), null)]).toEqual([false, false, false]);
     expect(awaitsRecheck(moves([]), { ...remembered, moves: ['m4'] })).toBe(false);
+    // An undo or redo that leaves none of the marker's moves (undoing a split replaces the first half's) waits for any
+    // recheck; while one of its moves remains, other moves' rechecks still do not count.
+    const split = { ...remembered, moves: ['first-half'] };
+    expect([awaitsRecheck(moves(['m3']), split), awaitsRecheck(moves([]), split), awaitsRecheck(moves(['m3']), { ...split, moves: ['first-half', 'm1'] })]).toEqual([true, false, false]);
   });
 });

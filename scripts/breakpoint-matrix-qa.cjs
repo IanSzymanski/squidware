@@ -459,6 +459,32 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     if (await evaluate("!!document.querySelector('.workspace-pane--overlay')")) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'Inspector overlay closed after the preview'); }
     await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the applied preview undone');
     pass('focus that left a transport option for the page stays there through a tier change, a dialog opened from the page and a preview applied with Enter, so Space plays and pauses');
+    // A wider tier that removes ⋯ while it has focus, or under a dialog opened while it had focus, moves focus to the first
+    // option that left the menu, now in ⋯'s place, instead of the page (where Space would play): by a resize, focus mode
+    // and a UI scale change under Preferences.
+    const onMore = async label => { await evaluate(`${byName('More playback options')}.focus()`); await wait("document.activeElement?.getAttribute('aria-label')==='More playback options'", label); };
+    const lands = (name, label) => wait(`document.querySelector('.studio').dataset.transport==='full' && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(name)} && !!document.activeElement.closest('.transport-options')`, label);
+    await applySize(...MINIMUM); await onMore('More playback options in the narrow transport');
+    await applySize(1920, 1080, 1, true); await lands('Rehearsal passages', 'a resize to the full transport moves focus from More to Rehearsal passages');
+    await applySize(1024, 700, 1); assert.equal(await evaluate("document.querySelector('.studio').dataset.transport"), 'compact'); await onMore('More playback options before focus mode');
+    await evaluate(`${editor}.dispatch('layout.focus')`); await lands('Loop show', 'focus mode moves focus from More to Loop show');
+    await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode ends');
+    await applySize(1366, 768, 1.5); await onMore('More playback options before Preferences');
+    await evaluate(`${editor}.dispatch('preferences.open')`); await wait(`${state}.ui.dialog==='preferences' && !!document.querySelector('dialog[open]')?.contains(document.activeElement)`, 'Preferences from More');
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1}))`); await wait("document.querySelector('.studio').dataset.transport==='full'", 'the transport widens under Preferences');
+    await key('Escape'); await lands('Loop show', 'closing Preferences opened from More moves focus to Loop show');
+    // A confirmation is a dialog too: opened through the palette from Rehearsal passages, which folds away under it, it
+    // returns focus to ⋯. (The suite's confirmation shim leaves it to real input meanwhile.)
+    const titled = await evaluate(`${state}.project.revision`);
+    await evaluate(`window.__qaConfirmBefore=window.__qaConfirmResponse; window.__qaConfirmResponse='manual'; ${editor}.dispatch('project.update',{title:'Unsaved title'})`); await applySize(1024, 700, 1.5);
+    await evaluate(`${byName('Rehearsal passages', "document.querySelector('.transport-options')")}.focus()`); await key('K', [mod]);
+    await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", 'palette from Rehearsal passages');
+    await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Open production' }); await wait("document.querySelector('.palette-result--active')?.getAttribute('aria-label')==='Open production'", 'Open production in the palette');
+    await key('Return'); await wait(`!!${state}.ui.confirmation && !!document.querySelector('dialog.confirm-dialog[open]')?.contains(document.activeElement)`, 'the open confirmation');
+    await applySize(...MINIMUM, true); await wait("document.querySelector('.studio').dataset.transport==='narrow'", 'Rehearsal passages folds away under the confirmation');
+    await key('Escape'); await wait(`!${state}.ui.confirmation && !document.querySelector('dialog[open]') && document.activeElement?.getAttribute('aria-label')==='More playback options'`, 'the confirmation returns focus to More');
+    await evaluate(`window.__qaConfirmResponse=window.__qaConfirmBefore; ${editor}.dispatch('history.undo')`); await wait(`${state}.project.revision===${titled}`, 'the title edit undone');
+    pass('focus on More playback options, or a dialog opened while it has focus, moves to the first option that left the menu when a resize, focus mode or a UI scale change removes ⋯; a confirmation over a tier change returns focus to ⋯ like other dialogs');
   }
   // Auto-tucking and overlays are temporary: the saved layout and production are unchanged.
   assert.equal(await evaluate(`JSON.stringify({ layout: ${state}.preferences.value.workspaceLayout, cast: ${state}.preferences.value.castPanelOpen })`), layoutBefore);

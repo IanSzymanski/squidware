@@ -221,6 +221,25 @@ app.whenReady().then(async () => {
     await wait("!document.querySelector('.problem-cluster-list') && document.activeElement===document.body",'a press outside closes the list');await frames();
     assert.deepEqual(await evaluate(`(document.removeEventListener('focusin',${qa}.logFocus,true),${qa}.focused)`),[],'a press outside the list does not focus its marker on the way out');
     pass('the row keeps focus through a recheck that empties it unless the user acts first; markers returning to a row left empty or after a key or click, and presses outside a list, leave focus where it went, so Space plays and pauses');
+    // A long, sparse show (stride findings at counts 4 and 412 only) zoomed to 104 counts. A count window moved past the
+    // focused marker's findings empties the row while another move is rechecked: focus goes, and the markers that return
+    // with the window never take it. Undoing a split from a marker in its first half replaces that half's move: focus
+    // returns to the row when the merged move's results arrive.
+    const sparse=fixture();for(const [i,set] of sparse.sets.entries())set.positions=Object.fromEntries(sparse.performers.map((p,j)=>[p.id,{x:[10,22,22,34][i],y:10+j*2}]));
+    sparse.moves=sparse.moves.map((m,i)=>({...m,counts:i===1?400:8,transition:'linear'}));
+    await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(sparse)}});${editor}.dispatch('set.select',{index:0})`);await oracle();
+    await click('.timeline-view-toggle');for(let i=0;i<2;i++)await click('[aria-label="Zoom timeline in"]');await click('.timeline-view-toggle');
+    await evaluate(`${editor}.dispatch('set.select',{index:3});${qa}.hold=true;${editor}.dispatch('positions.move',{index:3,updates:{p0:{x:34,y:9}}});${editor}.dispatch('set.select',{index:0})`);
+    await evaluate("document.querySelector('.problem-track .problem-marker[tabindex=\"0\"]').focus()");await wait(`${rowFocus} && ${snapshot}.moves[2].status==='pending'`,'marker focused while another move is rechecked');
+    await evaluate(`${editor}.dispatch('playback.scrub',{count:208})`);await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'a count window past the findings empties the row');
+    await evaluate(`${editor}.dispatch('playback.scrub',{count:0})`);await wait("!!document.querySelector('.problem-track .problem-marker')",'markers return with the count window');await frames();await frames();
+    await onDocument('markers that return with the count window while another move is rechecked leave focus on the document');await evaluate(`${qa}.release()`);await oracle();
+    await evaluate(`(s=>${editor}.dispatch('set.split',{moveId:'m0',count:4,revision:s.project.revision,epoch:s.ui.projectEpoch}))(${state});${editor}.dispatch('set.select',{index:0})`);await oracle();
+    await evaluate("document.querySelector('.problem-track .problem-marker').focus()");await wait(`${rowFocus} && document.activeElement.getAttribute('aria-label').endsWith(' · count 2')`,'a marker in the first half of the split');
+    await evaluate(`${qa}.hold=true;${editor}.dispatch('history.undo')`);await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'undoing the split empties the row');
+    await evaluate(`${qa}.release()`);await oracle();await wait(rowFocus,'focus returns to the row when the merged move is checked');
+    await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
+    pass('a count window moved past the focused marker while another move is rechecked lets focus go for good; undoing a split from a marker returns focus to the row when the merged move is checked');
     // Native drag: cancel with Escape, then repeat and commit one history entry.
     let point=await startDrag();const baseline=await evaluate(`JSON.stringify(${state}.project)`);
     await evaluate(`${qa}.hold=true`);await mouse('mouseMoved',{x:point.x+40,y:point.y+50},{button:'left',buttons:1});

@@ -139,9 +139,15 @@ export function rovingIndex(key: string, index: number, count: number, orientati
 }
 /** The marker the row last focused: its group, first count and moves. */
 export interface Remembered { key: string; count: number; moves: readonly string[] }
-/** A recheck emptied the row under the remembered marker while one of its moves is pending again; an empty row with
- * only other moves pending (a count window without findings) is not the row's to wait for. */
-export const awaitsRecheck = (moves: readonly MoveCheck[], remembered: Remembered | null) => !!remembered && moves.some(m => m.status === 'pending' && remembered.moves.includes(m.moveId));
+/** A recheck emptied the row under the remembered marker while one of its moves is pending again, or while any move is
+ * pending once none of its moves is left (an undo or redo replaced them, as undoing a transition split replaces the
+ * first half's move). An empty row with only other moves pending while the marker's moves remain (a count window
+ * without findings) is not the row's to wait for. */
+export function awaitsRecheck(moves: readonly MoveCheck[], remembered: Remembered | null) {
+  if (!remembered) return false;
+  const replaced = !moves.some(m => remembered.moves.includes(m.moveId));
+  return moves.some(m => m.status === 'pending' && (replaced || remembered.moves.includes(m.moveId)));
+}
 /** The remembered marker after regrouping: the same group, else the group nearest its count, else the first. */
 export function activeCluster(clusters: readonly ProblemCluster[], remembered: { key: string; count: number } | null): number {
   if (!clusters.length) return -1;
