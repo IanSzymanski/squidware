@@ -86,7 +86,7 @@ export async function optimizeAssignment(problem:AssignmentProblem,value:Assignm
         lower=Math.max(lower,result.value.lower);upper=Math.max(upper,result.value.upper);converged&&=result.value.converged;
         if(i%32===0){await pause();check();}
       }
-      const result=await analyzer.analyze(input,()=>canceled()||performance.now()-start>(options.budgetMs??20000));check();if(!result)throw Error('Assignment movement checks canceled.');
+      const result=await analyzer.analyze(input,()=>canceled()||performance.now()-start>(options.budgetMs??20000),pause);check();if(!result)throw Error('Assignment movement checks canceled.');
       spacing+=result.issues.filter(i=>i.type==='collision').length;stride+=result.issues.filter(i=>i.type==='stride').length;possible+=result.issues.filter(i=>i.certainty==='possible').length;
     }
     return {travel:travel.reduce((a,b)=>a+b,0),longestTravel:Math.max(0,...travel),demand:problem.checks.length?{lower,upper,converged}:null,flags:problem.checks.length?{spacing,stride,possible}:null};
