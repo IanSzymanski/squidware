@@ -30,7 +30,7 @@ export interface EditorState {
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
     setCreationKind: SetCreationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
-    /** Showing Cast beside the field (header tab, Dock Cast, palette) increments castReveal; a window too narrow to dock it opens it over the field. */
+    /** Showing Cast beside the field (header tab, Dock Cast, palette) increments castReveal: Cast docks, or opens over the field on a window too narrow to dock it, and takes focus. */
     castPanelOpen: boolean; castReveal: number; castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
     printMode: 'charts' | 'coordinates'; printing: boolean;
     transformPreview: TransformSession | null;

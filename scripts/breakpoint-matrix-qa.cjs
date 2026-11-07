@@ -135,28 +135,65 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
    * walks already use its time budget. */
   async function checkDemandedPanels() {
     const savedLayout = () => evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`);
+    /** Short windows at 150% outside the matrix, where Cast docked beside the narrower field would wrap the field toolbar
+     * and scroll the workspace (and, with classic scrollbars, re-tuck and re-dock every frame): Cast opens over the field
+     * instead, steadily, and the workspace fits without scrolling with the field at the matrix floor. */
+    async function checkShortWindow(label) {
+      await wake();
+      const states = await evaluate("new Promise(resolve => { const out = []; const tick = () => { const p = document.querySelector('#workspace-pane-cast'), b = document.querySelector('.studio-body'); out.push([p.hidden, p.classList.contains('workspace-pane--overlay'), b.clientWidth, b.scrollHeight > b.clientHeight + 1, b.scrollWidth > b.clientWidth + 1].join()); if (out.length < 4) requestAnimationFrame(tick); else resolve(out); }; tick(); })");
+      assert.equal(new Set(states).size, 1, `${label} Cast stays put from frame to frame: ${states.join(' | ')}`);
+      const m = await evaluate(probe); const context = `${label} ${JSON.stringify(m)}`;
+      assert.ok(m.header.oneRow && m.transport.oneRow && !m.bodyScroll && !m.documentOverflow, `${label} the workspace fits without scrolling under a one-row header and transport: ${context}`);
+      assert.ok(m.drawn.width >= FLOOR.width && m.drawn.height >= FLOOR.height, `${label} the field keeps the matrix floor: ${context}`);
+    }
     const tabs = "document.querySelector('.workspace-tabs')";
     const noOverflow = "document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector('.studio-body').scrollWidth <= document.querySelector('.studio-body').clientWidth + 1";
     // The header Cast tab shows Cast where the field reserve alone would tuck it: docked beside a narrower field, or
     // over the field where even that does not fit, always with focus inside it and the saved layout unchanged.
-    for (const [width, height, scale, over] of [[1024, 700, 1.25, false], [900, 650, 1.25, false], [800, 600, 1, false], [900, 650, 1.5, true]]) {
-      const label = `${width}x${height}@${scale}`;
+    // `current`: Cast is already shown but tucked (restored at startup, or the window narrowed), so only the overlay opens.
+    // 1014 × 650 @150% is a short window outside the matrix (see checkShortWindow).
+    for (const [width, height, scale, over, current] of [[1024, 700, 1.25, false], [900, 650, 1.25, false], [800, 600, 1, false], [900, 650, 1.5, true], [900, 650, 1.5, true, true], [1014, 650, 1.5, true]]) {
+      const label = `${width}x${height}@${scale}${current ? ' (Cast current)' : ''}`;
       await applySize(width, height, scale); const saved = await savedLayout();
+      if (current) { await evaluate(`${editor}.setValue('ui','castPanelOpen',true)`); await wait("!!document.querySelector('[aria-label=\"Show Cast\"]') && !document.querySelector('.workspace-pane--overlay')", `${label} Cast tucked`); }
       await evaluate(`${byName('Cast', tabs)}.focus()`); await key('Return');
       await wait("(() => { const pane = document.querySelector('#workspace-pane-cast'); return !!pane && !pane.hidden && !pane.inert && pane.contains(document.activeElement); })()", `${label} the Cast tab shows Cast with focus inside it`);
       assert.equal(await evaluate("document.querySelector('#workspace-pane-cast').classList.contains('workspace-pane--overlay')"), over, `${label} Cast ${over ? 'opens over' : 'docks beside'} the field`);
       assert.deepEqual(await reachableIn(['Find a performer'], "document.querySelector('#workspace-pane-cast')"), [], `${label} Cast search is unobstructed`);
       assert.ok(await evaluate(noOverflow), `${label} Cast fits without overflow`);
+      if (width === 1014) await checkShortWindow(label);
       if (over) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Cast'", `${label} Escape closes the Cast overlay`); }
       assert.equal(await savedLayout(), saved, `${label} showing Cast leaves the saved layout unchanged`);
       await evaluate(`${byName('Design', tabs)}.focus()`); await key('Return');
       await wait(`!${state}.ui.castPanelOpen && !document.querySelector('#workspace-pane-cast') && document.activeElement !== document.body`, `${label} Design returns to the Inspector with focus kept`);
     }
-    pass('the header Cast tab docks Cast beside a narrower field at 1024 × 700 @125%, 900 × 650 @125% and 800 × 600 @100%, opens it over the field at 900 × 650 @150%, and moves focus into it without changing the saved layout');
+    pass('the header Cast tab docks Cast beside a narrower field at 1024 × 700 @125%, 900 × 650 @125% and 800 × 600 @100%, opens it over the field at 900 × 650 @150% (also when Cast is already current) and on the short 1014 × 650 @150% where docking would scroll the workspace, and moves focus into it without changing the saved layout');
+    // The Command palette shows Cast the same way, with focus moving from the field into Cast's search rather than staying
+    // under a scrim. In focus mode, which hides panels and must never show an overlay or scrim, it leaves focus mode first.
+    const mod = process.platform === 'darwin' ? 'meta' : 'control';
+    for (const [width, height, scale, over, focusMode] of [[1024, 700, 1.25, false, false], [900, 650, 1.5, true, false], [900, 650, 1.5, true, true], [1024, 700, 1.25, false, true]]) {
+      const label = `${width}x${height}@${scale}${focusMode ? ' in focus mode' : ''}`;
+      await applySize(width, height, scale); const saved = await savedLayout();
+      if (focusMode) { await evaluate(`${editor}.dispatch('layout.focus')`); await wait("!!document.querySelector('.studio--focus')", `${label} focus mode`); }
+      await evaluate("document.querySelector('.field-stage__svg').focus()"); await key('K', [mod]);
+      await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", `${label} palette open`);
+      await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Show Cast beside field' });
+      await wait("document.querySelector('.palette-result--active')?.getAttribute('aria-label')==='Show Cast beside field'", `${label} palette result`);
+      await key('Return');
+      await wait("(() => { const pane = document.querySelector('#workspace-pane-cast'); return !!pane && !pane.hidden && !pane.inert && !document.querySelector('dialog[open]') && document.activeElement?.getAttribute('aria-label')==='Find a performer' && pane.contains(document.activeElement); })()", `${label} the palette shows Cast with focus in its search`);
+      assert.deepEqual(await evaluate("[!!document.querySelector('.studio--focus'), document.querySelector('#workspace-pane-cast').classList.contains('workspace-pane--overlay')]"), [false, over], `${label} the palette leaves focus mode and ${over ? 'opens Cast over' : 'docks Cast beside'} the field`);
+      assert.deepEqual(await reachableIn(['Find a performer'], "document.querySelector('#workspace-pane-cast')"), [], `${label} Cast search is unobstructed`);
+      if (over) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Cast'", `${label} Escape closes the Cast overlay`); }
+      assert.equal(await savedLayout(), saved, `${label} the palette leaves the saved layout unchanged`);
+      await evaluate(`${byName('Design', tabs)}.focus()`); await key('Return');
+      await wait(`!${state}.ui.castPanelOpen && !document.querySelector('#workspace-pane-cast') && document.activeElement !== document.body`, `${label} Design returns to the Inspector`);
+    }
+    pass('Show Cast beside field from the Command palette moves focus from the field into Cast, docked or over the field, and from focus mode leaves focus mode first instead of covering the window with an empty scrim');
     // A preview keeps its subject in view: the Inspector docks beside a narrower field where it did before #178, and
     // where it cannot it opens over the field without a scrim while the field fits beside it.
     const ids = await evaluate(`JSON.stringify(${state}.project.present.performers.map(p => p.id))`);
-    for (const [width, height, scale, over] of [[1024, 700, 1.5, false], [900, 650, 1.25, false], [900, 650, 1.5, true], [800, 600, 1.5, true]]) {
+    // 1000 × 650 @150% is a short window outside the matrix where docking would scroll the workspace (see checkShortWindow).
+    for (const [width, height, scale, over] of [[1024, 700, 1.5, false], [900, 650, 1.25, false], [900, 650, 1.5, true], [800, 600, 1.5, true], [1000, 650, 1.5, true]]) {
       const label = `${width}x${height}@${scale}`;
       await applySize(width, height, scale); const saved = await savedLayout();
       await evaluate(`${editor}.setValue('selection','selectedIds',${ids}); ${editor}.dispatch('transform.mirror')`);
@@ -167,13 +204,56 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
         return { scrim: !!document.querySelector('.workspace-overlay-dismiss'), overlay: document.querySelector('#workspace-pane-inspector').classList.contains('workspace-pane--overlay'), surface: shown(document.querySelector('[data-field-surface]')), banner: shown(document.querySelector('.transform-preview-banner')), noOverflow: ${noOverflow} }; })()`);
       assert.deepEqual(view, { scrim: false, overlay: over, surface: true, banner: true, noOverflow: true }, `${label} the preview's field and banner stay in view`);
       assert.deepEqual(await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document'), [], `${label} Apply, Cancel and Play are reachable during the preview`);
+      if (width === 1000) assert.equal(await evaluate("(b => b.scrollHeight <= b.clientHeight + 1)(document.querySelector('.studio-body'))"), true, `${label} the preview fits without scrolling the workspace`);
       await capture(`breakpoints-preview-${label}.png`);
       await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview`, `${label} preview cancelled`);
       if (over) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", `${label} overlay closed after the preview`); }
       assert.equal(await savedLayout(), saved, `${label} the preview leaves the saved layout unchanged`);
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
     }
-    pass('transform previews keep the field, banner, Apply/Cancel and Play visible: the Inspector docks at 1024 × 700 @150% and 900 × 650 @125% and opens over the field without a scrim at 900 × 650 and 800 × 600 @150%');
+    pass('transform previews keep the field, banner, Apply/Cancel and Play visible: the Inspector docks at 1024 × 700 @150% and 900 × 650 @125% and opens over the field without a scrim at 900 × 650 and 800 × 600 @150% and on the short 1000 × 650 @150%');
+    const inspector = "document.querySelector('#workspace-pane-inspector')";
+    const openOver = `(() => { const pane = ${inspector}; return pane.classList.contains('workspace-pane--overlay') && !pane.hidden && !pane.inert && pane.contains(document.activeElement); })()`;
+    // An Inspector the writer opened over the field docks while a preview needs it and is still open over the field,
+    // with focus inside it, when the preview ends: by Cancel, or by Escape in coordinate entry (which refocuses Place).
+    for (const [width, height, scale] of [[1024, 700, 1.5], [900, 650, 1.25]]) {
+      const label = `${width}x${height}@${scale}`;
+      await applySize(width, height, scale); const saved = await savedLayout();
+      await evaluate(`${editor}.setValue('selection','selectedIds',${ids})`);
+      await nativeClick(byName('Show Inspector')); await wait(openOver, `${label} Show Inspector opens it over the field`);
+      await nativeClick(byName('Mirror selection', inspector));
+      // The preview's panel scrolls into view and focuses its operation, whose help would cover Cancel: wait for that
+      // focus, then leave it before clicking Cancel.
+      await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden && !${inspector}.classList.contains('workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Transform operation'`, `${label} the preview docks the Inspector`);
+      await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", `${label} help dismissed`);
+      await nativeClick(byName('Cancel transform'));
+      await wait(`!${state}.ui.transformPreview && ${openOver}`, `${label} the Inspector stays open over the field after Cancel, with focus inside it`);
+      await nativeClick(byName('Enter coordinates', inspector));
+      await wait(`!!${state}.ui.coordinatePreview && document.activeElement?.getAttribute('aria-label')==='Drill phrase' && !${inspector}.classList.contains('workspace-pane--overlay')`, `${label} coordinate entry docks the Inspector`);
+      await key('Escape');
+      await wait(`!${state}.ui.coordinatePreview && ${openOver} && document.activeElement?.getAttribute('aria-label')==='Enter coordinates'`, `${label} Escape in coordinate entry returns focus to Place in the still-open Inspector`);
+      await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Inspector'", `${label} Escape then closes the Inspector overlay`);
+      assert.equal(await savedLayout(), saved, `${label} the previews leave the saved layout unchanged`);
+      await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
+    }
+    // Shrinking the window during a preview that docked the Inspector opens it over the field: Apply and Cancel stay reachable.
+    await applySize(1024, 700, 1.5);
+    await evaluate(`${editor}.setValue('selection','selectedIds',${ids}); ${editor}.dispatch('transform.mirror')`);
+    await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden && !${inspector}.classList.contains('workspace-pane--overlay')`, 'the preview docks the Inspector at 1024 × 700 @150%');
+    await applySize(...MINIMUM);
+    await wait(`${inspector}.classList.contains('workspace-pane--overlay') && !${inspector}.hidden && !document.querySelector('.workspace-overlay-dismiss')`, 'shrinking during the preview opens the Inspector over the field');
+    assert.deepEqual(await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document'), [], 'Apply, Cancel and Play stay reachable after shrinking during the preview');
+    await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${openOver}`, 'the Inspector stays open over the field after the shrunken preview');
+    await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'Escape closes it');
+    // Focus mode hides every panel: a preview there neither shows a scrim nor narrows the field for an invisible overlay,
+    // and one Escape after it still leaves focus mode.
+    await applySize(900, 650, 1.5); await evaluate(`${editor}.dispatch('layout.focus')`); await wait("!!document.querySelector('.studio--focus')", 'focus mode for a preview');
+    await evaluate(`${editor}.dispatch('transform.mirror')`); await wait(`!!${state}.ui.transformPreview`, 'preview in focus mode'); await frames();
+    assert.deepEqual(await evaluate("(() => { const body = document.querySelector('.studio-body'), field = document.querySelector('.field-container').getBoundingClientRect(), s = document.querySelector('[data-field-surface]').getBoundingClientRect(); const hit = document.elementFromPoint(s.left + s.width / 2, s.top + s.height / 2); return { scrim: !!document.querySelector('.workspace-overlay-dismiss'), previewOverlay: body.dataset.previewOverlay ?? null, wide: field.width >= body.getBoundingClientRect().width - 60, field: !!hit && document.querySelector('.field-container').contains(hit) }; })()"), { scrim: false, previewOverlay: null, wide: true, field: true }, 'a preview in focus mode keeps the whole field, with no scrim or overlay margin');
+    await evaluate(`${editor}.dispatch('transform.cancel')`); await wait(`!${state}.ui.transformPreview`, 'preview in focus mode cancelled');
+    await evaluate("document.querySelector('.field-stage__svg').focus()"); await key('Escape'); await wait("!document.querySelector('.studio--focus') && !document.querySelector('.workspace-overlay-dismiss')", 'one Escape leaves focus mode after the preview');
+    await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
+    pass('an Inspector open over the field stays open with focus inside it after a preview that docked it (Cancel, coordinate Escape), shrinking during a preview opens it over the field, and focus mode never shows a scrim or overlay margin');
   }
   for (const [width, height] of SIZES) for (const scale of SCALES) await verify(width, height, scale);
   pass('UI-scale matrix 900–1920 px × 100–150%: one-row header and transport, unobstructed Save/Undo/Redo/Export/play/set navigation/show count, no scrolling, and a drawn field ≥ 480 × 260 at 1366 × 768 @150% and 900 × 650 @100%');
@@ -214,7 +294,23 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     await key('Escape');
     await wait(`!${state}.ui.dialog && document.activeElement?.getAttribute('aria-label')==='Rehearsal passages' && !!document.querySelector('.overflow-menu-panel')?.contains(document.activeElement)`, 'the dialog returns focus to its folded opener');
     await key('Escape'); await wait("!document.querySelector('.overflow-menu-panel') && document.activeElement?.getAttribute('aria-label')==='More playback options'", 'Escape then closes More');
-    pass('a dialog opened from More playback options returns focus to its opener inside More, and Escape then returns to the More trigger');
+    // A UI scale change while that dialog is open moves its opener from More to the transport (narrow to compact): the
+    // folded controls keep their own nodes, and focus follows Rehearsal passages instead of landing on another control.
+    await key('Return'); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options again');
+    await evaluate(`${byName('Rehearsal passages', "document.querySelector('.overflow-menu-panel')")}.focus()`); await key('Return');
+    await wait(`${state}.ui.dialog==='rehearsal' && !!document.querySelector('dialog[open]')?.contains(document.activeElement)`, 'Rehearsal passages dialog from More again');
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1}))`);
+    await wait("document.querySelector('.studio').dataset.transport==='compact' && !document.querySelector('.overflow-menu-panel [aria-label=\"Rehearsal passages\"]')", 'the transport widens under the dialog');
+    await key('Escape');
+    await wait(`!${state}.ui.dialog && document.activeElement?.getAttribute('aria-label')==='Rehearsal passages' && !!document.activeElement.closest('.transport-options') && !document.activeElement.closest('.overflow-menu-panel')`, 'focus follows Rehearsal passages to the transport');
+    // Without a dialog, focus on a folded control follows it too when a UI scale change moves it out of More.
+    await applySize(...MINIMUM);
+    await evaluate(`${byName('More playback options')}.focus()`); await key('Return'); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options for a tier change');
+    await evaluate(`${byName('Rehearsal passages', "document.querySelector('.overflow-menu-panel')")}.focus()`);
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1}))`);
+    await wait("document.querySelector('.studio').dataset.transport==='compact' && document.activeElement?.getAttribute('aria-label')==='Rehearsal passages' && !!document.activeElement.closest('.transport-options') && !document.querySelector('.overflow-menu-panel')", 'focus follows Rehearsal passages out of More on a tier change');
+    await applySize(...MINIMUM);
+    pass('a dialog opened from More playback options returns focus to its opener inside More, Escape then returns to the More trigger, and focus follows the opener, or a focused folded control, when a UI scale change moves it to the transport');
   }
   // Auto-tucking and overlays are temporary: the saved layout and production are unchanged.
   assert.equal(await evaluate(`JSON.stringify({ layout: ${state}.preferences.value.workspaceLayout, cast: ${state}.preferences.value.castPanelOpen })`), layoutBefore);

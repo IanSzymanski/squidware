@@ -58,6 +58,12 @@ describe('workspace layout boundaries', () => {
     await controller.flush(); expect(durable).not.toHaveProperty('castReveal');
     controller.stop();
   });
+  it('leaves focus mode to show Cast beside the field, which focus mode would hide', () => {
+    const store = createEditorStore(createDemoProject());
+    for (const mode of ['table', 'closed'] as const) { store.setValue('ui', 'focusMode', true); store.dispatch('cast.show', { mode }); expect(store.getState().ui.focusMode).toBe(true); }
+    store.dispatch('cast.show', { mode: 'panel' });
+    expect(store.getState().ui).toMatchObject({ focusMode: false, castPanelOpen: true, castReveal: 1, workspace: 'design' });
+  });
   it('keeps active drafts and previews reachable and always permits leaving focus', () => {
     const s = createEditorStore(createDemoProject());
     s.setValue('ui', 'pendingDraft', true);

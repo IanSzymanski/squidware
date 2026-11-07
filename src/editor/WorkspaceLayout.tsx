@@ -18,15 +18,28 @@ export function useWorkspaceLayout(controller: EditorController) {
   const studio = useRef<HTMLDivElement>(null);
   const [available, setAvailable] = useState(() => effectiveViewport(window.innerWidth, window.innerHeight, controller.preferences.value.uiScale).width);
   const [viewport, setViewport] = useState<Viewport>(() => effectiveViewport(window.innerWidth, window.innerHeight, controller.preferences.value.uiScale));
-  const [overlay, setOverlay] = useState<PaneId | null>(null);
+  // The pane the writer, or a preview, opened over the field. It shows as an overlay only while the window tucks it,
+  // so an Inspector a preview docks beside a narrower field is open over the field again when the preview ends.
+  // `restored` marks a pane the user had collapsed: its overlay offers Collapse rather than Close.
+  const [opened, setOpened] = useState<{ pane: PaneId; restored: boolean } | null>(null);
+  const setOverlay = (pane: PaneId | null, restored = false) => setOpened(pane && { pane, restored });
+  const focusShow = (pane: PaneId) => requestAnimationFrame(() => document.querySelector<HTMLElement>(`[aria-label="Show ${paneNames[pane]}"]`)?.focus());
   const [menu, setMenu] = useState(false);
   const layout = controller.preferences.value.workspaceLayout;
   const preview = !!(controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview);
   const side: 'cast' | 'inspector' = controller.workspace === 'design' && controller.castPanelOpen && !preview ? 'cast' : 'inspector';
-  // Cast the writer showed, or the Inspector a preview needs, docks beside a narrower field before it tucks.
-  const demanded = side === 'cast' || preview;
+  // Cast the writer showed, or the Inspector a preview needs, docks beside a narrower field before it tucks, unless
+  // that made the workspace scroll at this window size (`crowded`): there it opens over the field instead.
+  const [crowded, setCrowded] = useState('');
+  const sized = `${viewport.width}x${viewport.height}:${side}`;
+  const demanded = (side === 'cast' || preview) && crowded !== sized;
   const fit = fitWorkspaceLayout(layout, available, side, demanded);
+  // Without a preview's demand: where the Inspector a preview docks tucks again once the preview ends.
+  const idle = preview ? fitWorkspaceLayout(layout, available, side) : fit;
   const focusMode = useEditorSelector(state => state.ui.focusMode) && controller.workspace === 'design';
+  // Focus mode hides every panel, so nothing opens over the field there: no overlay, scrim or preview margin.
+  const overlay = opened && !focusMode && (opened.pane === 'sets' ? fit.setsHidden : opened.pane === side && fit.sideHidden) ? opened.pane : null;
+  const restored = opened?.restored ? opened.pane : null;
   // The timeline spans the main workspace: the width left beside docked (or tucked) panels.
   const mainWidth = focusMode ? available : available - (fit.setsHidden ? 30 : fit.widths.sets + 6) - (fit.sideHidden ? 30 : fit.widths[side] + 6);
   const breakpoints = workspaceBreakpoints(viewport, mainWidth);
@@ -51,17 +64,48 @@ export function useWorkspaceLayout(controller: EditorController) {
   // header and panels never paint one frame at the previous scale's breakpoints.
   const uiScale = controller.preferences.value.uiScale;
   useLayoutEffect(measure, [uiScale]);
-  // A pane that fits again docks: its temporary overlay ends and the saved layout shows as chosen.
-  useEffect(() => { if (overlay && !(overlay === 'sets' ? fit.setsHidden : fit.sideHidden)) setOverlay(null); }, [overlay, fit.setsHidden, fit.sideHidden]);
-  useEffect(() => { setOverlay(null); setMenu(false); }, [focusMode, controller.workspace, side]);
-  // Showing Cast (header tab, Dock Cast, palette) on a window too narrow to dock it opens it over the field.
+  // A pane that fits again without a preview's demand docks: its overlay ends and the saved layout shows as chosen.
+  // These run as layout effects, in this order, so an overlay is on screen before the next paint or animation frame.
+  useLayoutEffect(() => { if (opened && !(opened.pane === 'sets' ? idle.setsHidden : idle.sideHidden)) setOverlay(null); }, [opened, idle.setsHidden, idle.sideHidden]);
+  const findPerformer = useRef(false);
+  useLayoutEffect(() => { setOverlay(null); setMenu(false); findPerformer.current = false; }, [focusMode, controller.workspace, side]);
+  // Showing Cast (header tab, Dock Cast, palette) docks it or, on a window too narrow, opens it over the field; focus
+  // then moves to its search as soon as it is on screen.
   const castReveal = useEditorSelector(state => state.ui.castReveal);
-  useEffect(() => { if (castReveal && side === 'cast' && fit.sideHidden) setOverlay('cast'); }, [castReveal]);
-  useEffect(() => {
-    if (!preview) return;
-    if (layout.inspectorCollapsed) controller.dispatch('layout.update', { update: { inspectorCollapsed: false } });
-    if (fitWorkspaceLayout({ ...layout, inspectorCollapsed: false }, available, 'inspector', true).sideHidden) setOverlay('inspector');
-  }, [preview]);
+  useLayoutEffect(() => { if (!castReveal || side !== 'cast' || focusMode) return; findPerformer.current = true; if (fit.sideHidden) setOverlay('cast'); }, [castReveal]);
+  useLayoutEffect(() => {
+    const search = findPerformer.current && document.querySelector<HTMLElement>('#workspace-pane-cast [aria-label="Find a performer"]');
+    if (search && !search.closest('[hidden], [inert]')) { findPerformer.current = false; search.focus(); }
+  });
+  // A preview restores a collapsed Inspector. Where the Inspector tucks without the preview's demand it stays open
+  // over the field: during the preview once the window tucks it (also after shrinking), and after the preview ends.
+  // One pane opens over the field at a time; a set list open over it stays while the Inspector docks.
+  const uncollapsed = { ...layout, inspectorCollapsed: false };
+  const previewTucks = preview && fitWorkspaceLayout(uncollapsed, available, 'inspector').sideHidden;
+  const previewHides = previewTucks && fitWorkspaceLayout(uncollapsed, available, 'inspector', true).sideHidden;
+  useLayoutEffect(() => {
+    if (!preview || focusMode) return;
+    const collapsed = layout.inspectorCollapsed;
+    if (collapsed) controller.dispatch('layout.update', { update: { inspectorCollapsed: false } });
+    if (previewTucks) setOpened(current => current?.pane === 'inspector' || current && !previewHides ? current : { pane: 'inspector', restored: collapsed });
+  }, [preview, previewTucks, previewHides, focusMode]);
+  // On a short window the narrower field beside a demanded panel wraps its toolbar and can make a workspace that fits
+  // scroll; with classic scrollbars the scrollbar then narrows the workspace below the reserve, the panel tucks, the
+  // scrollbar goes and the panel docks again, every frame. Such a panel opens over the field instead for this window
+  // size, keeping focus inside it. A window that scrolls without it (the smallest supported sizes) keeps it docked.
+  // Only measured where the demand decides whether the panel docks.
+  const docksOnDemand = (side === 'cast' || preview) && !fitWorkspaceLayout(layout, available, side, true).sideHidden && fitWorkspaceLayout(layout, available, side).sideHidden;
+  const settled = useRef({ size: '', overflow: 0 });
+  useLayoutEffect(() => {
+    const node = body.current; if (!node || !docksOnDemand) return;
+    const size = `${viewport.width}x${viewport.height}`, overflow = node.scrollHeight - node.clientHeight;
+    if (!demanded) { settled.current = { size, overflow }; if (overflow > 1) setCrowded(''); return; }
+    if (overflow <= 1 || settled.current.size === size && settled.current.overflow > 1) return;
+    setCrowded(sized);
+    if (opened?.pane === side || document.querySelector(`#workspace-pane-${side}`)?.contains(document.activeElement)) setOpened(current => current?.pane === side ? current : { pane: side, restored: false });
+  });
+  // The preview's controls leave with it; focus they held moves to the heading of the Inspector still open over the field.
+  useLayoutEffect(() => { if (!preview && overlay && (!document.activeElement || document.activeElement === document.body)) document.querySelector<HTMLElement>(`#workspace-pane-${overlay} button`)?.focus(); }, [preview]);
   useEffect(() => {
     function escape(event: KeyboardEvent) {
       if (event.key !== 'Escape' || event.isComposing || controller.store.getState().ui.paletteOpen || controller.store.getState().ui.dialog || controller.store.getState().ui.selectionToolsOpen) return;
@@ -78,7 +122,7 @@ export function useWorkspaceLayout(controller: EditorController) {
       if (menu || overlay || controller.store.getState().ui.focusMode) {
         event.preventDefault(); event.stopPropagation();
         if (menu) { setMenu(false); requestAnimationFrame(() => focusFirst(...layoutTrigger)); }
-        else if (overlay) { const pane = overlay; setOverlay(null); requestAnimationFrame(() => document.querySelector<HTMLElement>(`[aria-label="Show ${paneNames[pane]}"]`)?.focus()); }
+        else if (overlay) { setOverlay(null); focusShow(overlay); }
         else { controller.dispatch('layout.focus'); requestAnimationFrame(() => focusFirst('[aria-label="Focus field"]', '[aria-label="Project menu"]')); }
       }
     }
@@ -87,18 +131,20 @@ export function useWorkspaceLayout(controller: EditorController) {
   function update(update: Partial<WorkspaceLayout>) { controller.dispatch('layout.update', { update }); }
   function collapse(pane: PaneId) {
     if (locked) return;
-    // Closing a pane the window tucked only ends its overlay; the saved layout and preset stay as chosen.
-    if (overlay !== pane || layout[`${pane}Collapsed`]) update({ [`${pane}Collapsed`]: true });
-    setOverlay(null);
-    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[aria-label="Show ${paneNames[pane]}"]`)?.focus());
+    // Closing a pane the window tucked only ends its overlay; the saved layout and preset stay as chosen. A pane the
+    // user had collapsed, restored by Show or a preview, collapses again.
+    if (overlay !== pane || layout[`${pane}Collapsed`] || restored === pane) update({ [`${pane}Collapsed`]: true });
+    setOverlay(null); focusShow(pane);
   }
+  /** A click on the field around an overlay closes it like Escape: focus returns to the pane's Show button. */
+  function dismiss() { if (!overlay || locked) return; setOverlay(null); focusShow(overlay); }
   function reveal(pane: PaneId) {
     if (controller.preferences.status === 'loading') return;
-    const next = { ...layout, [`${pane}Collapsed`]: false };
+    const collapsed = layout[`${pane}Collapsed`];
     // Only a pane the user collapsed changes the saved layout; a pane tucked away by a narrow window opens over the field.
-    if (layout[`${pane}Collapsed`]) update({ [`${pane}Collapsed`]: false });
-    const resolved = fitWorkspaceLayout(next, available, side, demanded);
-    setOverlay(pane === 'sets' ? resolved.setsHidden ? pane : null : resolved.sideHidden ? pane : null);
+    if (collapsed) update({ [`${pane}Collapsed`]: false });
+    const resolved = fitWorkspaceLayout({ ...layout, [`${pane}Collapsed`]: false }, available, side, demanded);
+    setOverlay((pane === 'sets' ? resolved.setsHidden : resolved.sideHidden) ? pane : null, collapsed);
     requestAnimationFrame(() => document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus());
   }
   function toggleFocus() {
@@ -109,7 +155,7 @@ export function useWorkspaceLayout(controller: EditorController) {
     controller.setMenu(false); setMenu(true);
     requestAnimationFrame(() => document.querySelector<HTMLElement>('#workspace-layout-options button')?.focus());
   }
-  return { body, studio, studioStyle, available, viewport, breakpoints, overlay, overlayWidth, setOverlay, menu, setMenu, layout, side, preview, fit, focusMode, locked, reason, update, collapse, reveal, toggleFocus, openFromMenu };
+  return { body, studio, studioStyle, available, viewport, breakpoints, overlay, overlayWidth, setOverlay, restored, menu, setMenu, layout, side, preview, fit, focusMode, locked, reason, update, collapse, dismiss, reveal, toggleFocus, openFromMenu };
 }
 export type WorkspaceLayoutController = ReturnType<typeof useWorkspaceLayout>;
 const presetName = (preset: WorkspaceLayout['preset']) => preset[0].toUpperCase() + preset.slice(1);
@@ -154,7 +200,7 @@ export function WorkspacePane({ pane, layout: l, children }: { pane: PaneId; lay
   const [draftWidth, setDraftWidth] = useState<number | null>(null);
   const drag = useRef<{ pointer: number; startX: number; width: number; current: number } | null>(null);
   const hidden = pane === 'sets' ? l.fit.setsHidden : l.fit.sideHidden;
-  const overlay = l.overlay === pane; const tucked = hidden && !l.layout[`${pane}Collapsed`];
+  const overlay = l.overlay === pane; const tucked = hidden && !l.layout[`${pane}Collapsed`] && l.restored !== pane;
   const left = pane === 'sets'; const [min, max] = paneLimits[pane];
   const width = draftWidth ?? l.fit.widths[pane];
   const otherWidth = left ? l.fit.sideHidden ? 30 : l.fit.widths[l.side] + 6 : l.fit.setsHidden ? 30 : l.fit.widths.sets + 6;
