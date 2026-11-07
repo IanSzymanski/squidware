@@ -30,8 +30,8 @@ export interface EditorState {
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
     setCreationKind: SetCreationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
-    /** Showing Cast beside the field (header tab, Dock Cast, palette) increments castReveal: Cast docks, or opens over the field on a window too narrow to dock it, and takes focus. */
-    castPanelOpen: boolean; castReveal: number; castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
+    /** Showing Cast beside the field (header tab, Dock Cast, palette) increments castReveal: Cast docks, or opens over the field on a window too small to dock it, and takes focus. castRevealRestored: that reveal restored a Cast the writer had collapsed, so its overlay offers Collapse. */
+    castPanelOpen: boolean; castReveal: number; castRevealRestored: boolean; castQuery: string; sectionFilter: string; castAmount: number; castSection: string; castPrefix: string;
     printMode: 'charts' | 'coordinates'; printing: boolean;
     transformPreview: TransformSession | null;
     spacingPreview: SpacingSession | null;
@@ -63,7 +63,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     ui: { workspace: 'design', focusMode: false, view: '2d', popout3d: 'unavailable', popout3dFocus: 0, tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
       showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
       pendingDraft: false, menu: false, paletteOpen: false, toast: '', setCreationKind: 'new', formation: 'arc', formationWidth: 45,
-      formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castReveal: 0, castQuery: '',
+      formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castReveal: 0, castRevealRestored: false, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',
       castPrefix: 'B', printMode: 'charts', printing: false, transformPreview: null, spacingPreview: null, coordinatePreview: null, formationPreview: null, formationDrafts: {}, formationAssignmentModes: {}, movementClipboard: null,
       confirmation: null },

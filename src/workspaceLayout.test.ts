@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitWorkspaceLayout, validateWorkspaceLayout, workspacePreset } from './workspaceLayout';
+import { fitWorkspaceLayout, isCrowded, nextCrowdingProbe, validateWorkspaceLayout, workspacePreset, type CrowdingProbe } from './workspaceLayout';
 import { defaultPreferences, validatePreferences } from './preferences';
 import { createDemoProject, serializeProject } from './domain';
 import { createEditorStore } from './editor/store';
@@ -57,6 +57,47 @@ describe('workspace layout boundaries', () => {
     store.dispatch('cast.show', { mode: 'table' }); store.dispatch('cast.show', { mode: 'closed' }); expect(reveals()).toBe(2);
     await controller.flush(); expect(durable).not.toHaveProperty('castReveal');
     controller.stop();
+  });
+  it('treats docking as crowded only when it adds overflow, and never past the situation it was measured in', () => {
+    const key = '676x433:cast:2d:design', settle = (probe: CrowdingProbe | null, docked: number, idle: number) => {
+      const measured = nextCrowdingProbe(probe, key, !isCrowded(probe, key), docked);
+      return isCrowded(measured, key) ? nextCrowdingProbe(measured, key, false, idle) : measured;
+    };
+    // Docking that fits, or overflows no more than the workspace does without the panel, stays docked.
+    expect(nextCrowdingProbe(null, key, true, -40)).toBeNull();
+    expect(isCrowded(settle(null, 6, 5.5), key)).toBe(false);
+    expect(isCrowded(settle(null, 38, -20), key)).toBe(true);
+    // A 600 px tall window at 150% already scrolls 6 px without the panel: docking that scrolls 38 px is still crowded.
+    const short = settle(null, 38, 6);
+    expect(short).toEqual({ key, docked: 38, idle: 6 }); expect(isCrowded(short, key)).toBe(true);
+    // Repeated measurements change nothing, so the panel cannot alternate between docked and tucked across frames.
+    expect(nextCrowdingProbe(short, key, false, 6)).toBe(short); expect(nextCrowdingProbe(short, key, false, 6.8)).toBe(short);
+    const fits = settle(null, 6, 6); expect(isCrowded(fits, key)).toBe(false); expect(nextCrowdingProbe(fits, key, true, 6.5)).toBe(fits);
+    // The decision belongs to its window size, panel, view and workspace: the 2D view docks again after the 3D view crowded it.
+    const view3d = settle(null, 32, -2), in3d = { ...view3d!, key: key.replace('2d', '3d') };
+    expect(isCrowded(in3d, in3d.key)).toBe(true); expect(isCrowded(in3d, key)).toBe(false);
+    // The measurement without the panel follows the content: once docking no longer adds overflow the panel docks again,
+    // and content that grows beside a docked panel measures it again.
+    expect(isCrowded(nextCrowdingProbe(short, key, false, -30), key)).toBe(true);
+    expect(nextCrowdingProbe(short, key, false, 40)).toEqual({ key, docked: 38, idle: 40 }); expect(isCrowded(nextCrowdingProbe(short, key, false, 40), key)).toBe(false);
+    expect(nextCrowdingProbe(fits, key, true, 40)).toEqual({ key, docked: 40, idle: null });
+    // A 3D view whose camera controls settle a frame after each change: measurements that lag a frame behind settle on
+    // one placement instead of alternating.
+    let lagging: CrowdingProbe | null = null; const placements: boolean[] = [];
+    for (let frame = 0; frame < 12; frame++) {
+      const crowded = isCrowded(lagging, key), stale = frame % 2 === 0;
+      lagging = nextCrowdingProbe(lagging, key, !crowded, crowded ? stale ? 0 : -20 : stale ? 0 : 19);
+      placements.push(isCrowded(lagging, key));
+    }
+    expect(placements.slice(2)).toEqual(Array(10).fill(true));
+  });
+  it('records whether showing Cast restored a Cast the writer had collapsed, so its overlay offers Collapse', () => {
+    const store = createEditorStore(createDemoProject());
+    store.dispatch('cast.show', { mode: 'panel' }); expect(store.getState().ui.castRevealRestored).toBe(false);
+    store.setValue('preferences', 'value', p => ({ ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: true } }));
+    store.dispatch('cast.show', { mode: 'panel' });
+    expect(store.getState().ui).toMatchObject({ castRevealRestored: true, castReveal: 2 });
+    expect(store.getState().preferences.value.workspaceLayout.castCollapsed).toBe(false);
   });
   it('leaves focus mode to show Cast beside the field, which focus mode would hide', () => {
     const store = createEditorStore(createDemoProject());
