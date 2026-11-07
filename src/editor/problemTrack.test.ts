@@ -3,7 +3,7 @@ import { analyzeTransition, createBlankProject } from '../domain';
 import type { MoveCheck } from '../analysis/show';
 import type { TransitionIssue } from '../types';
 import type { Finding } from '../analysis/show';
-import { PROBLEM_TARGET, activeCluster, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, findingQuantity, performerLabels, problemClusters, rovingIndex, wholeCount, type ProblemCluster } from './problemTrack';
+import { BADGE_CAP, CAPPED_TARGET, PROBLEM_TARGET, activeCluster, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, findingQuantity, performerLabels, problemClusters, rovingIndex, wholeCount, type ProblemCluster } from './problemTrack';
 
 const issue = (atCount: number, severity: 'danger' | 'warning' = 'warning', type: 'collision' | 'stride' = 'collision', ids = type === 'collision' ? ['a', 'b'] : ['a']): TransitionIssue =>
   ({ type, severity, performerIds: ids, message: type === 'collision' ? `A / B: 0.75 yards apart near count ${atCount}.` : 'A: 6.0 yards in 2 counts; 1.7 steps per 5 yards. Limit 1.25 yd/count (minimum 4 steps per 5 yd); base.', atCount });
@@ -75,6 +75,18 @@ describe('timeline problem clusters', () => {
     expect(problemClusters([move(2, [issue(9)]), ready], 0, 10, 1000)[1]).toMatchObject({ size: 2, danger: 1, parts: [{ move: { moveId: 'm1' } }] });
     expect(all([{ ...ready, status: 'pending' }, { ...ready, status: 'error' }], 0, 200)).toEqual([]);
     expect(ready.issues).toEqual(copy);
+  });
+
+  // “99k+” is about 28 px wide at 11 px in DejaVu Sans Bold, the widest common fallback face.
+  it('widens the markers of a row that holds a capped group so its four-character badge fits', () => {
+    const at = (size: number) => [move(1, Array.from({ length: size }, (_, i) => ({ ...issue(6), performerIds: [`p${i % 9}`, `p${(i + 1) % 9}`] }))), move(2, [issue(40), issue(41, 'danger'), issue(44)])];
+    const capped = problemClusters(at(BADGE_CAP), 0, 64, 640), group = capped.find(c => c.size >= BADGE_CAP)!;
+    expect(clusterBadge(group.size)).toBe('99k+');
+    expect(capped.every(c => c.width >= CAPPED_TARGET - 1e-9)).toBe(true);
+    for (let i = 1; i < capped.length; i++) expect(capped[i - 1].left + capped[i - 1].width).toBeLessThanOrEqual(capped[i].left + 1e-9);
+    expect(capped.reduce((n, c) => n + c.size, 0)).toBe(BADGE_CAP + 3);
+    // One finding fewer keeps the row's 24 px targets.
+    expect(problemClusters(at(BADGE_CAP - 1), 0, 64, 640).map(c => [c.width, c.size])).toEqual([[PROBLEM_TARGET, BADGE_CAP - 1], [34, 2], [PROBLEM_TARGET, 1]]);
   });
 
   it('bounds markers for very dense shows', () => {

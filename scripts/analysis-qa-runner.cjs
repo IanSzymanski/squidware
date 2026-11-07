@@ -128,6 +128,15 @@ app.whenReady().then(async () => {
     await evaluate("[...document.querySelectorAll('.set-track > button')].at(-1).focus()");await key(window,'Tab');
     assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker[tabindex=\\'0\\']')"),'Tab enters the problem row');
     await key(window,'Tab');await focusReaches('Timeline playhead');await key(window,'Tab',['shift']);assert.ok(await evaluate("document.activeElement.matches('.problem-track .problem-marker')"));
+    // Tab and Shift+Tab in an open group list close it and move on from the group marker, as from a menu button: they
+    // reach what the same key reaches from the marker, and the opposite key comes back to that marker.
+    const tabbed=markers.find(m=>m.group),focusTabbed=`[...document.querySelectorAll('.problem-track .problem-marker')].find(e=>e.getAttribute('aria-label')===${JSON.stringify(tabbed.label)}).focus()`;
+    await evaluate(focusTabbed);await focusReaches(tabbed.label);await key(window,'Tab',['shift']);await wait(`!document.activeElement?.closest('.problem-track')`,'Shift+Tab leaves the row');const behind=await focusedLabel();assert.ok(behind);
+    for(const [mods,back,reaches] of [[[],['shift'],'Timeline playhead'],[['shift'],[],behind]]){
+      await evaluate(focusTabbed);await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before Tab');await key(window,'Down');await wait("document.activeElement===document.querySelectorAll('.problem-cluster-list [role=menuitem]')[1]",'Down before Tab');
+      await key(window,'Tab',mods);await wait(`!document.querySelector('.problem-cluster-list') && !document.querySelector('.problem-marker[aria-expanded=true]') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(reaches)}`,`${mods.length?'Shift+Tab':'Tab'} from the group list moves on from its marker`);
+      await key(window,'Tab',back);await focusReaches(tabbed.label);
+    }
     await key(window,'Home');await focusReaches(markers[0].label);await tooltipInView(markers[0].label);
     let reached=0;const unchanged=await evaluate(`JSON.stringify(${state}.project)`);
     for(const m of markers){
@@ -152,7 +161,7 @@ app.whenReady().then(async () => {
     const firstItem=await evaluate("document.querySelector('.problem-cluster-list [role=menuitem]').textContent");await click('.problem-cluster-list [role=menuitem]');
     await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null`,'pointer group choice');assert.ok(firstItem.startsWith(findingName((await evaluate(snapshot+'.selected')).issue,labels)));
     assert.equal(await evaluate(state+'.playback.count'),(await evaluate(snapshot+'.selected')).issue.atCount);
-    pass('the problem row is one Tab stop of non-overlapping 24 px markers named by type, performers and whole count; arrows reach every finding, groups list theirs, Escape returns and choices seek and select');
+    pass('the problem row is one Tab stop of non-overlapping 24 px markers named by type, performers and whole count; arrows reach every finding, groups list theirs, Escape returns, Tab and Shift+Tab move on from the marker and choices seek and select');
     // Escape in a group list closes only the list, also in focus mode and over a tucked-panel overlay (the workspace
     // handles Escape in the capture phase); the next Escape then belongs to the workspace.
     await evaluate(`${editor}.dispatch('set.select',{index:1});${analysis}.clearSelection()`);await frames();
@@ -176,6 +185,39 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`!${state}.ui.focusMode`,'focus mode restored');
     window.setContentSize(1366,768);await settleNativeViewport(window,'analysis window restored');
     pass('Escape in a group list returns to its marker in focus mode and over a tucked-panel overlay before the workspace handles Escape; layout changes close an open list and keep focus in the row');
+    // The row restores focus in the commit that removes its focused marker or list; a recheck that empties the row (a
+    // keyboard edit from it) restores it when its results arrive, unless the user pressed a key or clicked meanwhile.
+    // Markers that return to a row emptied otherwise, or after such input, never take focus back, where Space would open
+    // a group list instead of playing or pausing. A press outside an open list does not pass focus through its marker.
+    const rowFocus="document.activeElement?.matches('.problem-track .problem-marker[tabindex=\"0\"]')";
+    const onDocument=async label=>assert.equal(await evaluate("document.activeElement===document.body"),true,`${label}: ${await evaluate("document.activeElement?.outerHTML.slice(0,120)")}`);
+    async function focusMarker() { await evaluate(`${editor}.dispatch('set.select',{index:1});document.querySelector('.problem-track .problem-marker[tabindex="0"]').focus()`);await wait(rowFocus,'marker focused before its moves are rechecked'); }
+    async function emptyRowFromMarker(edit) {
+      await focusMarker();
+      await evaluate(`${qa}.hold=true;${editor}.dispatch('positions.move',{index:1,updates:{p0:{x:22,y:${10+edit*.05}}}});${editor}.dispatch('set.select',{index:2});${editor}.dispatch('positions.move',{index:2,updates:{p0:{x:34,y:${10+edit*.05}}}});${editor}.dispatch('set.select',{index:1})`);
+      await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'the row empties while every move is rechecked');
+    }
+    async function markersReturn() { await evaluate(`${qa}.release()`);await ready();await wait("!!document.querySelector('.problem-track .problem-marker')",'markers return');await frames();await frames(); }
+    const edited=await evaluate(state+'.project.past.length');await emptyRowFromMarker(1);await markersReturn();await wait(rowFocus,'focus returns to the row when its recheck ends');
+    const spot=await evaluate("(()=>{const e=document.elementFromPoint(5,5);return {x:5,y:5,focusable:!!e?.closest('button,input,select,textarea,a[href],[tabindex]'),element:e?.outerHTML.slice(0,120)}})()");assert.equal(spot.focusable,false,spot.element);
+    await emptyRowFromMarker(2);for(const type of ['mouseMoved','mousePressed','mouseReleased'])await mouse(type,spot,type==='mouseMoved'?{}:{button:'left',clickCount:1});await frames();
+    await markersReturn();await onDocument('a click elsewhere during the recheck keeps focus out of the row');
+    await emptyRowFromMarker(3);await key(window,'Space');await wait(`${state}.playback.playing`,'Space plays while the row is empty');
+    await markersReturn();await onDocument('markers that return during playback leave focus on the document');
+    await key(window,'Space');await wait(`!${state}.playback.playing`,'Space pauses once markers return');assert.equal(await evaluate("!!document.querySelector('.problem-cluster-list')"),false);
+    while(await evaluate(state+'.project.past.length')>edited)await evaluate(`${editor}.dispatch('history.undo')`);await oracle();assert.deepEqual(await evaluate(state+'.project.present.sets'),project.sets);
+    // Rules with no findings empty the row after the recheck: focus goes at once, and undoing them later brings back markers, not focus.
+    await focusMarker();await evaluate(`${editor}.dispatch('analysis.rules-save',{rules:{defaults:{minimumSpacing:.1,maximumStride:5}}})`);await ready();
+    await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'rules without findings empty the row');
+    await evaluate(`${editor}.dispatch('history.undo')`);await ready();await wait("!!document.querySelector('.problem-track .problem-marker')",'findings return');await frames();await frames();
+    await onDocument('markers that return to a row left empty leave focus on the document');assert.equal(await evaluate(state+'.project.past.length'),edited);
+    await key(window,'Space');await wait(`${state}.playback.playing`,'Space plays once markers return');assert.equal(await evaluate("!!document.querySelector('.problem-cluster-list')"),false);await key(window,'Space');await wait(`!${state}.playback.playing`,'Space pauses');
+    await evaluate(`${editor}.dispatch('set.select',{index:1});document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').focus()`);await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before a press outside');
+    await evaluate(`${qa}.focused=[];document.addEventListener('focusin',${qa}.logFocus=e=>${qa}.focused.push(e.target.getAttribute('aria-label')||e.target.tagName),true)`);
+    for(const type of ['mouseMoved','mousePressed','mouseReleased'])await mouse(type,spot,type==='mouseMoved'?{}:{button:'left',clickCount:1});
+    await wait("!document.querySelector('.problem-cluster-list') && document.activeElement===document.body",'a press outside closes the list');await frames();
+    assert.deepEqual(await evaluate(`(document.removeEventListener('focusin',${qa}.logFocus,true),${qa}.focused)`),[],'a press outside the list does not focus its marker on the way out');
+    pass('the row keeps focus through a recheck that empties it unless the user acts first; markers returning to a row left empty or after a key or click, and presses outside a list, leave focus where it went, so Space plays and pauses');
     // Native drag: cancel with Escape, then repeat and commit one history entry.
     let point=await startDrag();const baseline=await evaluate(`JSON.stringify(${state}.project)`);
     await evaluate(`${qa}.hold=true`);await mouse('mouseMoved',{x:point.x+40,y:point.y+50},{button:'left',buttons:1});
@@ -224,8 +266,17 @@ app.whenReady().then(async () => {
       await evaluate(`${analysis}.clearSelection();${editor}.dispatch('set.select',{index:1})`);await frames();
     }
     assert.ok(regrouped>0,'reviews from Cast regroup the row');metrics.castReviewsRegrouped=regrouped;
+    // 500 performers on one spot make about 125,000 findings at one count: a “99k+” group. Its badge fits in the app font
+    // and in the widest common fallback faces, DejaVu Sans (Linux without the app's fonts) or Verdana (macOS, Windows).
+    const stacked=createPerformanceFixture('maximum'),spot0=Object.values(stacked.sets[0].positions)[0];stacked.sets=stacked.sets.slice(0,2);stacked.moves=stacked.moves.slice(0,1);
+    for(const set of stacked.sets)for(const id of Object.keys(set.positions))set.positions[id]={...spot0};
+    await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(stacked)}});${editor}.dispatch('set.select',{index:1})`);await ready();await frames();
+    const cappedRow=await timelineRow(),capped=cappedRow.find(m=>m.badge==='99k+');assert.ok(capped&&capped.size>=100000,JSON.stringify(cappedRow));
+    rowGeometry(cappedRow,await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width"));await badgesFit();
+    const wide=await evaluate(`(()=>{const width=font=>{const s=document.createElement('span');s.style.cssText='position:absolute;white-space:nowrap;font:700 11px '+font;s.textContent='99k+';document.body.append(s);const w=s.getBoundingClientRect().width;s.remove();return w};const style=document.createElement('style');style.id='qa-badge-font';style.textContent='.problem-marker-count{font-family:"DejaVu Sans",Verdana,monospace!important}';document.head.append(style);return {wide:width('"DejaVu Sans",Verdana,monospace'),mono:width('monospace')};})()`);
+    assert.notEqual(wide.wide,wide.mono,'DejaVu Sans or Verdana is installed');await frames();await badgesFit();await evaluate("document.getElementById('qa-badge-font').remove()");metrics.capped={size:capped.size,width:capped.right-capped.left,wideFontText:wide.wide};
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
-    pass('127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast keeps focus in the regrouped row; rapid edits and same-ID project replacement keep reference-correct results');
+    pass('127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast keeps focus in the regrouped row; a 99k+ badge fits in wide fallback faces; rapid edits and same-ID project replacement keep reference-correct results');
     await openProblems();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await capture(`problems-${theme}.png`);}
     await close();
     window.setContentSize(1024,720);window.webContents.setZoomFactor(1.25);await settleNativeViewport(window,'enlarged analysis');await openProblems();await capture('problems-enlarged.png');
