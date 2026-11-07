@@ -81,6 +81,8 @@ async function timelineProblemChecks() {
       untabbable: [...track.querySelectorAll('.problem-marker')].filter(e => e.tabIndex !== 0 && e.tabIndex !== -1).length,
       small: targets.filter(t => t.width < 24 || t.height < 24), overlaps: markers.filter((r, i) => i && markers[i - 1].right > r.left + .5).length,
       unnamed: within('button, input, select, [tabindex], [role=menuitem]').filter(e => !name(e)).map(e => e.outerHTML.slice(0, 120)),
+      // Label in Name (WCAG 2.5.3): visible marker text (a group's size badge) starts the accessible name.
+      labelNotInName: [...track.querySelectorAll('.problem-marker')].filter(e => e.textContent.trim() && !name(e).startsWith(e.textContent.trim())).map(e => [e.textContent.trim(), name(e)]),
       popupState: [...track.querySelectorAll('[aria-haspopup]')].filter(e => !['true', 'false'].includes(e.getAttribute('aria-expanded'))).length,
       dangling: refs.filter(id => !document.getElementById(id)), duplicateIds: ids.filter((id, i) => id && ids.indexOf(id) !== i),
       menu: menu && { labelled: !!document.getElementById(menu.getAttribute('aria-labelledby'))?.textContent.trim(), items: menu.querySelectorAll('[role=menuitem]').length,
@@ -88,7 +90,7 @@ async function timelineProblemChecks() {
   })()`);
   const clean = (result, label) => {
     assert.equal(result.role, 'toolbar', label); assert.equal(result.name, 'Problem markers', label); assert.equal(result.tabStops, 1, label); assert.equal(result.untabbable, 0, label);
-    assert.deepEqual(result.small, [], `24 px targets: ${label}`); assert.equal(result.overlaps, 0, label); assert.deepEqual(result.unnamed, [], label);
+    assert.deepEqual(result.small, [], `24 px targets: ${label}`); assert.equal(result.overlaps, 0, label); assert.deepEqual(result.unnamed, [], label); assert.deepEqual(result.labelNotInName, [], `label in name: ${label}`);
     assert.equal(result.popupState, 0, label); assert.deepEqual(result.dangling, [], label); assert.deepEqual(result.duplicateIds, [], label);
   };
   clean(await inspect(), 'timeline at rest');
@@ -101,7 +103,9 @@ async function timelineProblemChecks() {
   }
   const sets = order.filter(name => /^(Opening set|Set \d+):/.test(name)), problemStops = order.filter((_, i) => i > order.indexOf(sets.at(-1)) && i < order.length - 1);
   assert.match(order[0], /^Show-wide problems: \d+ finding/); assert.match(order[1], /^Opening set:/);
-  assert.deepEqual(sets.map(name => name.startsWith('Opening') ? 1 : Number(/^Set (\d+)/.exec(name)[1])), Array.from({ length: sets.length }, (_, i) => i + 1));
+  // Every set of the loaded production is a stop, in order (the expected length comes from the project, not the tab order).
+  const setCount = await evaluate(`${editor}.getState().project.present.sets.length`); assert.equal(setCount, 128);
+  assert.deepEqual(sets.map(name => name.startsWith('Opening') ? 1 : Number(/^Set (\d+)/.exec(name)[1])), Array.from({ length: setCount }, (_, i) => i + 1));
   assert.equal(problemStops.length, 1, JSON.stringify(problemStops)); assert.equal(order.at(-1), 'Timeline playhead');
   await key('Tab', ['shift']); await uiWait(`document.activeElement?.getAttribute('aria-label') === ${JSON.stringify(problemStops[0])}`, 'Shift+Tab returns to the problem row');
   const help = async edge => {
