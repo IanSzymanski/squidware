@@ -32,6 +32,13 @@ async function control(selector) {
   await wait('!!window.__workspaceClick', 'native click ' + selector);
   assert.ok(await evaluate('window.__workspaceExpected.contains(window.__workspaceClick)'), selector + ' receives native input');
 }
+// Clicks the scrim beside an open overlay, on the side away from the pane.
+async function clickScrim() {
+  const point = await evaluate("(()=>{const s=document.querySelector('.workspace-overlay-dismiss').getBoundingClientRect(),p=document.querySelector('.workspace-pane--overlay').getBoundingClientRect();const x=Math.round(p.left>s.left+s.width/2?s.left+20:s.right-20),y=Math.round(s.top+s.height/2);return {x,y,hit:document.elementFromPoint(x,y)?.classList.contains('workspace-overlay-dismiss')}})()");
+  assert.ok(point.hit, 'the scrim is clickable beside the overlay');
+  await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
+  for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
+}
 async function viewport(width, height, zoom = 1) {
   window.setContentSize(width, height); window.webContents.setZoomFactor(zoom);
   await settleNativeViewport(window, 'workspace display change');
@@ -135,6 +142,10 @@ app.whenReady().then(async () => {
           await control(`[aria-label="Show ${hiddenPane}"]`); await wait("!!document.querySelector('.workspace-pane--overlay')", 'narrow pane overlay again');
           await control('.workspace-pane--overlay .workspace-pane-heading button');
           await wait(`!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}'`, 'heading button closes the overlay');
+          // A click on the field around the overlay closes it like Escape and returns focus to Show.
+          await control(`[aria-label="Show ${hiddenPane}"]`); await wait("!!document.querySelector('.workspace-pane--overlay')", 'narrow pane overlay for a click beside it');
+          await clickScrim();
+          await wait(`!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show ${hiddenPane}'`, 'a click beside the overlay closes it and focuses Show');
         } else await capture(`workspace-${width}-${zoom}.png`);
         if (castOverlay !== undefined) {
           await control('.workspace-tab[aria-label="Cast"]');
@@ -167,6 +178,22 @@ app.whenReady().then(async () => {
       assert.ok(await evaluate("!!document.querySelector('.workspace-pane--overlay')"));
       await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'second Escape dismisses overlay');
       pass('narrow overlays preserve preview controls and let Escape cancel the edit before dismissing the panel');
+      // A pane the user collapsed and then restored over the field, by Show or by a preview, offers Collapse there, which
+      // collapses it again; Close (layout unchanged) is only for panes the window tucked.
+      await preset('Rehearse');
+      await control('[aria-label="Show Set list"]'); await wait("!!document.querySelector('#workspace-pane-sets.workspace-pane--overlay')", 'restored Set list over the field');
+      assert.equal(await evaluate("document.querySelector('.workspace-pane--overlay .workspace-pane-heading button').getAttribute('aria-label')"), 'Collapse Set list');
+      await control('.workspace-pane--overlay .workspace-pane-heading button');
+      await wait(`${state}.preferences.value.workspaceLayout.setsCollapsed && !document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Set list'`, 'Collapse collapses the restored Set list again');
+      await preset('Review');
+      await evaluate(`${editor}.setValue('selection','selectedIds',[${state}.project.present.performers[0].id]); ${editor}.dispatch('transform.mirror')`);
+      await wait(`!!${state}.ui.transformPreview && !!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay')`, 'a preview restores the collapsed Inspector over the field');
+      await control('[aria-label="Cancel transform"]'); await wait(`!${state}.ui.transformPreview`, 'restored preview cancelled');
+      assert.equal(await evaluate("document.querySelector('.workspace-pane--overlay .workspace-pane-heading button').getAttribute('aria-label')"), 'Collapse Inspector');
+      await control('.workspace-pane--overlay .workspace-pane-heading button');
+      await wait(`${state}.preferences.value.workspaceLayout.inspectorCollapsed && !document.querySelector('.workspace-pane--overlay')`, 'Collapse collapses the restored Inspector again');
+      assert.deepEqual(await evaluate(`(({ preset, setsCollapsed, inspectorCollapsed }) => ({ preset, setsCollapsed, inspectorCollapsed }))(${state}.preferences.value.workspaceLayout)`), { preset: 'custom', setsCollapsed: false, inspectorCollapsed: true });
+      pass('a pane restored over the field by Show or a preview offers Collapse, which restores the collapsed choice');
       await viewport(1366, 768); await preset('Write');
       await control('.workspace-tab[aria-label="Cast"]');
       await control('[aria-label="Resize Cast"]'); await key('Left', ['shift']);

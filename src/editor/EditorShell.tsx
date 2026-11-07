@@ -55,7 +55,7 @@ export function EditorShell() {
       <div className="studio-body" ref={layout.body} data-preview-overlay={layout.preview && layout.overlay ? layout.overlay === 'sets' ? 'left' : 'right' : undefined}>
         {layout.focusMode && <HelpButton pointerPassThrough title="Exit focus" description="Restore panels and workspace navigation. Escape also exits focus." className="focus-restore" onClick={layout.toggleFocus}><Maximize size={16} />Exit focus · Esc</HelpButton>}
         {/* A preview's subject stays visible: no scrim hides the field, its banner or the transport while one runs. */}
-        {layout.overlay && !layout.preview && <div className="workspace-overlay-dismiss" onClick={() => { if (!layout.locked) layout.setOverlay(null); }} />}
+        {layout.overlay && !layout.preview && <div className="workspace-overlay-dismiss" onClick={layout.dismiss} />}
         <WorkspacePane pane="sets" layout={layout}>
         <SetListPanel controller={controller} /></WorkspacePane>
         <main className="main-workspace">
