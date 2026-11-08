@@ -18,7 +18,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'dialog.open' && args.dialog === 'remove-cast' && !state.selection.selectedIds.length) return 'Select performers to remove first.';
   if (id === 'dialog.open' && args.dialog === 'remove-set' && state.project.present.sets.length <= 1) return 'Keep at least one set in the production.';
   const previews = state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview;
-  if (previews && !/\.(apply|cancel)$/.test(id) && !['live.redistribute', 'palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit'].includes(id)) return 'Apply or cancel the current preview first.';
+  if (previews && !/\.(apply|cancel)$/.test(id) && !['live.redistribute', 'palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit', 'view.popout', 'view.popout-close'].includes(id)) return 'Apply or cancel the current preview first.';
   if (['transform.preview', 'transform.mirror', 'formation.preview', 'spacing.preview', 'coordinates.preview'].includes(id)) {
     if (!canEditPositions(state)) return state.playback.playing ? 'Pause playback at a set before editing positions.' : !isAtActiveSet(state) ? 'Return to a set before editing positions.' : 'Finish or cancel the current preview first.';
     if (state.selection.selectedIds.length < (id === 'spacing.preview' ? 2 : 1)) return id === 'spacing.preview' ? 'Select at least two performers on this set.' : 'Select performers on this set first.';
@@ -55,6 +55,8 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'selection.section') return 'This section has no performers to select.';
   if (id === 'group.select') return 'This saved group has no performers to select.';
   if (id === 'layout.focus') return 'Open the Design workspace before focusing the field.';
+  if (id === 'view.popout') return 'The 3D window is available in the desktop app.';
+  if (id === 'view.popout-close') return 'The 3D window is not open.';
   return 'This action is unavailable in the current editing context.';
 }
 /** User commands and concrete variants. Parameter entry remains in its shared editor. */
@@ -62,10 +64,12 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
   function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string, description = commandRegistry[id].description) {
     const invocation = { id, args } as CommandInvocation;
-    const keywords = id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
+    const keywords = id === 'view.popout' ? 'pop out popout detach second monitor display separate 3d preview window' : id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
     entries.push({ key, name: name ?? commandRegistry[id].name, description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
   }
-  for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && definition.id !== 'palette.open' && definition.id !== 'section.add' && definition.id !== 'selection.close') add(definition.id, undefined);
+  // The browser build has no separate 3D window, so its commands stay hidden there.
+  const hidden = new Set<CommandId>(['palette.open', 'section.add', 'selection.close', ...(state.ui.popout3d === 'unavailable' ? ['view.popout', 'view.popout-close'] as const : [])]);
+  for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && !hidden.has(definition.id)) add(definition.id, undefined);
   add('coordinates.preview', {});
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
   const current = state.project.present.sets[state.selection.activeIndex];

@@ -63,6 +63,79 @@ function instrument() {
   };
 }
 
+// Timeline problem row (#180), self-contained: one Tab stop in set order, 24 × 24 px targets,
+// named controls, valid ARIA references and states, readable text and in-viewport help.
+async function timelineProblemChecks() {
+  await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
+  await uiWait("/^Show-wide problems: \\d+ findings?$/.test(document.querySelector('.problem-count-badge')?.getAttribute('aria-label')) && !!document.querySelector('.problem-track .problem-marker')", 'checked timeline problem markers');
+  const inspect = () => evaluate(`(() => {
+    const name = e => (e.getAttribute('aria-label') || e.textContent || '').trim(), track = document.querySelector('.problem-track');
+    const targets = [...document.querySelectorAll('.problem-track .problem-marker, .problem-count-badge')].map(e => { const r = e.getBoundingClientRect(); return { label: name(e), left: r.left, right: r.right, width: r.width, height: r.height }; });
+    const markers = [...track.querySelectorAll('.problem-marker')].map(e => e.getBoundingClientRect());
+    const scope = [...document.querySelectorAll('.timeline, .problem-cluster-list')];
+    const within = selector => scope.flatMap(root => [...root.querySelectorAll(selector)]);
+    const refs = within('[aria-describedby], [aria-labelledby]').flatMap(e => ((e.getAttribute('aria-describedby') || '') + ' ' + (e.getAttribute('aria-labelledby') || '')).split(' ').filter(Boolean));
+    const ids = [...document.querySelectorAll('[id]')].map(e => e.id);
+    const menu = document.querySelector('.problem-cluster-list [role=menu]');
+    return { role: track.getAttribute('role'), name: track.getAttribute('aria-label'), tabStops: track.querySelectorAll('[tabindex="0"]').length,
+      untabbable: [...track.querySelectorAll('.problem-marker')].filter(e => e.tabIndex !== 0 && e.tabIndex !== -1).length,
+      small: targets.filter(t => t.width < 24 || t.height < 24), overlaps: markers.filter((r, i) => i && markers[i - 1].right > r.left + .5).length,
+      unnamed: within('button, input, select, [tabindex], [role=menuitem]').filter(e => !name(e)).map(e => e.outerHTML.slice(0, 120)),
+      // Label in Name (WCAG 2.5.3): visible marker text (a group's size badge) starts the accessible name.
+      labelNotInName: [...track.querySelectorAll('.problem-marker')].filter(e => e.textContent.trim() && !name(e).startsWith(e.textContent.trim())).map(e => [e.textContent.trim(), name(e)]),
+      popupState: [...track.querySelectorAll('[aria-haspopup]')].filter(e => !['true', 'false'].includes(e.getAttribute('aria-expanded'))).length,
+      dangling: refs.filter(id => !document.getElementById(id)), duplicateIds: ids.filter((id, i) => id && ids.indexOf(id) !== i),
+      menu: menu && { labelled: !!document.getElementById(menu.getAttribute('aria-labelledby'))?.textContent.trim(), items: menu.querySelectorAll('[role=menuitem]').length,
+        stops: menu.querySelectorAll('[role=menuitem][tabindex="0"]').length, foreign: [...menu.children].filter(e => e.getAttribute('role') !== 'menuitem').length } };
+  })()`);
+  const clean = (result, label) => {
+    assert.equal(result.role, 'toolbar', label); assert.equal(result.name, 'Problem markers', label); assert.equal(result.tabStops, 1, label); assert.equal(result.untabbable, 0, label);
+    assert.deepEqual(result.small, [], `24 px targets: ${label}`); assert.equal(result.overlaps, 0, label); assert.deepEqual(result.unnamed, [], label); assert.deepEqual(result.labelNotInName, [], `label in name: ${label}`);
+    assert.equal(result.popupState, 0, label); assert.deepEqual(result.dangling, [], label); assert.deepEqual(result.duplicateIds, [], label);
+  };
+  clean(await inspect(), 'timeline at rest');
+  const label = () => evaluate("document.activeElement?.getAttribute('aria-label')");
+  await tabTo('[aria-label="Timeline view"]');
+  const order = [];
+  // Each Tab reaches a differently named control; wait for it so a slow focus change is never read twice.
+  for (let i = 0, previous = 'Timeline view'; i < 140 && order.at(-1) !== 'Timeline playhead'; i++) {
+    await key('Tab'); await uiWait(`document.activeElement?.getAttribute('aria-label') !== ${JSON.stringify(previous)}`, 'Tab moves focus'); order.push(previous = await label());
+  }
+  const sets = order.filter(name => /^(Opening set|Set \d+):/.test(name)), problemStops = order.filter((_, i) => i > order.indexOf(sets.at(-1)) && i < order.length - 1);
+  assert.match(order[0], /^Show-wide problems: \d+ finding/); assert.match(order[1], /^Opening set:/);
+  // Every set of the loaded production is a stop, in order (the expected length comes from the project, not the tab order).
+  const setCount = await evaluate(`${editor}.getState().project.present.sets.length`); assert.equal(setCount, 128);
+  assert.deepEqual(sets.map(name => name.startsWith('Opening') ? 1 : Number(/^Set (\d+)/.exec(name)[1])), Array.from({ length: setCount }, (_, i) => i + 1));
+  assert.equal(problemStops.length, 1, JSON.stringify(problemStops)); assert.equal(order.at(-1), 'Timeline playhead');
+  await key('Tab', ['shift']); await uiWait(`document.activeElement?.getAttribute('aria-label') === ${JSON.stringify(problemStops[0])}`, 'Shift+Tab returns to the problem row');
+  const help = async edge => {
+    const target = `[...document.querySelectorAll('.problem-track .problem-marker')].at(${edge})`;
+    await uiWait(`document.activeElement === ${target} && document.querySelector('.tooltip-panel')?.textContent.startsWith(${target}.getAttribute('aria-label'))`, 'marker help');
+    return evaluate("(() => { const r = document.querySelector('.tooltip-panel').getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; })()");
+  };
+  await key('End'); assert.equal(await help(-1), true, 'last marker help in view');
+  await key('Home'); assert.equal(await help(0), true, 'first marker help in view');
+  const group = await evaluate("(() => { const all = [...document.querySelectorAll('.problem-track .problem-marker')]; return all.findIndex(e => e.getAttribute('aria-haspopup') === 'menu'); })()");
+  if (group >= 0) {
+    for (let i = 0; i < group; i++) await key('Right');
+    await uiWait(`document.activeElement === document.querySelectorAll('.problem-track .problem-marker')[${group}]`, 'arrow keys reach the first group');
+    const opener = await label(); await key('Return');
+    await uiWait("document.activeElement?.getAttribute('role') === 'menuitem'", 'problem group list');
+    const open = await inspect(); clean(open, 'problem group open');
+    assert.ok(open.menu.labelled && open.menu.items >= 2 && open.menu.stops === 1 && open.menu.foreign === 0, JSON.stringify(open.menu));
+    const tree = await window.webContents.debugger.sendCommand('Accessibility.getFullAXTree');
+    const nodes = tree.nodes.filter(node => !node.ignored);
+    assert.equal(nodes.filter(node => node.role?.value === 'toolbar' && node.name?.value === 'Problem markers').length, 1);
+    assert.equal(nodes.filter(node => node.role?.value === 'menuitem' && !node.name?.value).length, 0);
+    assert.equal(nodes.filter(node => node.role?.value === 'menu' && node.name?.value).length, 1);
+    await audit('timeline problem group list'); await capture('timeline-problem-group.png');
+    await key('Escape'); await uiWait(`!document.querySelector('.problem-cluster-list') && document.activeElement?.getAttribute('aria-label') === ${JSON.stringify(opener)}`, 'Escape returns to the group marker');
+  }
+  await evaluate('document.activeElement?.blur()');
+  await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: false });
+  pass(`timeline Tab order follows set order with one problem-row stop; ${group >= 0 ? 'its group list and ' : ''}markers meet 24 px targets, naming, ARIA and in-viewport help checks`);
+}
+
 app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
@@ -119,6 +192,7 @@ app.whenReady().then(async () => {
     assert.equal(visible, true);
     await audit('design at 1366 × 768'); await capture('field-keyboard.png');
     pass('focused performers reveal coordinates, distinct focus outlines and off-viewport positions at 1366 × 768');
+    await timelineProblemChecks();
 
     await tabTo('.inspector textarea');
     // Cocoa app-menu accelerators require a visible key window. Exercise their
@@ -172,7 +246,13 @@ app.whenReady().then(async () => {
     assert.equal(accessibility.nodes.filter(node => !node.ignored && node.role?.value === 'button' && !node.name?.value).length, 0);
     pass('enlarged UI text remains readable, keyboard controls stay reachable, and exposed buttons have accessible names');
 
-    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, audits, viewport: await evaluate('({ width: innerWidth, height: innerHeight })'), rendererNodeAccess: await evaluate('typeof window.require') }, null, 2));
+    // #178 UI-scale breakpoints: a self-contained block. Every size × scale keeps required controls visible, folded
+    // controls reachable through Menu, More playback options or tucked-panel overlays, and a logical keyboard order.
+    window.webContents.setZoomFactor(1);
+    const breakpoints = await require('./breakpoint-matrix-qa.cjs')({ window, evaluate, editor, state: `${editor}.getState()`, capture, pass, reachability: true });
+    await audit('design after the UI-scale breakpoint matrix');
+
+    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, audits, breakpoints, viewport: await evaluate('({ width: innerWidth, height: innerHeight })'), rendererNodeAccess: await evaluate('typeof window.require') }, null, 2));
      app.exit(0);
   } catch (error) {
      console.error(error);

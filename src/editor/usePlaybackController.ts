@@ -9,6 +9,7 @@ import { MetronomeAudio } from './metronomeAudio';
 import { clockDifference, countAt, tempoSpans } from './clickSchedule';
 import type { ClickPlan } from './clickSchedule';
 import { useEditorSelector, useEditorStore } from './react';
+import { requestFrame } from './frameSources';
 
 /** rAF only publishes the field. Audio rendering owns the click queue; a small
  * control timer synchronizes media handovers even when no frame is painted. */
@@ -30,7 +31,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     const start = countToSeconds(project, bounds.start), end = countToSeconds(project, bounds.end);
     const clock = new RehearsalClock({ totalSeconds, rangeStart: start, rangeEnd: end,
       offset: project.audioOffsetSeconds, media, now });
-    let raf = 0, writing = false, disposed = false, plan: ClickPlan | null = null;
+    let cancelFrame: (() => void) | null = null, writing = false, disposed = false, plan: ClickPlan | null = null;
     let pendingStartCount: number | null = null;
     let clickSequence = 0;
     const current = () => !disposed && store.getState().project.present === project && store.getState().playback.rehearsalId === rehearsalId;
@@ -91,11 +92,12 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
         store.setValue('playback', 'clockStatus', unavailable && (store.getState().playback.metronome || leadEnd !== null) ? 'Metronome unavailable · check the audio output' : status);
       } finally { writing = false; }
     }
-    function frame() { raf = 0; publish(); schedule(); }
+    function frame() { cancelFrame = null; publish(); schedule(); }
     function schedule() {
-      if (!current()) { cancelAnimationFrame(raf); raf = 0; audio?.update(null); return; }
-      if (store.getState().playback.playing && !raf) raf = requestAnimationFrame(frame);
-      else if (!store.getState().playback.playing && raf) { cancelAnimationFrame(raf); raf = 0; }
+      if (!current()) { cancelFrame?.(); cancelFrame = null; audio?.update(null); return; }
+      // An open 3D window also supplies frames, so playback continues while the editor window is minimized.
+      if (store.getState().playback.playing && !cancelFrame) cancelFrame = requestFrame(frame);
+      else if (!store.getState().playback.playing && cancelFrame) { cancelFrame(); cancelFrame = null; }
     }
     function update(transport: ReturnType<typeof store.getState>['playback'], seek: boolean, starting: boolean) {
       if (transport.playing) void ctx?.resume().catch(() => { unavailable = true; });
@@ -133,7 +135,7 @@ export function usePlaybackController(audioRef: RefObject<HTMLAudioElement | nul
     const events = ['loadedmetadata', 'canplay', 'playing', 'waiting', 'seeked', 'ended', 'error'] as const;
     events.forEach(event => media?.addEventListener(event, onMedia));
     return () => {
-      disposed = true; unsubscribe(); cancelAnimationFrame(raf); clearInterval(timer); audio?.dispose();
+      disposed = true; unsubscribe(); cancelFrame?.(); clearInterval(timer); audio?.dispose();
       events.forEach(event => media?.removeEventListener(event, onMedia)); clock.dispose();
     };
   }, [store, project, audioUrl, audioRef, rehearsalId]);

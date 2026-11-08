@@ -39,6 +39,8 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
   const pointerFocus = useRef(false);
   const [open, setOpen] = useState(false);
   const passThrough = pointerPassThrough && !help;
+  // Controls can render in the separate 3D window; help belongs to the trigger's own document.
+  const owner = () => trigger.current?.ownerDocument ?? document;
   const cancelTimer = () => { clearTimeout(timer.current); timer.current = undefined; };
   const close = () => { cancelTimer(); setOpen(false); };
   const show = () => {
@@ -57,7 +59,7 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     if (!trigger.current || !element) return;
     // Measure the natural size; a previous cap must not shrink the next one.
     element.style.maxHeight = '';
-    const { clientWidth: width, clientHeight: height } = document.documentElement;
+    const { clientWidth: width, clientHeight: height } = owner().documentElement;
     const p = placeTooltip(trigger.current.getBoundingClientRect(), element.getBoundingClientRect(), { width, height }, { scale: uiScale() });
     Object.assign(element.style, { left: `${p.left}px`, top: `${p.top}px`, maxHeight: p.maxHeight === undefined ? '' : `${p.maxHeight}px` });
   };
@@ -80,23 +82,24 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
       if (panel.current?.contains(event.target as Node)) return;
       // Focusing an offscreen Inspector field can scroll its panel after focus
       // has already opened help. Keep keyboard help anchored to that control.
-      if (focused.current && document.activeElement === trigger.current) place();
+      if (focused.current && owner().activeElement === trigger.current) place();
       else close();
     };
     // Dense inline fields keep focus help without blocking neighboring pointer
     // controls. Moving away dismisses only the description, not text focus.
     const pointerMove = (event: PointerEvent) => { if (passThrough && !trigger.current?.contains(event.target as Node)) close(); };
-    document.addEventListener('keydown', dismiss, true);
-    document.addEventListener('pointerdown', outside, true);
-    document.addEventListener('scroll', scroll, true);
-    document.addEventListener('pointermove', pointerMove, true);
-    window.addEventListener('resize', close);
+    const doc = owner(), view = doc.defaultView ?? window;
+    doc.addEventListener('keydown', dismiss, true);
+    doc.addEventListener('pointerdown', outside, true);
+    doc.addEventListener('scroll', scroll, true);
+    doc.addEventListener('pointermove', pointerMove, true);
+    view.addEventListener('resize', close);
     return () => {
-      document.removeEventListener('keydown', dismiss, true);
-      document.removeEventListener('pointerdown', outside, true);
-      document.removeEventListener('scroll', scroll, true);
-      document.removeEventListener('pointermove', pointerMove, true);
-      window.removeEventListener('resize', close);
+      doc.removeEventListener('keydown', dismiss, true);
+      doc.removeEventListener('pointerdown', outside, true);
+      doc.removeEventListener('scroll', scroll, true);
+      doc.removeEventListener('pointermove', pointerMove, true);
+      view.removeEventListener('resize', close);
     };
   }, [open, passThrough]);
   const handlers: TriggerProps = {
@@ -130,5 +133,5 @@ export function Tooltip({ name, description, keycaps = [], state, disabledReason
     onFocus={() => { focused.current = true; cancelTimer(); }} onBlur={event => { if (!panel.current?.contains(event.relatedTarget as Node) && event.relatedTarget !== trigger.current) { focused.current = false; close(); } }}>
     <div id={id} role="tooltip"><strong>{name}</strong><p>{description}</p>{state && <p className="tooltip-state">Current: {state}</p>}{disabledReason && <p className="tooltip-reason">Unavailable: {disabledReason}</p>}<Keycaps groups={keycaps} /></div>
     {help && <a href={help.href}>{help.label}</a>}
-  </div>, trigger.current?.closest('dialog') || document.body)}</>;
+  </div>, trigger.current?.closest('dialog') || owner().body)}</>;
 }

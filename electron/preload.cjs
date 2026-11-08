@@ -30,6 +30,19 @@ contextBridge.exposeInMainWorld('squidware', Object.freeze({
   setDirty: (dirty) => { if (typeof dirty === 'boolean') ipcRenderer.send('squidware:set-dirty', dirty); },
   setKeyboardContext: context => { if (['editor', 'text', 'modal'].includes(context)) ipcRenderer.send('squidware:keyboard-context', context); },
   resetProject: () => ipcRenderer.send('squidware:reset-project'),
+  focusPreviewWindow: () => ipcRenderer.send('squidware:focus-preview'),
+  onPreviewWindowBounds: (callback) => {
+    if (typeof callback !== 'function') throw new TypeError('A bounds callback is required.');
+    // Display ids are int64 values carried as doubles: X11 ids derived from a monitor's EDID exceed 2^53, so any
+    // integer is kept. An unusable id is dropped on its own; main then places the window by its geometry.
+    const listener = (_event, bounds) => {
+      if (bounds && ['x', 'y', 'width', 'height'].every(key => Number.isFinite(bounds[key]))) {
+        callback({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, ...(Number.isInteger(bounds.displayId) ? { displayId: bounds.displayId } : {}) });
+      }
+    };
+    ipcRenderer.on('squidware:preview-bounds', listener);
+    return () => ipcRenderer.removeListener('squidware:preview-bounds', listener);
+  },
   onMenuAction: (callback) => {
     if (typeof callback !== 'function') throw new TypeError('A menu callback is required.');
     const listener = (_event, action) => { if (menuActions.has(action)) callback(action); };

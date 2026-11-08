@@ -47,6 +47,7 @@ export const desktopSuites = [
   { name: 'analysis', title: 'Whole-show problems, count navigation, live drag checks and worker recovery', script: 'analysis-qa.mjs', timeoutMs: 270000 },
   { name: 'recovery', title: 'Durable production recovery after restart', script: 'recovery-qa.mjs', timeoutMs: 330000 },
   { name: 'print', title: 'Native PDF output and pagination', script: 'print-regression-qa.mjs', timeoutMs: 270000 },
+  { name: 'popout-3d', title: 'One sandboxed 3D window: mirrored edits/scrub/playback at 64 and 500 performers, denied windows, CSP, context loss, release and restored/clamped bounds', script: 'popout-3d-qa.mjs', timeoutMs: 600000 },
   { name: 'stage3d', title: 'WebGL lifecycle component harness (opt-in)', script: 'stage3d-qa.mjs', timeoutMs: 280000, optional: true },
 ];
 

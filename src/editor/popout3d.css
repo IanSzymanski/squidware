@@ -1,0 +1,12 @@
+/* The separate 3D window (#181). Its document has only these roots, so class-scoped rules apply there. */
+body.popout-3d-body { margin: 0; overflow: hidden; background: #141e1b; }
+.popout-3d-root, .popout-3d { height: var(--viewport-height, 100vh); }
+.popout-3d { display: flex; flex-direction: column; background: var(--app-bg); color: var(--text); }
+.popout-3d__status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.popout-3d__status strong { color: var(--text); font-size: 13px; font-weight: 650; }
+.popout-3d__status .popout-3d__note { margin-left: auto; }
+.popout-3d__stage { position: relative; flex: 1; min-height: 0; }
+.popout-3d__stage .stage-three, .popout-3d__stage .stage-three__canvas { height: 100%; min-height: 0; }
+/* Second recovery action (Return 3D here, Close 3D window) is secondary to the first. */
+.stage-three__fallback > button + button { border-color: #9fb59a; background: transparent; color: #e4eedf; }
+.popout-3d-button.is-open { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }

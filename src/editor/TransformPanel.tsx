@@ -18,7 +18,7 @@ export function TransformPanel({ controller: c }: { controller: EditorController
   return <section ref={section} className="inspector-section transform-panel" aria-label="Exact transform preview">
     <h3>Exact transform preview</h3>
     <p className="section-description">{session.ids.length} selected · set {c.index+1}. Original positions stay unchanged until Apply.</p>
-    <label className="form-label">Operation<Tooltip name="Transform operation" description="Choose rotation/scaling or a mirror around a fixed field axis."><select aria-label="Transform operation" value={options.operation} onChange={event => update({ operation: event.target.value as TransformOperation, angle: 0, scale: 1, pivot: { kind: 'centroid' } })}>
+    <label className="form-label">Operation<Tooltip pointerPassThrough name="Transform operation" description="Choose rotation/scaling or a mirror around a fixed field axis."><select aria-label="Transform operation" value={options.operation} onChange={event => update({ operation: event.target.value as TransformOperation, angle: 0, scale: 1, pivot: { kind: 'centroid' } })}>
       <option value="rotate-scale">Rotate and scale</option><option value="across-50">Mirror across the 50</option><option value="front-back">Flip front to back</option>
     </select></Tooltip></label>
     {options.operation === 'rotate-scale' ? <>

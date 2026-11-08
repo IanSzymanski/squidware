@@ -17,7 +17,7 @@ const legacyProject = syncFs.readFileSync(path.join(root, 'src/fixtures/schema-v
 
 // Run the actual main-process handlers with controlled dialogs and real files.
 // No Electron binary, GUI, remote server, or production user profile is needed.
-async function harness(t, { failRename = false, development = false, platform = 'win32' } = {}) {
+async function harness(t, { failRename = false, development = false, platform = 'win32', displays = [{ id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }] } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'squidware-desktop-test-'));
   t.after(async () => {
     const relative = path.relative(os.tmpdir(), directory);
@@ -40,6 +40,7 @@ async function harness(t, { failRename = false, development = false, platform = 
       this.webContents = {
         mainFrame: { url: development ? 'http://127.0.0.1:5173/' : pathToFileURL(path.join(root, 'dist', 'index.html')).href },
         on: (name, handler) => this.contentsEvents.set(name, handler), setWindowOpenHandler: handler => { this.openWindowHandler = handler; },
+        backgroundThrottling: true, getBackgroundThrottling() { return this.backgroundThrottling; }, setBackgroundThrottling(value) { this.backgroundThrottling = value; },
         send: (...args) => messages.push(args),
         setIgnoreMenuShortcuts: value => { this.ignoreMenuShortcuts = value; },
         ...Object.fromEntries(['cut','copy','paste','undo','redo','selectAll'].map(action => [action, () => messages.push(['text-edit', action])])),
@@ -59,6 +60,8 @@ async function harness(t, { failRename = false, development = false, platform = 
       whenReady: () => ({ then: () => ({ catch() {} }) }),
     },
     BrowserWindow: FakeWindow,
+    screen: { getAllDisplays: () => displays, getPrimaryDisplay: () => displays[0],
+      getDisplayMatching: bounds => displays.find(({ workArea: a }) => bounds.x >= a.x && bounds.x < a.x + a.width) ?? displays[0] },
     dialog: {
       showSaveDialog: async () => { saveDialogs += 1; return nextDialog; },
       showOpenDialog: async () => nextDialog,
@@ -265,12 +268,98 @@ test('desktop windows isolate Node, reject popups, and receive dirty state', asy
   assert.equal(preferences.contextIsolation, true);
   assert.equal(preferences.nodeIntegration, false);
   assert.equal(h.window.openWindowHandler().action, 'deny');
+  assert.equal(h.window.openWindowHandler({ url: 'https://example.com/', frameName: '', features: '', disposition: 'foreground-tab' }).action, 'deny');
   h.send('set-dirty', true);
   assert.equal(h.window.documentEdited, true);
   h.send('set-dirty', 'invalid');
   assert.equal(h.window.documentEdited, true);
   h.send('set-dirty', false);
   assert.equal(h.window.documentEdited, false);
+});
+
+function previewChild(frameName = 'squidware-3d-preview') {
+  const child = { events: new Map(), contentsEvents: new Map(), calls: [], destroyed: false, minimized: true, bounds: { x: 2100, y: 80, width: 900, height: 600 },
+    webContents: { on(name, handler) { child.contentsEvents.set(name, handler); }, setWindowOpenHandler(handler) { child.openWindowHandler = handler; } },
+    on(name, handler) { child.events.set(name, handler); }, isDestroyed: () => child.destroyed, destroy() { child.destroyed = true; child.calls.push('destroy'); },
+    removeMenu() { child.calls.push('removeMenu'); }, isMinimized: () => child.minimized, restore() { child.minimized = false; child.calls.push('restore'); },
+    show() { child.calls.push('show'); }, focus() { child.calls.push('focus'); }, close() { child.calls.push('close'); }, getNormalBounds: () => ({ ...child.bounds }) };
+  return { child, details: { frameName } };
+}
+
+test('only one same-origin 3D window opens; every other window request is denied', async t => {
+  const h = await harness(t);
+  const open = details => h.window.openWindowHandler({ features: 'popup', disposition: 'new-window', ...details });
+  for (const details of [{ url: 'https://example.com/', frameName: 'squidware-3d-preview' }, { url: 'about:blank', frameName: 'other' }, { url: 'about:blank', frameName: '' },
+    { url: 'file:///etc/passwd', frameName: 'squidware-3d-preview' }, { url: 'about:blank#x', frameName: 'squidware-3d-preview' }, { url: 'about:blank', frameName: 'squidware-3d-preview', postBody: { data: [] } }])
+    assert.equal(open(details).action, 'deny', JSON.stringify(details));
+  const allowed = open({ url: 'about:blank', frameName: 'squidware-3d-preview' });
+  assert.equal(allowed.action, 'allow');
+  const options = allowed.overrideBrowserWindowOptions;
+  assert.deepEqual({ sandbox: options.webPreferences.sandbox, contextIsolation: options.webPreferences.contextIsolation, nodeIntegration: options.webPreferences.nodeIntegration, webviewTag: options.webPreferences.webviewTag, preload: options.webPreferences.preload },
+    { sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false, preload: undefined });
+  assert.deepEqual({ x: options.x, y: options.y, width: options.width, height: options.height }, { x: 480, y: 220, width: 960, height: 600 });
+  const { child, details } = previewChild();
+  h.window.contentsEvents.get('did-create-window')(child, details);
+  assert.ok(child.calls.includes('removeMenu'));
+  assert.equal(child.openWindowHandler({ url: 'about:blank', frameName: 'squidware-3d-preview' }).action, 'deny');
+  let prevented = 0; child.contentsEvents.get('will-navigate')({ preventDefault: () => { prevented++; } }, 'https://example.com/'); child.contentsEvents.get('will-redirect')({ preventDefault: () => { prevented++; } }, 'file:///');
+  assert.equal(prevented, 2);
+  assert.equal(h.window.webContents.backgroundThrottling, false, 'the editor keeps driving playback behind the 3D window');
+  assert.equal(open({ url: 'about:blank', frameName: 'squidware-3d-preview' }).action, 'deny', 'a second preview request is denied');
+  assert.deepEqual(child.calls.slice(-3), ['restore', 'show', 'focus'], 'and focuses the existing window instead');
+  const stray = previewChild(); h.window.contentsEvents.get('did-create-window')(stray.child, stray.details); assert.ok(stray.child.destroyed);
+  h.window.contentsEvents.get('did-start-navigation')({ isMainFrame: true, isSameDocument: true });
+  assert.equal(child.calls.includes('close'), false);
+  h.window.contentsEvents.get('did-start-navigation')({ isMainFrame: true, isSameDocument: false });
+  assert.equal(child.calls.at(-1), 'close', 'a reloaded editor closes the window its old renderer drew');
+  child.events.get('close')();
+  assert.deepEqual(JSON.parse(JSON.stringify(h.messages.at(-1))), ['squidware:preview-bounds', { x: 2100, y: 80, width: 900, height: 600, displayId: 1 }]);
+  child.events.get('closed')();
+  assert.equal(h.window.webContents.backgroundThrottling, true);
+  assert.equal(open({ url: 'about:blank', frameName: 'squidware-3d-preview' }).action, 'allow', 'closing releases the single window slot');
+});
+
+test('3D window geometry is placed on a connected display; focus requests need the trusted editor', async t => {
+  const displays = [{ id: 10, workArea: { x: 0, y: 25, width: 1440, height: 875 } }, { id: 20, workArea: { x: 1440, y: 0, width: 1920, height: 1080 } }];
+  const h = await harness(t, { displays });
+  const open = () => h.window.openWindowHandler({ url: 'about:blank', frameName: 'squidware-3d-preview', features: 'popup', disposition: 'new-window' }).overrideBrowserWindowOptions;
+  const { defaultPreferences } = require('../electron/preferences-codec.cjs');
+  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 1600, y: 100, width: 1000, height: 700, displayId: 20 } });
+  assert.deepEqual((({ x, y, width, height }) => ({ x, y, width, height }))(open()), { x: 1600, y: 100, width: 1000, height: 700 });
+  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 9000, y: -4000, width: 1000, height: 700, displayId: 20 } });
+  assert.deepEqual((({ x, y, width, height }) => ({ x, y, width, height }))(open()), { x: 2360, y: 0, width: 1000, height: 700 }, 'off-screen bounds are clamped');
+  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 1600, y: 100, width: 1000, height: 700, displayId: 99 } });
+  assert.deepEqual((({ x, y, width, height }) => ({ x, y, width, height }))(open()), { x: 220, y: 113, width: 1000, height: 700 }, 'a missing display falls back to the primary display');
+  const { child, details } = previewChild();
+  h.window.contentsEvents.get('did-create-window')(child, details);
+  h.sendAs('focus-preview', { sender: {}, senderFrame: h.sender.senderFrame });
+  assert.equal(child.calls.includes('focus'), false);
+  h.send('focus-preview');
+  assert.deepEqual(child.calls.slice(-3), ['restore', 'show', 'focus']);
+  child.bounds = { x: 1500, y: 40, width: 800, height: 500 };
+  child.events.get('move')(); child.events.get('resize')(); child.events.get('move')();
+  assert.equal(h.messages.some(([channel]) => channel === 'squidware:preview-bounds'), false, 'moves are debounced');
+  await new Promise(resolve => setTimeout(resolve, 450));
+  assert.deepEqual(JSON.parse(JSON.stringify(h.messages.filter(([channel]) => channel === 'squidware:preview-bounds'))), [['squidware:preview-bounds', { x: 1500, y: 40, width: 800, height: 500, displayId: 20 }]]);
+});
+
+test('3D window geometry survives X11 display ids above 2^53, including identical monitors that share a rounded id', async t => {
+  // Electron 44 on X11 reports EDID-derived ids such as Samsung's 21442280834799420; 2^54 and 2^54 + 1 round to the same double.
+  const samsung = 21442280834799420, twin = 2 ** 54;
+  const displays = [{ id: twin, workArea: { x: 0, y: 0, width: 1920, height: 1080 } }, { id: twin + 1, workArea: { x: 1920, y: 0, width: 1920, height: 1080 } }, { id: samsung, workArea: { x: 3840, y: 0, width: 2560, height: 1440 } }];
+  const h = await harness(t, { displays });
+  const open = () => (({ x, y, width, height }) => ({ x, y, width, height }))(h.window.openWindowHandler({ url: 'about:blank', frameName: 'squidware-3d-preview', features: 'popup', disposition: 'new-window' }).overrideBrowserWindowOptions);
+  const { child, details } = previewChild();
+  h.window.contentsEvents.get('did-create-window')(child, details);
+  child.bounds = { x: 4000, y: 120, width: 900, height: 600 };
+  child.events.get('close')(); child.events.get('closed')();
+  assert.deepEqual(JSON.parse(JSON.stringify(h.messages.at(-1))), ['squidware:preview-bounds', { x: 4000, y: 120, width: 900, height: 600, displayId: samsung }]);
+  const { defaultPreferences } = require('../electron/preferences-codec.cjs');
+  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 4000, y: 120, width: 900, height: 600, displayId: samsung } });
+  assert.deepEqual((await h.invoke('read-preferences')).preferences.popout3dBounds, { x: 4000, y: 120, width: 900, height: 600, displayId: samsung }, 'the saved id is kept');
+  assert.deepEqual(open(), { x: 4000, y: 120, width: 900, height: 600 }, 'the window reopens where it was');
+  await h.invoke('save-preferences', { ...defaultPreferences(), popout3dBounds: { x: 2400, y: 200, width: 800, height: 500, displayId: twin + 1 } });
+  assert.deepEqual(open(), { x: 2400, y: 200, width: 800, height: 500 }, 'the twin under the saved window wins');
 });
 
 test('unsaved close guard respects cancel and explicit discard', async t => {
@@ -352,6 +441,17 @@ test('preload exposes only fixed methods and strips Electron event objects from 
   assert.deepEqual(invocations.slice(1), [['squidware:begin-recovery'], ['squidware:read-recovery', 'session', 'id'], ['squidware:write-recovery', 'session', 2, 1, { project: true }]]);
   bridge.readPreferences(); bridge.savePreferences({ version: 1 }); bridge.resetPreferences(); bridge.exportPdf('a4');
   assert.deepEqual(invocations.slice(4), [['squidware:read-preferences'], ['squidware:save-preferences', { version: 1 }], ['squidware:reset-preferences'], ['squidware:export-pdf', 'a4']]);
+  // The 3D window bridge: a fixed focus request and validated geometry without the Electron event.
+  bridge.focusPreviewWindow(); assert.deepEqual(invocations.at(-1), ['squidware:focus-preview']);
+  const bounds = []; removed = false;
+  const stopBounds = bridge.onPreviewWindowBounds(value => bounds.push(value));
+  listener({ secret: 'native event' }, { x: 1, y: 2, width: 800, height: 600, displayId: 3, extra: 'dropped' });
+  listener({}, { x: 'far', y: 2, width: 800, height: 600 }); listener({}, null); listener({}, { x: 1, y: 2, width: 800, height: 600, displayId: 1.5 });
+  // X11 display ids derived from a monitor's EDID exceed 2^53; Electron reports them as rounded integers.
+  listener({}, { x: 5, y: 6, width: 900, height: 600, displayId: 21442280834799420 });
+  assert.deepEqual(JSON.parse(JSON.stringify(bounds)), [{ x: 1, y: 2, width: 800, height: 600, displayId: 3 }, { x: 1, y: 2, width: 800, height: 600 }, { x: 5, y: 6, width: 900, height: 600, displayId: 21442280834799420 }]);
+  stopBounds(); assert.equal(removed, true);
+  assert.throws(() => bridge.onPreviewWindowBounds('not a function'), /callback/);
 });
 
 test('preferences IPC validates values, trusts only the editor and fixes the app-data destination', async t => {
