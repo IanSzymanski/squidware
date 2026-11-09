@@ -4,7 +4,7 @@ Squidware is a desktop workspace for designing marching ensemble drill and prepa
 
 ## A first production
 
-1. Use the project menu to choose **New project**, then **Blank production**. Use **Explore the demo** to learn with 64 performers already placed.
+1. Use the project menu to choose **New project**, then **Blank production**. Use **Explore the demo** to open **Tether**, a complete 165-member drum corps show (84 brass, 24 battery, 13 front ensemble, 44 guard, 67 sets) with its tempo map, score map, routes and group movement already in place.
 2. Open **Production settings** to name the show and ensemble, select college or high-school field markings, and customize section names and colors.
 3. In **Cast**, add performers or import a roster. New performers receive a position in every set.
 4. Return to **Design**. Select performers, arrange the opening picture, and save the project.
@@ -248,7 +248,7 @@ In the 2D field, Tab enters at the remembered performer and the next Tab leaves 
 
 ## Acceptance walkthrough for a new build
 
-1. Start the desktop app and open the demo. Confirm the title, 64 performers, six sets, and both field presets render.
+1. Start the desktop app and open the demo. Confirm the title (Tether), 165 performers, 67 sets, and both field presets render, and that show-wide analysis reports only the counter-march teaching finding explained in set TE 5.
 2. Select several performers, drag them, nudge once and with Shift, then Undo and Redo. Check that one keypress causes one move and that dragging a group to the edge keeps it together.
 3. Pan at 100% zoom, choose Fit field, then scroll to zoom and fit again. Inspect paths and label visibility.
 4. Add a set, apply a formation, change counts/tempo, reorder it, and delete it. Confirm playback arrives at the edited pictures.
