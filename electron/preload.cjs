@@ -7,6 +7,7 @@ const menuActions = new Set(['new', 'open', 'save', 'save-as', 'undo', 'redo', '
 // arbitrary IPC channels, filesystem primitives, or Electron event objects.
 contextBridge.exposeInMainWorld('squidware', Object.freeze({
   platform: process.platform,
+  legacyDemo: Array.isArray(process.argv) && process.argv.includes('--squidware-legacy-demo'),
   readTemplateLibrary: () => ipcRenderer.invoke('squidware:read-template-library'),
   saveTemplateLibrary: content => ipcRenderer.invoke('squidware:save-template-library', content),
   openTemplateLibrary: () => ipcRenderer.invoke('squidware:open-template-library'),

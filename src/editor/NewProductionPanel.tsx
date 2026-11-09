@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { FilePlus2, Waves } from 'lucide-react';
 import { Modal } from '../components/Modal';
-import { createBlankProject, createDemoProject } from '../domain';
+import { createBlankProject } from '../domain';
+import { createStartupProject } from '../demoShow';
 import { productionFromTemplate } from '../templates/production';
 import type { ShowTemplate } from '../templates/library';
 import type { EditorController } from './useEditorController';
@@ -29,7 +30,7 @@ export function NewProductionPanel({ controller: c }: { controller: EditorContro
   const preview = useMemo(() => template ? productionFromTemplate(template) : null, [template]);
   return <Modal title="New production" onClose={() => c.setDialog(null)}>
     <p className="modal-intro">Create your next production. {c.dirty ? 'Save your current project to a file before replacing it.' : 'Choose a blank field, a saved setup or the sample show.'}</p>
-    <div className="new-options"><button disabled={!!c.fileOperation} onClick={() => void c.replaceProduction(createBlankProject(), true)}><FilePlus2 size={28} /><strong>Blank production</strong><span>An open field, ready for your ensemble.</span></button><button disabled={!!c.fileOperation} onClick={() => void c.replaceProduction(createDemoProject())}><Waves size={28} /><strong>Explore the demo</strong><span>64 performers. Six sets. Find your flow.</span></button></div>
+    <div className="new-options"><button disabled={!!c.fileOperation} onClick={() => void c.replaceProduction(createBlankProject(), true)}><FilePlus2 size={28} /><strong>Blank production</strong><span>An open field, ready for your ensemble.</span></button><button disabled={!!c.fileOperation} onClick={() => void c.replaceProduction(createStartupProject())}><Waves size={28} /><strong>Explore the demo</strong><span>Tether: a 165-member drum corps show in four movements.</span></button></div>
     <h3 className="modal-subtitle">Saved ensemble setup</h3>
     {shows.length ? <><label className="form-label">Show template<select aria-label="Show template" value={selected} onChange={e => setSelected(e.target.value)}><option value="">Choose a saved setup…</option>{shows.map(item => <option key={item.index} value={item.index}>{item.entry.name}</option>)}</select></label>
       {template && preview && <><ShowTemplateSummary template={template} /><TemplatePreview project={preview} positions={preview.sets[0].positions} />

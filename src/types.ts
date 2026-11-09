@@ -142,6 +142,8 @@ export interface RecoveryBridge {
 export interface AudioAttachment { name: string; token: string; bytes: Uint8Array; size: number; type: string; referenceAvailable: boolean }
 export interface DesktopBridge extends RecoveryBridge, PreferencesBridge, TemplateLibraryBridge {
   platform: string;
+  /** Set only for desktop QA runs, which assert against the small generated demo fixture. */
+  legacyDemo?: boolean;
   resetProject: () => void;
   openProject: () => Promise<{ content: string; path: string; audio?: AudioAttachment; audioWarning?: string } | null>;
   pickAudio: () => Promise<AudioAttachment | null>;

@@ -12,7 +12,7 @@ Write formations, refine transitions, rehearse in 3D, and export the next rehear
 
 ## Design with precision
 
-Start with the **Tidal forces** demo—64 performers and six editable sets—or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
+Start with **Tether**, the bundled demo: a full 165-member drum corps show in four movements, written to Squidwriter's Space show with curvilinear forms, scatters, orbiting conveyors, follow-the-leader cables, a counter-march and a company front ([about the demo](examples/README.md)). Or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
 
 | Your next step | Tools in the workspace |
 | --- | --- |
