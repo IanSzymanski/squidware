@@ -2,7 +2,8 @@ import type { Project } from '../types';
 import type { EditorState } from './state';
 import type { EditorStore } from './store';
 
-export const isFileDirty = (state: EditorState) => state.project.revision !== state.fileSession.savedRevision;
+/** A saved file's revision wins; otherwise a freshly created production is clean until its first edit. */
+export const isFileDirty = (state: EditorState) => state.project.revision !== (state.fileSession.savedRevision ?? state.fileSession.cleanRevision);
 export const hasUnsavedWork = (state: EditorState) => isFileDirty(state) || state.ui.pendingDraft;
 
 export function fileStatusText(state: EditorState): string {
@@ -13,8 +14,15 @@ export function fileStatusText(state: EditorState): string {
   ].filter(Boolean);
   if (hasUnsavedWork(state)) return ['Unsaved changes', ...details].join(' · ');
   if (state.fileSession.fileOperation === 'saving') return 'Saving project file…';
+  // A clean production that was never written must not imply a saved file.
+  if (state.fileSession.savedRevision === null) return 'No changes';
   // Undo back to the saved revision is saved, even after an earlier failed save.
   return state.fileSession.saveStatus === 'Project download requested' ? 'Project download requested' : 'Project file saved';
+}
+
+/** Only startup and New production (blank, demo or template) have nothing to lose; recovery and generic loads stay unsaved. */
+export function markProductionClean(store: EditorStore) {
+  store.setValue('fileSession', 'cleanRevision', store.getState().project.revision);
 }
 
 /** Set the baseline only after a file has actually opened, never for new/recovery loads. */

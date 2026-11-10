@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../components/Modal';
+import { FormattedNumberInput } from '../components/NumberField';
+import { formatYards } from '../coordinates';
 import { compileRoute, reverseRoute, routeLength, routePath, routeSeam, validateSharedRoutes } from '../sharedRoutes';
 import type { Point, SharedRoute } from '../types';
 import { HelpButton } from './ControlHelp';
@@ -54,7 +56,7 @@ export function SharedRoutesPanel({ controller: c }: { controller: EditorControl
       ...(!route.closed || i < route.segments.length - 1 ? [{ id: `${s.id}-arrival`, rowId: s.id, kind: 'arrival' as const, point: s.to, label: `Segment ${i + 1} end` }] : []),
     ]),
   ];
-  const numeric = (label: string, point: Point, update: (point: Point) => void) => <div className="route-coordinates" key={label}>{(['x', 'y'] as const).map(axis => <label className="form-label" key={axis}>{label} {axis.toUpperCase()} · yd<input aria-label={`${label} ${axis.toUpperCase()}`} type="number" step="0.1" value={Number.isFinite(point[axis]) ? point[axis] : ''} onChange={e => update({ ...point, [axis]: e.target.value.trim() ? Number(e.target.value) : NaN })} /></label>)}</div>;
+  const numeric = (label: string, point: Point, update: (point: Point) => void) => <div className="route-coordinates" key={label}>{(['x', 'y'] as const).map(axis => <label className="form-label" key={axis}>{label} {axis.toUpperCase()} · yd<FormattedNumberInput aria-label={`${label} ${axis.toUpperCase()}`} step="0.1" value={point[axis]} onChange={text => update({ ...point, [axis]: text.trim() ? Number(text) : NaN })} /></label>)}</div>;
   return <Modal title="Shared routes" wide className="path-panel shared-routes-panel" onClose={close}>
     <div className="path-fields">
       <p className="modal-intro">Draw reusable route geometry for this production. Routes have no performer assignment or show counts. Apply saves geometry; performer movement stays as reviewed in its own editor.</p>
@@ -93,7 +95,7 @@ export function SharedRoutesPanel({ controller: c }: { controller: EditorControl
         <TravelCanvas project={initial.project} positions={c.activeSet.positions} performerId="" from={preview.route.start} to={preview.route.segments.at(-1)!.to} path={routePath(preview.route)} original={original ? routePath(original) : undefined} originalFrom={original?.start} counts={route.segments.length} transition="linear" handles={handles} selectedRow={selected.id} onSelectRow={setRow}
           onHandle={(h, p) => attempt(() => { const next = moveRoutePoint(route, h.rowId, h.kind, p); validateSharedRoutes([next], initial.project.field); change(next); })} capture={capture} stroke={stroke} onStroke={setStroke} onCancelCapture={() => { setStroke([]); setCapture(null); }} onError={setMessage} onGesture={setGesture}
           label="Editable shared route field" routeMode routeClosed={route.closed} samples={preview.samples} />
-        <p role="status" aria-label="Route geometry summary">{route.closed ? 'Closed' : 'Open'} · {route.segments.length} segments · {preview.length.toFixed(3)} yd · {routeSeam(route)}. Distance dots use the serialized route. Self-crossings are permitted; routes have no movement or clearance analysis until assigned.</p>
+        <p role="status" aria-label="Route geometry summary">{route.closed ? 'Closed' : 'Open'} · {route.segments.length} segments · {formatYards(preview.length)} yd · {routeSeam(route)}. Distance dots use the serialized route. Self-crossings are permitted; routes have no movement or clearance analysis until assigned.</p>
       </>}
       <p className="microcopy">Anchor edits translate adjacent controls. Seam edits move both closing endpoints. Tangents may form corners; closure does not promise smooth speed. Apply records one undo action. Cancel leaves the production unchanged.</p>
       {original && <HelpButton title={deleting ? 'Confirm delete shared route' : 'Delete shared route'} className="button subtle" disabled={gesture || stale || pending || !!capture} onClick={() => deleting ? save(true) : setDeleting(true)}>{deleting ? `Confirm delete ${original.name} · one undo` : 'Delete saved route…'}</HelpButton>}

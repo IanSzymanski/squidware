@@ -78,3 +78,9 @@ export function moveSelection(positions: Record<string, Point>, ids: readonly st
   const dy = snap(anchor.y + delta.y, anchor.y - Math.min(...points.map(p => p.y)), anchor.y + field.height - Math.max(...points.map(p => p.y)), 'y', anchor.y) - anchor.y;
   return Object.fromEntries(selected.map(id => [id, { x: clamp(positions[id].x + dx, 0, field.width), y: clamp(positions[id].y + dy, 0, field.height) }]));
 }
+/** Snap state for the single persistent status location, including previews that bypass snapping. */
+export function fieldSnapStatus(settings: SnapSettings, enabled: boolean, bypass?: 'coordinates' | 'spacing'): string {
+  if (bypass === 'coordinates') return 'Exact coordinate entry · snapping bypassed';
+  if (bypass === 'spacing') return 'Exact spacing · snapping bypassed';
+  return snapDescription(settings, enabled);
+}

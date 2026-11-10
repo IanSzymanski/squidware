@@ -1,11 +1,14 @@
 .workspace-layout-controls { position: relative; display: flex; align-items: center; gap: 3px; }
 .layout-popover { position: fixed; width: min(390px, calc(100vw - 24px)); overflow: auto; z-index: 40; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 10px 35px var(--shadow); font-size: 12px; }
-.app-header > .header-actions { max-width: 100%; flex-wrap: wrap; }
+.app-header > .header-actions { max-width: 100%; flex-wrap: nowrap; }
 .layout-popover-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .layout-popover-heading button { display: flex; padding: 5px; border-radius: 4px; background: transparent; }
 .layout-presets { display: flex; gap: 6px; }
 .layout-presets button { flex: 1; }
-.layout-presets [aria-pressed=true] { border: 2px solid var(--accent); background: var(--selected-bg); }
+/* Beats .button.subtle from styles.css (loaded later); a check mark repeats the state without color. */
+.layout-presets .button[aria-pressed=true]:not([aria-disabled=true]) { border: 2px solid var(--accent); padding: 7px 12px; background: var(--selected-bg); color: var(--text); }
+.layout-presets .button { gap: 5px; }
+.layout-popover .layout-custom { margin-bottom: 0; font-weight: 600; }
 .layout-popover p { margin: 10px 0; line-height: 1.5; }
 .layout-pane-option { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding: 10px 0; }
 .layout-pane-option label { display: flex; align-items: center; gap: 8px; }
@@ -21,7 +24,7 @@
 .workspace-pane-content { display: flex; flex: 1; min-height: 0; overflow: auto; }
 .studio .workspace-pane-content > .set-panel, .studio .workspace-pane-content > .inspector, .studio .workspace-pane-content > .cast-dock { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; }
 .studio .workspace-pane-content > .cast-dock { min-height: 440px; }
-.workspace-pane .panel-heading, .workspace-pane .inspector-header { display: none; }
+.workspace-pane .inspector-header { display: none; }
 .workspace-pane .set-list { padding-top: 10px; }
 .workspace-pane .cast-panel-heading h2 { display: none; }
 .workspace-pane .cast-panel-heading { justify-content: flex-end; padding: 2px 8px; }
@@ -37,7 +40,12 @@
 .workspace-pane--overlay.workspace-pane--left { left: 30px; }
 .workspace-pane--overlay.workspace-pane--right { right: 30px; }
 .workspace-overlay-dismiss { position: absolute; inset: 0; z-index: 14; background: var(--surface-muted); }
+/* During a preview the field fits beside a panel open over it, and the panel ends above the transport row, so the
+   preview, its banner, Apply/Cancel and the whole transport row stay in view (#178). */
+.studio .studio-body[data-preview-overlay] .workspace-pane--overlay { bottom: var(--transport-height, 0px); }
+.studio .studio-body[data-preview-overlay=right] .field-container { margin-right: calc(var(--overlay-width) + 12px); }
+.studio .studio-body[data-preview-overlay=left] .field-container { margin-left: calc(var(--overlay-width) + 12px); }
 .studio--focus .app-header, .studio--focus .statusbar, .studio--focus .workspace-pane, .studio--focus .workspace-pane-closed, .studio--focus .canvas-toolbar, .studio--focus .field-legend { display: none; }
 .focus-restore { position: absolute; right: 24px; top: 12px; z-index: 12; display: flex; align-items: center; gap: 7px; padding: 9px 12px; background: var(--surface); color: var(--text); border: 2px solid var(--accent); border-radius: 6px; font-size: 13px; }
 .studio--focus .field-container { margin-top: 8px; }
-.studio .main-workspace { min-width: min(360px, calc(100vw - 60px)); }
+.studio .main-workspace { min-width: min(var(--field-reserve, 360px), calc(100% - 60px)); }

@@ -4,7 +4,7 @@ Squidware is a desktop workspace for designing marching ensemble drill and prepa
 
 ## A first production
 
-1. Use the project menu to choose **New project**, then **Blank production**. Use **Explore the demo** to learn with 64 performers already placed.
+1. Use the project menu to choose **New project**, then **Blank production**. Use **Explore the demo** to open **Tether**, a complete 165-member drum corps show (84 brass, 24 battery, 13 front ensemble, 44 guard, 67 sets) with its tempo map, score map, routes and group movement already in place.
 2. Open **Production settings** to name the show and ensemble, select college or high-school field markings, and customize section names and colors.
 3. In **Cast**, add performers or import a roster. New performers receive a position in every set.
 4. Return to **Design**. Select performers, arrange the opening picture, and save the project.
@@ -22,7 +22,7 @@ Use **Grid and snapping** beside the field magnet to choose a production's step 
 
 **Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid`, JSON or portable `.squidpack` files; JSON and package imports receive a `.squid` destination when saved.
 
-**Unsaved changes** beside the production title includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
+A new or untouched production shows **No changes** beside its title until you edit it; its first Save still asks for a file name. **Unsaved changes** includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
 
 After a committed change, the desktop app writes recovery in the background to its application data folder. Open **Project menu → Recovery copies**, or click the recovery status at the bottom of the editor, to choose a dated copy. Up to 20 most recent copies or 100 MiB are kept across productions; the newest valid copy is always retained. Older copies expire. Save named project files and keep your usual rehearsal backups.
 
@@ -38,9 +38,9 @@ In browser preview, Save downloads a project and PDF export opens the browser pr
 
 ## Personal preferences
 
-The **2D field display** section sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
+In Preferences, **Field display → 2D field display** sets audience orientation, dot radius and label size in screen pixels, label visibility, and section/selection/custom coloring. Flipping turns the view 180°; pointer gestures and arrow keys follow the screen while coordinate descriptions and Inspector directions keep their field meaning. These choices persist on this device. Printed charts and SVG exports keep their standard orientation, section colors and labels. See [field display details](FIELD_DISPLAY.md).
 
-Open **Project menu → Preferences** for device settings: panel layout, 2D/3D view, labels, paths, grid visibility, snap, zoom, keyboard increments, formation tool defaults, coordinate decimals, paper size, packet type, and geometric check thresholds. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
+Open **Project menu → Preferences** for device settings, grouped as **Appearance** (theme, UI scale, panel layout, hints), **Field display** (2D/3D start view, paths, grid visibility, zoom, labels, coordinate precision), **Editing** (keyboard increments, snap, new move counts, formation tool defaults, new-production defaults, paper size and packet type) and **Shortcuts**. The section buttons at the top jump between them. Changes save automatically and do not mark your production as unsaved. Formation parameters take effect when you choose **Apply formation**; coordinate precision changes descriptions, without rounding stored positions.
 
 Choose **Reset defaults** to restore the personal settings. If storage is unavailable, your choices work for the session and Preferences shows the error with **Retry save**. Unsupported newer preferences remain preserved until you update the app or reset them. Invalid numeric entries stay in Preferences until corrected or canceled with Escape. Production settings still belong to each show. See [the persistence policy](PREFERENCES.md).
 
@@ -108,7 +108,7 @@ The Inspector's selection bar keeps the selected count, coordinates or group bou
 
 Formation tools provide **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select performers and choose a shape to open a [formation preview](FORMATION_PREVIEWS.md). Adjust width, depth/bulge, rotation, center and block columns with numbers or field handles. Each shape retains its own parameters for the session. **Apply formation**, or Enter on the field, accepts the visible positions as one undoable action. **Cancel**, or Escape outside an input, keeps the original positions. Shapes crossing a field boundary cannot apply. Choose **Select all** explicitly to reshape the ensemble.
 
-The initial formation center is the selected performers' center. **Positional order** preserves their spatial order; choose **Roster order** to use Cast order instead. Review the dashed paths and total/longest travel before applying. Assignment stays fixed as you move or rotate a preview, and each accepted edit can be undone. Pinning and a shortest-travel solver remain planned.
+A new shape starts at the selected performers' center, sized to their extent, at least the production's minimum spacing apart and inside the field. **Shortest travel** is the default assignment, so straight paths do not cross; choose **Positional** to preserve spatial order or **Roster** to use Cast order. Review the dashed paths and total/longest travel before applying. Assignment stays fixed as you move or rotate a preview (choose a mode again to recompute it), and each accepted edit can be undone. Use **Optimize assignment…** for pins and other constraints.
 
 Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 
@@ -150,7 +150,7 @@ Ranges override base move tempos only within their intervals; musical anchors re
 
 ## Playback and audio
 
-Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome.
+Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome. On narrow windows or at large UI scales, speed, loop and metronome are under **More playback options** (⋯) in the transport, and Layout, Focus field, Help and History are in **Menu**.
 
 The displayed count is the cumulative show count. Written tempo can differ between moves; the total runtime accounts for those changes. The metronome accents every fourth cumulative count.
 
@@ -175,9 +175,19 @@ Click a performer to select them; Shift-click modifies the selection. Selection 
 
 The 3D performers are section-colored rehearsal markers. Their appearance does not model actual uniforms, instruments, guard equipment, body orientation, or marching technique. If a graphics context cannot initialize, the app shows a fallback message. Switch to 2D to continue designing; after a temporary graphics interruption, leave and reopen 3D to retry.
 
+### 3D window
+
+In the desktop app, choose **Open 3D window** (the arrow-out-of-a-box button beside **3D preview**), its command palette entry, or `Shift+T` to show the 3D preview in a separate window, for example on a second display. It follows the editor's set, count, playback, selection highlighting, previews and any 2D drag in progress, and its top bar shows the set, count and mode. The window is read-only: its camera buttons, quality choice and orbit/pan/zoom work, but clicking a performer does not change the selection. Edit positions in the main window.
+
+Only one 3D window exists. Choosing the command again brings it to the front. While it is open, the field area shows a placeholder instead of a second 3D view: **Show 3D window** brings it forward and **Return 3D here** closes it. Opening the window from the inline 3D view switches the field back to 2D. Closing the window releases its graphics resources and returns the 3D option to the field.
+
+The window remembers its size, position and display on this device. It reopens on that display, moved fully on screen if needed; if the display is disconnected, it opens centered on the main display. It stops drawing while minimized or hidden, and it keeps playback moving while the main window is minimized. If its graphics context fails, choose **Reload 3D preview** or **Close 3D window**; editing in the main window continues. The browser preview does not offer the 3D window, and `Shift+T` is free there for other commands.
+
 ## Transition checks
 
 The Inspector analyzes the move into the selected set. Click an issue to select its performer or pair and show their paths.
+
+For the whole show, use the timeline’s problem row. Each marker names the problem type, performers and count, such as “Spacing 1.13 yd · B4, B5 · count 6”; nearby findings share a numbered marker that lists them. Arrow keys move along the row, and Enter goes to a finding or opens a group. The ⚠ count beside the row opens **Show-wide problems**, which lists every finding and opens **Analysis rules**.
 
 The current checks are:
 
@@ -192,14 +202,14 @@ Flags help identify moves to review. They do not certify safe movement, account 
 
 ## Export a rehearsal packet
 
-Open **Export** and choose one of the two PDF layouts:
+Open **Export**. Its **PDF drill book** section chooses one of two PDF layouts, then **Save PDF** saves it:
 
 - **Field charts:** a drawing for each set, with counts, cumulative arrival count, tempo, cast size, and rehearsal notes.
 - **Performer coordinate sheets:** an individual sheet for each performer listing their position in every set in 8-to-5 steps.
 
 The desktop app saves the chosen packet directly as a landscape Letter PDF. Browser preview uses Print / Save PDF. Long performer tables can span more than one page. Inspect a sample page before making rehearsal copies, particularly for long productions or unusually long labels and notes.
 
-Additional exports are:
+**Other formats** lists the remaining exports, one per row; hover or focus a row for its contents:
 
 | Format | Contents |
 | --- | --- |
@@ -238,7 +248,7 @@ In the 2D field, Tab enters at the remembered performer and the next Tab leaves 
 
 ## Acceptance walkthrough for a new build
 
-1. Start the desktop app and open the demo. Confirm the title, 64 performers, six sets, and both field presets render.
+1. Start the desktop app and open the demo. Confirm the title (Tether), 165 performers, 67 sets, and both field presets render, and that show-wide analysis reports only the counter-march teaching finding explained in set TE 5.
 2. Select several performers, drag them, nudge once and with Shift, then Undo and Redo. Check that one keypress causes one move and that dragging a group to the edge keeps it together.
 3. Pan at 100% zoom, choose Fit field, then scroll to zoom and fit again. Inspect paths and label visibility.
 4. Add a set, apply a formation, change counts/tempo, reorder it, and delete it. Confirm playback arrives at the edited pictures.

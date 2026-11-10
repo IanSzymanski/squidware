@@ -25,7 +25,8 @@ import { previewExactTransform } from '../transforms';
 import type { TransformOperation } from '../transforms';
 import { previewSpacing } from '../spacing';
 import { previewCoordinateEntry } from '../drillEntry';
-import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, markFileOpened, saveProjectRevision } from './fileSession';
+import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, markFileOpened, markProductionClean, saveProjectRevision } from './fileSession';
+import { createConfirmation } from './confirmation';
 const cleanFilename = (title: string) => (title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/[. ]+$/, '').trim().slice(0, 100) || 'Squidware project').replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i, '$1-project');
 function download(content: string, filename: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -43,8 +44,11 @@ export function useEditorController() {
   const castPanelOpen = useEditorSelector(state => state.ui.castPanelOpen);
   function showCast(mode: 'panel' | 'table' | 'closed') {
     flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
-    if (dispatch('cast.show', { mode }) === true) requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>(mode === 'closed' ? '.selection-bar button' : '[aria-label="Find a performer"]')?.focus();
+    // Cast beside the field takes focus once it docks or opens over the field (useWorkspaceLayout), on every route.
+    if (dispatch('cast.show', { mode }) === true && mode !== 'panel') requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(mode === 'closed' ? '.selection-bar button' : '[aria-label="Find a performer"]');
+      // Never focus into a tucked (hidden, inert) pane, which would drop focus to the page: its Show button opens it.
+      (target && !target.closest('[inert], [hidden]') ? target : document.querySelector<HTMLElement>(`[aria-label="Show ${mode === 'closed' ? 'Inspector' : 'Cast'}"]`))?.focus();
     });
   }
   const projectEpoch = useEditorSelector(state => state.ui.projectEpoch);
@@ -120,7 +124,8 @@ export function useEditorController() {
   const coordinateResult = useMemo(() => coordinatePreview ? previewCoordinateEntry(activeSet.positions, coordinatePreview.ids, coordinatePreview.options, project) : null, [coordinatePreview, activeSet.positions, project.field, project.snapping]);
   const duration = useMemo(() => totalCounts(project), [project.moves]);
   const readOnly = !useEditorSelector(canEditPositions);
-  const dirty = history.revision !== savedRevision || pendingDraft;
+  // Header, Save and New production share the same unsaved-work test as close and unload protection.
+  const dirty = useEditorSelector(hasUnsavedWork);
   const selectedSet = useMemo(() => selectionMembership(selectedIds), [selectedIds]);
   const allSelected = useMemo(() => project.performers.length > 0 && project.performers.every(p => selectedSet.has(p.id)), [project.performers, selectedSet]);
   const selectedPerformers = useMemo(() => project.performers.filter(p => selectedSet.has(p.id)), [project.performers, selectedSet]);
@@ -131,7 +136,10 @@ export function useEditorController() {
 
   const notify = useCallback((message: string) => { setToast(message); }, []);
   useEffect(() => { if (!toast) return; const timeout = setTimeout(() => setToast(''), 5000); return () => clearTimeout(timeout); }, [toast]);
-  const recovery = useRecoveryController(loadProject);
+  const confirmer = useMemo(() => createConfirmation(store), [store]);
+  useEffect(() => confirmer.connect(), [confirmer]);
+  const confirmation = useEditorSelector(state => state.ui.confirmation);
+  const recovery = useRecoveryController(loadProject, confirmer.confirm);
   useEffect(() => {
     const update = () => window.squidware?.setDirty(hasUnsavedWork(store.getState()));
     update();
@@ -159,12 +167,18 @@ export function useEditorController() {
     patchAudio({ audioDuration: 0, audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '' });
     dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
   }
-  function replaceProduction(next: Project, cast = false) {
+  async function replaceProduction(next: Project, cast = false) {
     try {
       flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
-      assertCanReplace(store.getState());
-      if (hasUnsavedWork(store.getState()) && !window.confirm('Replace this production? Your unsaved changes will be discarded. Save a project file first to keep them.')) return;
-      loadProject({ ...next, analysisRules: { defaults: { minimumSpacing: preferences.value.minimumSpacing, maximumStride: preferences.value.maximumStride } }, snapping: { ...preferences.value.snapDefaults } }); window.squidware?.resetProject();
+      const before = store.getState();
+      assertCanReplace(before);
+      if (hasUnsavedWork(before)) {
+        if (!await confirmer.confirm({ title: 'Replace this production?', message: 'Your unsaved changes will be discarded. Save a project file first to keep them.', confirmLabel: 'Discard changes' })) return;
+        assertCanReplace(store.getState()); assertUnchangedSince(before, store.getState());
+      }
+      loadProject({ ...next, analysisRules: { defaults: { minimumSpacing: preferences.value.minimumSpacing, maximumStride: preferences.value.maximumStride } }, snapping: { ...preferences.value.snapDefaults } });
+      // Blank, demo and template productions have nothing to lose until their first edit.
+      markProductionClean(store); window.squidware?.resetProject();
       if (cast) setWorkspace('cast');
     } catch (error) { notify((error as Error).message); }
   }
@@ -191,7 +205,12 @@ export function useEditorController() {
     try {
       assertCanReplace(store.getState());
       if (document.querySelector('[aria-invalid="true"]')) throw new Error('Finish or cancel the pending field before opening another production.');
-      if (hasUnsavedWork(store.getState()) && !window.confirm('Open another project? Save a project file first to keep your latest edits.')) return;
+      const asked = store.getState();
+      if (hasUnsavedWork(asked)) {
+        if (!await confirmer.confirm({ title: 'Open another project?', message: 'Your unsaved changes will be discarded. Save a project file first to keep your latest edits.', confirmLabel: 'Discard and open' })) return;
+        assertCanReplace(store.getState()); assertUnchangedSince(asked, store.getState());
+      }
+      // The confirm click keeps the browser's user activation for the file chooser.
       if (!window.squidware) { projectInput.current?.click(); return; }
       const before = store.getState();
       store.setValue('fileSession', 'fileOperation', 'opening');
@@ -319,6 +338,6 @@ export function useEditorController() {
 
   const filteredCast = useMemo(() => filterCast(project.performers, castQuery, sectionFilter), [project.performers, sectionFilter, castQuery]);
   const visibleSet = activeSet;
-  return { templates, portableAudio, chooseAudio, exportPackage, selectionPreview, coordinatePreview, coordinateResult, spacingPreview, spacingResult, castPanelOpen, showCast, formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  return { templates, portableAudio, chooseAudio, exportPackage, selectionPreview, coordinatePreview, coordinateResult, spacingPreview, spacingResult, castPanelOpen, showCast, formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, confirmation, confirm: confirmer.confirm, settleConfirmation: confirmer.settle, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
 }
 export type EditorController = ReturnType<typeof useEditorController>;

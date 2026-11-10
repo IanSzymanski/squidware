@@ -2,6 +2,8 @@
 
 Open **Project menu → Preferences**. Changes apply and save automatically on this device; **Done** also flushes committed choices. Number fields commit on blur or Enter. Escape cancels a numeric draft. Invalid preferences remain visible until corrected or canceled, and these drafts never mark a production as unsaved.
 
+The dialog is one scrolling form in four headed sections: **Appearance**, **Field display**, **Editing** and **Shortcuts**. The section buttons at the top stay pinned while the form scrolls, show the section in view as pressed, and jump to and focus a section's heading so Tab continues inside it. **Shortcuts** also opens the keyboard shortcut list. Every section stays loaded, so Done and Escape still find an invalid field anywhere in the form.
+
 ## Persistence policy
 
 Desktop preferences live in a fixed `preferences.json` in Electron's application data directory. The sandboxed renderer has three fixed methods: read, save and reset. Main verifies the sender, canonicalizes each record, and uses the same atomic temporary-file/rename writer as project saves. Saves are ordered; normal quit waits for accepted preference writes to finish. Changes within one UI event coalesce before submission. Forced process termination can interrupt an outstanding write; the previous complete file remains available.
@@ -10,26 +12,32 @@ Browser preview uses `squidware.preferences.v1` in localStorage. Its preferences
 
 Persisted choices:
 
-| Choice | Default / limits |
-| --- | --- |
-| Keyboard shortcut overrides | Standard bindings; conflict/reserved-key checks, clear and reset. [Details](COMMAND_PALETTE.md). |
-| Interface theme | Dark; Light and High contrast available |
-| UI scale | 100%; 110%, 125% and 150% available |
-| Panel layout; field view | Comfortable; 2D |
-| Labels; previous paths; grid visibility; snap | On; off; on; on |
-| New production placement defaults | 8-to-5, whole steps, grid targets, keep spacing; 6/12-to-5, half/quarter steps, markings and individual mode also available |
-| Field zoom | 1×; 0.6–3× |
-| Audience orientation | Bottom; top turns the 2D view 180° |
-| Dot radius; label size | 3 / 12 CSS px; 2–8 / 11–24 px |
-| Label visibility | All; selected/focused or hidden also persist from the toolbar |
-| Performer coloring; custom color | Section colors; selection groups or custom RGB (`#B9ED85`) |
-| Formation tool kind | Arc; line, arc, circle, block or curve |
-| Formation width, depth, rotation, columns | 45 yd, 22 yd, 0°, 8; 1–95 yd, 1–48 yd, −180–180°, 1–500 whole columns |
-| Normal / fast nudge; unit | 0.625 / 2.5, in yards by default; 0.125–5 / 0.125–10. Optional production-step units use the current 8/6/12-to-5 grid step, independent of subdivision. |
-| Rotation / scale presets | 15° / 10%; 0.1–180° / 0.1–99%. Buttons open an exact preview before Apply. |
-| Coordinate description decimals | 2; 0, 1 or 2 |
-| Paper; rehearsal packet | Letter landscape; field charts; A4 and coordinate sheets also available |
-| Geometric review spacing / stride | 1 yd / 1.25 yd per count; each 0.1–5 |
+| Section | Choice | Default / limits |
+| --- | --- | --- |
+| Appearance | Interface theme | Dark; Light and High contrast available |
+| Appearance | UI scale | 100%; 110%, 125% and 150% available |
+| Appearance | Panel layout | Comfortable; Compact |
+| Appearance | Show hints | On. Off hides short instructional lines in the set list, field, status bar, Inspector, command palette and 3D preview; tooltips and Help keep the same guidance, and field keyboard help remains the field's accessible description. |
+| Field display | Start view | 2D; 3D preview |
+| Field display | Previous paths; next paths; field grid | Off; off; on |
+| Field display | Field zoom | 1×; 0.6–3× |
+| Field display | Audience orientation | Bottom; top turns the 2D view 180° |
+| Field display | Dot radius; label size | 3 / 12 CSS px; 2–8 / 11–24 px |
+| Field display | Label visibility | All; selected/focused or hidden also persist from the toolbar |
+| Field display | Performer coloring; custom color | Section colors; selection groups or custom RGB (`#B9ED85`) |
+| Field display | Coordinate precision; decimals | Quarter steps; whole or half steps, or legacy decimal steps with 0, 1 or 2 decimals |
+| Editing | Normal / fast nudge; unit | 0.625 / 2.5, in yards by default; 0.125–5 / 0.125–10. Optional production-step units use the current 8/6/12-to-5 grid step, independent of subdivision. |
+| Editing | Rotation / scale presets | 15° / 10%; 0.1–180° / 0.1–99%. Buttons open an exact preview before Apply. |
+| Editing | Snap to grid | On |
+| Editing | New move counts | 32; whole counts within the production count limits. See [set creation](SET_CREATION.md). |
+| Editing | Formation tool kind | Arc; line, arc, circle, block or curve |
+| Editing | Formation width, depth, rotation, columns | 45 yd, 22 yd, 0°, 8; 1–95 yd, 1–48 yd, −180–180°, 1–500 whole columns. New shapes are sized to the selection; width/depth apply to a selection without extent, and depth also limits a new arc, circle or wave's depth. |
+| Editing | New production placement defaults | 8-to-5, whole steps, grid targets, keep spacing; 6/12-to-5, half/quarter steps, markings and individual mode also available |
+| Editing | New production analysis defaults (spacing / stride) | 1 yd / 1.25 yd per count; each 0.1–5 |
+| Editing | Print defaults: paper; rehearsal packet | Letter landscape; field charts; A4 and coordinate sheets also available |
+| Shortcuts | Keyboard shortcut overrides | Standard bindings; conflict/reserved-key checks, clear and reset. [Details](COMMAND_PALETTE.md). |
+
+The desktop app also remembers the [3D window's](USER_GUIDE.md#3d-window) position, size and display. Main places those bounds fully on a connected display before opening the window, or centers it on the main display when the saved display is gone. Without a usable display id it uses the display under the saved window. Reset defaults forgets them.
 
 Toolbar changes to the persisted view, toggles, zoom and selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
 

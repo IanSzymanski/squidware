@@ -4,7 +4,7 @@ Implements [#67](https://github.com/IanSzymanski/squidware/issues/67), following
 
 ## Personal choices
 
-In Preferences, **Editing increments** offers:
+In Preferences → **Editing**, the **Editing increments** group offers:
 
 - Normal and fast nudge amounts, in yards (the backward-compatible default) or full production steps. A step is `5 / grid.steps` yards, so 6-to-5 and 12-to-5 show settings affect step-based requests. Half/quarter subdivision changes snap targets, not the meaning of a full step.
 - Rotation preset size, 0.1–180 degrees, default 15 degrees.

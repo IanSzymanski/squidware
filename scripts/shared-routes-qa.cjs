@@ -29,12 +29,19 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
     const item = find(Menu.getApplicationMenu()); assert.ok(item?.click); item.click(item, window, {});
   };
   const present = () => evaluate(`${state}.project.present`);
-  async function open() { await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
+  // Small or enlarged windows tuck the Inspector (#178); open it over the field, as a user would, before using its launchers.
+  const showInspector = async () => { if (await evaluate("!!document.querySelector('#workspace-pane-inspector')?.hidden")) { await click('Show Inspector'); await wait("!!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay:not([hidden])')", 'Inspector overlay'); } };
+  async function open() { await showInspector(); await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
   async function apply(count) { await click('Apply shared route'); await wait(`!${state}.ui.dialog && ${state}.project.present.sharedRoutes?.length===${count}`, 'accepted route'); }
 
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1); await settleNativeViewport(window, 'route baseline');
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}})`);
-  await capture('routes-before.png'); await open();
+  // A new route sits at half the field height (160/3/2 yd); inputs and readouts show yards to at most three decimals.
+  const newRouteShown = async () => {
+    assert.deepEqual(await evaluate("['Start X','Start Y','Segment end X','Segment end Y'].map(l=>document.querySelector('[aria-label=\"'+l+'\"]').value)"), ['25', '26.667', '75', '26.667']);
+    assert.match(await evaluate("document.querySelector('[aria-label=\"Route geometry summary\"]').textContent"), /^Open · 1 segments · 50 yd · /);
+  };
+  await capture('routes-before.png'); await open(); await newRouteShown();
   assert.deepEqual(await evaluate(`${state}.selection.selectedIds`), []);
   await type('Route name', 'S stroke'); await click('Draw shared route stroke');
   await evaluate("document.querySelector('[aria-label=\"Editable shared route field\"]').scrollIntoView({block:'center'})");
@@ -80,7 +87,7 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
   menu('Undo drill edit'); await wait(`${state}.project.future.length===1`, 'undo route reverse'); assert.deepEqual(await present(), accepted);
   pass('native keyboard and control drag previews, Escape rollback, numeric cancel/apply, and explicit direction reversal');
 
-  await open(); await click('New shared route'); await type('Route name', 'Closed outline'); await click('Closed shared route'); await click('Place shared route anchors');
+  await open(); await click('New shared route'); await newRouteShown(); await type('Route name', 'Closed outline'); await click('Closed shared route'); await click('Place shared route anchors');
   for (const [x, y] of [[20, 15], [80, 15], [80, 40], [20, 40]]) { await type('Route anchor X', x); await type('Route anchor Y', y); await click('Add numeric route anchor'); }
   await click('Fit shared route'); await wait("document.querySelector('[aria-label=\"Route geometry summary\"]').textContent.startsWith('Closed')", 'closed numeric fit');
   await click('Split route segment'); await wait("document.querySelector('[aria-label=\"Route segment\"]').options.length===5", 'split exact route');

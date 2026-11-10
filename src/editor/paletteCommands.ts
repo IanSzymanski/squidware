@@ -7,6 +7,7 @@ import { currentSpacingResult } from './spacingSession';
 import { currentTransformResult } from './transformSession';
 import type { EditorState } from './state';
 import { drillPlan, isDrillPhrase } from './drillCommands';
+import { openingMoveNote } from './setList';
 
 export type CommandInvocation = { [I in CommandId]: { id: I; args: CommandArguments[I] } }[CommandId];
 export interface PaletteEntry { key: string; name: string; description: string; keywords: string; invocation: CommandInvocation; disabledReason: string | null }
@@ -17,7 +18,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'dialog.open' && args.dialog === 'remove-cast' && !state.selection.selectedIds.length) return 'Select performers to remove first.';
   if (id === 'dialog.open' && args.dialog === 'remove-set' && state.project.present.sets.length <= 1) return 'Keep at least one set in the production.';
   const previews = state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview;
-  if (previews && !/\.(apply|cancel)$/.test(id) && !['live.redistribute', 'palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit'].includes(id)) return 'Apply or cancel the current preview first.';
+  if (previews && !/\.(apply|cancel)$/.test(id) && !['live.redistribute', 'palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit', 'view.popout', 'view.popout-close'].includes(id)) return 'Apply or cancel the current preview first.';
   if (['transform.preview', 'transform.mirror', 'formation.preview', 'spacing.preview', 'coordinates.preview'].includes(id)) {
     if (!canEditPositions(state)) return state.playback.playing ? 'Pause playback at a set before editing positions.' : !isAtActiveSet(state) ? 'Return to a set before editing positions.' : 'Finish or cancel the current preview first.';
     if (state.selection.selectedIds.length < (id === 'spacing.preview' ? 2 : 1)) return id === 'spacing.preview' ? 'Select at least two performers on this set.' : 'Select performers on this set first.';
@@ -43,6 +44,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'set.next') return 'This is the last set.';
   if (['set.new', 'set.duplicate', 'set.insert-before', 'set.hold'].includes(id)) return 'The production has reached its set limit.';
   if (id === 'set.reorder') return 'The current set is already at this end of the set list.';
+  if (id === 'set.move-to') return state.project.present.sets[args.target]?.id === args.id ? `This set is already at position ${args.target + 1}.` : 'Pause playback and finish other input before reordering sets.';
   if (id === 'set.add') return 'The production has reached its set limit.';
   if (id === 'performers.add-dialog') return 'The production has reached its performer limit.';
   if (id === 'playback.toggle') return 'Add a second set with move counts before rehearsing.';
@@ -53,21 +55,29 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'selection.section') return 'This section has no performers to select.';
   if (id === 'group.select') return 'This saved group has no performers to select.';
   if (id === 'layout.focus') return 'Open the Design workspace before focusing the field.';
+  if (id === 'view.popout') return 'The 3D window is available in the desktop app.';
+  if (id === 'view.popout-close') return 'The 3D window is not open.';
   return 'This action is unavailable in the current editing context.';
 }
 /** User commands and concrete variants. Parameter entry remains in its shared editor. */
 export function paletteEntries(state: EditorState): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
-  function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string) {
+  function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string, description = commandRegistry[id].description) {
     const invocation = { id, args } as CommandInvocation;
-    const keywords = id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
-    entries.push({ key, name: name ?? commandRegistry[id].name, description: commandRegistry[id].description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
+    const keywords = id === 'view.popout' ? 'pop out popout detach second monitor display separate 3d preview window' : id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
+    entries.push({ key, name: name ?? commandRegistry[id].name, description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
   }
-  for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && definition.id !== 'palette.open' && definition.id !== 'section.add' && definition.id !== 'selection.close') add(definition.id, undefined);
+  // The browser build has no separate 3D window, so its commands stay hidden there.
+  const hidden = new Set<CommandId>(['palette.open', 'section.add', 'selection.close', ...(state.ui.popout3d === 'unavailable' ? ['view.popout', 'view.popout-close'] as const : [])]);
+  for (const definition of Object.values(commandRegistry)) if (!Object.keys(definition.arguments).length && !hidden.has(definition.id)) add(definition.id, undefined);
   add('coordinates.preview', {});
   for (const direction of [-1, 1] as const) add('set.reorder', { index: state.selection.activeIndex, direction }, direction === -1 ? 'Move current set earlier' : 'Move current set later', `reorder-${direction}`);
-  add('tempo.open', undefined);
-  add('audio.align-open', undefined);
+  const current = state.project.present.sets[state.selection.activeIndex];
+  // The current position stays listed (unavailable) so typing it never falls through to a longer number such as 10 or 120.
+  for (let target = 0; target < state.project.present.sets.length; target++) {
+    add('set.move-to', { id: current.id, target, revision: state.project.revision, epoch: state.ui.projectEpoch }, `Move current set to position ${target + 1}`, `move-to-${target}`,
+      `${commandRegistry['set.move-to'].description}${openingMoveNote(state.selection.activeIndex, target)}`);
+  }
   add('group.open',{},'Group route movement','group-movement-new');
   for(const group of state.project.present.moves[state.selection.activeIndex-1]?.groupMotions??[])add('group.open',{id:group.id},`Edit group movement: ${group.name}`,`group-movement-${group.id}`);
   add('transform.preview', {});
@@ -93,9 +103,11 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   return entries;
 }
 export function searchPalette(entries: PaletteEntry[], query: string): PaletteEntry[] {
-  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const q = query.toLowerCase().trim(), terms = q.split(/\s+/).filter(Boolean);
+  // An exact name outranks longer names that merely start with it ("position 1" before "position 10").
+  const rank = (entry: PaletteEntry) => entry.name.toLowerCase() === q ? 2 : entry.name.toLowerCase().startsWith(q) ? 1 : 0;
   return entries.filter(entry => terms.every(term => `${entry.name} ${entry.description} ${entry.keywords} ${entry.invocation.id}`.toLowerCase().includes(term)))
-    .sort((a, b) => Number(b.name.toLowerCase().startsWith(query.toLowerCase().trim())) - Number(a.name.toLowerCase().startsWith(query.toLowerCase().trim())) || (!terms.length ? Number(!!a.disabledReason) - Number(!!b.disabledReason) : 0) || a.name.localeCompare(b.name));
+    .sort((a, b) => rank(b) - rank(a) || (!terms.length ? Number(!!a.disabledReason) - Number(!!b.disabledReason) : 0) || a.name.localeCompare(b.name));
 }
 /** Valid drill phrases take precedence. Otherwise keep matching action names searchable. */
 export function paletteQuery(state: EditorState, query: string) {

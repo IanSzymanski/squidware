@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoProject } from '../domain';
+import { createDemoProject, parseProject } from '../domain';
+import { createPerformanceFixture } from '../performanceFixtures';
 import { DEFAULT_SNAPPING } from '../snapping';
 import { drillPlan, parseDrillCommand } from './drillCommands';
 import { createEditorStore } from './store';
@@ -55,6 +56,7 @@ describe('drill commands through shared preview sessions', () => {
     expect(drillPlan(store.getState(), 'place "Flute 1" at Side 2: on the 40; on back hash').plan?.ids).toEqual([ids[0]]);
     expect(searchPalette(paletteEntries(store.getState()), 'rename group').some(entry => entry.invocation.id === 'selection.tools')).toBe(true);
     expect(searchPalette(paletteEntries(store.getState()), 'rebind').some(entry => entry.invocation.id === 'preferences.open')).toBe(true);
+    expect(searchPalette(paletteEntries(store.getState()), 'hints').some(entry => entry.invocation.id === 'preferences.open')).toBe(true);
   });
   it('rejects ambiguity, unknown labels, trailing words, field crossings and stale editing context without mutation', () => {
     const { store, before } = fixture();
@@ -70,12 +72,47 @@ describe('drill commands through shared preview sessions', () => {
 describe('command search and enablement', () => {
   it('exposes every rebindable command and searchable set/section variants with useful disabled reasons', () => {
     const { store } = fixture(); const entries = paletteEntries(store.getState());
-    for (const id of shortcutIds.filter(id => id !== 'palette.open')) expect(entries.some(e => e.invocation.id === id)).toBe(true);
+    // The separate 3D window is desktop-only: hidden without the bridge, listed once it is available.
+    for (const id of shortcutIds.filter(id => id !== 'palette.open')) expect(entries.some(e => e.invocation.id === id)).toBe(id !== 'view.popout');
+    store.setValue('ui', 'popout3d', 'closed'); expect(paletteEntries(store.getState()).some(e => e.invocation.id === 'view.popout')).toBe(true);
     expect(searchPalette(entries, 'previous set')[0].disabledReason).toMatch(/first set/);
     expect(searchPalette(entries, 'Brass').some(e => e.name.includes('Select section'))).toBe(true);
     expect(searchPalette(entries, 'undo')[0].disabledReason).toMatch(/no earlier edits/);
     store.setValue('selection', 'selectedIds', []);
     expect(searchPalette(paletteEntries(store.getState()), 'Mirror across 50')[0].disabledReason).toMatch(/Select/);
+  });
+  it('lists each palette entry once, so result rows keep stable identities', () => {
+    const { store } = fixture(); const keys = paletteEntries(store.getState()).map(entry => entry.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(searchPalette(paletteEntries(store.getState()), 'Align recording').filter(entry => entry.invocation.id === 'audio.align-open')).toHaveLength(1);
+  });
+  it('offers direct set positions as one-step palette reorders that undo atomically', () => {
+    const { store } = fixture(); const before = store.getState().project.present.sets.map(set => set.id);
+    const entries = paletteEntries(store.getState()).filter(entry => entry.invocation.id === 'set.move-to');
+    expect(entries).toHaveLength(before.length);
+    const here = entries.find(entry => entry.name === `Move current set to position ${store.getState().selection.activeIndex + 1}`)!;
+    expect(here.disabledReason).toBe(`This set is already at position ${store.getState().selection.activeIndex + 1}.`);
+    const last = entries.find(entry => entry.name === `Move current set to position ${before.length}`)!;
+    expect(last.disabledReason).toBeNull();
+    // Moving the opening changes show timing, so the entry says so before and the toast confirms it after.
+    expect(last.description).toMatch(/New opening: 0 counts\. The former opening now has a 32-count move\./);
+    expect(store.dispatch(last.invocation.id, last.invocation.args as never)).toBe(true);
+    expect(store.getState().ui.toast).toBe(`Moved set to position ${before.length}. New opening: 0 counts. The former opening now has a 32-count move.`);
+    expect(store.getState().project.present.sets.at(-1)!.id).toBe(before[0]);
+    expect(store.dispatch('history.undo')).toBe(true);
+    expect(store.getState().project.present.sets.map(set => set.id)).toEqual(before);
+  });
+  it('resolves a typed set position exactly, never to a longer number that starts with it', () => {
+    const store = createEditorStore(parseProject(JSON.stringify(createPerformanceFixture('maximum'))));
+    for (const current of [0, 1, 11]) {
+      store.dispatch('set.select', { index: current });
+      for (const typed of [1, 2, 12]) {
+        const [first] = paletteQuery(store.getState(), `Move current set to position ${typed}`).entries;
+        expect(first.name).toBe(`Move current set to position ${typed}`);
+        expect((first.invocation.args as { target: number }).target).toBe(typed - 1);
+        expect(!!first.disabledReason).toBe(typed - 1 === current);
+      }
+    }
   });
   it('opening and closing command search preserves an existing preview', () => {
     const { store, before } = fixture(); store.dispatch('transform.preview', {});
@@ -87,6 +124,8 @@ describe('command search and enablement', () => {
     const { store, before } = fixture();
     const action = paletteQuery(store.getState(), 'Move current set earlier');
     expect(action.phrase).toBe(false); expect(action.entries[0].invocation.id).toBe('set.reorder');
+    const direct = paletteQuery(store.getState(), 'Move current set to position 2');
+    expect(direct.phrase).toBe(false); expect(direct.entries[0].invocation.id).toBe('set.move-to');
     expect(paletteQuery(store.getState(), 'move 4 forward').resolved?.plan?.command.kind).toBe('coordinates');
     expect(paletteQuery(store.getState(), 'move 4 diagonally').resolved?.error).toBeTruthy();
     store.dispatch('transform.preview', {}); const preview = store.getState().ui.transformPreview;

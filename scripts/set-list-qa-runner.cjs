@@ -89,6 +89,10 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelectorAll('.mini-field').length"), 0);
     const reference = await evaluate("({width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height,rowHeight:document.querySelector('.set-card').getBoundingClientRect().height,add:document.querySelectorAll('.set-panel [aria-label=\"Add set\"]').length})");
     assert.equal(reference.width, 1366); assert.equal(reference.height, 768); assert.ok(reference.fieldHeight >= 470); assert.equal(reference.rowHeight, 32); assert.equal(reference.add, 1); layouts.push({ name: 'reference', ...reference }); await capture('set-list-compact.png');
+    // At the default pane width the BPM column gives way to set names; a wider pane shows it again.
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.set-row-tempo')).display"), 'none');
+    await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:300}})`); await wait("getComputedStyle(document.querySelector('.set-row-tempo')).display!=='none'", 'wide set list shows BPM');
+    await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:216}})`); await wait("getComputedStyle(document.querySelector('.set-row-tempo')).display==='none'", 'default set list hides BPM');
     await type(named('Find set'), '040'); await key(window, 'Return'); await wait(`${state}.selection.activeIndex===39`, 'number jump'); await visibleCurrent();
     assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 1);
     await type(named('Find set'), 'ballad'); assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 2); await capture('set-list-search.png'); await evaluate("document.querySelector('[aria-label=\"Find set\"]').focus()");
@@ -98,19 +102,28 @@ app.whenReady().then(async () => {
     await key(window, 'Escape'); await wait("document.querySelectorAll('.set-card').length===128", 'escape clears search'); await visibleCurrent();
     await wait("document.activeElement.matches('.set-card[aria-current]')", 'Escape restores current-row focus');
     // A user can leave search before its deferred focus restoration runs.
-    await evaluate("(()=>{const n=document.querySelector('[aria-label=\"Find set\"]');n.focus();n.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('[aria-label=\"Move current set to position\"]').focus()})()"); await frames();
-    assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Move current set to position');
+    await evaluate("(()=>{const n=document.querySelector('[aria-label=\"Find set\"]');n.focus();n.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('[aria-label=\"Show set thumbnails\"]').focus()})()"); await frames();
+    assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Show set thumbnails');
     assert.equal(await evaluate(`${state}.project.past.length`), 0);
     pass('128-set number/name navigation, filtered Home/End, no-match recovery and current-row reveal create no history');
-    await type(named('Move current set to position'), '12'); await wait("document.querySelector('[aria-label=\"Move set to position\"]').getAttribute('aria-disabled')!=='true'", 'direct reorder ready'); await key(window, 'Return');
+    // The set list no longer reserves a footer for direct positions; the Command palette keeps the one-step reorder.
+    const palette = named('Search commands or drill phrases');
+    await evaluate(`${editor}.dispatch('palette.open')`); await wait(`!!document.querySelector(${JSON.stringify(palette)})`, 'palette open');
+    await type(palette, 'Move current set to position 12'); await wait(`(()=>{const input=document.querySelector(${JSON.stringify(palette)});return document.getElementById(input.getAttribute('aria-activedescendant'))?.querySelector('strong')?.textContent==='Move current set to position 12'})()`, 'direct reorder ready'); await key(window, 'Return');
     await wait(`${state}.project.present.sets[11].id===${JSON.stringify(maximum.sets[39].id)} && ${state}.project.past.length===1`, 'single direct reorder');
     let accepted = await evaluate(state + '.project.present'); assert.equal(await evaluate(`${state}.selection.activeIndex`), 11); assert.equal(await evaluate(`${state}.playback.count`), setStartCount(accepted, 11)); await visibleCurrent(); await capture('set-list-reordered.png');
     await evaluate(`${editor}.dispatch('history.undo')`); await wait(`${state}.selection.activeIndex===39`, 'undo retains identity'); assert.deepEqual(await evaluate(state + '.project.present'), maximum);
     await evaluate(`${editor}.dispatch('history.redo')`); await wait(`${state}.selection.activeIndex===11`, 'redo retains identity'); assert.deepEqual(await evaluate(state + '.project.present'), accepted);
-    await type(named('Move current set to position'), '999'); assert.equal(await evaluate("document.querySelector('[aria-label=\"Move set to position\"]').getAttribute('aria-disabled')"), 'true'); assert.match(await evaluate("document.querySelector('.set-order-note').textContent"), /whole position/);
-    await key(window, 'Return'); assert.equal(await evaluate(`${state}.project.past.length`), 1);
-    await type(named('Move current set to position'), '12');
-    pass('set 40 moves to position 12 in one named undo; undo/redo preserve active identity and invalid positions cannot commit');
+    await evaluate(`${editor}.dispatch('palette.open')`); await wait(`!!document.querySelector(${JSON.stringify(palette)})`, 'palette reopened');
+    await type(palette, 'Move current set to position 999'); assert.equal(await evaluate("document.querySelectorAll('.palette-result').length"), 0);
+    await key(window, 'Return'); await frames(); assert.equal(await evaluate(`${state}.project.past.length`), 1);
+    // Typing the current position selects that exact, unavailable row, never a longer number such as 120.
+    await type(palette, 'Move current set to position 12');
+    await wait(`(()=>{const input=document.querySelector(${JSON.stringify(palette)});const option=document.getElementById(input.getAttribute('aria-activedescendant'));return option?.querySelector('strong')?.textContent==='Move current set to position 12'&&option.getAttribute('aria-disabled')==='true'})()`, 'current position unavailable');
+    await key(window, 'Return'); await frames();
+    assert.equal(await evaluate(`${state}.project.past.length`), 1); assert.equal(await evaluate(`${state}.project.present.sets[11].id`), maximum.sets[39].id);
+    await key(window, 'Escape'); await wait(`!document.querySelector(${JSON.stringify(palette)})`, 'palette closed');
+    pass('set 40 moves to position 12 from the Command palette in one named undo; undo/redo preserve active identity and invalid positions cannot commit');
     await evaluate(`${editor}.dispatch('file.save-as')`); await wait(`${state}.fileSession.saveStatus==='Project file saved'`, 'saved native reordered show');
     assert.deepEqual(parseProject(await fs.readFile(savedFile, 'utf8')), accepted);
     await evaluate(`${editor}.dispatch('file.open')`); await wait(`${state}.project.past.length===0`, 'native reopen'); assert.deepEqual(await evaluate(state + '.project.present'), accepted);
@@ -134,12 +147,12 @@ app.whenReady().then(async () => {
     for (const [width, height, zoom] of [[1120,768,1.25],[1024,720,1.5]]) {
       window.setContentSize(width, height); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window, 'set list enlarged');
       if (await evaluate("!!document.querySelector('[aria-label=\"Show Set list\"]') && !document.querySelector('.set-panel')?.getBoundingClientRect().width")) await click(named('Show Set list'));
-      const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},list:rect('.set-list'),search:rect('[aria-label=\"Find set\"]'),move:rect('[aria-label=\"Move current set to position\"]'),add:rect('.set-panel [aria-label=\"Add set\"]')}})()");
-      for (const r of [metrics.search, metrics.move, metrics.add]) assert.ok(r.top>=0&&r.bottom<=metrics.viewport.height+.5&&r.left>=0&&r.right<=metrics.viewport.width+.5, JSON.stringify(metrics));
+      const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},list:rect('.set-list'),search:rect('[aria-label=\"Find set\"]'),add:rect('.set-panel [aria-label=\"Add set\"]')}})()");
+      for (const r of [metrics.search, metrics.add]) assert.ok(r.top>=0&&r.bottom<=metrics.viewport.height+.5&&r.left>=0&&r.right<=metrics.viewport.width+.5, JSON.stringify(metrics));
       assert.ok(metrics.list.height >= 64); layouts.push({ width, height, zoom, ...metrics }); await capture(`set-list-${width}-${zoom}.png`);
     }
-    pass('supported themes and enlarged narrow layouts retain search, reorder, rows and the single Add control');
+    pass('supported themes and enlarged narrow layouts retain search, rows and the single Add control');
     assert.deepEqual(errors, []); assert.deepEqual(await evaluate('window.__setListQA.errors'), []);
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, layouts, platform: process.platform }, null, 2)); app.exit(0);
-  } catch (error) { console.error(error); console.error('Set-list diagnostic',await evaluate("({focus:document.activeElement?.outerHTML.slice(0,300),position:document.querySelector('#set-order-position')?.value,query:document.querySelector('[aria-label=\"Find set\"]')?.value,moveDisabled:document.querySelector('[aria-label=\"Move set to position\"]')?.getAttribute('aria-disabled'),active:window.__setListQA?.editor?.getState().selection.activeIndex,history:window.__setListQA?.editor?.getState().project.past.length})").catch(()=>null)); if (window && !window.isDestroyed()) await capturePage(window, output, 'failure.png').catch(() => {}); app.exit(1); }
+  } catch (error) { console.error(error); console.error('Set-list diagnostic',await evaluate("({focus:document.activeElement?.outerHTML.slice(0,300),query:document.querySelector('[aria-label=\"Find set\"]')?.value,active:window.__setListQA?.editor?.getState().selection.activeIndex,history:window.__setListQA?.editor?.getState().project.past.length})").catch(()=>null)); if (window && !window.isDestroyed()) await capturePage(window, output, 'failure.png').catch(() => {}); app.exit(1); }
 });

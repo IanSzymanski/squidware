@@ -1,6 +1,6 @@
 /* Compact editor chrome. Physical field geometry and project data are unchanged. */
 .studio { min-height: 0; min-width: 0; }
-.app-header { height: auto; min-height: 48px; flex-shrink: 0; flex-wrap: wrap; gap: 8px 14px; padding: 5px 14px; }
+.app-header { height: auto; min-height: 48px; flex-shrink: 0; flex-wrap: nowrap; gap: 8px 14px; padding: 5px 14px; }
 .brand { gap: 7px; flex-shrink: 0; }
 .brand > img { width: 28px; height: 28px; }
 .brand > span:first-of-type { font-size: 20px; }
@@ -11,14 +11,16 @@
 .workspace-tab { display: flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 9px; border: 2px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 12px; }
 .workspace-tab > span { display: flex; }
 .workspace-tab svg { width: 16px; height: 16px; }
-.workspace-tab:hover { background: var(--hover-bg); }
-.workspace-tab.active { background: var(--selected-bg); border-color: var(--accent); font-weight: 650; }
+.workspace-tab:hover { background: var(--hover-bg); color: var(--text); }
+.workspace-tab.active { background: var(--selected-bg); border-color: var(--accent); color: var(--text); font-weight: 650; }
 .header-actions { gap: 4px; margin-left: auto; }
 .header-actions > .header-divider { margin: 0 2px; }
 .help-action { padding: 7px; gap: 4px; }
 .help-action > svg { width: 16px; height: 16px; }
 .studio-body { overflow: auto; }
 .main-workspace { min-width: 360px; min-height: 440px; }
+/* The field keeps its floor (src/editor/breakpoints.ts); the main workspace never demands more height than its parts. */
+.studio .main-workspace { min-height: min-content; }
 .workspace-heading { min-height: 48px; padding: 8px 14px; gap: 8px; flex-wrap: wrap; }
 .workspace-heading h1 { font-size: 18px; }
 .canvas-toolbar { min-height: 0; flex-shrink: 0; flex-direction: column; align-items: stretch; gap: 3px; margin: 8px 12px 0; padding: 4px 6px; }
@@ -31,16 +33,30 @@
 .canvas-tools .tool-group { padding: 0; gap: 3px; flex-wrap: wrap; }
 .canvas-tools .icon-button { width: 28px; min-width: 28px; height: 28px; }
 .selection-count { display: inline; white-space: nowrap; font-size: 12px; }
-.field-container { margin: 0 12px 8px; min-height: 180px; }
+.field-container { margin: 0 12px 8px; min-height: var(--field-min-height, 180px); }
 .field-container .field-stage, .field-container .stage-three,
-.field-container .field-stage__svg, .field-container .stage-three__canvas { min-height: 180px; }
-.field-legend { position: absolute; z-index: 4; top: 8px; left: 8px; right: 8px; min-height: 0; max-height: none; padding: 4px; gap: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); overflow: visible; }
-.field-legend-scroll { overflow-x: auto; flex-wrap: nowrap !important; min-width: 0; padding: 2px; scrollbar-width: thin; }
-.field-legend button { flex-shrink: 0; white-space: nowrap; padding: 4px 7px; font-size: 12px; }
-.field-legend > span { padding-right: 4px; }
-.field-topline { top: auto; bottom: 54px; left: 12px; right: 12px; font-size: 12px; letter-spacing: .3px; }
-.field-preview-banner { top: 60px; }
-.neighbor-legend { top: 60px; }
+.field-container .field-stage__svg, .field-container .stage-three__canvas { min-height: var(--field-min-height, 180px); }
+/* A compact section legend in the top apron, left of the centered sideline label. It never spans the field. */
+.field-legend { position: absolute; z-index: 4; top: 8px; left: 8px; right: auto; max-width: calc(50% - 50px); min-height: 0; max-height: none; padding: 0; gap: 4px; border: 0; background: transparent; overflow: visible; transition: opacity .12s ease; }
+.field-legend > .field-legend-scroll { overflow-x: auto; flex-wrap: nowrap !important; min-width: 0; padding: 2px; gap: 4px; scrollbar-width: thin; }
+.field-legend button { flex-shrink: 0; white-space: nowrap; padding: 2px 5px; gap: 4px; min-height: 24px; font-size: 12px; }
+/* The legend steps aside while dragging; during previews it reappears on hover or keyboard focus. */
+.field-container:has(.field-stage--moving) .field-legend { opacity: 0; pointer-events: none; }
+.field-container--previewing .field-legend:not(:hover):not(:focus-within) { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .field-legend { transition: none; } }
+/* View state and roster count sit in the bottom apron corners, clear of the centered sideline label. */
+.field-topline { top: auto; bottom: 8px; left: 12px; right: 12px; font-size: 12px; letter-spacing: .3px; pointer-events: none; }
+.field-topline > span { max-width: calc(50% - 60px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.is-3d .field-topline { bottom: 36px; }
+/* Focus mode hides the status bar, so the field's own status line carries snap mode there (one visible home either way). */
+.field-topline-snap { display: none; }
+.studio--focus .field-container:not(.is-3d) .field-topline-snap { display: inline; }
+.field-container:has(.field-stage--keyboard) .field-topline { visibility: hidden; }
+/* With Show hints off, field keyboard help stays an accessible description only. */
+.field-container.field-container--no-hints .field-stage .field-keyboard-help { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.field-container--no-hints:has(.field-stage--keyboard) .field-topline { visibility: visible; }
+.field-preview-banner { top: 48px; }
+.neighbor-legend { top: 48px; }
 /* Keep camera actions below the floating section row, including its scrollbar. */
 .field-container .stage-three__controls { top: 72px; max-width: calc(100% - 24px); flex-wrap: wrap; }
 .field-container--preview .stage-three__controls { top: auto; bottom: 72px; }
@@ -64,6 +80,9 @@
 .statusbar { min-height: 28px; padding: 4px 14px; }
 /* Selection actions stay above the independently scrolling Inspector sections. */
 .selection-bar { flex-shrink: 0; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+/* Where focus lands when a preview's Apply or Cancel leaves with it (#178). */
+.selection-bar:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.field-container:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .selection-bar-heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 26px; }
 .selection-bar-heading .selection-count { font-size: 13px; color: var(--text); }
 .selection-bar-heading > button { display: inline-flex; align-items: center; gap: 4px; background: transparent; font-size: 12px; color: var(--muted); border-radius: 4px; }
@@ -104,34 +123,85 @@
 .transform-preview-banner strong { font-size: 12px; line-height: 1.4; }
 .transform-preview-banner--error { border-color: #f6aaa0; background: #54271ff5; color: #fff0ed; }
 @media (max-width: 1250px) {
-  .app-header { gap: 6px 10px; }
-  .brand > span:first-of-type { display: none; }
   .project-file-state { flex-basis: 120px; }
-  .inspector { width: 235px; min-width: 235px; }
   .audio-attach { max-width: 125px; }
-  .transport-options select { width: 65px; }
   .count-display { gap: 4px; }
   .count-display > span { display: none; }
 }
 @media (max-width: 1000px) {
-  .app-header { padding: 5px 10px; }
   .canvas-toolbar { margin-top: 4px; padding-top: 3px; padding-bottom: 3px; }
-  .header-actions { flex-wrap: wrap; }
   .canvas-tools { gap: 4px; }
   .tool-divider { margin: 0 2px; }
-  .transport { justify-content: center; }
-  .transport-options { flex-basis: 100%; justify-content: center; }
-  .count-display { flex: 0 0 auto; }
   .field-topline > span:last-child { display: none; }
 }
 .field-container.is-3d { min-height: var(--camera-min-height, 180px); }
 .field-container.is-3d .stage-three__controls { top: var(--camera-top, 72px); bottom: auto; }
-.field-display-preferences > .microcopy { margin-bottom: 12px; }
 .formation-panel .preview-formation { width: 100%; margin-top: 8px; }
 .formation-parameters { margin-top: 10px; }
+.formation-assignment > :first-child { grid-column: 1 / -1; }
 .formation-panel .transform-result { margin-top: 8px; }
 .formation-handles { color: #8dc8ff; }
 .display-color-control { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
 .display-color-control input[type=color] { width: 48px; height: 34px; }
 .display-color-control input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
 .display-color-control input[type=color]::-webkit-color-swatch { border: 0; border-radius: 3px; }
+/* A clean production that was never saved is neutral, not a saved-file success. */
+.status-dot.idle { background: var(--muted); }
+/* Preferences: four headed groups, all mounted, under a jump nav pinned flush with the dialog top (-24px offsets .modal padding). */
+.preferences-nav { position: sticky; top: -24px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; margin: 0 -24px 18px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.preferences-nav .button { min-height: 30px; padding: 5px 11px; }
+.preferences-section + .preferences-section { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+.preferences-section > h3 { font-size: 15px; font-weight: 650; color: var(--text); margin-bottom: 14px; }
+.preferences-section > h3:focus { outline: none; }
+.preferences-section > h3:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.preferences-section > h3 + .modal-subtitle { margin-top: 0; }
+.preferences-section .shortcut-preferences { margin: 0 0 12px; padding-top: 0; border-top: 0; }
+/* Export: the PDF section owns its contents choice; other formats form a vertical list. */
+.export-pdf { margin: 12px 0 0; }
+.export-secondary { display: grid; gap: 8px; margin-bottom: 16px; }
+.export-secondary > button { justify-content: space-between; width: 100%; }
+/* UI-scale-aware breakpoints (#178). .studio carries data-header, data-transport and data-height from
+   src/editor/breakpoints.ts, computed from the effective viewport (window px ÷ UI scale), so raw-pixel media
+   queries never decide them. The header and transport keep one row; folded controls live in Menu or More. */
+.studio:not([data-header=full]) .app-header { gap: 8px 10px; padding: 5px 10px; }
+.studio:not([data-header=full]) .brand > span:first-of-type, .studio:not([data-header=full]) .file-menu .header-label { display: none; }
+.studio[data-header=narrow] .app-header .header-label { display: none; }
+.studio[data-header=narrow] .app-header > .header-divider { display: none; }
+.studio[data-header=narrow] .workspace-tab { padding: 5px 7px; }
+.studio[data-header=narrow] .header-actions > .header-save { padding: 8px 10px; gap: 3px; }
+/* The project title yields space first and never wraps the header; file status stays on its own line. */
+.studio .app-header > .project-file-state { flex: 1 1 0; min-width: 0; }
+.studio:not([data-header=full]) .project-file-state .save-state { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.studio:not([data-header=full]) .project-file-state .save-state .status-dot { margin-right: 6px; vertical-align: middle; }
+.studio .file-menu .dropdown { max-height: calc(var(--viewport-height, 100dvh) - 56px); overflow-y: auto; }
+/* Transport: one row in every tier. Options yield first (audio label, then the More menu holds them); the
+   play and set controls never shrink; the readout clips before anything wraps. */
+.studio .timeline .transport { flex-wrap: nowrap; }
+.studio .timeline .transport-options { flex: 0 1 auto; min-width: 0; flex-wrap: nowrap; }
+.studio .timeline .count-display { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
+.studio .timeline .count-display .move-count { min-width: 0; overflow: hidden; }
+.studio .timeline .count-display .move-count > *, .studio .timeline .move-heading .score-readout { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.studio .timeline .count-display .show-count, .studio .timeline .count-display > .icon-button { flex-shrink: 0; }
+.studio:not([data-transport=full]) .timeline .transport-options > .audio-attach .audio-file-label { display: none; }
+.studio:not([data-transport=full]) .timeline .transport-options > .audio-attach { width: 26px; max-width: 26px; justify-content: center; gap: 0; }
+.overflow-option-label { display: none; }
+.transport-speed { display: contents; }
+.overflow-menu { position: relative; display: flex; }
+/* Below the smallest supported layout the workspace scrolls; the timeline stays pinned so playback never leaves view. */
+.studio .timeline { position: sticky; bottom: 0; z-index: 5; }
+/* An open More playback options stays above a notification toast (z-index 100), which would otherwise cover its options. */
+.studio .timeline:has(.overflow-menu[data-overflow-open]) { z-index: 101; }
+.overflow-menu-panel { position: absolute; z-index: 40; display: flex; flex-direction: column; gap: 2px; min-width: 220px; padding: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 10px 35px var(--shadow); }
+.overflow-menu-panel--above { bottom: calc(100% + 6px); left: 0; }
+.overflow-menu-panel--below { top: calc(100% + 6px); right: 0; }
+.overflow-menu-panel .overflow-option-label { display: inline; }
+.studio .overflow-menu-panel > button { width: 100%; max-width: none; height: auto; min-height: 30px; justify-content: flex-start; gap: 8px; padding: 5px 8px; color: var(--text); font-size: 12px; }
+.studio .overflow-menu-panel .audio-attach .audio-file-label { display: inline; }
+.overflow-menu-panel .transport-speed { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 8px; font-size: 12px; color: var(--text); }
+.overflow-menu-panel .transport-speed select { border: 1px solid var(--border); padding: 4px 6px; }
+/* Short windows tighten chrome spacing so the field keeps its share; the field never drops below its floor. */
+.studio[data-height=short] .canvas-toolbar { margin-top: 4px; padding-top: 2px; padding-bottom: 2px; gap: 2px; }
+.studio[data-height=short] .field-container { margin-bottom: 4px; }
+.studio[data-height=short] .timeline { padding-top: 2px; }
+.studio[data-height=short] .timeline .transport { min-height: 42px; padding-top: 2px; padding-bottom: 2px; }
+.studio[data-height=short] .statusbar { min-height: 24px; padding-top: 2px; padding-bottom: 2px; }

@@ -12,7 +12,8 @@ export function commandKeycaps(id: CommandId, variant?: number, platform = short
   else {
     const ids: ShortcutId[] = id === 'tool.select' ? ['tool.box', 'tool.pan', 'tool.lasso'] : id === 'set.select' ? ['set.previous', 'set.next'] : Object.hasOwn(defaultShortcuts, id) ? [id as ShortcutId] : [];
     // Preserve variant indices when an earlier variant is unbound.
-    groups = ids.map(key => key === 'file.export' && !desktop && bindingFor(key, bindings) === 'Primary+P' ? [] : bindingKeycaps(bindingFor(key, bindings), platform)[0] ?? []);
+    // The separate 3D window exists only in the desktop app.
+    groups = ids.map(key => key === 'file.export' && !desktop && bindingFor(key, bindings) === 'Primary+P' || key === 'view.popout' && !desktop ? [] : bindingKeycaps(bindingFor(key, bindings), platform)[0] ?? []);
   }
   if (id === 'history.redo' && platform === 'other' && nativeRedoAlias(bindings)) groups.push(['Ctrl', 'Y']);
   return (variant === undefined ? groups : groups[variant] ? [groups[variant]] : []).filter(keys => keys.length);

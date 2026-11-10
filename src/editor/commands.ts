@@ -25,8 +25,11 @@ import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
-import { currentFormationResult, formationSessionCurrent, formationProject } from './formationSession';
-import { formationAssignmentOrder, formationCenter } from '../formationAssignment';
+import { currentFormationResult, defaultAssignmentMode, formationSessionCurrent, formationProject, sessionAssignmentMode, sessionAssignmentOrder, shortestGeometryKey } from './formationSession';
+import { formationCenter } from '../formationAssignment';
+import type { FormationAssignmentMode } from '../formationPreview';
+import { defaultFormationOptions } from '../formationGeometry';
+import { DEFAULT_ANALYSIS_RULES } from '../analysis/rules';
 import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
 import { isNudgeKey, nudgeDelta, type NudgeRequest } from '../editIncrements';
 import { defaultSpacing, type SpacingOptions } from '../spacing';
@@ -36,6 +39,8 @@ import { currentCoordinateResult, coordinateSessionCurrent } from './coordinateS
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout, type WorkspacePreset } from '../workspaceLayout';
 import type { SelectionSpec } from '../selectionTools';
 import { analysisCommands } from './analysisCommands';
+import { openingMoveNote } from './setList';
+import { projectPatches } from './history';
 import type { ProjectAnalysisRules, MarchingDirection } from '../types';
 import { rehearsalCommands } from './rehearsalCommands';
 import { rehearsalBounds } from '../rehearsal';
@@ -95,7 +100,7 @@ export interface CommandArguments {
   'performers.add-dialog': undefined; 'set.new': undefined; 'set.duplicate': undefined; 'set.insert-before': undefined; 'set.hold': undefined; 'set.previous': undefined; 'set.next': undefined;
   'transform.mirror': undefined; 'view.toggle': undefined; 'display.paths': undefined; 'display.labels': undefined;
   'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
-  'view.select': { view: '2d' | '3d' }; 'workspace.show': { workspace: Workspace };
+  'view.select': { view: '2d' | '3d' }; 'view.popout': undefined; 'view.popout-close': undefined; 'workspace.show': { workspace: Workspace };
   'playback.count-previous': undefined; 'playback.count-next': undefined;
   'selection.tools': undefined; 'selection.close': undefined;
   'selection.section': { id: string; additive?: boolean }; 'selection.invert': undefined;
@@ -135,7 +140,7 @@ export interface CommandArguments {
   'live.edit': { id: string }; 'live.detach': { id: string; ids?: string[] };
   'live.members': { ids: string[] }; 'live.redistribute': undefined;
   'live.copy': { id: string; targetSetId: string };
-  'formation.preview': { kind?: FormationKind };
+  'formation.preview': { kind?: FormationKind; assignmentMode?: FormationAssignmentMode; scaffold?: boolean };
   'formation.scatter': undefined;
   'scatter.display': { travel: boolean };
   'scatter.select': { vertex?: number; slot?: number };
@@ -147,7 +152,7 @@ export interface CommandArguments {
   'formation.bezier': { wave: boolean };
   'formation.bezier-select': { id: string };
   'formation.bezier-update': { bezier: BezierFormation };
-  'formation.update': { options: FormationOptions };
+  'formation.update': { options: FormationOptions; assignmentMode?: FormationAssignmentMode };
   'formation.apply': undefined; 'formation.cancel': undefined;
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
   'metronome.configure': { meter: import('../types').Meter; enabled: boolean; countInBars: number; speed: number };
@@ -206,10 +211,13 @@ const selectSet = (context: CommandContext, index: number) => {
   context.patch('selection', { activeIndex: next }); context.patch('playback', { playing: false, count: setStartCount(project, next), seekVersion: context.getState().playback.seekVersion + 1 });
 };
 
-function reorderSet(c: CommandContext, id: string, target: number) {
+/** Direct moves always confirm; any move into or out of the opening says how show timing changed. */
+function reorderSet(c: CommandContext, id: string, target: number, announce = false) {
   const state = c.getState(), activeId = state.project.present.sets[state.selection.activeIndex].id;
+  const from = state.project.present.sets.findIndex(set => set.id === id), note = openingMoveNote(from, target);
   c.edit(p => moveSetTo(p, id, target));
   selectSet(c, c.getState().project.present.sets.findIndex(set => set.id === activeId));
+  if (announce || note) c.patch('ui', { toast: `Moved set to position ${target + 1}.${note}` });
 }
 
 const canOpenSetCreation = (s: EditorState) => canNavigate(s) && s.project.present.sets.length < PROJECT_LIMITS.sets;
@@ -261,7 +269,7 @@ export const commandRegistry = {
     } }),
   'path.operations-open': simple('path.operations-open', 'Move operations', 'Preview move count rescaling, selected-path reversal and interval copy/paste.', canReviewPaths, c => showDialog(c, 'path-operations')),
   'path.operation-apply': define({ id: 'path.operation-apply', name: 'Apply move operation', description: 'Recheck context and apply the complete move operation as one undo action.', arguments: { moveId: 'reviewed move', activeSetId: 'reviewed picture', ids: 'explicit selection', revision: 'reviewed revision', epoch: 'project session', operation: 'resize | reverse | paste' },
-    enabled: (s,a) => pathReviewCurrent(s,a), execute: (c,a) => { c.edit(p => pathOperationPlan(p,a,c.getState().ui.movementClipboard).project);selectSet(c,c.getState().selection.activeIndex);c.patch('ui',{dialog:null}); } }),
+    enabled: (s,a) => pathReviewCurrent(s,a), execute: (c,a) => { const p=c.getState().project.present,next=pathOperationPlan(p,a,c.getState().ui.movementClipboard).project;if(!projectPatches(p,next).length)throw Error('The reviewed operation does not change the move.');c.edit(()=>next);selectSet(c,c.getState().selection.activeIndex);c.patch('ui',{dialog:null}); } }),
   'path.copy-intervals': define({ id: 'path.copy-intervals', name: 'Copy movement intervals', description: 'Copy a contiguous selected range to this production’s session clipboard without changing history.', arguments: { moveId:'reviewed move',activeSetId:'reviewed picture',ids:'explicit selection',revision:'reviewed revision',epoch:'project session',performerId:'source performer',segmentIds:'contiguous intervals',wholeMove:'include outer holds' },
     enabled: (s,a) => pathReviewCurrent(s,a) && a.ids.length === 1 && a.ids[0] === a.performerId,
     execute: (c,a) => { const p=c.getState().project.present,index=p.moves.findIndex(m=>m.id===a.moveId),clipboard=copyIntervals(p,index,a.performerId,a.segmentIds,a.wholeMove,uid(),a.epoch);c.patch('ui',{movementClipboard:clipboard,dialog:null,toast:`Copied ${clipboard.intervals.length} intervals from ${clipboard.sourceLabel}`}); } }),
@@ -334,6 +342,10 @@ export const commandRegistry = {
   'transform.mirror': simple('transform.mirror', 'Mirror across 50', 'Preview a physical midfield mirror on the selected performers.', canIncrement, c => beginTransform(c, { operation: 'across-50' })),
   'view.toggle': simple('view.toggle', 'Toggle 2D / 3D', 'Switch between field editing and the 3D rehearsal preview.', canNavigate, c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: s.ui.view === '2d' ? '3d' : '2d' }); }),
   'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Open the 2D field or 3D rehearsal view.', arguments: { view: '2d | 3d' }, enabled: (s, a) => canNavigate(s) && !!a && ['2d', '3d'].includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
+  // Opening moves an inline 3D view back to 2D so only one renderer runs; the window itself never edits.
+  'view.popout': simple('view.popout', 'Open 3D window', 'Show the 3D preview in its own window that follows this editor’s set, count, playback and selection. If it is open, bring it to the front.', s => s.ui.popout3d !== 'unavailable',
+    c => { const s = c.getState(); c.patch('ui', s.ui.popout3d === 'open' ? { popout3dFocus: s.ui.popout3dFocus + 1 } : { popout3d: 'open', ...(s.ui.view === '3d' ? { view: '2d' } : {}) }); }),
+  'view.popout-close': simple('view.popout-close', 'Close 3D window', 'Close the separate 3D window. The 3D preview option returns to the field area.', s => s.ui.popout3d === 'open', c => c.patch('ui', { popout3d: 'closed' })),
   'workspace.show': define({ id: 'workspace.show', name: 'Show workspace', description: 'Open Design, Cast or the Production sheet.', arguments: { workspace: 'design | cast | production' }, enabled: (s, a) => canNavigate(s) && !!a && ['design', 'cast', 'production'].includes(a.workspace), execute: (c, a) => c.patch('ui', { workspace: a.workspace, castPanelOpen: false }) }),
   'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', idle, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
   'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle all labels, selected/focused labels and hidden labels.', idle, c => { const u = c.getState().ui; c.patch('ui', !u.showLabels ? { showLabels: true, selectionLabelsOnly: false } : !u.selectionLabelsOnly ? { selectionLabelsOnly: true } : { showLabels: false }); }),
@@ -350,7 +362,7 @@ export const commandRegistry = {
     execute: c => c.patch('ui', { focusMode: !c.getState().ui.focusMode, menu: false }) }),
   'cast.show': define({ id: 'cast.show', name: 'Show Cast', description: 'Dock the Cast beside the field, expand its table or return to the Inspector without changing selection.', arguments: { mode: 'panel | table | closed' },
     enabled: (s, a) => !!a && ['panel', 'table', 'closed'].includes(a.mode) && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview,
-    execute: (c, a) => { if (a.mode === 'panel') { const p = c.getState().preferences.value; c.patch('preferences', { value: { ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: false } } }); } c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel' }); } }),
+    execute: (c, a) => { const p = c.getState().preferences.value, restored = a.mode === 'panel' && p.workspaceLayout.castCollapsed; if (a.mode === 'panel') c.patch('preferences', { value: { ...p, workspaceLayout: { ...p.workspaceLayout, castCollapsed: false } } }); c.patch('ui', { workspace: a.mode === 'table' ? 'cast' : 'design', castPanelOpen: a.mode === 'panel', ...(a.mode === 'panel' ? { castReveal: c.getState().ui.castReveal + 1, castRevealRestored: restored, focusMode: false } : {}) }); } }),
   'selection.nudge': define({ id: 'selection.nudge', name: 'Nudge selection', description: 'Move the explicit selection using the configured normal or fast increment and production snapping rules.', arguments: { key: 'ArrowLeft | ArrowRight | ArrowUp | ArrowDown', fast: 'boolean?', fieldRelative: 'boolean? (default: screen direction)' },
     enabled: (s, a) => canIncrement(s) && !!a && isNudgeKey(a.key) && (a.fast === undefined || typeof a.fast === 'boolean') && (a.fieldRelative === undefined || typeof a.fieldRelative === 'boolean'),
     execute: (c, a) => { const s = c.getState(); const delta = nudgeDelta(s.preferences.value, s.project.present, a); const index = s.selection.activeIndex;
@@ -361,7 +373,8 @@ export const commandRegistry = {
     enabled: (s, a) => canIncrement(s) && !!a && ['rotate', 'scale'].includes(a.operation) && [-1, 1].includes(a.direction),
     execute: (c, a) => { const p = c.getState().preferences.value; beginTransform(c, { angle: a.operation === 'rotate' ? a.direction * p.rotationStep : 0, scale: a.operation === 'scale' ? 1 + a.direction * p.scaleStep / 100 : 1 }); } }),
   'snapping.update': define({ id: 'snapping.update', name: 'Change grid and snapping', description: 'Save placement rules with this production without moving any performers.', arguments: { settings: 'SnapSettings' }, enabled: s => !s.ui.pendingDraft && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview && !s.project.transactionName,
-    execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => ({ ...p, snapping })); } }),
+    // Equal effective rules are a no-op: an untouched production keeps no explicit snapping and gains no undo entry.
+    execute: (c, a) => { const snapping = validateSnapSettings(a.settings); c.edit(p => { const current = p.snapping ?? DEFAULT_SNAPPING; return (Object.keys(snapping) as (keyof SnapSettings)[]).every(k => snapping[k] === current[k]) ? p : { ...p, snapping }; }); } }),
   'positions.place': define({ id: 'positions.place', name: 'Place performer', description: 'Place a performer using the active snap targets; the other coordinate stays unchanged.', arguments: { index: 'integer', id: 'performerId', axis: 'x | y', value: 'yards' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && !!s.project.present.sets[a.index].positions[a.id],
     execute: (c, a) => { const s = c.getState(); const project = s.project.present; const positions = project.sets[a.index].positions;
       if (!['x', 'y'].includes(a.axis) || !Number.isFinite(a.value) || a.value < 0 || a.value > (a.axis === 'x' ? project.field.width : project.field.height)) throw new Error('Enter a coordinate inside the field.');
@@ -388,7 +401,7 @@ export const commandRegistry = {
     execute:(c,a)=>{ const s=c.getState(), session=s.ui.formationPreview!;
       if(session.assignmentConstraints)throw Error('Clear assignment constraints in Optimize assignment before changing members or redistributing slots.');
       if (!Array.isArray(a.ids) || new Set(a.ids).size!==a.ids.length || a.ids.some(id=>!s.project.present.performers.some(p=>p.id===id))) throw Error('Choose unique performers in this cast.');
-      const ids=s.project.present.performers.filter(p=>a.ids.includes(p.id)).map(p=>p.id), order=formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions,ids,session.kind,session.options);
+      const ids=s.project.present.performers.filter(p=>a.ids.includes(p.id)).map(p=>p.id), order=sessionAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions,ids,session.kind,session.options,sessionAssignmentMode(session));
       c.patch('ui',{formationPreview:null}); c.patch('selection',{selectedIds:ids});
       c.patch('ui',{formationPreview:session.scatter?scatterMembers(session,ids,s.project.present.sets[s.selection.activeIndex].positions):{...session,ids,order,live:{...session.live!,slotCount:Math.max(1,ids.length),slots:ids.map((_,i)=>i)}}});
     } }),
@@ -405,21 +418,31 @@ export const commandRegistry = {
       selectSet(c,index); const order=source.members.map(m=>m.performerId),ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
       c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,assignmentConstraints:source.assignmentConstraints?structuredClone(source.assignmentConstraints):undefined,scatter:source.scatter?structuredClone(source.scatter):undefined,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
     } }),
-  'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
+  'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?', assignmentMode: 'shortest | position | roster?', scaffold: 'boolean? (Scatter/Bézier: preference size at the centroid, positional or roster order)' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
       const s = c.getState(); const kind = a.kind ?? s.ui.formation;
       const ids = s.ui.formationPreview?.ids ?? s.project.present.performers.filter(p => s.selection.selectedIds.includes(p.id)).map(p => p.id);
       const positions = s.project.present.sets[s.selection.activeIndex].positions;
-      const center = s.ui.formationPreview?.options.center ?? formationCenter(positions, ids);
-      const options: FormationOptions = { assignment: 'position', ...(s.ui.formationPreview?.live ? s.ui.formationPreview.options : s.ui.formationDrafts[kind] ?? { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns }), center };
-      const previous = s.ui.formationPreview;
+      const previous = s.ui.formationPreview, inherit = !!previous && (!!previous.live || previous.kind === kind);
+      const center = previous?.options.center ?? formationCenter(positions, ids), saved = previous?.live ? previous.options : s.ui.formationDrafts[kind];
+      const preferred = { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns };
+      // Session drafts and live edits win; a first use is sized from the selection and fit inside the field.
+      const seeded: FormationOptions = saved || a.scaffold ? { assignment: 'position', ...(saved ?? preferred), center } : defaultFormationOptions(kind, positions, ids, preferred, s.project.present.field, (s.project.present.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES).minimumSpacing, previous?.options.center);
+      const inherited = inherit ? sessionAssignmentMode(previous!) : undefined;
+      const remembered = s.ui.formationAssignmentModes[kind];
+      let mode = a.assignmentMode ?? inherited ?? (a.scaffold ? (seeded.assignment === 'roster' ? 'roster' : 'position') : remembered && remembered !== 'shortest' ? remembered : defaultAssignmentMode(ids.length));
+      if (a.scaffold && mode === 'shortest') mode = 'position'; // Scatter and Bézier slots are not the generated shape's slots.
+      const options: FormationOptions = { ...seeded, assignment: mode === 'roster' ? 'roster' : 'position' };
       const assignmentRotation = previous?.kind === kind ? previous.assignmentRotation ?? options.rotation : options.rotation;
-      const order = (previous?.live || previous?.kind === kind) && previous?.order ? previous.order : formationAssignmentOrder(positions, ids, kind, options);
-      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
+      // A live formation's member slots stay authoritative here; formation.update reassigns them explicitly.
+      const kept = inherit && !!previous?.order && (inherited === mode || !!previous.live);
+      const order = kept ? previous!.order! : sessionAssignmentOrder(positions, ids, kind, options, mode);
+      const assignmentSolvedFor = mode !== 'shortest' ? undefined : kept ? previous!.assignmentSolvedFor : shortestGeometryKey(kind, options);
+      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
   'formation.scatter': define({id:'formation.scatter',name:'Preview scatter formation',description:'Generate a seeded arrangement for explicitly selected performers, then review and Apply or Cancel.',arguments:{},
     enabled:s=>(editable(s)||formationSessionCurrent(s))&&!s.ui.pendingDraft&&!s.ui.dialog&&!s.project.transactionName&&s.selection.selectedIds.length>0,
-    execute:c=>{commandRegistry['formation.preview'].execute(c,{kind:'line'});const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
+    execute:c=>{commandRegistry['formation.preview'].execute(c,{kind:'line',scaffold:true});const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
       const live=session.live??{id:uid(),name:uniqueLiveName(existing,'Scatter'),slotCount:session.ids.length,slots:session.ids.map((_,i)=>i)};
       const scatter=generateScatter(scatterPreset(session.options.center,s.project.present.field),live.slotCount,{},s.project.present.field);
       c.patch('ui',{formationPreview:{...session,kind:'block',options:{...session.options,rotation:0,columns:500},scatter,live,bezier:undefined}});} }),
@@ -458,7 +481,7 @@ export const commandRegistry = {
       c.patch('ui',{formationPreview:{...session,scatter,scatterError:undefined}});} }),
   'formation.bezier': define({id:'formation.bezier',name:'Preview Bézier formation',description:'Shape an editable curve for at least two explicitly selected performers.',arguments:{wave:'boolean'},
     enabled:s=>(editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length>=2,
-    execute:(c,a)=>{commandRegistry['formation.preview'].execute(c,{kind:'curve'}); const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
+    execute:(c,a)=>{commandRegistry['formation.preview'].execute(c,{kind:'curve',scaffold:true}); const s=c.getState(),session=s.ui.formationPreview!,existing=s.project.present.sets[s.selection.activeIndex].liveFormations??[];
       c.patch('ui',{formationPreview:{...session,bezier:bezierPreset(session.options.center,a.wave,s.project.present.field),live:session.live??{id:uid(),name:uniqueLiveName(existing,a.wave?'Bézier wave':'Bézier curve'),slotCount:session.ids.length,slots:session.ids.map((_,i)=>i)}}});} }),
   'formation.bezier-select': define({id:'formation.bezier-select',name:'Select curve anchor',description:'Show this anchor in the Inspector without editing geometry.',arguments:{id:'anchorId'},
     enabled:(s,a)=>formationSessionCurrent(s) && !s.ui.pendingDraft && !!s.ui.formationPreview?.bezier?.anchors.some(v=>v.id===a?.id),
@@ -466,16 +489,20 @@ export const commandRegistry = {
   'formation.bezier-update': define({id:'formation.bezier-update',name:'Adjust Bézier formation',description:'Preview anchor and tangent edits; Apply accepts the entire preview as one named undo transaction.',arguments:{bezier:'BezierFormation'},
     enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.bezier && !s.ui.pendingDraft,
     execute:(c,a)=>{const s=c.getState(); const bezier=validateBezierFormation(a.bezier,s.project.present.field);c.patch('ui',{formationPreview:{...s.ui.formationPreview!,bezier}});} }),
-  'formation.update': define({ id: 'formation.update', name: 'Adjust formation preview', description: 'Update shape parameters without changing the project or history.', arguments: { options: 'FormationOptions' }, enabled: formationSessionCurrent,
-    execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!;
-      const options = { ...a.options, assignment: a.options.assignment ?? session.options.assignment ?? 'position' };
-      const changedMode = options.assignment !== session.options.assignment;
+  'formation.update': define({ id: 'formation.update', name: 'Adjust formation preview', description: 'Update shape parameters without changing the project or history. An explicit assignment mode reassigns destinations.', arguments: { options: 'FormationOptions', assignmentMode: 'shortest | position | roster?' }, enabled: formationSessionCurrent,
+    execute: (c, a) => { const s = c.getState(); const session = s.ui.formationPreview!, current = sessionAssignmentMode(session);
+      // Geometry edits resend options.assignment ('position' under shortest travel); only a different value or an explicit mode reassigns.
+      const mode = a.assignmentMode ?? (a.options.assignment !== undefined && a.options.assignment !== session.options.assignment ? a.options.assignment : current);
+      if ((session.scatter || session.bezier) && mode === 'shortest') throw Error('Scatter and Bézier formations use positional or roster order.');
+      const options: FormationOptions = { ...a.options, assignment: mode === 'roster' ? 'roster' : 'position' };
+      const changedMode = mode !== current || a.assignmentMode !== undefined;
       if(session.assignmentConstraints&&changedMode)throw Error('Change the mapping in Optimize assignment, or explicitly clear its constraints first.');
-      if(session.scatter){c.patch('ui',{formationPreview:scatterMembers(session,session.ids,s.project.present.sets[s.selection.activeIndex].positions,options)});return;}
+      if(session.scatter){c.patch('ui',{formationPreview:{...scatterMembers(session,session.ids,s.project.present.sets[s.selection.activeIndex].positions,options),assignmentMode:mode}});return;}
       const assignmentRotation = changedMode ? options.rotation : session.assignmentRotation ?? session.options.rotation;
       const reassign = changedMode || !session.order || (!session.live && session.kind === 'block' && options.columns !== session.options.columns);
-      const order = reassign ? formationAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, { ...options, rotation: assignmentRotation }) : session.order;
-      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, assignmentReviewed:reassign?undefined:session.assignmentReviewed, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options } });
+      const order = reassign ? sessionAssignmentOrder(s.project.present.sets[s.selection.activeIndex].positions, session.ids, session.kind, options, mode, assignmentRotation) : session.order;
+      const assignmentSolvedFor = mode !== 'shortest' ? undefined : reassign ? shortestGeometryKey(session.kind, options) : session.assignmentSolvedFor;
+      c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:reassign?undefined:session.assignmentReviewed, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options }, ...(session.bezier ? {} : { formationAssignmentModes: { ...s.ui.formationAssignmentModes, [session.kind]: mode } }) });
     } }),
   'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
     execute: c => c.patch('ui', { formationPreview: null }) }),
@@ -533,7 +560,7 @@ export const commandRegistry = {
   'set.reorder': define({ id: 'set.reorder', name: 'Move set', description: 'Move a set earlier or later in the show. Incoming timing follows its destination.', arguments: { index: 'integer', direction: '-1 | 1' }, enabled: (s, a) => canNavigate(s) && !!a && [-1, 1].includes(a.direction) && setExists(s, a.index) && setExists(s, a.index + a.direction), execute: (c, a) => reorderSet(c, c.getState().project.present.sets[a.index].id, a.index + a.direction) }),
   'set.move-to': define({ id: 'set.move-to', name: 'Move set to position', description: 'Reorder a set directly in one undo action. Incoming timing follows its destination; the current set stays selected.', arguments: { id: 'stable set ID', target: 'final zero-based position', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => canNavigate(s) && !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && setExists(s, a.target) && s.project.present.sets.some((set, i) => set.id === a.id && i !== a.target),
-    execute: (c, a) => reorderSet(c, a.id, a.target) }),
+    execute: (c, a) => reorderSet(c, a.id, a.target, true) }),
   'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' }, enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers, execute: (c, a) => { c.edit(p => { const start = p.performers.length; return { ...p, performers: [...p.performers, ...a.performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...Object.fromEntries(a.performers.map((performer, i) => [performer.id, { x: 5 + ((start + i) % 40) * 2.3, y: Math.max(1, p.field.height - 3 - Math.floor((start + i) / 40) * 2.3) }])) } })) }; }); c.patch('selection', { selectedIds: a.performers.map(p => p.id) }); c.patch('ui', { dialog: null }); } }),
   'performers.remove': define({ id: 'performers.remove', name: 'Remove performers', description: 'Remove roster members and their positions in every set.', arguments: { ids: 'string[]' }, enabled: (s, a) => a.ids.some(id => s.project.present.performers.some(p => p.id === id)), execute: (c, a) => { if(c.getState().project.present.moves.some(m=>m.groupMotions?.some(g=>g.members.some(id=>a.ids.includes(id)))))throw Error('Remove these performers from group movement before deleting them from Cast.'); c.edit(p => ({ ...p, performers: p.performers.filter(person => !a.ids.includes(person.id)), ...(p.selectionGroups ? { selectionGroups: p.selectionGroups.map(g => ({ ...g, performerIds: g.performerIds.filter(id => !a.ids.includes(id)) })) } : {}), moves: p.moves.map(move => ({ ...move, ...(move.marchingDirections ? { marchingDirections: Object.fromEntries(Object.entries(move.marchingDirections).filter(([id]) => !a.ids.includes(id))) } : {}), paths: Object.fromEntries(Object.entries(move.paths).filter(([id]) => !a.ids.includes(id))) })), sets: p.sets.map(set => ({ ...set, positions: Object.fromEntries(Object.entries(set.positions).filter(([id]) => !a.ids.includes(id))) })) })); c.patch('selection', { selectedIds: [] }); c.patch('ui', { dialog: null }); } }),
   'performer.update': define({ id: 'performer.update', name: 'Edit performer', description: 'Update a performer name or section across the show.', arguments: { id: 'string', update: 'name? | sectionId?' }, enabled: (s, a) => s.project.present.performers.some(p => p.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, performers: p.performers.map(person => person.id === a.id ? { ...person, ...a.update } : person) })) }),

@@ -7,7 +7,7 @@ import { HelpButton } from './ControlHelp';
 import { Button } from './EditorControls';
 import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
-import { formatTimelineCount as fmt, timelineLabels, timelineWindow } from './timelineNavigation';
+import { formatTimelineCount as fmt, formatTransportCount, timelineLabels, timelineWindow, transportCount } from './timelineNavigation';
 import './timeline.css';
 import { ProblemTimeline, ProblemTimelineLabel } from './ProblemTimeline';
 
@@ -65,6 +65,8 @@ export function TimelineTracks({ controller }: { controller: EditorController })
         <div className="tracks">
           <div className="count-ruler">{labels.filter(label=>marks.every(group=>Math.abs(label.count-group[0].count)/span*width>55)).map(label => <span key={label.count} style={{ left: `${percent(label.count)}%` }}>{label.label}</span>)}{marks.map(group=>{const mark=group[0],p=scorePosition(score,mark.count);return <HelpButton key={mark.count} title={group.length===1?`Rehearsal mark ${mark.label}`:`${group.length} rehearsal marks`} description={group.map(m=>`${m.label} · ${scoreLabel(score,m.count)} · count ${m.count}`).join('; ')} className="score-mark" style={{left:`${percent(mark.count)}%`}} onClick={()=>group.length===1?controller.dispatch('score.seek',{measure:p.measure,beat:p.beat}):controller.dispatch('score.open')}>{group.length===1?mark.label:`${group.length} marks`}</HelpButton>;})}</div>
           <div className="set-track">
+            {/* The opening set leads the DOM so Tab follows set order. */}
+            {view.start === 0 && <HelpButton command="set.select" showShortcut={false} title={`Opening set: ${project.sets[0].name}`} description="Set 1 is the opening picture at show count zero." className={`timeline-opening ${index === 0 ? 'active' : ''}`} onClick={() => selectSet(0)}>01</HelpButton>}
             {arrivals.filter(a => a.index > 0 && a.count > view.start && a.from < view.start + span).map(a => {
               const left = Math.max(0, percent(a.from)), right = Math.min(100, percent(a.count));
               const pixels = (right - left) / 100 * width;
@@ -72,7 +74,6 @@ export function TimelineTracks({ controller }: { controller: EditorController })
                 <span>{pixels >= 22 ? String(a.index + 1).padStart(2, '0') : ''}</span>{pixels >= 90 && <span className="timeline-set-name">{a.set.name}</span>}
               </HelpButton>;
             })}
-            {view.start === 0 && <HelpButton command="set.select" showShortcut={false} title={`Opening set: ${project.sets[0].name}`} description="Set 1 is the opening picture at show count zero." className={`timeline-opening ${index === 0 ? 'active' : ''}`} onClick={() => selectSet(0)}>01</HelpButton>}
           </div>
           <ProblemTimeline start={view.start} span={span} width={width} />
           {/* Musical labels share the ruler so the field retains its height. */}
@@ -84,7 +85,7 @@ export function TimelineTracks({ controller }: { controller: EditorController })
             return at >= view.start && at <= view.start + span ? <i key={i} style={{ left: `${percent(at)}%`, height: `${Math.max(2, value * 95)}%` }} /> : null;
           }) : <span>{audioLoading ? 'Loading audio…' : 'Audio attached'}</span>}</div>}
           {count >= view.start && count <= view.start + span && <div className="playhead" style={{ left: `${percent(count)}%` }}><i /></div>}
-          <input className="timeline-scrubber" type="range" min={view.start} max={Math.min(duration, view.start + span) || 1} step="any" value={Math.max(view.start, Math.min(view.start + span, count))} aria-label="Timeline playhead" aria-valuetext={`Show count ${fmt(count)} · ${scoreLabel(score,Math.min(duration,Math.max(0,count)))}`} onChange={e => scrub(Number(e.target.value))} />
+          <input className="timeline-scrubber" type="range" min={view.start} max={Math.min(duration, view.start + span) || 1} step="any" value={Math.max(view.start, Math.min(view.start + span, count))} aria-label="Timeline playhead" aria-valuetext={`Show count ${formatTransportCount(count, playing)} · ${scoreLabel(score,transportCount(Math.min(duration,Math.max(0,count)), playing))}`} onChange={e => scrub(Number(e.target.value))} />
         </div>
       </div>
     </div>

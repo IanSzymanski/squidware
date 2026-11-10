@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, selectNativeOption, waitFor, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { auditText } = require('./accessibility-audit.cjs');
 const { root, output, profile } = require(process.argv.find(a => a.startsWith('--themes-manifest=')).slice('--themes-manifest='.length));
 const phase = process.argv.find(a => a.startsWith('--phase='))?.slice(8);
@@ -20,7 +20,6 @@ const wait = (source, label) => waitFor(() => evaluate(source), label, { timeout
 const key = (code, modifiers = []) => sendKey(window, code, modifiers, 20);
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 function instrument() {
-  window.confirm = () => true;
   window.__themesQA = { editor: null, errors: [] };
   window.addEventListener('error', e => window.__themesQA.errors.push(e.message));
   window.addEventListener('unhandledrejection', e => window.__themesQA.errors.push(String(e.reason)));
@@ -66,7 +65,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'theme window'); await wait("!!document.querySelector('.field-stage__svg')", 'initial renderer');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source }));
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'theme store');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true }); await viewport(1366, 768);
     if (phase === 'restart') {
@@ -88,7 +87,9 @@ app.whenReady().then(async () => {
         await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(id)}])`);
         await viewport(1366, 768); await preferences(); await select('Interface theme', theme); await select('UI scale', 1);
         await wait(`document.documentElement.dataset.theme===${JSON.stringify(theme)}`, 'applied theme');
-        await audit(theme + ' preferences'); await capture(`themes-${theme}-preferences.png`); await close();
+        await audit(theme + ' preferences'); await capture(`themes-${theme}-preferences.png`);
+        await click('.preferences-nav [aria-label="Shortcuts"]'); await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Shortcuts' && document.querySelector('.shortcut-preferences').open", 'Shortcuts section');
+        await audit(theme + ' shortcut preferences'); await close();
         await focus('.header-actions [aria-label="Save"]');
         await focus(`[data-performer-id="${id}"]`);
         await wait("getComputedStyle(document.activeElement.querySelector('.field-focus-ring')).visibility==='visible'", 'field keyboard focus');
@@ -106,7 +107,8 @@ app.whenReady().then(async () => {
         await evaluate("document.querySelector('.preferences-fields [aria-invalid=true]').focus()"); await key('Escape'); await close();
         await click('.canvas-toolbar [aria-label="Fit field"]');
         await viewport(1000, 700); await preferences(); await select('UI scale', 1.25); await audit(theme + ' 125% preferences'); await close();
-        await click('[aria-label="Workspace layout"]'); await audit(theme + ' enlarged layout controls'); await capture(`themes-${theme}-layout.png`); await key('Escape');
+        // #178: at 125% in a 1000 px window the effective width is 800 px, so Layout lives in Menu.
+        await click('[aria-label="Project menu"]'); await click('.dropdown [aria-label="Workspace layout"]'); await wait("!!document.querySelector('#workspace-layout-options')", 'layout options from Menu'); await audit(theme + ' enlarged layout controls'); await capture(`themes-${theme}-layout.png`); await key('Escape');
         await click('[aria-label="Selection tools and groups"]'); await audit(theme + ' enlarged selection tools'); await capture(`themes-${theme}-selection.png`); await click('[aria-label="Close selection tools"]');
         await click('.header-actions [aria-label="Save"]'); await wait(`${state}.fileSession.fileOperation===null`, 'native save');
         const hit = await evaluate(`(() => { const svg=document.querySelector('.field-stage__svg'), matrix=document.querySelector('[data-field-geometry]').getScreenCTM(); const bounds=svg.getBoundingClientRect(); for(const person of ${state}.project.present.performers){const p=${state}.project.present.sets[0].positions[person.id], point=new DOMPoint(p.x,p.y).matrixTransform(matrix); const target=document.elementFromPoint(point.x,point.y); if(point.x>bounds.left && point.x<bounds.right && target?.closest('.field-stage__svg')) return {id:person.id,x:point.x,y:point.y};} return null;})()`);
@@ -114,7 +116,11 @@ app.whenReady().then(async () => {
         for(const type of ['mouseMoved','mousePressed','mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,x:hit.x,y:hit.y,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
         await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(hit.id)}`, 'scaled native field hit');
         await audit(theme + ' 125% design'); await capture(`themes-${theme}-1000-125.png`);
-        await viewport(850, 650); await preferences(); await select('UI scale', 1.5); await audit(theme + ' 150% preferences'); await close();
+        await viewport(850, 650); await preferences(); await select('UI scale', 1.5); await audit(theme + ' 150% preferences');
+        // At 150% in a small window the section nav stays on one row, pinned to the dialog top above the Editing heading.
+        await click('.preferences-nav [aria-label="Editing"]');
+        await wait("(()=>{const d=document.querySelector('dialog[open]').getBoundingClientRect(),n=document.querySelector('.preferences-nav'),r=n.getBoundingClientRect(),h=document.activeElement.getBoundingClientRect();return document.activeElement.textContent==='Editing'&&n.querySelector('[aria-pressed=true]')?.textContent==='Editing'&&new Set([...n.children].map(c=>Math.round(c.getBoundingClientRect().top))).size===1&&Math.abs(r.top-d.top)<3&&h.top>=r.bottom&&h.bottom<=d.bottom})()", 'pinned 150% section nav');
+        await audit(theme + ' 150% Editing preferences'); await close();
         await click('.header-actions [aria-label="Export"]'); await audit(theme + ' 150% Export'); await close();
         await capture(`themes-${theme}-850-150.png`);
         assert.deepEqual(await evaluate(`${state}.project`), baseline, 'Appearance must preserve project, history and revision');

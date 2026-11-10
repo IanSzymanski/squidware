@@ -25,10 +25,12 @@ globalThis.fetch = async (url, options = {}) => {
     return response({ name: mode === 'normalized' && name.endsWith('.exe') ? 'Squidware.0.5.0.exe' : name, state: 'uploaded', digest: 'sha256:' + crypto.createHash('sha256').update(options.body).digest('hex') });
   }
   if (route === 'issues') {
-    if (!u.searchParams.has('milestone')) inventories++;
+    const page = Number(u.searchParams.get('page') || 1), perPage = Number(u.searchParams.get('per_page') || 30);
+    if (!u.searchParams.has('milestone') && page === 1) inventories++;
     const issues = plan.releases.flatMap((r, i) => r.issues.map(number => ({ number, title: 'Issue ' + number, state: i === 0 ? 'closed' : 'open', state_reason: i === 0 ? 'completed' : null })));
     if (mode === 'incomplete' || mode === 'reopened' && inventories > 1) issues.find(i => i.number === 5).state_reason = 'not_planned';
-    return response(u.searchParams.has('milestone') ? issues.filter(i => plan.releases[0].issues.includes(i.number)) : issues);
+    const matching = u.searchParams.has('milestone') ? issues.filter(i => plan.releases[0].issues.includes(i.number)) : issues;
+    return response(matching.slice((page - 1) * perPage, page * perPage));
   }
   if (route === 'releases' && method === 'GET') return response([]);
   if (route.startsWith('actions/')) return response({ workflow_runs: [{ head_sha: source, status: 'completed', conclusion: mode === 'ci-failed' ? 'failure' : 'success' }] });

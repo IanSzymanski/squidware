@@ -5,7 +5,7 @@ const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key: sendKey, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--production-sheet-manifest=')).slice('--production-sheet-manifest='.length));
 const { root, output, profile, bundle } = manifest;
-const { fixture, parseProject, totalCounts, setStartCount, createPerformanceFixture } = require(bundle);
+const { fixture, parseProject, totalCounts, setStartCount, createPerformanceFixture, createDemoProject } = require(bundle);
 const savedFile = path.join(output, 'created.squid');
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 // Match the editor suite's fixed-size layout capture. A visible macOS window
@@ -76,6 +76,16 @@ app.whenReady().then(async () => {
     if (manifest.baseline) { await capture('sheet-before.png'); app.exit(0); return; }
     await capture('sheet-after.png');
     assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);
+    const cells = await evaluate(`(()=>{const q=s=>document.querySelector(s),marks=[...document.querySelectorAll('.sheet-scroll [data-column="5"]')],table=q('.sheet-scroll');return {meter:q(${JSON.stringify(cell(0,4))}).value,inherit:q(${JSON.stringify(cell(1,4))}).placeholder,described:q(${JSON.stringify(cell(0,4))}).getAttribute('aria-describedby'),help:q('#sheet-meter-help').textContent,marks:marks.map(m=>m.placeholder),outline:getComputedStyle(marks[0]).borderTopColor,blank:getComputedStyle(marks[1]).borderTopColor,markRight:marks[0].getBoundingClientRect().right,tableRight:table.getBoundingClientRect().right,overflow:table.scrollWidth-table.clientWidth}})()`);
+    assert.deepEqual([cells.meter,cells.inherit,cells.described],['4/4','inherit 4/4','sheet-help sheet-meter-help'],JSON.stringify(cells));
+    assert.match(cells.help,/4\/4.*7\/8:2\+2\+3.*inherits/);
+    assert.deepEqual(cells.marks,['Add mark','',''],JSON.stringify(cells));
+    assert.ok(cells.outline!==cells.blank && cells.blank==='rgba(0, 0, 0, 0)' && cells.overflow<=0 && cells.markRight<=cells.tableRight,JSON.stringify(cells));
+    await load(createDemoProject()); await capture('sheet-notes.png');
+    const notes = await evaluate(`[...document.querySelectorAll('.sheet-scroll [data-column="3"]')].map(n=>({value:n.value,client:n.clientHeight,scroll:n.scrollHeight,top:n.getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top,nameTop:n.closest('tr').querySelector('[data-column="0"]').getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top}))`);
+    assert.ok(notes.length===6 && notes.every(n=>n.value && n.scroll<=n.client+1 && Math.abs(n.top-n.nameTop)<=1) && notes.some(n=>n.client>40),JSON.stringify(notes));
+    await load(project);
+    pass('sheet Meter reads 4/4 with explained notation, the active empty Mark cell shows an outlined Add mark placeholder in view, and multi-line demo notes show whole lines top-aligned with their row');
     // The field budget belongs to this exact viewport. Once shown, macOS can
     // constrain the native window to its shorter desktop work area.
     await evaluate(`${editor}.dispatch('workspace.show',{workspace:'design'})`); await frames();

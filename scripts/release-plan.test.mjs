@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { validatePlan, implementationOrder, releaseReady } from './release-plan.mjs';
 import { versionedPackage } from './release-version.mjs';
 const plan = JSON.parse(await readFile(new URL('../release-plan.json', import.meta.url), 'utf8'));
-test('release membership is unique, increasing and respects dependency order', () => { assert.equal(validatePlan(plan).size, 97); });
+test('release membership is unique, increasing and respects dependency order', () => { assert.equal(validatePlan(plan).size, 107); });
 test('future releases cannot depend on an earlier issue assigned to a later release', () => { const invalid = structuredClone(plan); invalid.dependencies[5] = [90]; assert.throws(() => validatePlan(invalid), /later-release/); });
 test('cycles are rejected even within one release', () => { const invalid = structuredClone(plan); invalid.dependencies[5] = [6]; assert.throws(() => validatePlan(invalid), /cycle/); });
 test('closed as not planned, missing and reopened issues do not fulfill a release', () => {
@@ -24,7 +24,7 @@ test('the implementation queue keeps the foundation sequence and orders all prer
   const completed = new Set([2,4,8,15,19,23]);
   const issues = plan.releases.flatMap(release => release.issues.map(number => ({ number, title: `Task ${number}`, state: completed.has(number) ? 'closed' : 'open', state_reason: completed.has(number) ? 'completed' : null, priority: 'P2', effort: 'M', importance: 3 })));
   const ordered = implementationOrder(plan, issues).map(issue => issue.number);
-  assert.deepEqual(ordered.slice(0, 4), [5,6,7,38]); assert.equal(ordered.length, 91);
+  assert.deepEqual(ordered.slice(0, 4), [5,6,7,38]); assert.equal(ordered.length, 101);
   for (const id of ordered) for (const dep of plan.dependencies[id] || []) if (!completed.has(dep)) assert.ok(ordered.indexOf(dep) < ordered.indexOf(id));
 });
 test('release version serialization matches the package used to build assets', () => {

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, OctagonAlert, SlidersHorizontal, TriangleAlert } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { countToSeconds, setStartCount } from '../domain';
 import { DEFAULT_ANALYSIS_RULES } from '../analysis/rules';
 import { defaultProblemFilter, findings, type ProblemFilter } from '../analysis/show';
 import { HelpButton } from './ControlHelp';
 import { reviewProblem, useShowAnalysis, useShowChecks } from './ShowAnalysis';
+import { commandRegistry } from './commands';
+import { findingName, performerLabels } from './problemTrack';
+import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
 import { formatTimelineCount as fmt } from './timelineNavigation';
 import './problems.css';
@@ -19,11 +22,13 @@ export function ProblemsPanel({ controller }: { controller: EditorController }) 
   const pending = checks.moves.filter(m => m.status === 'pending').length, failed = checks.moves.filter(m => m.status === 'error');
   const defaults = project.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES;
   const total = checks.moves.reduce((sum, m) => sum + m.issues.length, 0);
+  const labels = useMemo(() => performerLabels(project), [project]), rules = useEditorSelector(s => commandRegistry['analysis.rules-open'].enabled(s, undefined));
   function change(update: Partial<ProblemFilter>) { setFilter({ ...filter, ...update }); setPage(0); }
   return <Modal title="Show-wide problems" wide onClose={() => controller.setDialog(null)}>
     <div className="problems-panel" data-show-analysis-status={pending ? 'pending' : failed.length ? 'error' : 'ready'}>
       <p className="section-description" role="status">{checks.moves.length - pending - failed.length} / {checks.moves.length} moves checked · {total} findings{pending ? ` · ${pending} pending / stale moves hidden` : ''}{failed.length ? ` · ${failed.length} unavailable` : ''}. Geometric spacing and stride checks.</p>
-      <p className="microcopy">Project defaults: minimum {defaults.minimumSpacing} yd · maximum {defaults.maximumStride} yd/count. {project.analysisRules?.sections?.length ?? 0} section overrides. Each finding explains the applied section/direction rule; unknown directions use base rules.</p>
+      <div className="problem-rules"><p className="microcopy">Project defaults: minimum {defaults.minimumSpacing} yd · maximum {defaults.maximumStride} yd/count. {project.analysisRules?.sections?.length ?? 0} section overrides. Each finding explains the applied section/direction rule; unknown directions use base rules.</p>
+        <HelpButton command="analysis.rules-open" title="Analysis rules" className="button subtle" disabled={!rules} disabledReason="Finish or cancel the current input or preview before editing analysis rules." onClick={() => controller.dispatch('analysis.rules-open')}><SlidersHorizontal size={14} />Analysis rules…</HelpButton></div>
       <p className="microcopy">Detailed paths use conservative curve bounds with a target gap of 0.001 yd for spacing and 0.001 yd/count for peak stride. Displayed quantity bounds round outwards. Confirmed findings have a violating sampled witness; possible findings need review. Count ranges identify a known offending window or an unresolved candidate interval, not every encounter in a move.</p>
       <div className="problem-filters">
         <label>Severity<select aria-label="Problem severity" value={filter.severity} onChange={e => change({ severity: e.target.value })}><option value="all">All severities</option><option value="danger">Danger</option><option value="warning">Warning</option></select></label>
@@ -36,9 +41,9 @@ export function ProblemsPanel({ controller }: { controller: EditorController }) 
       <div className="problem-pagination"><span role="status">{rows.length ? `${currentPage * PAGE_SIZE + 1}–${Math.min(rows.length, (currentPage + 1) * PAGE_SIZE)}` : '0'} of {rows.length} matching findings</span><HelpButton title="Previous problems page" disabled={!currentPage} disabledReason="This is the first page." onClick={() => setPage(currentPage - 1)}><ChevronLeft size={14} /></HelpButton><span>{currentPage+1} / {pages}</span><HelpButton title="Next problems page" disabled={currentPage+1 >= pages} disabledReason="This is the final page." onClick={() => setPage(currentPage + 1)}><ChevronRight size={14} /></HelpButton></div>
       {!rows.length && <p className="section-description">{pending ? 'Waiting for the remaining move checks. Current findings will appear here.' : total ? 'No findings match these filters.' : failed.length ? 'Resolve unavailable checks before relying on this result.' : 'No spacing or stride flags in this show.'}</p>}
       <ol className="problem-results" start={currentPage*PAGE_SIZE+1} aria-label="Matching problems">{rows.slice(currentPage*PAGE_SIZE,(currentPage+1)*PAGE_SIZE).map((row,i) => {
-        const count=row.issue.atCount ?? 0, time=countToSeconds(project,count);
-        return <li key={`${row.moveId}:${currentPage}:${i}`}><HelpButton title={`Go to problem ${currentPage*PAGE_SIZE+i+1}`} description={`Move ${row.index}, ${row.issue.severity} ${row.issue.type}, show count ${fmt(count)}, ${time.toFixed(3)} seconds. ${row.issue.message}${row.issue.countRange ? ` Review show counts ${row.issue.countRange[0]}–${row.issue.countRange[1]}.` : ''}${row.issue.measurement ? ` ${row.issue.certainty === 'possible' ? 'Possible violation.' : 'Confirmed violation.'} ${row.issue.measurement.converged ? 'Numerical bound gap meets its target.' : 'The bound is wider than the precision target; review this interval.'}` : ''} Performer IDs ${row.issue.performerIds.join(', ')}. Pause here, select performers and highlight their paths.`} className="problem-result" onClick={() => reviewProblem(service,controller.store,row)}>
-          <span className={`problem-severity ${row.issue.severity}`}><TriangleAlert size={14} />{row.issue.severity} · {row.issue.type === 'collision' ? 'spacing' : 'stride'}</span>
+        const count=row.issue.atCount ?? 0, time=countToSeconds(project,count), name=findingName(row.issue,labels), danger=row.issue.severity==='danger';
+        return <li key={`${row.moveId}:${currentPage}:${i}`}><HelpButton title={`Go to problem ${currentPage*PAGE_SIZE+i+1}: ${name}`} description={`Move ${row.index}, ${row.issue.severity} ${row.issue.type}, show count ${fmt(count)}, ${time.toFixed(3)} seconds. ${row.issue.message}${row.issue.countRange ? ` Review show counts ${row.issue.countRange[0]}–${row.issue.countRange[1]}.` : ''}${row.issue.measurement ? ` ${row.issue.certainty === 'possible' ? 'Possible violation.' : 'Confirmed violation.'} ${row.issue.measurement.converged ? 'Numerical bound gap meets its target.' : 'The bound is wider than the precision target; review this interval.'}` : ''} Performer IDs ${row.issue.performerIds.join(', ')}. Pause here, select performers and highlight their paths.`} className="problem-result" onClick={() => reviewProblem(service,controller.store,row)}>
+          <span className={`problem-severity ${row.issue.severity}`}>{danger ? <OctagonAlert size={14} /> : <TriangleAlert size={14} />}{danger ? 'Danger' : 'Warning'} · <span className="problem-name">{name}</span></span>
           <strong>Move {row.index} · Set {row.index} → {row.index+1} · {project.sets[row.index].name}</strong>
           <span>Show {fmt(count)} · Move {fmt(count-setStartCount(project,row.index-1))} · {time.toFixed(3)} s</span>
           <span>{row.issue.message}</span>{row.issue.measurement && <span className="problem-bound" data-problem-certainty={row.issue.certainty}>

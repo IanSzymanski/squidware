@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {app,dialog}=require('electron');
 const fs=require('node:fs/promises'),path=require('node:path');
-const {capturePage,key,waitFor,waitForProgress,pause,settleNativeViewport}=require('./testing/renderer.cjs');
+const {capturePage,key,waitFor,waitForProgress,pause,settleNativeViewport,installConfirmShim}=require('./testing/renderer.cjs');
 const manifest=require(process.argv.find(a=>a.startsWith('--tempo-map-manifest=')).slice('--tempo-map-manifest='.length));
 const {root,output,profile,bundle,recording,files}=manifest,{fixture,parseProject,serializeProject,countToSeconds}=require(bundle);
 app.disableHardwareAcceleration();app.setPath('userData',profile);
@@ -17,7 +17,7 @@ const checks=[],measurements=[],viewports=[];const pass=s=>{checks.push(s);conso
 const regions='0,8,120,240\n8,16,240,120',holds='4,0.9\n8,0.6';
 const at=c=>c<=8?4*Math.log1p(c/8)+(c>4?.9:0):4*Math.log(2)-4*Math.log1p(-(c-8)/16)+1.5;
 function instrument(){
- const qa=window.__tempoQA={editor:null,clicks:[],plans:[],stops:[],errors:[]};window.confirm=()=>true;
+ const qa=window.__tempoQA={editor:null,clicks:[],plans:[],stops:[],errors:[]};
  const Original=window.AudioWorkletNode;window.AudioWorkletNode=class extends Original{constructor(context,name,options){super(context,name,options);if(name==='squidware-metronome'){qa.context=context;const post=this.port.postMessage.bind(this.port);this.port.postMessage=(data,...args)=>{if(data.type==='plan'){if(data.plan)qa.plans.push({...data.plan,issuedAt:context.currentTime});else qa.stops.push(context.currentTime);}return post(data,...args);};this.port.addEventListener('message',e=>{if(e.data.type==='click')qa.clicks.push(e.data);});this.port.start();this.port.postMessage({type:'diagnostics',diagnostics:true});}}};
  window.addEventListener('error',e=>qa.errors.push(e.message));window.addEventListener('unhandledrejection',e=>qa.errors.push(String(e.reason)));
  window.__REACT_DEVTOOLS_GLOBAL_HOOK__={supportsFiber:true,renderers:new Map(),inject(){return 1;},onCommitFiberRoot(_id,root){function visit(f){if(!f)return;const v=f.memoizedProps?.value;if(v?.getState&&v?.dispatch)qa.editor=v;visit(f.child);visit(f.sibling);}visit(root.current);},onCommitFiberUnmount(){},onPostCommitFiberRoot(){}};
@@ -81,7 +81,7 @@ function assertClicks(clicks,speed,plans,stops=[],mediaClock=false){
 }
 
 app.whenReady().then(async()=>{try{
- await waitFor(()=>!!window,'window');await wait("!!document.querySelector('.set-card')",'renderer');window.show();window.focus();window.setContentSize(1366,768);window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});window.webContents.reload();await wait(`!!${store}&&${state}.preferences.status==='saved'`,'store');
+ await waitFor(()=>!!window,'window');await wait("!!document.querySelector('.set-card')",'renderer');window.show();window.focus();window.setContentSize(1366,768);window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});await installConfirmShim(source=>window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source}));window.webContents.reload();await wait(`!!${store}&&${state}.preferences.status==='saved'`,'store');
  await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
  await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');const original=fixture();await evaluate(`${store}.dispatch('project.load',{project:${JSON.stringify(original)}})`);await capture('tempo-before.png');
  await openTempo();await type('Tempo ranges',regions);await type('Fermatas',holds);await wait(`${state}.ui.pendingDraft`,'draft tracked');await capture('tempo-preview.png');await press('Cancel');await wait(`${state}.ui.dialog===null`,'cancel');assert.deepEqual(await evaluate(state+'.project.present'),original);

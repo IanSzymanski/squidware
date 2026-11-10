@@ -1,7 +1,7 @@
 import { HelpButton } from '../editor/ControlHelp';
 import { Tooltip } from './Tooltip';
 import { selectionMembership } from '../selection';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Point, Project } from '../types';
@@ -13,10 +13,13 @@ export interface Stage3DProps {
   project: Project;
   positions: Record<string, Point>;
   selectedIds: string[];
-  onSelect: (ids: string[]) => void;
+  /** Omitted in the read-only 3D window: clicks orbit the camera but never change selection. */
+  onSelect?: (ids: string[]) => void;
   quality: Stage3DQuality;
   onQualityChange: (quality: Stage3DQuality) => void;
   onReturnTo2D: () => void;
+  /** A host without its own 2D field (the 3D window) supplies the interruption text and recovery actions. */
+  recovery?: { contextLost: string; actions: ReactNode };
 }
 
 type CameraPreset = 'perspective' | 'front' | 'top';
@@ -69,8 +72,8 @@ function updateRoster(state: SceneState, roster: string) {
   if (state.caps.instanceColor) state.caps.instanceColor.needsUpdate = true;
 }
 
-function makeFieldTexture(width: number, height: number, preset: Project['field']['preset']) {
-  const canvas = document.createElement('canvas');
+function makeFieldTexture(width: number, height: number, preset: Project['field']['preset'], owner: Document) {
+  const canvas = owner.createElement('canvas');
   canvas.width = 2048;
   canvas.height = Math.round(canvas.width * height / width);
   const context = canvas.getContext('2d');
@@ -153,11 +156,11 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, s
   }
 }
 
-export function Stage3D({ project, positions, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D }: Stage3DProps) {
+export function Stage3D({ project, positions, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery }: Stage3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
-  const currentRef = useRef({ positions, selectedIds, onSelect, quality });
-  currentRef.current = { positions, selectedIds, onSelect, quality };
+  const currentRef = useRef({ positions, selectedIds, onSelect, quality, recovery });
+  currentRef.current = { positions, selectedIds, onSelect, quality, recovery };
   const [error, setError] = useState<string | null>(null);
   const width = project.field.width;
   const height = project.field.height;
@@ -171,6 +174,9 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     const host = hostRef.current;
     if (!host) return;
     setError(null);
+    // The canvas may live in the separate 3D window: use its document, clock, size and pixel ratio.
+    const owner = host.ownerDocument;
+    const view = (owner.defaultView ?? window) as Window & typeof globalThis;
     let renderer: THREE.WebGLRenderer | undefined;
     let controls: OrbitControls | undefined;
     let resizeObserver: ResizeObserver | undefined;
@@ -217,8 +223,8 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     }
 
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer = new THREE.WebGLRenderer({ canvas: owner.createElement('canvas'), antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -226,7 +232,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       renderer.toneMappingExposure = 1.15;
       renderer.domElement.tabIndex = 0;
       renderer.domElement.setAttribute('role', 'img');
-      renderer.domElement.setAttribute('aria-label', 'Three dimensional drill preview. Drag to orbit, scroll to zoom, and click a performer to select. Use the camera buttons for front and overhead views.');
+      renderer.domElement.setAttribute('aria-label', `Three dimensional drill preview. Drag to orbit, right-drag to pan${currentRef.current.onSelect ? ', scroll to zoom, and click a performer to select' : ' and scroll to zoom'}. Use the camera buttons for front and overhead views.`);
       host.appendChild(renderer.domElement);
       scene.background = new THREE.Color('#141e1b');
       scene.fog = new THREE.Fog('#141e1b', 130, 240);
@@ -279,7 +285,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       apron.position.y = -0.04;
       apron.receiveShadow = true;
       scene.add(apron);
-      const fieldTexture = makeFieldTexture(width, height, fieldPreset);
+      const fieldTexture = makeFieldTexture(width, height, fieldPreset, owner);
       fieldTexture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
       const field = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshStandardMaterial({ map: fieldTexture, roughness: 1, metalness: 0 }));
       field.rotation.x = -Math.PI / 2;
@@ -323,13 +329,13 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         if (!renderer) return;
         renderer.shadowMap.enabled = value === 'detailed';
         renderer.shadowMap.needsUpdate = true;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, value === 'detailed' ? 2 : 1));
+        renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, value === 'detailed' ? 2 : 1));
         invalidate();
       };
       let texturePreset = fieldPreset;
       const setFieldPreset = (preset: Project['field']['preset']) => {
         if (!renderer || texturePreset === preset) return;
-        const texture = makeFieldTexture(width, height, preset);
+        const texture = makeFieldTexture(width, height, preset, owner);
         texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
         const previous = field.material.map;
         field.material.map = texture;
@@ -352,6 +358,8 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         if (!press || !renderer) return;
         const start = press;
         press = null;
+        const select = currentRef.current.onSelect;
+        if (!select) return;
         if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 4) return;
         const bounds = renderer.domElement.getBoundingClientRect();
         pointer.set(((event.clientX - bounds.left) / bounds.width) * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
@@ -359,14 +367,14 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         const hit = raycaster.intersectObjects([state.bodies, state.heads, state.caps], false)[0];
         const id = hit?.instanceId === undefined ? undefined : state.performers[hit.instanceId]?.id;
         const current = currentRef.current;
-        if (!id) { if (!start.shift) current.onSelect([]); return; }
-        current.onSelect(start.shift ? selectionMembership(current.selectedIds).has(id) ? current.selectedIds.filter(selected => selected !== id) : [...current.selectedIds, id] : [id]);
+        if (!id) { if (!start.shift) select([]); return; }
+        select(start.shift ? selectionMembership(current.selectedIds).has(id) ? current.selectedIds.filter(selected => selected !== id) : [...current.selectedIds, id] : [id]);
       };
       const onContextLost = (event: Event) => {
         event.preventDefault();
         if (!disposed) {
           cleanup();
-          setError('The graphics context was interrupted. Return to 2D and open 3D again to reload the preview.');
+          setError(currentRef.current.recovery?.contextLost ?? 'The graphics context was interrupted. Return to 2D and open 3D again to reload the preview.');
         }
       };
       renderer.domElement.addEventListener('pointerdown', onPointerDown);
@@ -387,7 +395,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         renderer.setSize(w, h, false);
         invalidate();
       }
-      resizeObserver = new ResizeObserver(resize);
+      resizeObserver = new view.ResizeObserver(resize);
       resizeObserver.observe(host);
       resize();
       frames = createDemandFrames(() => {
@@ -395,7 +403,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         const changed = controls?.update() ?? false;
         renderer.render(scene, camera);
         return changed;
-      }, fail);
+      }, fail, view);
       setQuality(currentRef.current.quality);
       invalidate();
     } catch (cause) {
@@ -426,18 +434,18 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     {!error && <>
       <div className="field-stage__corner"><span className="stage-status-light" /> LIVE 3D PREVIEW</div>
       <div className="stage-three__controls" role="group" aria-label="Camera presets">
-        <HelpButton title="Perspective camera" description="Reset the camera to an angled view of the entire field." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
-        <HelpButton title="Front camera" description="Reset the camera to the home sideline view." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
-        <HelpButton title="Overhead camera" description="Reset the camera to look straight down at the field." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
+        <HelpButton title="Perspective camera" description="Reset the camera to an angled view of the entire field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
+        <HelpButton title="Front camera" description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
+        <HelpButton title="Overhead camera" description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
         <Tooltip name="3D quality" description="Choose detailed shadows or lightweight rendering for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
       </div>
-      <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan · Click a performer to select</span></div>
+      <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan{onSelect ? ' · Click a performer to select' : ''}</span></div>
     </>}
     {error && <div className="stage-three__fallback" role="alert">
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
       <strong>3D preview unavailable</strong>
       <p>{error}</p>
-      <HelpButton title="Return to 2D field" description="Return to the editable field view." onClick={onReturnTo2D}>Return to 2D field</HelpButton>
+      {recovery ? recovery.actions : <HelpButton title="Return to 2D field" description="Return to the editable field view." onClick={onReturnTo2D}>Return to 2D field</HelpButton>}
     </div>}
   </div>;
 }

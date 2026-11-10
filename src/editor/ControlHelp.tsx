@@ -32,6 +32,21 @@ export function HelpButton({ title, description, command, shortcutVariant, showS
   </Tooltip>;
 }
 
+/** Whether short instructional lines are shown. Tooltips and Help carry the same guidance when this is off. */
+export function useShowHints() {
+  return useEditorSelector(state => state.preferences.value.showHints);
+}
+
+/**
+ * Instructional microcopy gated by the Show hints preference. With hints off, an element that serves as an
+ * aria-describedby target (one with an id) stays available to assistive technology as visually hidden text.
+ */
+export function Hint({ id, className = 'microcopy', children }: { id?: string; className?: string; children: ReactNode }) {
+  const show = useShowHints();
+  if (show) return <small id={id} className={className} data-hint="">{children}</small>;
+  return id ? <span id={id} className="sr-only">{children}</span> : null;
+}
+
 export function CommandKeycaps({ command }: { command: CommandId }) {
   const bindings = useEditorSelector(state => state.preferences.value.shortcutBindings);
   return <Keycaps groups={commandKeycaps(command, undefined, undefined, undefined, bindings)} />;

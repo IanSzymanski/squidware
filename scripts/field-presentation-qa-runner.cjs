@@ -94,11 +94,12 @@ async function checkNeighbors(project) {
   await input('mousePressed', dragPoint, {button:'left',clickCount:1});
   await input('mouseMoved', {x:dragPoint.x+12,y:dragPoint.y}, {button:'left',buttons:1});
   await wait("!!document.querySelector('.field-stage--moving') && !document.querySelector('[data-neighbor]')", 'drag ghosts hidden');
+  await wait("(()=>{const s=getComputedStyle(document.querySelector('.field-legend'));return Number(s.opacity)===0&&s.pointerEvents==='none'})()", 'section legend steps aside while dragging');
   assert.equal(await evaluate(`${state}.project.revision`), before.revision);
   // Return to the anchor before release so this probe makes no production edit.
   await input('mouseMoved', dragPoint, {button:'left',buttons:1});
   await input('mouseReleased', dragPoint, {button:'left',clickCount:1});
-  await wait("!!document.querySelector('[data-neighbor]')", 'drag review restored');
+  await wait("!!document.querySelector('[data-neighbor]') && Number(getComputedStyle(document.querySelector('.field-legend')).opacity)===1", 'drag review and legend restored');
   await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
   pass('uncommitted drag previews suppress ghosts and restore them on release');
   window.webContents.setZoomFactor(1.25); await capture('neighbors-enlarged.png');
@@ -204,7 +205,9 @@ app.whenReady().then(async () => {
     await checkNeighbors(project);
     await require('./snapping-qa.cjs')({project,editor,state,evaluate,wait,click,key,input,capture,window,pass});
     await require('./nudge-qa.cjs')({project,editor,state,evaluate,wait,click,key,capture,window,pass});
-    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
+    // #178: header, transport and drawn-field bounds across 900–1920 px windows at 100/125/150% UI scale.
+    const breakpoints = await require('./breakpoint-matrix-qa.cjs')({window,evaluate,editor,state,capture,pass});
+    await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, baselineViewport, narrowViewport, breakpoints, platform:process.platform, rendererNodeAccess:await evaluate('typeof window.require') }, null, 2));
      app.exit(0);
   } catch (error) {  console.error(error); if (window && !window.isDestroyed()) await capture('failure.png').catch(() => {}); app.exit(1); }
 });

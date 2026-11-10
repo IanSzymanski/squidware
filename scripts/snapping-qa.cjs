@@ -11,7 +11,17 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   const fixture = { ...project, title: 'Grid and snapping QA', performers: people, sets: project.sets.map(set => ({ ...set, positions })), moves: project.moves.map(move => ({ ...move, paths: {} })) };
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(fixture)}}); ${editor}.setValue('ui','snap',true); ${editor}.setValue('ui','showGrid',true); ${editor}.setValue('ui','zoom',1); ${editor}.setValue('ui','fitVersion',99); ${editor}.setValue('ui','showPaths',false); ${editor}.setValue('ui','showNextPaths',false); ${editor}.setValue('selection','selectedIds',${JSON.stringify(ids.slice(0,2))})`);
   await wait("document.querySelectorAll('.field-performer').length===3", 'placement fixture');
-  assert.ok(await evaluate("(() => {const a=document.querySelector('.field-snap-status').getBoundingClientRect();return ['.field-topline','.field-keyboard-help'].every(selector=>{const b=document.querySelector(selector).getBoundingClientRect();return a.bottom<=b.top || b.bottom<=a.top})})()"), 'snap status must not overlap field information');
+  // Snap mode has one persistent home, the status bar; nothing drawn at idle covers the playing surface.
+  assert.ok(await evaluate("(() => {const surface=document.querySelector('.field-stage__background [data-field-surface]').getBoundingClientRect();const drawn=n=>{const s=getComputedStyle(n);return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)>0&&s.clipPath==='none'};return !document.querySelector('.field-snap-status') && /steps|Yard lines|Snap off/.test(document.querySelector('.statusbar-snap')?.textContent ?? '') && ['.field-legend','.field-topline','.field-keyboard-help'].every(selector=>{const n=document.querySelector(selector);if(!n||!drawn(n))return true;const b=n.getBoundingClientRect();return b.right<=surface.left||b.left>=surface.right||b.bottom<=surface.top||b.top>=surface.bottom})})()"), 'snap mode lives in the status bar and no idle overlay covers the drawn field');
+  // Exactly one snap location is visible and announced in narrow windows and in focus mode as well.
+  const snapHomes = () => evaluate("[...document.querySelectorAll('.statusbar-snap, .field-topline-snap')].filter(n => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && /steps|Yard lines|Snap off/.test(n.textContent); }).map(n => n.className)");
+  assert.deepEqual(await snapHomes(), ['statusbar-snap']);
+  window.setContentSize(1000, 700); await settleNativeViewport(window, 'narrow snap status');
+  assert.deepEqual(await snapHomes(), ['statusbar-snap'], 'snap status stays visible in narrow windows');
+  window.setContentSize(1366, 768); await settleNativeViewport(window, 'snapping baseline');
+  await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`${state}.ui.focusMode`, 'focus mode');
+  assert.deepEqual(await snapHomes(), ['field-topline-snap'], 'focus mode keeps one visible snap status');
+  await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode exited');
   const before = await evaluate(`${state}.project`);
   await capture('snapping-before.png');
   const control = async selector => { const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };
@@ -20,7 +30,14 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
     // Select change events set up native dropdown values; real Tab/Enter below verify access and commit.
     await evaluate(`(() => {const values=${JSON.stringify([steps,subdivision,target,group])};[...document.querySelectorAll('.modal select')].forEach((n,i)=>{n.value=values[i];n.dispatchEvent(new Event('change',{bubbles:true}));});})()`);
   };
+  // Unchanged rules have nothing to apply: Apply rules stays focusable but visibly unavailable and creates no undo entry.
+  await control('[aria-label="Grid and snapping"]'); await wait("document.querySelector('.modal h2')?.textContent==='Grid and snapping'", 'unchanged grid dialog');
+  assert.ok(await evaluate("(() => {const b=document.querySelector('.modal [aria-label=\"Apply rules\"]');return b.getAttribute('aria-disabled')==='true'&&getComputedStyle(b).borderStyle==='dashed'})()"), 'unchanged rules leave Apply rules visibly unavailable');
+  await evaluate("document.querySelector('.modal [aria-label=\"Apply rules\"]').click()");
+  assert.ok(await evaluate("!!document.querySelector('.modal')")); assert.deepEqual(await evaluate(`${state}.project`), before);
+  await evaluate("[...document.querySelectorAll('.modal button')].find(b => b.textContent === 'Cancel').click()"); await wait("!document.querySelector('.modal')", 'unchanged grid cancellation');
   await configure(6, 2, 'individual');
+  assert.equal(await evaluate("document.querySelector('.modal [aria-label=\"Apply rules\"]').getAttribute('aria-disabled')"), null);
   await evaluate("document.querySelector('.modal select').focus()");
   for (let i=0; i<4; i++) await key('Tab');
   assert.equal(await evaluate('document.activeElement.textContent'), 'Cancel'); await key('Return');
@@ -34,7 +51,7 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   assert.deepEqual(await evaluate(`${state}.project.present.sets[0].positions`), positions);
   assert.equal(await evaluate(`${state}.project.past.at(-1).name`), 'Change grid and snapping');
   await capture('snapping-individual.png');
-  pass('Grid dialog exposes keyboard-reachable choices and Apply/Cancel; changing rules is one undoable edit without moving dots');
+  pass('Grid dialog exposes keyboard-reachable choices and Apply/Cancel; unchanged rules cannot be applied; changing rules is one undoable edit without moving dots');
 
   const screen = point => evaluate(`(() => {const p=new DOMPoint(${point.x},${point.y}).matrixTransform(document.querySelector('[data-field-geometry]').getScreenCTM());return {x:p.x,y:p.y}})()`);
   const shown = () => evaluate(`Object.fromEntries(${JSON.stringify(ids.slice(0,2))}.map(id=>{const xy=document.querySelector('[data-performer-id="'+id+'"]').getAttribute('transform').slice(10,-1).split(' ').map(Number);return [id,{x:xy[0],y:xy[1]}]}))`);

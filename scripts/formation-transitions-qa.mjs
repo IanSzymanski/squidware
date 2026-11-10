@@ -11,6 +11,7 @@ await esbuild.build({stdin:{contents:`
  import {emptyAssignmentConstraints} from './src/assignmentConstraints';
  import {captureParametricFormation} from './src/templates/formations';
  export {parseProject,sampleProject} from './src/domain';
+ export {formatYards} from './src/coordinates';
  export {beginFormationTransition,formationTransitionPlan,transitionMapping} from './src/editor/formationTransition';
  export function fixture(count=4,large=false){
   const p=createDemoProject(),n=large?count:6,sectionId=p.sections[0].id;

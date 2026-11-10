@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const { app, dialog } = require('electron');
+const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--timeline-manifest=')).slice('--timeline-manifest='.length));
@@ -8,6 +8,10 @@ const { root, output, profile, bundle } = manifest;
 const { fixture, setStartCount, totalCounts } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 dialog.showMessageBox = async () => ({ response: 1 });
+// Keep the window hidden until the fixed-viewport fit check: once shown, macOS
+// can constrain the native window to its shorter desktop work area.
+const showWindow = BrowserWindow.prototype.show;
+BrowserWindow.prototype.show = function () {};
 let window, failure; const checks = [], viewports = [];
 app.on('browser-window-created', (_e, w) => { window = w; w.webContents.setBackgroundThrottling(false); w.webContents.on('render-process-gone', (_e, d) => { failure = new Error(d.reason); }); });
 require(path.join(root, 'electron/main.cjs'));
@@ -40,7 +44,7 @@ async function capture(name) {
 app.whenReady().then(async () => {
   try {
     await waitFor(() => !!window, 'window'); await wait("!!document.querySelector('.set-card')", 'renderer');
-    window.show(); window.focus(); window.setContentSize(manifest.smallDesktop ? 1024 : 1366, manifest.smallDesktop ? 647 : 768); await settleNativeViewport(window, 'visible timeline');
+    window.setContentSize(1366, 768); await settleNativeViewport(window, 'review timeline');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
     await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: `(${instrument.toString()})()` });
     window.webContents.reload(); await wait(`!!${editor} && ${state}.preferences.status==='saved'`, 'store and preferences');
@@ -52,6 +56,24 @@ app.whenReady().then(async () => {
     const original = await evaluate(`JSON.stringify(${state}.project.present)`);
     await capture('timeline-fit-dark.png');
     assert.match(await evaluate("document.querySelector('.move-count').textContent"), /Opening.*01.*Count 0/);
+    // Measure the fixed 1366 x 768 review viewport while hidden. macOS constrains a shown window
+    // to its physical desktop, which can be smaller than this review viewport.
+    { const fit = viewports.at(-1); assert.deepEqual([fit.width, fit.height], [1366, 768]); assert.ok(fit.timelineHeight <= 122 && fit.fieldHeight >= 470, JSON.stringify(fit)); }
+    BrowserWindow.prototype.show = showWindow; window.show(); window.focus(); if (manifest.smallDesktop) window.setContentSize(1024, 647); await settleNativeViewport(window, 'visible timeline');
+    // Tab follows set order: the opening set comes first, the problem row adds at most one stop, then the playhead.
+    await evaluate("document.querySelector('[aria-label=\"Timeline view\"]').focus()");
+    const order = [];
+    // Each Tab reaches a differently named control; wait for it so a slow focus change is never read twice.
+    for (let i = 0, previous = 'Timeline view'; i < 140 && order.at(-1) !== 'Timeline playhead'; i++) {
+      await key(window, 'Tab'); await wait(`document.activeElement?.getAttribute('aria-label') !== ${JSON.stringify(previous)}`, 'Tab moves focus');
+      order.push(previous = await evaluate("document.activeElement?.getAttribute('aria-label')"));
+    }
+    const setStops = order.filter(label => /^(Opening set|Set \d+):/.test(label));
+    assert.match(order[0], /^Show-wide problems/); assert.match(order[1], /^Opening set:/);
+    assert.deepEqual(setStops.map(label => label.startsWith('Opening') ? 1 : Number(/^Set (\d+)/.exec(label)[1])), Array.from({ length: 128 }, (_, i) => i + 1));
+    assert.ok(order.length - setStops.length - 2 <= 1, JSON.stringify(order.slice(setStops.length + 1)));
+    assert.equal(order.at(-1), 'Timeline playhead'); await evaluate('document.activeElement?.blur()');
+    pass('timeline Tab order runs from the problem badge through the opening set and all 128 sets in order, then at most one problem-row stop and the playhead');
     await click('Timeline view');
     await click('Zoom timeline in'); await click('Zoom timeline in');
     assert.ok(await evaluate("Number(document.querySelector('[aria-label=\"Pan timeline\"]').max)>0"));
@@ -100,8 +122,11 @@ app.whenReady().then(async () => {
     await click('Fit show timeline'); await click('Zoom timeline in'); await click('Zoom timeline in');
     await evaluate(`${editor}.dispatch('playback.scrub',{count:0}); ${editor}.setValue('playback','speed',1.5)`);
     await click('Play show'); await wait(`${state}.playback.playing`, 'native Play starts playback'); await wait(`${state}.playback.count>2`, 'playback advancement');
+    const running = await evaluate(`({playing:${state}.playback.playing,show:document.querySelector('.show-count strong').textContent,move:document.querySelector('.move-count > small').textContent,score:document.querySelector('[aria-label="Score position"]').textContent,valuetext:document.querySelector('[aria-label="Timeline playhead"]').getAttribute('aria-valuetext')})`);
+    assert.equal(running.playing, true); assert.match(running.show, /^\d+$/); assert.doesNotMatch(`${running.score} ${running.valuetext}`, /\d\.\d/, JSON.stringify(running));
+    if (running.move.startsWith('Move')) assert.match(running.move, /^Move \d+ \/ \d+/, JSON.stringify(running));
     assert.equal(await evaluate("!!document.querySelector('.playhead')"), true); await click('Pause playback');
-    pass('ordinary typing does not step counts, and follow keeps the running clock visible');
+    pass('ordinary typing does not step counts, follow keeps the running clock visible, and running readouts show whole counts');
     for (const theme of ['light','high-contrast']) {
       await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);
       await capture(`timeline-${theme}.png`);

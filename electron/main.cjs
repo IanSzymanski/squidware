@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, dialog, ipcMain, Menu, session } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Menu, screen, session } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
@@ -11,7 +11,7 @@ const { createRecoveryService } = require('./recovery-service.cjs');
 const { createPreferencesService } = require('./preferences-service.cjs');
 const { createTemplateLibraryService, readLibraryFile } = require('./template-library-service.cjs');
 const { parseTemplateLibrary, serializeTemplateLibrary } = require('./template-library-codec.cjs');
-const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences, textEditAction } = require('./preferences-codec.cjs');
+const { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, validatePreferences, textEditAction, placePopoutBounds, POPOUT_SIZE } = require('./preferences-codec.cjs');
 const textOperations = { cut: 'cut', copy: 'copy', paste: 'paste', undo: 'undo', redo: 'redo', 'select-all': 'selectAll' };
 const { MAX_AUDIO, MAX_PACKAGE, digest, audioInfo, safeRelative, encodePackage, decodePackage } = require('./audio-package.cjs');
 const audioAttachments = new Map();
@@ -38,6 +38,8 @@ async function boundedRead(filename, limit, noFollow = false) {
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
+// Desktop QA runners (--<suite>-manifest=…) assert against the small generated demo fixture, not the bundled show.
+const legacyDemo = process.argv.some(argument => /^--[a-z0-9-]+-manifest=/.test(argument));
 const smokeArtifactsArg = process.argv.find(argument => argument.startsWith('--smoke-artifacts='));
 const smokeArtifacts = smokeArtifactsArg?.slice('--smoke-artifacts='.length);
 if (smokeArtifactsArg && (!smokeTest || !smokeArtifacts || !path.isAbsolute(smokeArtifacts))) {
@@ -56,6 +58,11 @@ let preferencesService;
 let templateLibraryService;
 let drainingPreferences = false;
 let keyboardContext = 'editor';
+// The only child window: an about:blank 3D preview that the editor renders from its own store (#181).
+const PREVIEW_FRAME = 'squidware-3d-preview';
+let preview = null;
+let previewThrottling = null;
+let latestPreferences = null;
 
 function developmentUrl() {
   if (app.isPackaged || !process.env.ELECTRON_RENDERER_URL) return null;
@@ -198,9 +205,9 @@ function registerIpc() {
     return filename;
   });
   for (const [channel, action] of [
-    ['read-preferences', async () => { const result = await preferences().read(); installMenu(result.preferences); return result; }],
-    ['save-preferences', value => { const canonical = validatePreferences(value); const request = preferences().save(canonical); installMenu(canonical); return request; }],
-    ['reset-preferences', async () => { const result = await preferences().reset(); installMenu(result); return result; }],
+    ['read-preferences', async () => { const result = await preferences().read(); latestPreferences = result.preferences; installMenu(result.preferences); return result; }],
+    ['save-preferences', value => { const canonical = validatePreferences(value); latestPreferences = canonical; const request = preferences().save(canonical); installMenu(canonical); return request; }],
+    ['reset-preferences', async () => { const result = await preferences().reset(); latestPreferences = result; installMenu(result); return result; }],
   ]) ipcMain.handle(`squidware:${channel}`, async (event, ...args) => { assertSender(event); return action(...args); });
   for (const [channel, action] of [
     ['begin-recovery', () => recovery().begin()],
@@ -361,6 +368,70 @@ function registerIpc() {
     try { assertSender(event); } catch { return; }
     savedPath = null;
   });
+  ipcMain.on('squidware:focus-preview', (event) => {
+    try { assertSender(event); } catch { return; }
+    focusPreview();
+  });
+}
+
+function focusPreview() {
+  if (!preview || preview.isDestroyed()) return false;
+  if (preview.isMinimized()) preview.restore();
+  preview.show(); preview.focus();
+  return true;
+}
+
+function closePreview() { if (preview && !preview.isDestroyed()) preview.close(); }
+
+// Saved geometry comes from the renderer, so main re-places it on a connected display every time.
+function previewBounds() {
+  const displays = screen.getAllDisplays().map(({ id, workArea }) => ({ id, workArea }));
+  return placePopoutBounds(latestPreferences?.popout3dBounds ?? null, displays, screen.getPrimaryDisplay().id);
+}
+
+function reportPreviewBounds(child) {
+  if (child.isDestroyed() || !window || window.isDestroyed()) return;
+  const bounds = child.getNormalBounds();
+  window.webContents.send('squidware:preview-bounds', { ...bounds, displayId: screen.getDisplayMatching(bounds).id });
+}
+
+// Allow exactly one same-origin about:blank 3D window. Every other request, including
+// external URLs, other frame names and a second preview, is denied.
+function openPreview({ url, frameName, postBody } = {}) {
+  if (frameName !== PREVIEW_FRAME || url !== 'about:blank' || postBody) return { action: 'deny' };
+  if (preview && !preview.isDestroyed()) { focusPreview(); return { action: 'deny' }; }
+  const bounds = previewBounds();
+  return { action: 'allow', overrideBrowserWindowOptions: {
+    ...bounds, minWidth: Math.min(POPOUT_SIZE.minWidth, bounds?.width ?? POPOUT_SIZE.minWidth), minHeight: Math.min(POPOUT_SIZE.minHeight, bounds?.height ?? POPOUT_SIZE.minHeight),
+    title: 'Squidware 3D preview', backgroundColor: '#141e1b', show: true, autoHideMenuBar: true,
+    icon: path.join(__dirname, '..', 'dist', 'icon512.png'),
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false, navigateOnDragDrop: false },
+  } };
+}
+
+function guardPreview(child, { frameName }) {
+  if (frameName !== PREVIEW_FRAME || (preview && !preview.isDestroyed())) { child.destroy(); return; }
+  preview = child;
+  if (process.platform !== 'darwin') child.removeMenu();
+  const contents = child.webContents;
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  contents.on('will-navigate', event => event.preventDefault());
+  contents.on('will-redirect', event => event.preventDefault());
+  contents.on('will-attach-webview', event => event.preventDefault());
+  // The editor window drives playback and edits; keep it running while only the 3D window is visible.
+  previewThrottling = window.webContents.getBackgroundThrottling();
+  window.webContents.setBackgroundThrottling(false);
+  let timer = null;
+  const report = () => { clearTimeout(timer); timer = setTimeout(() => reportPreviewBounds(child), 400); };
+  child.on('move', report);
+  child.on('resize', report);
+  child.on('close', () => { clearTimeout(timer); reportPreviewBounds(child); });
+  child.on('closed', () => {
+    clearTimeout(timer);
+    if (preview === child) preview = null;
+    if (window && !window.isDestroyed() && previewThrottling !== null) window.webContents.setBackgroundThrottling(previewThrottling);
+    previewThrottling = null;
+  });
 }
 
 function sendAction(action) {
@@ -430,13 +501,18 @@ function createWindow() {
     icon: path.join(__dirname, '..', 'dist', 'icon512.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
+      additionalArguments: legacyDemo ? ['--squidware-legacy-demo'] : [],
       contextIsolation: true, nodeIntegration: false, sandbox: true,
       webSecurity: true, allowRunningInsecureContent: false, webviewTag: false,
       spellcheck: false, offscreen: smokeTest && Boolean(smokeArtifacts),
     },
   });
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.setWindowOpenHandler(openPreview);
   const contents = window.webContents;
+  contents.on('did-create-window', guardPreview);
+  // A reload or crash discards the React tree that renders the 3D window.
+  contents.on('did-start-navigation', details => { if (details.isMainFrame && !details.isSameDocument) closePreview(); });
+  contents.on('render-process-gone', closePreview);
   contents.on('before-input-event', (event, input) => {
     if (process.platform !== 'darwin' || keyboardContext !== 'text' || input.type !== 'keyDown' || input.isComposing) return;
     const action = textEditAction({ key: input.key, code: input.code, ctrlKey: input.control, metaKey: input.meta, shiftKey: input.shift, altKey: input.alt }, 'mac');

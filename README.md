@@ -12,7 +12,7 @@ Write formations, refine transitions, rehearse in 3D, and export the next rehear
 
 ## Design with precision
 
-Start with the **Tidal forces** demo—64 performers and six editable sets—or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
+Start with **Tether**, the bundled demo: a full 165-member drum corps show in four movements, written to Squidwriter's Space show with curvilinear forms, scatters, orbiting conveyors, follow-the-leader cables, a counter-march and a company front ([about the demo](examples/README.md)). Or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
 
 | Your next step | Tools in the workspace |
 | --- | --- |
@@ -49,7 +49,7 @@ Use the [compact set list](docs/set-list.md) to search by number or name, reorde
 
 ## Rehearse and review
 
-Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in. Use [recording anchors](docs/audio-alignment.md) to align set arrivals and individual counts to variable-tempo recordings, with waveform/tap assistance and an undoable preview.
+Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras, or open it in a separate [3D window](docs/USER_GUIDE.md#3d-window) that follows the editor, for example on a second display. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in. Use [recording anchors](docs/audio-alignment.md) to align set arrivals and individual counts to variable-tempo recordings, with waveform/tap assistance and an undoable preview.
 
 ![Squidware's live 3D preview of the Orbital motion set, with section-colored performer markers, perspective camera controls and the shared show timeline in the Rehearse layout](docs/images/rehearsal-3d.png)
 
@@ -122,6 +122,7 @@ Use `Ctrl` on Windows/Linux and `⌘` on macOS. Defaults can be changed in **Pre
 | Save / Save As | `Ctrl/⌘ S` / `Ctrl/⌘ Shift S` |
 | Open / new production | `Ctrl/⌘ O` / `Ctrl/⌘ N` |
 | Toggle 2D / 3D | `T` |
+| Open or focus the 3D window (desktop) | `Shift+T` |
 
 The field is one Tab stop: arrows move performer focus, Enter/Space selects, and Shift+Enter/Space adds or removes a performer. Editing shortcuts respect text entry. See [commands, drill phrases and rebinding](docs/COMMAND_PALETTE.md).
 

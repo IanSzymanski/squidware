@@ -1,5 +1,5 @@
 'use strict';
-const { waitFor: waitUntil, capturePage, key: sendKey } = require('./testing/renderer.cjs');
+const { waitFor: waitUntil, capturePage, key: sendKey, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
 const manifest = require(process.argv.find(arg => arg.startsWith('--preferences-manifest=')).slice('--preferences-manifest='.length));
@@ -26,7 +26,7 @@ const uiWait = (source, label) => waitFor(() => evaluate(source), label);
 async function click(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await pause(40); }
 function native(label) { function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } } const item = find(Menu.getApplicationMenu()); assert.ok(item, label); item.click(); }
 function instrument() {
-  window.__preferencesQA = { editor: null }; window.confirm = () => true;
+  window.__preferencesQA = { editor: null };
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { const visit = fiber => { if (!fiber) return; const value = fiber.memoizedProps?.value; if (value?.getState && value?.dispatch) window.__preferencesQA.editor = value; visit(fiber.child); visit(fiber.sibling); }; visit(root.current); },
     onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
@@ -59,6 +59,25 @@ async function pdf(paper) {
   await uiWait("!window.__preferencesQA.editor.getState().ui.printing", 'print finished');
   const content = (await fs.readFile(savedFile)).toString('latin1'); const match = content.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/); assert.ok(match, 'PDF page dimensions');
   const expected = paper === 'a4' ? [841.89, 595.28] : [792, 612]; assert.ok(Math.abs(Number(match[1]) - expected[0]) < 1.5); assert.ok(Math.abs(Number(match[2]) - expected[1]) < 1.5);
+}
+
+async function checkSections() {
+  // One mounted fieldset holds four headed groups in this order; the former sub-heads are demoted within them.
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('.preferences-fields > .preferences-section')].map(s => [s.querySelector('h3').textContent, [...s.querySelectorAll('h4')].map(h => h.textContent)])"),
+    [['Appearance', []], ['Field display', ['2D field display', 'Coordinates']], ['Editing', ['Editing increments', 'Set creation', 'Default formation tools', 'New production placement defaults', 'New production analysis defaults', 'Print defaults']], ['Shortcuts', []]]);
+  const groups = { Appearance: ['Interface theme', 'UI scale', 'Panel layout', 'Show hints'], 'Field display': ['Start view', 'Previous paths', 'Next paths', 'Field grid', 'Field zoom', 'Audience orientation', 'Label visibility', 'Coordinate precision'],
+    Editing: ['Nudge units', 'Rotate preset', 'Snap to grid', 'New move counts', 'Shape', 'Step grid', 'Spacing', 'Paper', 'Packet default'], Shortcuts: ['Find a shortcut'] };
+  for (const [title, labels] of Object.entries(groups)) for (const label of labels) assert.equal(await evaluate(`[...document.querySelectorAll('.preferences-fields label')].find(node => node.textContent.startsWith(${JSON.stringify(label)})).closest('.preferences-section').querySelector('h3').textContent`), title, label);
+  const pressed = "document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent";
+  assert.equal(await evaluate(pressed), 'Appearance'); assert.equal(await evaluate("document.querySelector('.shortcut-preferences').open"), false);
+  for (const title of ['Editing', 'Shortcuts', 'Field display', 'Appearance']) {
+    await click(`.preferences-nav [aria-label="${title}"]`);
+    await uiWait(`${pressed} === ${JSON.stringify(title)} && document.activeElement?.textContent === ${JSON.stringify(title)} && (() => { const nav = document.querySelector('.preferences-nav').getBoundingClientRect(), heading = document.activeElement.getBoundingClientRect(); return heading.top >= nav.bottom && heading.bottom <= document.querySelector('dialog[open]').getBoundingClientRect().bottom; })()`, 'section nav: ' + title);
+  }
+  assert.equal(await evaluate("document.querySelector('.shortcut-preferences').open"), true, 'jumping to Shortcuts opens the shortcut list');
+  await evaluate("document.querySelector('dialog[open]').scrollTop = 1e6"); await uiWait(`${pressed} === 'Shortcuts'`, 'scrolled to the last section');
+  await evaluate("document.querySelector('dialog[open]').scrollTop = 0"); await uiWait(`${pressed} === 'Appearance'`, 'scrolled back to the first section');
+  pass('Preferences groups Appearance, Field display, Editing and Shortcuts in one mounted form; the pinned section nav jumps, focuses and follows scrolling');
 }
 
 async function checkCoordinateOutput(project) {
@@ -118,7 +137,7 @@ app.whenReady().then(async () => {
   try {
     await waitFor(() => Boolean(window), 'window'); await uiWait("!!document.querySelector('.field-performer')", 'renderer');
     window.webContents.debugger.attach('1.3'); await window.webContents.debugger.sendCommand('Page.enable');
-    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); window.webContents.reload();
+    await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: '(' + instrument.toString() + ')()' }); await installConfirmShim(source => window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source })); window.webContents.reload();
     await uiWait("!!window.__preferencesQA?.editor && window.__preferencesQA.editor.getState().preferences.status !== 'loading'", 'preferences startup');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
     // Preferences and recovery initialize independently. On restart, recovery
@@ -143,6 +162,7 @@ app.whenReady().then(async () => {
     await openPreferences();
     if (phase === 'write') {
       assert.ok(before.preferences.error.includes('Older')); assert.equal(before.ui.zoom, 1.1);
+      await checkSections();
       await checkCoordinateOutput(original);
       await done();
       for (const section of ['Set properties', 'Formation tools', 'Transition check']) {

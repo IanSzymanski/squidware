@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings } from './snapping';
+import { DEFAULT_SNAPPING, fieldSnapStatus, moveSelection, snapDescription, validateSnapSettings } from './snapping';
 import type { SnapSettings } from './snapping';
 import { fieldDirection, fieldViewPoint } from './components/fieldOrientation';
 
@@ -73,5 +73,14 @@ describe('placement grids and group snapping', () => {
   it('rejects unsupported or partial settings and nonfinite moves', () => {
     for (const value of [null, [], {}, { ...DEFAULT_SNAPPING, steps: 5 }, { ...DEFAULT_SNAPPING, subdivision: 3 }, { ...DEFAULT_SNAPPING, target: 'unknown' }]) expect(() => validateSnapSettings(value)).toThrow('snapping');
     expect(() => moveSelection(originals, ['a'], { x: NaN, y: 0 }, field)).toThrow('finite');
+  });
+});
+
+describe('snap status text', () => {
+  it('reports the production snap mode, snap off and previews that bypass snapping', () => {
+    expect(fieldSnapStatus(DEFAULT_SNAPPING, true)).toBe(snapDescription(DEFAULT_SNAPPING, true));
+    expect(fieldSnapStatus(DEFAULT_SNAPPING, false)).toBe('Snap off · Unquantized moves');
+    expect(fieldSnapStatus(DEFAULT_SNAPPING, true, 'coordinates')).toBe('Exact coordinate entry · snapping bypassed');
+    expect(fieldSnapStatus(DEFAULT_SNAPPING, false, 'spacing')).toBe('Exact spacing · snapping bypassed');
   });
 });

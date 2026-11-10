@@ -4,6 +4,8 @@ import { flushSync } from 'react-dom';
 import { bindingFromEvent, defaultShortcuts, nativeMenuCommands, shortcutForEvent } from '../shortcuts';
 import { shortcutPlatform } from './shortcutDisplay';
 import { useEditorStore } from './react';
+import { isModalOpen } from './confirmation';
+import { isTooltipEscape } from '../components/Tooltip';
 
 export const menuCommands = nativeMenuCommands;
 const isInput = (target: Element | null) => target instanceof HTMLElement && (target.matches('input, textarea, select') || target.isContentEditable);
@@ -17,7 +19,7 @@ export function useCommandController() {
     function updateMenuContext() {
       const state = store.getState();
       // A modal recorder or text input must receive its own keystrokes before native accelerators.
-      const context = isInput(document.activeElement) ? 'text' : state.ui.dialog || state.ui.paletteOpen ? 'modal' : 'editor';
+      const context = isInput(document.activeElement) ? 'text' : isModalOpen(state) || state.ui.paletteOpen ? 'modal' : 'editor';
       if (context !== lastMenuContext) { lastMenuContext = context; window.squidware?.setKeyboardContext?.(context); }
     }
     function menuAction(action: string) {
@@ -27,7 +29,8 @@ export function useCommandController() {
       if (editing && ['undo', 'redo', 'select-all'].includes(action)) {
         document.execCommand(action === 'select-all' ? 'selectAll' : action); return;
       }
-      if (state.ui.dialog) return;
+      // An in-app confirmation is modal: menus wait for its answer.
+      if (isModalOpen(state)) return;
       const command = menuCommands[action as keyof typeof menuCommands];
       if (!command) return;
       if (command.startsWith('file.')) flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -38,7 +41,8 @@ export function useCommandController() {
       const state = store.getState(); const target = event.target;
       const input = isInput(target);
       const id = shortcutForEvent(event, state.preferences.value.shortcutBindings, platform, !!window.squidware);
-      if (state.ui.dialog) return;
+      // Keys inside a confirmation (Escape, Tab, Enter) belong to that dialog.
+      if (isModalOpen(state)) return;
       if (state.ui.paletteOpen) { if (id === 'palette.open') { event.preventDefault(); store.setValue('ui', 'paletteOpen', false); } return; }
       if (id) {
         const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];
@@ -50,11 +54,14 @@ export function useCommandController() {
         if (!store.dispatch(id) && id === 'palette.open') store.setValue('ui', 'toast', 'Finish or cancel the pending edit before opening commands.');
         return;
       }
-      if (input) return;
+      const cancel = state.ui.formationPreview ? 'formation.cancel' : state.ui.spacingPreview ? 'spacing.cancel' : state.ui.coordinatePreview ? 'coordinates.cancel' : state.ui.transformPreview ? 'transform.cancel' : null;
+      // A select has no Escape action of its own, so Escape there still cancels a preview it controls.
+      if (input && !(event.key === 'Escape' && cancel && target.matches('select'))) return;
       if (event.key === 'Escape') {
         if (state.ui.selectionToolsOpen) { event.preventDefault(); store.dispatch(state.ui.selectionPreview ? 'selection.cancel' : 'selection.close'); return; }
-        const cancel = state.ui.formationPreview ? 'formation.cancel' : state.ui.spacingPreview ? 'spacing.cancel' : state.ui.coordinatePreview ? 'coordinates.cancel' : state.ui.transformPreview ? 'transform.cancel' : 'selection.clear';
-        event.preventDefault(); store.dispatch(cancel); return;
+        // Closing help also cancels a preview, but never clears the selection by itself.
+        if (!cancel && isTooltipEscape(event)) return;
+        event.preventDefault(); store.dispatch(cancel ?? 'selection.clear'); return;
       }
       if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.altKey && !target.closest('button, summary, a[href], [role="button"]')) {
         const apply = state.ui.selectionPreview ? 'selection.apply' : state.ui.formationPreview ? 'formation.apply' : state.ui.spacingPreview ? 'spacing.apply' : state.ui.coordinatePreview ? 'coordinates.apply' : state.ui.transformPreview ? 'transform.apply' : null;
@@ -65,7 +72,7 @@ export function useCommandController() {
       }
     }
     const unsubscribe = window.squidware?.onMenuAction(menuAction);
-    const unsubscribeContext = store.subscribeSelector(state => !!state.ui.dialog || state.ui.paletteOpen, updateMenuContext);
+    const unsubscribeContext = store.subscribeSelector(state => isModalOpen(state) || state.ui.paletteOpen, updateMenuContext);
     updateMenuContext();
     document.addEventListener('focusin', updateMenuContext);
     document.addEventListener('focusout', updateMenuContext);

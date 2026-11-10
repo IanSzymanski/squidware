@@ -8,6 +8,13 @@ describe('personal preferences codec', () => {
     expect(() => validatePreferences({ setThumbnails: 'true' })).toThrow();
     expect(serializeProject(createDemoProject())).not.toContain('setThumbnails');
   });
+  it('shows hints by default for older files and keeps the choice as a personal boolean', () => {
+    expect(validatePreferences({ version: 1 }).showHints).toBe(true);
+    expect(validatePreferences({ version: 0 }).showHints).toBe(true);
+    expect(validatePreferences({ showHints: false }).showHints).toBe(false);
+    for (const value of ['false', 0, null]) expect(() => validatePreferences({ showHints: value })).toThrow();
+    expect(serializeProject(createDemoProject())).not.toContain('showHints');
+  });
   it('migrates and bounds the integer default for new move counts', () => {
     expect(validatePreferences({ version: 1 }).newSetCounts).toBe(32);
     for (const counts of [1, 1024]) expect(validatePreferences({ newSetCounts: counts }).newSetCounts).toBe(counts);

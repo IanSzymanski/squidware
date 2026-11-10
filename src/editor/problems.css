@@ -7,7 +7,11 @@
 .problem-results { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .problem-results .problem-result { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 5px; text-align: left; white-space: normal; border: 1px solid var(--border); background: var(--surface); padding: 10px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .problem-result small { font-size: 11px; color: var(--muted); }
-.problem-severity { display: flex; align-items: center; gap: 5px; text-transform: capitalize; font-weight: 600; }
+.problem-severity { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-weight: 600; }
+.problem-severity .problem-name { color: var(--text); font-variant-numeric: tabular-nums; }
+.problem-rules { display: flex; align-items: flex-start; gap: 12px; }
+.problem-rules .microcopy { flex: 1; margin: 0; }
+.problem-rules .button { flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
 .problem-severity.danger { color: var(--error); }
 .problem-severity.warning { color: var(--warning); }
 .problem-field-status { position: absolute; left: 12px; bottom: 38px; max-width: calc(100% - 24px); padding: 5px 8px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 5px; font-size: 12px; z-index: 5; pointer-events: none; }

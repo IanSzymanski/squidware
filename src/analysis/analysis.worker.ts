@@ -1,14 +1,15 @@
 import { TransitionAnalyzer } from './engine';
 import type { AnalysisRequest, AnalysisResponse } from './input';
+import { messageYield } from '../workerYield';
 
 const scope = self as unknown as { onmessage: (event: MessageEvent<AnalysisRequest>) => void; postMessage: (message: AnalysisResponse) => void };
-const analyzer = new TransitionAnalyzer();
+const analyzer = new TransitionAnalyzer(), yieldTask = messageYield();
 let generation = 0;
 scope.onmessage = async ({ data }) => {
   const current = ++generation;
   if (!data.input) return;
   try {
-    const result = await analyzer.analyze(data.input, () => generation !== current);
+    const result = await analyzer.analyze(data.input, () => generation !== current, yieldTask);
     if (result && generation === current) scope.postMessage({ revision: data.revision, result });
   } catch (error) {
     if (generation === current) scope.postMessage({ revision: data.revision, error: error instanceof Error ? error.message : 'Transition check failed.' });

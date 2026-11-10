@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { coordinateDescription, coordinatePrecisionLabel } from './coordinates';
+import { coordinateDescription, coordinatePrecisionLabel, formatYards } from './coordinates';
 import { createBlankProject, exportCoordinatesCsv, performerMoveOutput, sampleProject, serializeProject, setStartCount } from './domain';
 import { defaultPreferences, validatePreferences } from './preferences';
 import { FieldDrawing } from './components/Field2D';
@@ -116,5 +116,17 @@ describe('incoming movement descriptions', () => {
     expect(csv).toContain('"0.219","20.219"');
     expect(serializeProject(project)).toBe(before);
     expect(performerMoveOutput(project, 1, 'p', options).averageStepsPerFive).toBe(8);
+  });
+});
+
+describe('formatYards', () => {
+  it('shows at most three decimals with trailing zeros trimmed, like the CSV yard columns', () => {
+    expect(formatYards(160 / 3 / 2)).toBe('26.667'); expect(formatYards(52.333333333333336)).toBe('52.333');
+    expect(formatYards(50)).toBe('50'); expect(formatYards(20.5)).toBe('20.5'); expect(formatYards(26.25)).toBe('26.25');
+    expect(formatYards(0.0005)).toBe('0.001'); expect(formatYards(-12.3456)).toBe('-12.346'); expect(formatYards(1e6 + 1 / 3)).toBe('1000000.333');
+  });
+  it('never shows negative zero and blanks non-finite values', () => {
+    for (const value of [-0, -0.0001, 0.0004]) expect(formatYards(value)).toBe('0');
+    for (const value of [NaN, Infinity, -Infinity]) expect(formatYards(value)).toBe('');
   });
 });

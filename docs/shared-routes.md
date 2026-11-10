@@ -33,9 +33,12 @@ tangents; aligned directions do not imply speed continuity. Cubic controls can
 be edited independently to refine a join. Closed geometry may cross itself.
 
 Select a segment on the field or in the selector. Numeric inputs and field
-handles share the same edits. The field is one Tab stop: brackets choose handles,
-arrows move 0.1 yard, Shift+arrows 1 yard, and optional snapping uses the existing
-production settings. Hit regions keep their screen size at 1×/2×/4× zoom.
+handles share the same edits. Inputs and the length readout show yards to at
+most three decimals (a new route starts at Y 26.667 on a college field); the
+stored coordinates stay exact until you type or drag a new value. The field is
+one Tab stop: brackets choose handles, arrows move 0.1 yard, Shift+arrows 1
+yard, and optional snapping uses the existing production settings. Hit regions
+keep their screen size at 1×/2×/4× zoom.
 Moving an anchor translates its adjacent controls; invalid boundary-crossing
 drags reject while numeric drafts retain a visible error. Split inserts an exact
 de Casteljau midpoint without changing the locus. Remove reconnects the next
