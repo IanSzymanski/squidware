@@ -6,7 +6,7 @@ Write formations, refine transitions, rehearse in 3D, and export the next rehear
 
 [Download v0.6.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) · [User guide](docs/USER_GUIDE.md) · [Run from source](#run-from-source) · [Roadmap](ROADMAP.md)
 
-> **Release and development:** v0.6.0 is the newest published prerelease. This README and its screenshots show current `main`, including v0.7 work such as musical timing, the editable Production sheet and portable audio. [Run from source](#run-from-source) to use those features before the next release.
+> **Release and development:** v0.6.0 is the newest published prerelease. This README and its screenshots show current `main`, including unreleased musical timing, editable travel paths, reusable formations and group route movement. [Run from source](#run-from-source) to use these features.
 
 ![The Tidal forces demo in Squidware's 2D editor, with 24 brass performers selected, compact set navigation, a contextual Inspector and the musical timeline](docs/images/studio.png)
 
@@ -19,10 +19,25 @@ Start with the **Tidal forces** demo—64 performers and six editable sets—or 
 | Build the cast | CSV roster import, editable names and sections, and [shared selection between Cast and field](docs/CAST_PANEL.md). |
 | Select the right performers | Individual and additive section selection, marquee and reviewed lasso selection, rank/file selection and [saved groups](docs/SELECTION_TOOLS.md). |
 | Place the picture | Drag, configurable [grids and group snapping](docs/GRID_SNAPPING.md), keyboard nudges and [drill-language coordinate entry](docs/COORDINATE_ENTRY.md). |
-| Shape and refine | Preview [lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md); [rotate, scale and mirror](docs/EXACT_TRANSFORMS.md); set [alignment and exact intervals](docs/SPACING_ALIGNMENT.md). |
+| Shape and refine | Preview [lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md), editable Bézier curves and seeded scatter; [rotate, scale and mirror](docs/EXACT_TRANSFORMS.md); set [alignment and exact intervals](docs/SPACING_ALIGNMENT.md). |
 | Connect the sets | Previous/next ghosts and paths, counts and tempo per move, distinct New/Duplicate/Insert/Hold actions, and a [sampled transition split](docs/split-transition.md). |
 
-Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture. Resize or collapse panels, switch Write/Review/Rehearse layouts, and choose dark, light or high-contrast display settings without changing drill geometry.
+Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture. The contextual Inspector keeps selection actions visible while you work. Resize or collapse panels, switch **Write / Review / Rehearse** layouts, or focus the field and timeline with an explicit Exit focus action. Dark, light and high-contrast themes, UI scaling and panel layouts change the workspace without changing drill geometry.
+
+## Shape the movement
+
+Pause at an arrival set and select one performer to **Edit performer path**. Refine a cubic curve with field handles or exact coordinates, then scrub its count ticks before Apply. **Draw performer path** adds stroke fitting and intermediate anchors; holds and timed submoves let performers depart and arrive independently.
+
+![An unapplied Bézier travel-path preview for performer B10 at 2× field zoom, with draggable handles, exact control coordinates, count ticks and Apply/Cancel controls](docs/images/travel-path.png)
+
+| Build on your work | Current tools |
+| --- | --- |
+| Keep formations editable | [Live formations](docs/live-formations.md) retain shape parameters and member slots. Refine [Bézier curves and waves](docs/bezier-formations.md) or preview [seeded scatter](docs/scatter-formations.md) with spacing constraints. |
+| Reuse a starting point | Save anonymous ensemble setups and formation presets in a [personal template library](docs/template-library.md), then preview placement on the current cast. |
+| Compare destinations | [Optimize assignment](docs/assignment-optimization.md) compares travel and movement checks while respecting pins, section slots and explicit role constraints. |
+| Control ensemble travel | Review [formation transitions](docs/formation-transitions.md), or use [shared routes](docs/shared-routes.md) for [follow-the-leader, counter-march and conveyor movement](docs/group-movement.md). Preview connectors, count ticks and spacing/stride findings before committing. |
+
+Path and movement edits use reviewed previews and named undo actions. See [individual path authoring](docs/path-authoring.md) for drawing and handle controls, and [move operations](docs/path-operations.md) for reviewed count resizing, reversal and interval copy/paste.
 
 ## Plan the whole show
 
@@ -84,9 +99,9 @@ pnpm start
 ## Your first rehearsal
 
 1. Explore the demo, choose a set, and select a section from the field legend.
-2. Move the selection or preview a formation. Apply it, then use Undo to compare.
+2. Move the selection or preview a formation. Apply it, then use Undo to compare. Keep a formation editable to refine it later.
 3. Add a New, Duplicate, Insert before or Hold set. Set its incoming counts, tempo and rehearsal notes.
-4. Review paths and flagged transitions, attach audio, then play or scrub in 2D or 3D.
+4. Select one performer at an arrival set to preview a travel-path edit. Review flagged transitions, attach audio, then play or scrub in 2D or 3D.
 5. Save the editable project and export field charts, performer sheets or a portable audio package.
 
 The [user guide](docs/USER_GUIDE.md) covers the full workflow, including roster import, coordinate conventions and file handling.
@@ -151,7 +166,7 @@ To build for the current host, run `pnpm dist --publish never`; Windows also has
 
 ## Scope and roadmap
 
-Squidware supports standard 100 × 53⅓-yard college/high-school fields, straight/cubic performer paths, and independently timed holds and submoves. Linear or eased timing applies within each travel interval; curved parameter speed can vary. The 3D figures are rehearsal markers. [Detailed movement operations](docs/path-operations.md) support count rescaling, selected-path reversal and reviewed interval copy/paste. [Detailed spacing/stride checks](docs/detailed-path-analysis.md) report conservative bounds and confirmed/possible findings for custom paths. Field path handles, detailed split/rewire operations, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
+Squidware supports standard 100 × 53⅓-yard college/high-school fields, editable straight/cubic performer paths, independently timed holds and submoves, live formations and shared group routes. Linear or eased timing applies within individual travel intervals; curved parameter speed can vary. Group route motion uses linear counts. The 3D figures are rehearsal markers. [Detailed spacing/stride checks](docs/detailed-path-analysis.md) report conservative bounds and confirmed/possible findings for custom paths. Detailed split/rewire operations, props, video export, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
 
 Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
 

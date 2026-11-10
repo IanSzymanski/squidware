@@ -1,43 +1,68 @@
 {
   "source": {
-    "revision": "14454e15484c64ef5bc141ba54b79969dceaf5db",
-    "tree": "4cf811db33882df7fb9635567ae9f1be33bcaeb4",
+    "revision": "329917506d42d89a0771f66665bd12a96b1f10e1",
+    "tree": "0ad78695a912885822daa922b6cd5c996a1b32e4",
     "dirty": false,
-    "contentHash": "3198a23eecd210678172ac3c97fded3d2188ef5f2b8ddd41c1621ec0e62d417c",
+    "contentHash": "06d009e98b2eb875500c516e0d675a0ee22d89df873245fbb22092620a66a069",
     "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "build": {
+    "builtAt": "2026-11-10T20:37:59.826Z",
+    "outputHash": "aaeb4c732eff43c49c12cc923d822219f17447e9f77fa4ec48a450c9168ac389"
   },
   "captures": [
     {
       "name": "studio.png",
+      "description": "Tidal arc, Brass selected, Write layout, canvas field and contextual Inspector",
       "width": 1600,
       "height": 1000,
       "workspace": "design",
       "view": "2d",
       "fieldHeight": 717,
       "webglDraws": 0,
-      "sha256": "e798cb5be3aa332740ac9bf7618618497da03df176992354a570fd3c08c14abb"
+      "sha256": "95f99ef31a91da213947bbd61d2e0393441f512ffc87b1368b28c5e0bdfa58fa"
     },
     {
       "name": "production-sheet.png",
+      "description": "Production sheet with six demo sets and musical timing",
       "width": 1600,
       "height": 1000,
       "workspace": "production",
       "view": "2d",
       "webglDraws": 0,
-      "sha256": "af0535c16f1a699699cb1762cffaf9d69973a6f882ee852613b48b82f830be87"
+      "sha256": "aa33211685630935217fb86632332aebb8bff622f54813dbffd55c46c91a0735"
     },
     {
       "name": "rehearsal-3d.png",
+      "description": "Orbital motion in the Rehearse layout, perspective 3D camera",
       "width": 1600,
       "height": 1000,
       "workspace": "design",
       "view": "3d",
       "fieldHeight": 717,
       "webglDraws": 38,
-      "sha256": "f8bf997013b93d11445804b68e78c335e0811eaa82f2a77d2bc446fa2b365e71"
+      "sha256": "d33926d7f69ee74493a9375ae8d7903685a0d384b22d3246e49c45dd50507460"
+    },
+    {
+      "name": "travel-path.png",
+      "description": "Unapplied B10 cubic performer path preview at 2× field zoom with handles, count ticks and exact controls",
+      "width": 1600,
+      "height": 1000,
+      "workspace": "design",
+      "view": "2d",
+      "fieldHeight": 717,
+      "webglDraws": 38,
+      "crop": {
+        "x": 411,
+        "y": 0,
+        "width": 778,
+        "height": 1000
+      },
+      "sha256": "ab5b554fb4d6d67ebccc3823fe3fce7b612168157c57c929fcad7016898bee0f"
     },
     {
       "name": "portable-audio.png",
+      "description": "Portable production export, bundled generated recording and two-second sync offset",
       "width": 1600,
       "height": 1000,
       "workspace": "design",
@@ -50,10 +75,11 @@
         "width": 508,
         "height": 599
       },
-      "sha256": "feb3245f0e7ca0a6696a866461905966ffa9f2695ae2e5a29d59b701caaabcea"
+      "sha256": "47ba338b903750c51e354e1b9245087dd583833d4e256e5105070cd1b0cd9c26"
     }
   ],
-  "recording": "Generated PCM waveform; no private recording.",
-  "renderer": "Production renderer/preload/main; SwiftShader WebGL.",
-  "date": "2026-10-29"
+  "recording": "Generated 80-second PCM pulse; no private recording.",
+  "renderer": "Production renderer/preload/main; Xvfb and SwiftShader WebGL.",
+  "date": "2026-11-10",
+  "errors": []
 }
