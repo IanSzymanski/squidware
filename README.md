@@ -8,11 +8,11 @@ Write formations, refine transitions, rehearse in 3D, and export the next rehear
 
 > **Release and development:** v0.6.0 is the newest published prerelease. This README and its screenshots show current `main`, including unreleased musical timing, editable travel paths, reusable formations and group route movement. [Run from source](#run-from-source) to use these features.
 
-![The Tidal forces demo in Squidware's 2D editor, with 24 brass performers selected, compact set navigation, a contextual Inspector and the musical timeline](docs/images/studio.png)
+![The Tether demo in Squidware's updated 2D editor, with 24 sopranos selected in the Accretion disc set, compact set navigation, a contextual Inspector and the musical timeline](docs/images/studio.png)
 
 ## Design with precision
 
-Start with **Tether**, the bundled demo: a full 165-member drum corps show in four movements, written to Squidwriter's Space show with curvilinear forms, scatters, orbiting conveyors, follow-the-leader cables, a counter-march and a company front ([about the demo](examples/README.md)). Or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
+Start with **Tether**, the bundled demo: a full 165-member drum corps show with 67 sets in four movements, written to Squidwriter's Space show with curvilinear forms, scatters, orbiting conveyors, follow-the-leader cables, a counter-march and a company front ([about the demo](examples/README.md)). Or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
 
 | Your next step | Tools in the workspace |
 | --- | --- |
@@ -22,13 +22,15 @@ Start with **Tether**, the bundled demo: a full 165-member drum corps show in fo
 | Shape and refine | Preview [lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md), editable Bézier curves and seeded scatter; [rotate, scale and mirror](docs/EXACT_TRANSFORMS.md); set [alignment and exact intervals](docs/SPACING_ALIGNMENT.md). |
 | Connect the sets | Previous/next ghosts and paths, counts and tempo per move, distinct New/Duplicate/Insert/Hold actions, and a [sampled transition split](docs/split-transition.md). |
 
-Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture. The contextual Inspector keeps selection actions visible while you work. Resize or collapse panels, switch **Write / Review / Rehearse** layouts, or focus the field and timeline with an explicit Exit focus action. Dark, light and high-contrast themes, UI scaling and panel layouts change the workspace without changing drill geometry.
+Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture. The contextual Inspector keeps selection actions and preview Apply/Cancel controls in view. Resize or collapse panels, switch **Write / Review / Rehearse** layouts, or focus the field and timeline. Cast docks beside the field; on smaller windows, panels tuck behind Show controls or open over the field.
+
+The workspace adapts to window size and UI scale. The compact transport moves loop, metronome and speed into **More playback options**. Preferences groups **Appearance**, **Field display**, **Editing** and **Shortcuts**, with dark, light and high-contrast themes. Display and layout choices leave drill geometry unchanged. See the [workspace guide](docs/WORKSPACE_LAYOUT.md).
 
 ## Shape the movement
 
 Pause at an arrival set and select one performer to **Edit performer path**. Refine a cubic curve with field handles or exact coordinates, then scrub its count ticks before Apply. **Draw performer path** adds stroke fitting and intermediate anchors; holds and timed submoves let performers depart and arrive independently.
 
-![An unapplied Bézier travel-path preview for performer B10 at 2× field zoom, with draggable handles, exact control coordinates, count ticks and Apply/Cancel controls](docs/images/travel-path.png)
+![An unapplied Bézier travel-path preview for Tether performer S16 into Lament at 2× field zoom, with draggable handles, exact control coordinates, count ticks and Apply/Cancel controls](docs/images/travel-path.png)
 
 | Build on your work | Current tools |
 | --- | --- |
@@ -43,7 +45,7 @@ Path and movement edits use reviewed previews and named undo actions. See [indiv
 
 Edit set names, counts, tempos and notes in the **Production sheet**. Navigate cells with the keyboard or review a CSV/TSV paste before applying the range as one undoable edit. Add pickups, meter changes and rehearsal marks through the **Score map**; measure/beat readouts and the metronome use the same count axis. Preview [tempo ranges, linear BPM ramps and timed fermatas](docs/tempo-map.md) with one undoable Apply; playback and the metronome share the map.
 
-![The editable Production sheet for Tidal forces, showing six sets with names, incoming counts, tempos, notes and musical positions, plus Score map and Paste range controls](docs/images/production-sheet.png)
+![Tether's editable Production sheet, showing the opening rows of its 67-set show with multiline notes, incoming counts, base tempos, readable meters and rehearsal marks](docs/images/production-sheet.png)
 
 Use the [compact set list](docs/set-list.md) to search by number or name, reorder by drag or direct position, and enable thumbnails when useful. The [Production sheet guide](docs/production-sheet.md) and [Score map guide](docs/score-map.md) explain editing and timing rules.
 
@@ -51,15 +53,15 @@ Use the [compact set list](docs/set-list.md) to search by number or name, reorde
 
 Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras, or open it in a separate [3D window](docs/USER_GUIDE.md#3d-window) that follows the editor, for example on a second display. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in. Use [recording anchors](docs/audio-alignment.md) to align set arrivals and individual counts to variable-tempo recordings, with waveform/tap assistance and an undoable preview.
 
-![Squidware's live 3D preview of the Orbital motion set, with section-colored performer markers, perspective camera controls and the shared show timeline in the Rehearse layout](docs/images/rehearsal-3d.png)
+![Squidware's live 3D preview of Tether's Accretion disc set, with 165 section-colored performer markers, perspective camera controls and the shared show timeline in the Rehearse layout](docs/images/rehearsal-3d.png)
 
-[Show-wide problems](docs/show-wide-problems.md) flag minimum spacing and excessive stride and take you to the affected count and performers. [Production, section and direction rules](docs/analysis-rules.md) travel with the project. Checks describe performer-center geometry; review physical clearance and traffic separately.
+[Show-wide problems](docs/show-wide-problems.md) flag minimum spacing and excessive stride and take you to the affected count and performers. Timeline markers group nearby findings so you can review them from the affected move. [Production, section and direction rules](docs/analysis-rules.md) travel with the project. Checks describe performer-center geometry; review physical clearance and traffic separately.
 
 ## Bring the recording with you
 
-Choose **Export → Portable production with audio** to bundle the recording in a `.squidpack` file or reference it relative to the package folder. Review the contents and size before export. Opening the package restores its recording and offset; a missing or changed reference offers an explicit relink action while keeping the drill intact.
+**Export** groups field charts and performer coordinate sheets under **PDF drill book**. **Other formats** offers coordinate CSV, the current chart as SVG and **Portable production with audio**. Choose the portable production to bundle the recording in a `.squidpack` file or reference it relative to the package folder. Review the contents and size before export. Opening the package restores its recording and offset; a missing or changed reference offers an explicit relink action while keeping the drill intact.
 
-![Portable production export showing bundled audio, six drill sets, a two-second sync offset, recording size and estimated package size before export](docs/images/portable-audio.png)
+![Portable production export for Tether showing 67 drill sets, a generated recording, a two-second sync offset and the estimated package size before export](docs/images/portable-audio.png)
 
 [Portable audio packages](docs/AUDIO_PACKAGES.md) support WAV, MP3, OGG, M4A and FLAC up to 200 MiB, subject to decoder support. Export the package again after edits or relinking.
 
@@ -108,7 +110,7 @@ The [user guide](docs/USER_GUIDE.md) covers the full workflow, including roster 
 
 ### Keyboard essentials
 
-Use `Ctrl` on Windows/Linux and `⌘` on macOS. Defaults can be changed in **Preferences → Keyboard shortcuts**.
+Use `Ctrl` on Windows/Linux and `⌘` on macOS. Defaults can be changed in **Preferences → Shortcuts**.
 
 | Action | Shortcut |
 | --- | --- |
