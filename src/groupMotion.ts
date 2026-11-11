@@ -44,7 +44,15 @@ function routePieces(route:SharedRoute,a:number,b:number,start:number,end:number
   const add=(d:number)=>{if(d>lo&&d<hi){cuts.push(d);if(cuts.length>GROUP_LIMITS.pieces+1)fail('route sampling exceeds 4,096 pieces per member. Simplify the route or travel.');}};
   if(route.closed){for(let lap=Math.floor(lo/L);lap<=Math.floor(hi/L);lap++)for(const e of compiled.table)add(lap*L+e.length);}
   else {add(0);add(L);for(const e of compiled.table)add(e.length);}
-  const ordered=[...new Set(cuts)].sort((x,y)=>a<b?x-y:y-x);
+  // Lap offsets and member phases can put the same table boundary a few ulps
+  // apart. Such slivers amplify coordinate roundoff into false peak strides.
+  // Coalesce only generated distance cuts at floating-point resolution, keeping
+  // the authored leg's exact endpoints (and thus cue/connector times) intact.
+  const resolution=16*Number.EPSILON*Math.max(L,Math.abs(a),Math.abs(b));
+  const ordered=[a];
+  for(const d of cuts.sort((x,y)=>a<b?x-y:y-x))
+    if(Math.abs(d-ordered.at(-1)!)>resolution&&Math.abs(d-b)>resolution)ordered.push(d);
+  ordered.push(b);
   for(let i=1;i<ordered.length;i++){
     const x=ordered[i-1],y=ordered[i],mid=(x+y)/2;
     const count=(d:number)=>d===a?start:d===b?end:start+(d-a)/(b-a)*(end-start);
