@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -24,7 +25,7 @@ function instrument() {
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
 const button = label => `[aria-label="${label}"]`;
-async function click(selector) {
+async function click(selector) { await revealFieldTool(window,selector);
   const point = await evaluate(`(() => {const n=document.querySelector(${JSON.stringify(selector)}); if(!n || n.disabled) throw new Error('Unavailable '+${JSON.stringify(selector)});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
   window.webContents.sendInputEvent({ type:'mouseDown', ...point, button:'left', clickCount:1 }); window.webContents.sendInputEvent({ type:'mouseUp', ...point, button:'left', clickCount:1 });
 }

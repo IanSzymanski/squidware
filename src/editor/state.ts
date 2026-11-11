@@ -25,6 +25,7 @@ export interface EditorState {
     workspace: Workspace; focusMode: boolean; view: '2d' | '3d'; tool: 'select' | 'pan' | 'lasso'; zoom: number; fitVersion: number; projectEpoch: number;
     /** The separate 3D window exists only with the desktop bridge; a focus request increments popout3dFocus. */
     popout3d: 'unavailable' | 'closed' | 'open'; popout3dFocus: number;
+    camera: { preset: 'perspective' | 'front' | 'top' | null; version: number };
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
     showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog; groupMotionId?: string;
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
@@ -60,7 +61,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     project: { present: project, past: [], future: [], revision: 0, estimatedBytes: 0, droppedEntries: 0, recoveryError },
     selection: { activeIndex: 0, selectedIds: [] },
     playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, countInBars: 0, muted: false, clockStatus: '', seekVersion: 0, rehearsalId: null },
-    ui: { workspace: 'design', focusMode: false, view: '2d', popout3d: 'unavailable', popout3dFocus: 0, tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
+    ui: { workspace: 'design', focusMode: false, view: '2d', popout3d: 'unavailable', popout3dFocus: 0, camera: { preset: 'perspective', version: 0 }, tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
       showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
       pendingDraft: false, menu: false, paletteOpen: false, toast: '', setCreationKind: 'new', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castReveal: 0, castRevealRestored: false, castQuery: '',

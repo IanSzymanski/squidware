@@ -19,7 +19,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'dialog.open' && args.dialog === 'remove-set' && state.project.present.sets.length <= 1) return 'Keep at least one set in the production.';
   const previews = state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview;
   if (previews && !/\.(apply|cancel)$/.test(id) && !['live.redistribute', 'palette.open', 'tool.box', 'tool.pan', 'display.paths', 'display.labels', 'field.zoom-in', 'field.zoom-out', 'field.fit', 'view.popout', 'view.popout-close'].includes(id)) return 'Apply or cancel the current preview first.';
-  if (['transform.preview', 'transform.mirror', 'formation.preview', 'spacing.preview', 'coordinates.preview'].includes(id)) {
+  if (['selection.move-controls', 'transform.preview', 'transform.mirror', 'formation.preview', 'spacing.preview', 'coordinates.preview'].includes(id)) {
     if (!canEditPositions(state)) return state.playback.playing ? 'Pause playback at a set before editing positions.' : !isAtActiveSet(state) ? 'Return to a set before editing positions.' : 'Finish or cancel the current preview first.';
     if (state.selection.selectedIds.length < (id === 'spacing.preview' ? 2 : 1)) return id === 'spacing.preview' ? 'Select at least two performers on this set.' : 'Select performers on this set first.';
   }
@@ -83,6 +83,7 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   add('transform.preview', {});
   add('view.select', { view: '2d' }, 'Open 2D field', 'view-2d');
   add('view.select', { view: '3d' }, 'Open 3D preview', 'view-3d');
+  for (const [preset,name] of [['perspective','Perspective camera'],['front','Front camera'],['top','Overhead camera']] as const) add('view.camera',{preset},name,`camera-${preset}`);
   add('workspace.show', { workspace: 'production' }, 'Production sheet');
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
   for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);

@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -33,7 +34,7 @@ function instrument() {
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) window.__selectionQA.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
-async function control(selector, modifiers = 0) {
+async function control(selector, modifiers = 0) { await revealFieldTool(window,selector);
   await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n || n.disabled || n.getAttribute('aria-disabled')==='true' || !n.getClientRects().length){resolve(false);return;}n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__selectionPoint={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__selectionPoint.x,window.__selectionPoint.y)));}));})`, 'actionable ' + selector);
   await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
   const point = await evaluate('window.__selectionPoint');
@@ -123,8 +124,8 @@ app.whenReady().then(async () => {
       await text('[aria-label="Selection tolerance in yards"]', '0.25'); await control('[aria-label="Preview rank"]');
       await evaluate("document.querySelector('.field-stage__svg').focus()"); await key('Escape'); await wait(`!${state}.ui.selectionPreview`, 'field Escape cancels selection review');
       assert.deepEqual(await selected(), initialIds); await key('Escape'); await wait(`!${state}.ui.selectionToolsOpen`, 'second field Escape closes selection tools'); assert.deepEqual(await selected(), initialIds);
-      await open(); await control('[aria-label="Preview rank"]'); await control('[aria-label="Apply selection"]'); assert.deepEqual(await selected(), ids.slice(0, 2));
-      await open(); await control('[aria-label="Preview file"]'); await control('[aria-label="Apply selection"]'); assert.deepEqual(await selected(), [ids[0], ids[3]]);
+      await open(); await control('[aria-label="Preview rank"]'); await control('.selection-tools-panel [aria-label="Apply selection"]'); assert.deepEqual(await selected(), ids.slice(0, 2));
+      await open(); await control('[aria-label="Preview file"]'); await control('.selection-tools-panel [aria-label="Apply selection"]'); assert.deepEqual(await selected(), [ids[0], ids[3]]);
       assert.deepEqual(await evaluate(`${state}.project`), rankBefore); pass('native rank/file preview, boundary inclusion, Cancel and Apply alter only selection with keyboard anchor/tolerance alternatives');
       await control('[aria-label="Lasso selection"]'); await key('V'); await wait(`${state}.ui.tool==='select'`, 'V tool shortcut'); await key('L'); await wait(`${state}.ui.tool==='lasso'`, 'lasso tool');
       const polygon = [{ x: 28, y: 20 }, { x: 46, y: 20 }, { x: 46, y: 28 }, { x: 28, y: 28 }];
@@ -141,14 +142,14 @@ app.whenReady().then(async () => {
       await control('[aria-label="Focus field"]'); await wait("!!document.querySelector('.studio--focus')", 'focus before lasso cancellation');
       await draw(true); assert.ok(await evaluate("!!document.querySelector('.studio--focus')")); await key('Escape'); await wait("!document.querySelector('.studio--focus')", 'second Escape restores workspace'); assert.deepEqual(await selected(), [ids[0], ids[3]]); assert.equal(await evaluate(`${state}.ui.selectionPreview`), null);
       await draw(false); await wait(`!!${state}.ui.selectionPreview`, 'native lasso review'); assert.deepEqual(await evaluate(`${state}.ui.selectionPreview.ids`), ids.slice(0, 2));
-      await capture('selection-lasso-preview.png'); await control('[aria-label="Apply selection"]'); assert.deepEqual(await selected(), ids.slice(0, 2));
+      await capture('selection-lasso-preview.png'); await control('.selection-tools-panel [aria-label="Apply selection"]'); assert.deepEqual(await selected(), ids.slice(0, 2));
       assert.deepEqual(await evaluate(`${state}.project`), rankBefore); pass('native freehand lasso previews exact IDs; gesture Escape in focus mode preserves the previous selection and Apply adds no geometry/history edit');
       for (const [width, height, scale] of [[850, 680, 1], [1000, 700, 2]]) {
         await viewport(width, height, scale); await evaluate(`${editor}.dispatch('selection.tools')`);
         await control('[aria-label="Selection tolerance in yards"]'); await key('Up');
         await control('.selection-tools-panel details details > summary');
         await text('[aria-label="Lasso points in yards"]', polygon.map(p => `${p.x}, ${p.y}`).join('\n')); await control('[aria-label="Preview typed lasso"]');
-        await control('[aria-label="Apply selection"]'); assert.deepEqual(await selected(), ids.slice(0, 2));
+        await control('.selection-tools-panel [aria-label="Apply selection"]'); assert.deepEqual(await selected(), ids.slice(0, 2));
         assert.equal(await evaluate('document.documentElement.scrollWidth>innerWidth'), false); await evaluate(`${editor}.dispatch('selection.tools')`);
         await capture(`selection-${width}-${scale}.png`); await close();
       }

@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { settleNativeViewport } = require('./testing/renderer.cjs');
 
@@ -24,7 +25,7 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode exited');
   const before = await evaluate(`${state}.project`);
   await capture('snapping-before.png');
-  const control = async selector => { const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };
+  const control = async selector => { await revealFieldTool(window,selector); const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };
   const configure = async (steps, subdivision, group, target = 'grid') => {
     await control('[aria-label="Grid and snapping"]'); await wait("document.querySelector('.modal h2')?.textContent==='Grid and snapping'", 'grid dialog');
     // Select change events set up native dropdown values; real Tab/Enter below verify access and commit.

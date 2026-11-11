@@ -1,0 +1,35 @@
+.studio .field-command-toolbar { position:relative; display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; gap:6px; height:42px; min-height:42px; padding:4px 6px; overflow:visible; }
+.field-command-toolbar .canvas-set-title { flex:0 1 125px; min-width:0; display:block; font-size:12px; line-height:14px; }
+.field-command-toolbar .canvas-set-title > span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.field-command-toolbar .canvas-set-number { display:none; }
+.field-command-toolbar .selection-count { padding:0; font-size:11px; color:var(--muted); }
+.field-command-toolbar .view-switch { display:flex; flex:none; white-space:nowrap; }
+.field-command-toolbar .view-switch button { display:flex; align-items:center; gap:3px; }
+.field-command-toolbar .field-primary { display:flex; align-items:center; gap:4px; flex:1 1 0; min-width:0; overflow:hidden; }
+.field-command-toolbar .stage-three__controls { position:static; border:0; background:none; margin:0; padding:0; box-shadow:none; flex-wrap:nowrap; }
+.field-action { display:inline-flex; align-items:center; justify-content:center; flex:none; gap:4px; min-height:28px; padding:4px 6px; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:18px; white-space:nowrap; background:var(--surface); color:var(--text); }
+.field-action.active, .field-action--apply { background:var(--selected-bg); border-color:var(--accent); }
+.field-action:hover { background:var(--hover-bg); }
+.field-action[aria-disabled=true] { color:var(--disabled-text); background:var(--disabled-bg); border-color:var(--border); border-style:dashed; opacity:1; cursor:not-allowed; }
+.field-tools-overflow { flex:none; }
+.field-tools-menu { position:absolute; right:0; top:100%; z-index:40; display:flex; flex-direction:column; gap:3px; min-width:235px; max-width:calc(100vw - 24px); max-height:min(420px,55vh); overflow-y:auto; padding:6px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:6px; box-shadow:0 8px 24px var(--shadow); }
+.field-tools-menu .field-action { width:100%; justify-content:flex-start; }
+.field-tools-menu[hidden] { display:none; }
+.field-tools-menu .field-action > span { margin-left:0; color:inherit; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.field-tools-menu kbd { flex:none; }
+.field-tools-menu kbd:first-of-type { margin-left:auto; }
+.field-toolbar-measure { position:absolute; visibility:hidden; pointer-events:none; display:flex; left:0; top:0; height:0; overflow:hidden; }
+.field-toolbar-measure .field-action { width:max-content; }
+.stage-three__quality { position:absolute; right:8px; top:8px; z-index:5; }
+@media (max-width:800px) { .field-command-toolbar .canvas-set-title { flex-basis:70px; } .field-command-toolbar .view-switch span { display:none; } }
+.studio-body[data-preview-overlay=right] .field-command-toolbar { margin-right:calc(var(--overlay-width) + 12px); }
+.studio-body[data-preview-overlay=left] .field-command-toolbar { margin-left:calc(var(--overlay-width) + 12px); }
+.studio-body[data-preview-overlay] .field-command-toolbar .canvas-set-title,
+.studio-body[data-preview-overlay] .field-command-toolbar .view-switch,
+.studio-body[data-preview-overlay] .field-command-toolbar .popout-3d-button { display:none; }
+.studio-body[data-preview-overlay] .field-tools-menu { right:auto; left:0; }
+
+.field-command-toolbar[data-context=preview] .canvas-set-title,
+.field-command-toolbar[data-context=preview] .popout-3d-button { display:none; }
+
+.field-command-toolbar[data-context=preview] .field-primary .field-action { padding-left:4px; padding-right:4px; }

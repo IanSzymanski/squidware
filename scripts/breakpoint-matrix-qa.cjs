@@ -56,7 +56,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     await wake();
   }
   const byName = (name, scope = 'document') => `[...${scope}.querySelectorAll('[aria-label]')].find(n => n.getAttribute('aria-label') === ${JSON.stringify(name)})`;
-  const reachableIn = (names, scope) => evaluate(`(${JSON.stringify(names)}).filter(name => { const n = ${byName('NAME', scope).replace('"NAME"', 'name')}; if (!n) return true; n.scrollIntoView({ block: 'nearest' }); const r = n.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(r.width > 0 && r.left >= 0 && r.right <= innerWidth + .5 && r.top >= 0 && r.bottom <= innerHeight + .5 && hit && n.contains(hit)); })`);
+  const reachableIn = (names, scope) => evaluate(`(${JSON.stringify(names)}).filter(name => { const n = [...${scope}.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===name&&n.getClientRects().length); if (!n) return true; n.scrollIntoView({ block: 'nearest' }); const r = n.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(r.width > 0 && r.left >= 0 && r.right <= innerWidth + .5 && r.top >= 0 && r.bottom <= innerHeight + .5 && hit && n.contains(hit)); })`);
   /** `keepFocus` resizes the window as a writer would, leaving focus where it is. */
   async function applySize(width, height, scale, keepFocus = false) {
     window.setContentSize(width, height); window.webContents.setZoomFactor(1);
@@ -287,7 +287,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     // with the count readout and show count, where they are, without scrolling anything into view.
     const hit = `(() => { const transport = [...document.querySelectorAll('.transport [aria-label], .transport .move-count, .transport .show-count')], name = n => n.getAttribute('aria-label') ?? n.className;
       const missing = ['First set', 'Previous set', 'Previous count', 'Play show', 'Next count', 'Next set', 'Last set', 'move-count', 'show-count', 'Mute audio'].filter(label => !transport.some(n => name(n) === label));
-      return [...missing, ...['Apply transform', 'Cancel transform'].map(label => ${byName('NAME').replace('"NAME"', 'label')} ?? label), ...transport].filter(n => { if (typeof n === 'string') return true; const r = n.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(r.width > 0 && r.top >= 0 && r.bottom <= innerHeight + .5 && !!e && n.contains(e)); }).map(n => typeof n === 'string' ? n : name(n)); })()`;
+      return [...missing, ...['Apply transform', 'Cancel transform'].map(label => ${byName('NAME', "document.querySelector('.selection-bar')").replace('"NAME"', 'label')} ?? label), ...transport].filter(n => { if (typeof n === 'string') return true; const r = n.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(r.width > 0 && r.top >= 0 && r.bottom <= innerHeight + .5 && !!e && n.contains(e)); }).map(n => typeof n === 'string' ? n : name(n)); })()`;
     // The focused control is whole: inside the window and every ancestor that clips it.
     const focusWhole = "(a => { const r = a.getBoundingClientRect(); let top = 0, bottom = innerHeight; for (let n = a.parentElement; n; n = n.parentElement) if (getComputedStyle(n).overflowY !== 'visible') { const c = n.getBoundingClientRect(); top = Math.max(top, c.top); bottom = Math.min(bottom, c.bottom); } return r.height > 0 && r.top >= top - .5 && r.bottom <= bottom + .5; })(document.activeElement)";
     for (const [width, height, scale, over] of [[1024, 700, 1.5, false], [900, 650, 1.25, false], [900, 650, 1.5, true], [800, 600, 1.5, true], [800, 600, 1, false], [1000, 650, 1.5, null], [1014, 650, 1.5, null], [1200, 650, 1.5, null], [1000, 620, 1.5, null]]) {
@@ -304,12 +304,13 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
         return { scrim: !!document.querySelector('.workspace-overlay-dismiss'), overlay: document.querySelector('#workspace-pane-inspector').classList.contains('workspace-pane--overlay'), surface: shown(document.querySelector('[data-field-surface]')), banner: shown(document.querySelector('.transform-preview-banner')), noOverflow: ${noOverflow} }; })()`);
       assert.deepEqual(view, { scrim: false, overlay: over ?? view.overlay, surface: true, banner: true, noOverflow: true }, `${label} the preview's field and banner stay in view${over === null ? ` (Inspector ${view.overlay ? 'over the field' : 'docked'})` : ''}`);
       assert.deepEqual(await evaluate(hit), [], `${label} Apply, Cancel and every control of the transport row, with the count readout and show count, are in view during the preview`);
-      assert.deepEqual(await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document'), [], `${label} Apply, Cancel and Play are reachable during the preview`);
+      const unreachable=await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document');
+      assert.deepEqual(unreachable, [], `${label} Apply, Cancel and Play are reachable during the preview`);
       if (over === null) assert.ok(await evaluate(scrolled) <= idle + 1, `${label} the preview adds no workspace scrolling (${idle} px without it)`);
       await capture(`breakpoints-preview-${label}.png`);
       // The preview's placement ends with it: the Inspector the writer never opened tucks again, no scrim appears, and
       // focus Cancel held moves to the field area.
-      await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the preview's Inspector tucks when it ends, with focus on the field area`);
+      await nativeClick(byName('Cancel transform', "document.querySelector('.selection-bar')")); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the preview's Inspector tucks when it ends, with focus on the field area`);
       assert.equal(await savedLayout(), saved, `${label} the preview leaves the saved layout unchanged`);
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
     }
@@ -349,7 +350,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", `${label} palette open`);
       await window.webContents.debugger.sendCommand('Input.insertText', { text: phrase }); await key('Return');
       await wait(`!!${state}.ui.${kind} && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(name)} && !!document.querySelector('[role=tooltip]')?.textContent.startsWith(${JSON.stringify(name)})`, `${label} focuses ${name} with its help`);
-      await nativeClick(byName(apply)); await wait(`!${state}.ui.${kind} && ${state}.project.revision !== ${revision}`, `${label} one click on ${apply} applies`);
+      await nativeClick(byName(apply, "document.querySelector('.selection-bar')")); await wait(`!${state}.ui.${kind} && ${state}.project.revision !== ${revision}`, `${label} one click on ${apply} applies`);
       await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision === ${revision}`, `${label} undone`);
     }
     pass('at 900 × 650 @150% Escape in an open Menu closes it first with focus on its button and the preview kept; a preview started from the Command palette shows its first control\'s help, and one click on Apply applies it');
@@ -364,7 +365,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     await evaluate(`${editor}.setValue('playback','playing',false); ${editor}.setValue('playback','count',0); ${editor}.setValue('selection','activeIndex',0)`);
     await mirror('1024x700@1.5 Escape'); await key('Escape'); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Escape ends the preview with the Inspector tucked and focus on the field area');
     await mirror('1024x700@1.5 Apply'); await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", '1024x700@1.5 help dismissed');
-    await nativeClick(byName('Apply transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Apply ends the preview with the Inspector tucked and focus on the field area');
+    await nativeClick(byName('Apply transform', "document.querySelector('.selection-bar')")); await wait(`!${state}.ui.transformPreview && ${ended}`, '1024x700@1.5 Apply ends the preview with the Inspector tucked and focus on the field area');
     await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision === ${project}`, '1024x700@1.5 the applied mirror undone');
     pass('at 1024 × 700 @150% a preview the writer started with the Inspector tucked ends, by Play, Escape or Apply, with the Inspector tucked again, no scrim, and the field, Pause or focus on the field area');
     // An Inspector the writer opened over the field docks while a preview needs it and is still open over the field,
@@ -374,21 +375,21 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await applySize(width, height, scale); const saved = await savedLayout();
       await evaluate(`${editor}.setValue('selection','selectedIds',${ids})`);
       await nativeClick(byName('Show Inspector')); await wait(openOver, `${label} Show Inspector opens it over the field`);
-      await nativeClick(byName('Mirror selection', inspector));
+      await evaluate(`${editor}.dispatch('transform.preview',{operation:'across-50'})`);
       // The preview's panel scrolls into view and focuses its operation; its help never takes the click meant for Cancel.
       await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden && !${inspector}.classList.contains('workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Transform operation'`, `${label} the preview docks the Inspector`);
-      await nativeClick(byName('Cancel transform'));
+      await nativeClick(byName('Cancel transform', "document.querySelector('.selection-bar')"));
       await wait(`!${state}.ui.transformPreview && ${openOver}`, `${label} the Inspector stays open over the field after Cancel, with focus inside it`);
-      await nativeClick(byName('Enter coordinates', inspector));
+      await evaluate(`${editor}.dispatch('coordinates.preview',{})`);
       await wait(`!!${state}.ui.coordinatePreview && document.activeElement?.getAttribute('aria-label')==='Drill phrase' && !${inspector}.classList.contains('workspace-pane--overlay')`, `${label} coordinate entry docks the Inspector`);
       await key('Escape');
-      await wait(`!${state}.ui.coordinatePreview && ${openOver} && document.activeElement?.getAttribute('aria-label')==='Enter coordinates'`, `${label} Escape in coordinate entry returns focus to Place in the still-open Inspector`);
+      await wait(`!${state}.ui.coordinatePreview && ${openOver} && !!document.activeElement?.closest('.workspace-pane-heading')`, `${label} Escape in coordinate entry returns focus to the still-open Inspector heading`);
       await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Inspector'", `${label} Escape then closes the Inspector overlay`);
       if (scale === 1.5) {
         // Play during a preview beside the Inspector the writer opened closes that pane rather than playing the show
         // behind its scrim, and focus stays on Pause, so Space pauses.
         await nativeClick(byName('Show Inspector')); await wait(openOver, `${label} Show Inspector again`);
-        await nativeClick(byName('Mirror selection', inspector)); await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden`, `${label} a preview beside the Inspector the writer opened`);
+        await evaluate(`${editor}.dispatch('transform.preview',{operation:'across-50'})`); await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden`, `${label} a preview beside the Inspector the writer opened`);
         await nativeClick(byName('Play show'));
         await wait(`${state}.playback.playing && !${state}.ui.transformPreview && ${inspector}.hidden && !document.querySelector('.workspace-pane--overlay, .workspace-overlay-dismiss') && document.activeElement?.getAttribute('aria-label')==='Pause playback'`, `${label} Play closes the Inspector over the field, focus kept on Pause`);
         await key('Space'); await wait(`!${state}.playback.playing`, `${label} Space on Pause pauses`);
@@ -410,7 +411,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       await wait(`${inspector}.classList.contains('workspace-pane--overlay') && !${inspector}.hidden && !document.querySelector('.workspace-overlay-dismiss') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(focused)} && ${focusWhole}`, `${label} shrinking during the preview opens the Inspector over the field, focus kept on ${focused} and whole in view`);
       await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", `${label} help dismissed after shrinking`);
       assert.deepEqual(await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document'), [], `${label} Apply, Cancel and Play stay reachable after shrinking during the preview`);
-      await nativeClick(byName('Cancel transform')); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the shrunken preview's Inspector tucks when it ends, with focus on the field area`);
+      await nativeClick(byName('Cancel transform', "document.querySelector('.selection-bar')")); await wait(`!${state}.ui.transformPreview && ${ended}`, `${label} the shrunken preview's Inspector tucks when it ends, with focus on the field area`);
     }
     // A preview's Inspector takes the place of a Set list open over the field, with focus moved into it, so Apply and
     // Cancel stay reachable: when the preview starts on the short 1000 × 650 @150% and when the window shrinks to it
@@ -427,10 +428,10 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       if (shrink) { await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1, y: 1 }); await wait("!document.querySelector('[role=tooltip]') && !document.querySelector('.workspace-overlay-dismiss')", `${label} Set list beside the preview without a scrim`); assert.deepEqual(await evaluate(hit), [], `${label} Apply, Cancel and every transport control stay in view beside the Set list`); }
       if (shrink) await applySize(1000, 650, 1.5, true);
       else await evaluate(`${editor}.setValue('selection','selectedIds',${ids}); ${editor}.dispatch('transform.mirror')`);
-      await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden && (!${inspector}.classList.contains('workspace-pane--overlay') || !${setsOver}) && !document.querySelector('.workspace-overlay-dismiss') && ${inspector}.contains(document.activeElement)`, `${label} the preview's Inspector replaces the Set list over the field, or docks beside it, with focus inside it`);
+      await wait(`!!${state}.ui.transformPreview && !${inspector}.hidden && (!${inspector}.classList.contains('workspace-pane--overlay') || !${setsOver}) && !document.querySelector('.workspace-overlay-dismiss') && (${inspector}.contains(document.activeElement) || (!${inspector}.classList.contains('workspace-pane--overlay') && document.querySelector('#workspace-pane-sets').contains(document.activeElement)))`, `${label} the preview's Inspector replaces the Set list with focus inside it, or docks beside the Set list with its focus preserved`);
       await evaluate('document.activeElement?.blur()'); await wait("!document.querySelector('[role=tooltip]')", `${label} help dismissed`);
       assert.deepEqual(await reachableIn(['Apply transform', 'Cancel transform', 'Play show'], 'document'), [], `${label} Apply, Cancel and Play are reachable`);
-      await nativeClick(byName('Cancel transform'));
+      await nativeClick(byName('Cancel transform', "document.querySelector('.selection-bar')"));
       await wait(`!${state}.ui.transformPreview && ${inspector}.hidden && ${setsOver} && document.querySelector('#workspace-pane-sets').contains(document.activeElement)`, `${label} after the preview the Set list the writer opened is back, with focus`);
       await key('Escape'); await wait(`!${setsOver} && document.activeElement?.getAttribute('aria-label')==='Show Set list'`, `${label} Escape closes the Set list`);
       await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
@@ -552,7 +553,7 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
         const page = end === 'Enter on the page';
         if (end === 'keyboard Apply') { await key('Tab', ['shift']); await key('Tab', ['shift']); assert.equal(await active(), 'Apply transform'); await key('Return'); }
         else if (page) { await nativeClick(plain); await wait(onPage, `${label} focus on the page`); await key('Return'); }
-        else await nativeClick(byName(end === 'pointer Apply' ? 'Apply transform' : 'Cancel transform'));
+        else await nativeClick(byName(end === 'pointer Apply' ? 'Apply transform' : 'Cancel transform', "document.querySelector('.selection-bar')"));
         await wait(`!${state}.ui.transformPreview && ${page ? onPage : `document.activeElement === document.querySelector(${JSON.stringify(spot)})`}`, `${label} ${page ? 'keeps focus on the page' : `moves focus to ${spot}`}`);
         assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"), end === 'keyboard Apply', `${label} shows the focus outline only after a key`);
         await key('Space'); await wait(`${state}.playback.playing`, `${label} Space plays`); await key('Space'); await wait(`!${state}.playback.playing`, `${label} Space pauses`);

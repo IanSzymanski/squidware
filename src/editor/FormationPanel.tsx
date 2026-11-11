@@ -1,7 +1,6 @@
 import { ScatterFormationFields } from './ScatterFormationFields';
 import { BezierFormationFields } from './BezierFormationFields';
 import { useEffect, useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { NumberField } from '../components/NumberField';
 import type { FormationOptions } from '../types';
 import type { FormationAssignmentMode } from '../formationPreview';
@@ -13,12 +12,15 @@ import type { EditorController } from './useEditorController';
 export function FormationPanel({ controller: c }: { controller: EditorController }) {
   const region = useRef<HTMLDivElement>(null);
   const session = c.formationPreview;
-  const previousSession = useRef(session);
+  const previousSession = useRef<typeof session>(null);
   useEffect(() => {
     const previous = previousSession.current;
     if (session && !previous) {
-      region.current?.scrollIntoView({ block: 'nearest' });
-      region.current?.querySelector<HTMLElement>('.formation-grid button[aria-pressed="true"]')?.focus();
+      c.preferences.update({inspectorFormationOpen:true});
+      requestAnimationFrame(()=>{
+        region.current?.scrollIntoView({ block: 'nearest' });
+        region.current?.querySelector<HTMLElement>('.formation-grid button[aria-pressed="true"]')?.focus();
+      });
     } else if (!session && previous?.live) {
       const saved = region.current?.querySelector<HTMLElement>(`[data-live-id="${previous.live.id}"]`);
       if (saved) { saved.scrollIntoView({ block: 'nearest' }); saved.querySelector<HTMLElement>('button')?.focus({ preventScroll: true }); }
@@ -33,10 +35,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
   const assignmentLocked = session?.assignmentConstraints ? 'Review or clear saved constraints in Optimize assignment.' : 'Finish or cancel the pending input before changing assignment.';
   const unavailable = c.pendingDraft ? 'Finish or cancel the pending input first.' : c.readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   return <div ref={region} className="formation-panel">
-    {!session && <HelpButton title="Browse saved formations" command="templates.open" className="button subtle" disabled={c.pendingDraft} onClick={() => c.dispatch('templates.open')}>Saved formations…</HelpButton>}
-    {!session && <HelpButton title="Edit group route movement" command="group.open" className="button subtle" disabled={c.pendingDraft||c.readOnly||c.index===0||c.selectedIds.length<2||c.view!=='2d'} disabledReason="Pause at an arrival set in 2D and select at least two members." onClick={()=>c.dispatch('group.open',{})}>Group route movement…</HelpButton>}
-    {!session && c.project.moves[c.index-1]?.groupMotions?.map(g=><div className="live-formation" key={g.id}><strong>{g.name}</strong><span className="microcopy">{g.mode} · {g.members.length} ordered members</span><HelpButton title={`Edit group ${g.name}`} command="group.open" className="button subtle" disabled={c.pendingDraft||c.readOnly||c.view!=='2d'} onClick={()=>c.dispatch('group.open',{id:g.id})}>Edit group movement…</HelpButton></div>)}
-    {!session && <HelpButton title="Edit formation transition" command="transition.open" className="button subtle" disabled={c.pendingDraft||c.readOnly||c.index===0||c.selectedIds.length<2||c.view!=='2d'} disabledReason="Pause at an arrival set in 2D and select at least two members of the endpoint formations." onClick={()=>c.dispatch('transition.open')}>Formation transition…</HelpButton>}
+    {!session&&!c.activeSet.liveFormations?.length&&<p className="microcopy">Choose Shape above the field to preview a formation. Saved formations and group movement are in More.</p>}
     {!session && !!c.activeSet.liveFormations?.length && <details className="live-formations" open>
       <summary>Live formations · {c.activeSet.liveFormations.length}</summary>
       <p className="microcopy">Moving dots individually detaches them. Other members keep their slots until you redistribute.</p>
@@ -48,6 +47,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
         {c.project.sets.length > 1 && <label className="form-label"><span>Copy {shape.name} to set</span><select value="" disabled={c.readOnly || c.pendingDraft} onChange={e=>{if(e.target.value)c.dispatch('live.copy',{id:shape.id,targetSetId:e.target.value});}}><option value="">Choose a set…</option>{c.project.sets.filter(set=>set.id!==c.activeSet.id).map(set=><option key={set.id} value={set.id}>{set.name}</option>)}</select></label>}
       </div>)}
     </details>}
+    {session && <>
     <p className="section-description">{session ? `Preview · ${session.ids.length} selected · ${session.assignmentReviewed || session.assignmentConstraints ? 'reviewed mapping' : mode === 'shortest' ? stale ? 'order kept from the earlier shape · choose Shortest travel to re-solve' : 'shortest-travel order' : mode === 'position' ? 'positional order' : 'roster order'}` : 'Choose a shape to preview the explicit selection.'}</p>
     <div className="formation-grid">{formations.map(f => <HelpButton pointerPassThrough key={f.kind} command="formation.preview" title={`${f.label} formation`}
       description={`Preview ${f.label.toLowerCase()} for the selected performers. Apply accepts; Cancel keeps their positions.`}
@@ -56,6 +56,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
       onClick={() => c.dispatch('formation.preview', { kind: f.kind })}>{f.icon}<span>{f.label}</span></HelpButton>)}</div>
     <div className="form-row"><HelpButton command="formation.bezier" title="Bézier curve formation" className="button subtle" disabled={c.pendingDraft || c.selectedIds.length<2 || (!session && c.readOnly)} onClick={()=>c.dispatch('formation.bezier',{wave:false})}>Bézier curve</HelpButton><HelpButton command="formation.bezier" title="Bézier wave formation" className="button subtle" disabled={c.pendingDraft || c.selectedIds.length<2 || (!session && c.readOnly)} onClick={()=>c.dispatch('formation.bezier',{wave:true})}>Bézier wave</HelpButton></div>
     <HelpButton command="formation.scatter" title="Scatter formation" className="button subtle" disabled={c.pendingDraft || !c.selectedIds.length || (!session && c.readOnly)} onClick={()=>c.dispatch('formation.scatter')}>Scatter…</HelpButton>
+    </>}
     {session && options && <div key={session.kind} className="formation-parameters">
       <label className="live-keep"><input type="checkbox" checked={!!session.live} disabled={!!session.assignmentConstraints || !!session.scatter || !!session.bezier || c.pendingDraft || !!c.activeSet.liveFormations?.some(f=>f.id===session.live?.id)} onChange={e=>c.dispatch('live.configure',{enabled:e.target.checked})} />Keep editable on this set</label>
       {session.live && <div className="live-settings">
@@ -84,6 +85,6 @@ export function FormationPanel({ controller: c }: { controller: EditorController
       {c.formationResult?.travel && <p className="formation-travel microcopy" role="status">Total travel {c.formationResult.travel.total.toFixed(2)} yd · Longest {c.formationResult.travel.maximum.toFixed(2)} yd</p>}
       <p className="microcopy">Dashed lines compare old and new destinations; they do not change authored travel paths. Assignments stay fixed while you move or rotate the preview. Each shape keeps its parameters for this session.</p>
     </div>}
-    {!session && <HelpButton command="formation.preview" title="Preview formation" description={`Preview a shape for ${c.selectedIds.length} selected performers before applying.`} className="button primary preview-formation" disabled={c.readOnly || !c.selectedIds.length || c.pendingDraft} disabledReason={unavailable} onClick={() => c.dispatch('formation.preview', {})}>Preview formation<ArrowRight size={15} /></HelpButton>}
+
   </div>;
 }

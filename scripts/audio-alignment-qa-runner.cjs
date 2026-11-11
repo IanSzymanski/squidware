@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert=require('node:assert/strict');
 const {app,dialog}=require('electron');
 const fs=require('node:fs/promises'),path=require('node:path');
@@ -22,7 +23,7 @@ function instrument(){
  window.addEventListener('error',e=>qa.errors.push(e.message));window.addEventListener('unhandledrejection',e=>qa.errors.push(String(e.reason)));
  window.__REACT_DEVTOOLS_GLOBAL_HOOK__={supportsFiber:true,renderers:new Map(),inject(){return 1;},onCommitFiberRoot(_id,root){function visit(f){if(!f)return;const v=f.memoizedProps?.value;if(v?.getState&&v?.dispatch)qa.editor=v;visit(f.child);visit(f.sibling);}visit(root.current);},onCommitFiberUnmount(){},onPostCommitFiberRoot(){}};
 }
-async function click(selector){const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled)throw Error('Unavailable control');const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);window.webContents.sendInputEvent({type:'mouseDown',...p,button:'left',clickCount:1});window.webContents.sendInputEvent({type:'mouseUp',...p,button:'left',clickCount:1});}
+async function click(selector){ await revealFieldTool(window,selector);const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled)throw Error('Unavailable control');const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);window.webContents.sendInputEvent({type:'mouseDown',...p,button:'left',clickCount:1});window.webContents.sendInputEvent({type:'mouseUp',...p,button:'left',clickCount:1});}
 async function press(label){await wait(`!!([...document.querySelectorAll('.modal button')].find(n=>n.textContent.trim()===${JSON.stringify(label)})||document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]'))`,'visible '+label);await evaluate(`([...document.querySelectorAll('.modal button')].find(n=>n.textContent.trim()===${JSON.stringify(label)})||document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]')).focus()`);await key(window,'Return');}
 async function type(label,text){await evaluate(`(()=>{const n=document.querySelector('[aria-label="'+${JSON.stringify(label)}+'"]');n.focus();n.select();})()`);await window.webContents.insertText(text);}
 async function toggle(){

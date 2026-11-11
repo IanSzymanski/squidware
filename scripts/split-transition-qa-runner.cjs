@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -28,7 +29,7 @@ function instrument() {
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
-async function click(selector) {
+async function click(selector) { await revealFieldTool(window,selector);
   await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__splitQA.point={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__splitQA.point.x,window.__splitQA.point.y)));}));})`, 'actionable '+selector);
   const point = await evaluate('window.__splitQA.point');
   for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await debug('Input.dispatchMouseEvent', { type, ...point, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });

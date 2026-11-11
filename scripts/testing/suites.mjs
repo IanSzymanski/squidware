@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  {name:'field-toolbar',title:'Contextual field commands, one-stop keyboard navigation, overflow, preview transactions and camera choices',script:'field-toolbar-qa.mjs',timeoutMs:210000},
   {name:'field-renderer',title:'Canvas/engine/vector parity, DPI/zoom, retained keyboard focus, context fallback and themes',script:'field-renderer-qa.mjs',timeoutMs:180000},
   {name:'group-movement',title:'Delayed followers, counter-march cues, conveyor laps, connectors, shared checks, scoped copy/undo and native v12 files',script:'group-movement-qa.mjs',timeoutMs:390000},
   { name:'formation-transitions', title:'Reusable endpoints, protected mappings/overrides, shared movement comparison, scoped Apply and reload', script:'formation-transitions-qa.mjs', timeoutMs:270000 },

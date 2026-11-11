@@ -1,11 +1,12 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const { settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
 
 module.exports = async function ({ project, editor, state, evaluate, wait, key, capture: screenshot, window, pass, saved, Menu }) {
   const layouts = [], timings = [];
-  const control = async selector => {
+  const control = async selector => { await revealFieldTool(window,selector);
     await evaluate('document.activeElement?.blur()');
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 2, y: 2 });
     await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__routePoint={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__routePoint.x,window.__routePoint.y)));}));})`, 'actionable ' + selector);
@@ -31,7 +32,7 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
   const present = () => evaluate(`${state}.project.present`);
   // Small or enlarged windows tuck the Inspector (#178); open it over the field, as a user would, before using its launchers.
   const showInspector = async () => { if (await evaluate("!!document.querySelector('#workspace-pane-inspector')?.hidden")) { await click('Show Inspector'); await wait("!!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay:not([hidden])')", 'Inspector overlay'); } };
-  async function open() { await showInspector(); await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
+  async function open() {  await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
   async function apply(count) { await click('Apply shared route'); await wait(`!${state}.ui.dialog && ${state}.project.present.sharedRoutes?.length===${count}`, 'accepted route'); }
 
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1); await settleNativeViewport(window, 'route baseline');

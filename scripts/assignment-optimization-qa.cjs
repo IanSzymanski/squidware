@@ -1,11 +1,12 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const {settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
 module.exports=async function({largeFixtures,project,editor,state,evaluate,wait,key,capture:takeScreenshot,window,pass,saved,Menu}) {
  const ids=project.performers.slice(0,4).map(p=>p.id),layouts=[],sizes=[];
  const capture=async name=>{await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('.tooltip-panel')",'dismissed help');await takeScreenshot(name);};
- const control=async selector=>{
+ const control=async selector=>{ await revealFieldTool(window,selector);
   await evaluate('document.activeElement?.blur()');await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
   await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__assignmentPoint={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__assignmentPoint.x,window.__assignmentPoint.y)));}));})`,'actionable '+selector);
   await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});const point=await evaluate('window.__assignmentPoint');

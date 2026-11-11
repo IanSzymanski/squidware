@@ -18,11 +18,14 @@ export interface Stage3DProps {
   quality: Stage3DQuality;
   onQualityChange: (quality: Stage3DQuality) => void;
   onReturnTo2D: () => void;
+  cameraRequest?: { preset: CameraPreset | null; version: number };
+  onCameraPreset?: (preset: CameraPreset | null) => void;
+  hideCameraPresets?: boolean;
   /** A host without its own 2D field (the 3D window) supplies the interruption text and recovery actions. */
   recovery?: { contextLost: string; actions: ReactNode };
 }
 
-type CameraPreset = 'perspective' | 'front' | 'top';
+export type CameraPreset = 'perspective' | 'front' | 'top';
 interface SceneState {
   scene: THREE.Scene;
   capacity: number;
@@ -156,7 +159,8 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, s
   }
 }
 
-export function Stage3D({ project, positions, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery }: Stage3DProps) {
+export function Stage3D({ project, positions, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets }: Stage3DProps) {
+  const cameraProps=useRef({cameraRequest,onCameraPreset});cameraProps.current={cameraRequest,onCameraPreset};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const currentRef = useRef({ positions, selectedIds, onSelect, quality, recovery });
@@ -246,6 +250,8 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       controls.target.set(0, 0, 0);
       controls.addEventListener('change', invalidate);
       cleanups.push(() => controls?.removeEventListener('change', invalidate));
+      const orbit=()=>cameraProps.current.onCameraPreset?.(null);
+      controls.addEventListener('start',orbit);cleanups.push(()=>controls?.removeEventListener('start',orbit));
       const setCamera = (preset: CameraPreset) => {
         if (!controls) return;
         controls.target.set(0, 0, 0);
@@ -257,8 +263,9 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         camera.lookAt(controls.target);
         controls.update();
         invalidate();
+        cameraProps.current.onCameraPreset?.(preset);
       };
-      setCamera('perspective');
+      setCamera(cameraProps.current.cameraRequest?.preset??'perspective');
 
       const ambient = new THREE.HemisphereLight('#eff4de', '#273229', 2.35);
       scene.add(ambient);
@@ -423,6 +430,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
   }, [positions, selectedIds, width, height, roster]);
 
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
+  useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height]);
   useEffect(() => {
     const state = sceneRef.current;
     try { state?.setFieldPreset(fieldPreset); }
@@ -433,10 +441,12 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     <div ref={hostRef} className="stage-three__canvas" />
     {!error && <>
       <div className="field-stage__corner"><span className="stage-status-light" /> LIVE 3D PREVIEW</div>
-      <div className="stage-three__controls" role="group" aria-label="Camera presets">
-        <HelpButton title="Perspective camera" description="Reset the camera to an angled view of the entire field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
-        <HelpButton title="Front camera" description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
-        <HelpButton title="Overhead camera" description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
+      <div className={hideCameraPresets?'stage-three__quality':'stage-three__controls'} role="group" aria-label={hideCameraPresets?'Rendering quality':'Camera presets'}>
+        {!hideCameraPresets&&<>
+        <HelpButton title="Perspective camera" aria-pressed={cameraRequest?cameraRequest.preset==='perspective':undefined} description="Reset the camera to an angled view of the entire field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
+        <HelpButton title="Front camera" aria-pressed={cameraRequest?cameraRequest.preset==='front':undefined} description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
+        <HelpButton title="Overhead camera" aria-pressed={cameraRequest?cameraRequest.preset==='top':undefined} description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
+        </>}
         <Tooltip name="3D quality" description="Choose detailed shadows or lightweight rendering for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
       </div>
       <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan{onSelect ? ' · Click a performer to select' : ''}</span></div>

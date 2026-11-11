@@ -215,4 +215,24 @@ function confirmShim() {
  * evaluate for the current document, or a Page.addScriptToEvaluateOnNewDocument
  * sender (registered before reload) to cover every later document. */
 async function installConfirmShim(run) { return run(`(${confirmShim.toString()})();`); }
-module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport, installConfirmShim };
+/** Reveal a toolbar action that moved into More, using acknowledged native input.
+ * Existing owner suites keep testing the same operation after responsive layout. */
+async function revealFieldTool(window, selector) {
+  if(/(?:Line|Arc|Circle|Block|Wave|Bézier curve|Bézier wave|Scatter) formation/.test(selector)&&!await window.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(selector)})`)){
+    // Let the responsive row finish moving actions after the owner resized.
+    await window.webContents.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    await revealFieldTool(window,'[aria-label="Shape selection"]');
+    const point=await window.webContents.executeJavaScript("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const n=document.querySelector('[aria-label=\"Shape selection\"]');const r=n.getBoundingClientRect();resolve({x:r.x+r.width/2,y:r.y+r.height/2});})))");
+    for(const type of ['mouseMoved','mousePressed','mouseReleased'])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,...(type==='mouseMoved'?{}:{button:'left',buttons:type==='mousePressed'?1:0,clickCount:1})});
+    await waitFor(()=>window.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(selector)})`),'formation parameters opened');
+    await waitFor(()=>window.webContents.executeJavaScript("!!document.activeElement?.closest('.formation-grid')"),'formation opening focus settled');
+  }
+  const point=await window.webContents.executeJavaScript(`(()=>{const target=document.querySelector(${JSON.stringify(selector)});if(!target?.closest('.field-tools-menu[hidden]'))return null;const r=document.querySelector('[aria-label="More field tools"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+  if(point){
+    await window.webContents.executeJavaScript("document.querySelector('[aria-label=\"More field tools\"]').focus()");
+    await keyWithRelease(window,'Return',[],{releaseKey:'Enter'});
+    await waitFor(()=>window.webContents.executeJavaScript("!!document.querySelector('.field-tools-menu:not([hidden])')"),'More field tools open');
+  }
+  await window.webContents.executeJavaScript(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-tools-menu'))n.scrollIntoView({block:'nearest'});})()`);
+}
+module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport, installConfirmShim, revealFieldTool };

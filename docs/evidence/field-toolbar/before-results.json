@@ -1,0 +1,19 @@
+{
+  "passed": [
+    "baseline captured at 1366 × 768"
+  ],
+  "metrics": [
+    {
+      "label": "before",
+      "fieldWidth": 856,
+      "fieldHeight": 481,
+      "viewport": [
+        1366,
+        768
+      ],
+      "header": 48,
+      "overflow": false
+    }
+  ],
+  "platform": "linux"
+}

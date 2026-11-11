@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog, Menu, clipboard } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -29,7 +30,7 @@ function instrument() {
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) window.__commandsQA.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
-async function click(selector) {
+async function click(selector) { await revealFieldTool(window,selector);
   await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'nearest'})`);
   await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
   const point = await evaluate(`(() => {const n=document.querySelector(${JSON.stringify(selector)}),r=n.getBoundingClientRect(),p={x:r.x+r.width/2,y:r.y+r.height/2};if(!n.contains(document.elementFromPoint(p.x,p.y)))throw new Error('Obscured: '+${JSON.stringify(selector)});return p;})()`);

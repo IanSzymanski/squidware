@@ -3,7 +3,6 @@ import { createPortal, flushSync } from 'react-dom';
 import { Box, SquareArrowOutUpRight } from 'lucide-react';
 import type { Stage3DQuality } from '../components/Stage3D';
 import { HelpButton } from './ControlHelp';
-import { Button } from './EditorControls';
 import { Mirrored3D } from './Mirrored3D';
 import { addFrameSource } from './frameSources';
 import { useFieldScene } from './mirroredScene';
@@ -143,11 +142,11 @@ export function Popout3DPlaceholder({ controller }: { controller: EditorControll
 }
 
 /** Canvas-toolbar action beside the 2D/3D switch; hidden where the desktop bridge is unavailable. */
-export function Popout3DButton({ controller }: { controller: EditorController }) {
+export function Popout3DButton({ controller, tabIndex, toolbarItem }: { controller: EditorController; tabIndex?: number; toolbarItem?: string }) {
   const popout = useEditorSelector(state => state.ui.popout3d);
   if (popout === 'unavailable') return null;
   const open = popout === 'open';
-  return <Button command="view.popout" title={open ? 'Show 3D window' : 'Open 3D window'} state={open ? 'Open in its own window' : 'Closed'}
+  return <HelpButton command="view.popout" title={open ? 'Show 3D window' : 'Open 3D window'} state={open ? 'Open in its own window' : 'Closed'} tabIndex={tabIndex} data-toolbar-item={toolbarItem}
     description={open ? 'Bring the separate 3D window to the front. It follows this editor’s set, count, playback and selection.' : 'Show the 3D preview in its own window, for example on a second display, while you edit in 2D here.'}
-    className={`popout-3d-button${open ? ' is-open' : ''}`} onClick={() => controller.dispatch('view.popout')}><SquareArrowOutUpRight size={16} /></Button>;
+    className={`icon-button popout-3d-button${open ? ' is-open' : ''}`} onClick={() => controller.dispatch('view.popout')}><SquareArrowOutUpRight size={16} /></HelpButton>;
 }
