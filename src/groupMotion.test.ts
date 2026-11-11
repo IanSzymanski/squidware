@@ -5,7 +5,7 @@ import type { GroupMotion, SharedRoute } from './types';
 import { compileRoute } from './sharedRoutes';
 import { transitionInput } from './analysis/input';
 import { TransitionAnalyzer } from './analysis/engine';
-import { compileTrack, curvePoint } from './analysis/detailed';
+import { compileTrack, curvePoint, peakStrideBounds } from './analysis/detailed';
 import { updateSetProperties, createPicture } from './editor/projectEdits';
 import { copyIntervals, reversePaths } from './movementPathOperations';
 import { editSharedRoute } from './editor/routeEditing';
@@ -24,7 +24,59 @@ function setup(mode:GroupMotion['mode']='follow',count=3,closed=false) {
 }
 const close=(a:{x:number;y:number},b:{x:number;y:number},tolerance=1e-7)=>expect(Math.hypot(a.x-b.x,a.y-b.y)).toBeLessThan(tolerance);
 
+function ring(laps:number,direction:1|-1=1,radius=3) {
+  const {project,group}=setup('conveyor',8,true),r=radius,k=r*4*(Math.sqrt(2)-1)/3,x=30,y=25;
+  const route:SharedRoute={id:'route',name:'Circle',closed:true,start:{x:x+r,y},segments:[
+    {id:'q0',kind:'cubic',to:{x,y:y+r},control1:{x:x+r,y:y+k},control2:{x:x+k,y:y+r}},
+    {id:'q1',kind:'cubic',to:{x:x-r,y},control1:{x:x-k,y:y+r},control2:{x:x-r,y:y+k}},
+    {id:'q2',kind:'cubic',to:{x,y:y-r},control1:{x:x-r,y:y-k},control2:{x:x-k,y:y-r}},
+    {id:'q3',kind:'cubic',to:{x:x+r,y},control1:{x:x+k,y:y-r},control2:{x:x+r,y:y-k}},
+  ]};
+  project.sharedRoutes=[route];const compiled=compileRoute(route);
+  Object.assign(group,{phase:0,speed:compiled.length*laps/16,interval:compiled.length/8,offsetDirection:direction,cues:[{count:0,direction}]});
+  for(const [rank,id] of group.members.entries()){
+    project.sets[0].positions[id]=compiled.atDistance(memberDistance(group,rank,0));
+    project.sets[1].positions[id]=compiled.atDistance(memberDistance(group,rank,16));
+  }
+  return {project,group,compiled};
+}
+
 describe('shared group movement',()=>{
+  it('bounds curved conveyor stride across exact quarter, half and full lap seams in both directions',async()=>{
+    for(const laps of [.25,.3,.5-1e-6,.5,.5+1e-6,1])for(const direction of [1,-1] as const){
+      const {project,group,compiled}=ring(laps,direction),p=validateProject(project),input=transitionInput(p,1,0)!;
+      for(const track of input.tracks){
+        const generator=peakStrideBounds(compileTrack(track,16,'ease'));let result=generator.next();while(!result.done)result=generator.next();
+        expect(result.value.converged).toBe(true);
+        expect(result.value.lower).toBeGreaterThan(group.speed-.001);
+        expect(result.value.upper).toBeLessThan(group.speed*1.001+.001);
+      }
+      expect((await new TransitionAnalyzer().analyze(input))!.issues.filter(i=>i.type==='stride')).toEqual([]);
+      for(const count of [0,.00001,4,8,12,15.99999,16])for(const [rank,id] of group.members.entries())
+        close(sampleProject(p,count).positions[id],compiled.atDistance(memberDistance(group,rank,count)));
+    }
+  },20000);
+  it('still reports real excessive stride on a multi-lap curved conveyor',async()=>{
+    const {project,group}=ring(2),p=validateProject(project);
+    const result=await new TransitionAnalyzer().analyze(transitionInput(p,1,0)!);
+    const strides=result!.issues.filter(i=>i.type==='stride');expect(strides).toHaveLength(group.members.length);
+    for(const issue of strides){
+      expect(issue.certainty).toBe('confirmed');expect(issue.measurement!.converged).toBe(true);
+      expect(issue.measurement!.lower).toBeGreaterThan(group.speed-.001);
+      expect(issue.measurement!.upper-issue.measurement!.lower).toBeLessThanOrEqual(.001000001);
+    }
+  });
+  it('analyzes two consecutive half-lap moves without unrepresentable seam findings',async()=>{
+    const {project,group,compiled}=ring(.5,1,2.9);
+    project.sets.push({...structuredClone(project.sets[0]),id:'ring-return'});
+    project.moves.push({...structuredClone(project.moves[0]),id:'second-half',fromSetId:project.sets[1].id,toSetId:'ring-return',groupMotions:[{...group,phase:compiled.length/2}]});
+    const p=validateProject(project),analyzer=new TransitionAnalyzer();
+    for(const index of [1,2]){
+      const result=await analyzer.analyze(transitionInput(p,index,0)!);
+      expect(result!.issues).toEqual([]);
+    }
+    for(const id of group.members)close(sampleProject(p,32).positions[id],p.sets[0].positions[id]);
+  });
   it('follows straight leaders by count delay, independent of global easing, scrubbing order and reload',()=>{
     const {project,group}=setup();const p=validateProject(project),before=structuredClone(p),loaded=parseProject(serializeProject(p));
     expect(JSON.parse(serializeProject(p)).schemaVersion).toBe(12);expect(loaded).toEqual(p);
