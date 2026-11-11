@@ -23,6 +23,22 @@ const plan: ClickPlan = { spans: [{ count: 0, seconds: 0, counts: 6, secondsPerC
   anchorTime: .1, seconds: 0, speed: 1, start: 0, end: 1.5, loop: true, clicks: true };
 
 describe('actual click PCM from the production audio processor', () => {
+  it.each(['reanchor','buffering','restart'])('keeps unheard startup cues scoped to their transport sequence during %s', change => {
+    vi.stubGlobal('currentTime', .2);
+    const processor = new Worklet(), messages: { count: number; time: number }[] = [];
+    processor.port.postMessage = message => messages.push(message as { count: number; time: number });
+    processor.port.onmessage!({ data: { type: 'diagnostics', diagnostics: true } });
+    const continuous = { ...plan, sequence: 7, loop: false, anchorTime: .2, seconds: .75 };
+    processor.port.onmessage!({ data: { type: 'plan', plan: { ...continuous, cue: { time: .21, count: 3 } } } });
+    block(processor, 9600);
+    // A media event corrects the anchor while the one-time cue is still queued.
+    vi.stubGlobal('currentTime', 9728 / 48000);
+    if (change === 'buffering') processor.port.onmessage!({ data: { type: 'plan', plan: null } });
+    processor.port.onmessage!({ data: { type: 'plan', plan: { ...continuous, sequence: change === 'restart' ? 8 : 7, anchorTime: 9728 / 48000, seconds: .8 } } });
+    for (let frame = 9728; frame < 38000; frame += 128) block(processor, frame);
+    expect(messages.map(event => event.count)).toEqual(change === 'restart' ? [4,5] : [3,4,5]);
+    expect(messages.find(event => event.count === 4)!.time).toBeCloseTo(9728 / 48000 + .2);
+  });
   it('renders a late-delivered recording-start cue and keeps later beats on their media anchor', () => {
     vi.stubGlobal('currentTime', .2);
     const processor = new Worklet(), messages: { count: number; time: number }[] = [];

@@ -12,19 +12,24 @@ class MetronomeProcessor extends AudioWorkletProcessor {
   private diagnostics = false;
   private sequence: number | undefined;
   private lastShowCount = -Infinity;
+  private pendingCue: ClickPlan['cue'];
   constructor() {
     super();
     this.port.onmessage = ({ data }: MessageEvent<{ type: string; plan?: ClickPlan; diagnostics?: boolean }>) => {
       if (data.type === 'diagnostics') { this.diagnostics = !!data.diagnostics; return; }
-      // The control message itself can arrive late under load. Place its
-      // one-time startup cue in an upcoming audio block, while preserving the
-      // media anchor used by every following beat.
-      const plan = data.plan?.cue ? { ...data.plan, cue: { ...data.plan.cue,
-        time: Math.max(data.plan.cue.time, currentTime + 128 / sampleRate) } } : data.plan;
+      let plan = data.plan;
       if (plan && (plan.sequence === undefined || plan.sequence !== this.sequence)) {
         this.sequence = plan.sequence;
         this.lastShowCount = -Infinity;
+        this.pendingCue = undefined;
       }
+      if (plan?.cue) this.pendingCue = plan.cue;
+      // A media reanchor or buffering stop can replace lookahead before the
+      // first cue sounds. Retain it within this transport sequence until it is
+      // actually rendered; an explicit seek/restart discards the old cue.
+      // Late messages move only the cue, preserving subsequent media anchors.
+      if (plan && this.pendingCue) plan = { ...plan, cue: { ...this.pendingCue,
+        time: Math.max(this.pendingCue.time, currentTime + 128 / sampleRate) } };
       // A buffering stop cancels lookahead but retains beats already rendered.
       this.scheduler = plan ? new ClickSchedule(plan, currentTime) : null;
       this.queue = [];
@@ -49,6 +54,7 @@ class MetronomeProcessor extends AudioWorkletProcessor {
       }
       if (!event.reported && start < output.length && event.time + .04 > currentTime) {
         event.reported = true;
+        if (event.phase === 'show' && event.count === this.pendingCue?.count) this.pendingCue = undefined;
         if (continuous && event.phase === 'show') this.lastShowCount = event.count;
         if (this.diagnostics) this.port.postMessage({ type: 'click', time: event.time, count: event.count,
           accent: event.accent, phase: event.phase, renderTime: currentTime + start / sampleRate });

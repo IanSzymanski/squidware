@@ -37,12 +37,8 @@ jobs:
       - name: Render representative Linux PDF pages
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y poppler-utils
           print_output=$(node scripts/run-desktop-regressions.mjs --print-output)
-          pdftoppm -f 1 -singlefile -scale-to 1400 -png "$print_output/charts-letter.pdf" "$print_output/chart-preview"
-          pdftoppm -f 1 -singlefile -scale-to 1400 -png "$print_output/coordinates-a4.pdf" "$print_output/coordinates-preview"
-          pdftoppm -f 1 -singlefile -scale-to 1400 -gray -png "$print_output/dense-a4.pdf" "$print_output/monochrome-preview"
+          python scripts/render-print.py "$print_output"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
