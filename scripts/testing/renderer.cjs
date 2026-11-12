@@ -218,6 +218,10 @@ async function installConfirmShim(run) { return run(`(${confirmShim.toString()})
 /** Reveal a toolbar action that moved into More, using acknowledged native input.
  * Existing owner suites keep testing the same operation after responsive layout. */
 async function revealFieldTool(window, selector) {
+  // Hidden Chromium widgets on Windows/Linux can throttle compositor frames
+  // even with backgroundThrottling=false. Keep native layout/key waits live
+  // without activating the QA window or changing their deadlines.
+  if(process.platform!=='darwin'&&!window.isVisible())window.showInactive();
   // Context updates can move a command between the row and More. Resolve its
   // location after React and the responsive measurement have committed.
   await window.webContents.executeJavaScript(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-command-toolbar'))requestAnimationFrame(()=>requestAnimationFrame(resolve));else resolve();})`);

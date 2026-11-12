@@ -41,10 +41,11 @@ async function click(name) {
 }
 const contained = name => evaluate(`(() => { const a = document.querySelector(${JSON.stringify(selector(name))}).getBoundingClientRect(), p = document.querySelector('.tooltip-panel').getBoundingClientRect(), w = document.documentElement.clientWidth, h = document.documentElement.clientHeight;
   return (p.left >= 0 && p.top >= 0 && p.right <= w && p.bottom <= h && !(p.left < a.right && p.right > a.left && p.top < a.bottom && p.bottom > a.top)) || JSON.stringify({ name, anchor: a, panel: p, w, h }); })()`);
-async function hover(name) {
+async function hover(name, hidden = false) {
   await revealFieldTool(window,selector(name));
   await evaluate('document.activeElement?.blur()');
   const point = await evaluate(`(() => { const control = document.querySelector(${JSON.stringify(selector(name))}); control.scrollIntoView({ block: 'nearest' }); const rect = control.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`);
+  if(hidden){window.hide();assert.equal(window.isVisible(),false,'hidden capture exercises a hidden native window');}
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 }); await pause(120);
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
 }
@@ -230,10 +231,11 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, uiScale: 1})`);
     await uiWait("!document.querySelector('.studio--focus') && document.documentElement.style.getPropertyValue('--ui-scale') === '1'", 'restored tooltip scale');
     await focus('Save');
-    await hover('Save'); await uiWait("!!document.querySelector('[role=tooltip]')", 'hover screenshot'); await pause(80);
+    await hover('Save', true); await uiWait("!!document.querySelector('[role=tooltip]')", 'hover screenshot'); await pause(80);
     // A hidden Linux window may stop producing compositor frames after 3D
     // fallback. Electron's capture API explicitly wakes it without showing it.
     await capturePage(window, output, 'focus-help.png');
+    assert.equal(window.isVisible(),false,'capture preserves the hidden window');
     pass('hidden-window screenshot completes after 3D controls or fallback');
     if (force3DFallback) { await finish(); return; }
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 });
