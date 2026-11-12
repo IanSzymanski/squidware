@@ -35,7 +35,7 @@ function instrument() {
 }
 async function click(selector) { await revealFieldTool(window,selector);
   const point = await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}); if(!e) throw Error('Missing '+${JSON.stringify(selector)}); e.scrollIntoView({block:'nearest'}); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
-  for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, ...(type === 'mouseMoved' ? {} : { button: 'left', clickCount: 1 }) });
+  for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
   await frames();
 }
 const button = name => `[aria-label=${JSON.stringify(name)}]`;
@@ -89,6 +89,17 @@ app.whenReady().then(async () => {
   if (manifest.smallDesktop) { window.setContentSize(1024,647);await settleNativeViewport(window,'constrained visible paths'); }
   await click('[data-performer-id="a"]');
   assert.deepEqual(await evaluate(state+'.selection.selectedIds'),['a']);
+  assert.deepEqual(await present(),p,'selecting a performer preserves geometry');
+  // A no-button native hover can arrive while pointer capture is retiring.
+  // It must not turn the selection click into a geometry edit.
+  const dot=await evaluate("(()=>{const p=new DOMPoint(0,0).matrixTransform(document.querySelector('[data-performer-id=\"a\"]').getScreenCTM());return{x:p.x,y:p.y}})()");
+  await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mousePressed',...dot,button:'left',buttons:1,clickCount:1});
+  await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:dot.x+40,y:dot.y+25,button:'none',buttons:0});
+  await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseReleased',...dot,button:'left',buttons:0,clickCount:1});
+  await frames();
+  assert.deepEqual(await present(),p,'unpressed native movement preserves geometry');
+  assert.equal(await evaluate(state+'.project.past.length'),0,'unpressed movement creates no undo entry');
+  pass('selection clicks and no-button native pointer movement preserve project geometry and history');
   await openPath();await fillCurve(true);await capture('paths-preview.png');
   assert.match(await evaluate("document.querySelector('[aria-label=\"Path preview position\"]').textContent"),/: X 20, Y 26\.25 yd/);
   assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);

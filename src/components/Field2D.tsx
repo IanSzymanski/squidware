@@ -376,7 +376,9 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
 
   function continueGesture(event: ReactPointerEvent<SVGSVGElement>) {
     const current = gesture.current;
-    if (!current) return;
+    // Native hover events can arrive while capture is retiring. Only held
+    // pointer buttons may change a gesture; pointerup commits its last drag.
+    if (!current || event.buttons === 0) return;
     if (current.kind === 'pan') {
       setPan({ x: current.startPan.x - (event.clientX - current.startClient.x) / current.scale, y: current.startPan.y - (event.clientY - current.startClient.y) / current.scale });
       return;
