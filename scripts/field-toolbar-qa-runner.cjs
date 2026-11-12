@@ -48,6 +48,10 @@ app.whenReady().then(async()=>{try{
  pass('field toolbar is one Tab stop with horizontal navigation and an escapable keyboard overflow menu');
  await action('Shared routes');await wait(`${state}.ui.dialog==='routes'`,'shared routes from More');await key('Escape');await wait(`!${state}.ui.dialog`,'route dialog dismissed');
  assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"),'More field tools','dialog returns to More');
+ await key('Down');await wait("!!document.activeElement.closest('.field-tools-menu')",'menu focus before changing context');
+ await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(project.performers[0].id)}])`);
+ await wait("document.querySelector('.field-command-toolbar').dataset.context==='performer' && document.activeElement?.getAttribute('aria-label')==='More field tools' && !document.querySelector('.field-tools-menu:not([hidden])')",'context change preserves a visible toolbar focus stop');
+ pass('changing selection while More owns focus returns to the visible trigger');
  await evaluate(`${editor}.setValue('selection','selectedIds',${JSON.stringify(project.performers.slice(0,3).map(p=>p.id))})`);
  await wait("document.querySelector('.field-command-toolbar').dataset.context==='group'",'group context');await snapshot('group-1366');await viewport(1024,700);await snapshot('group-1024');await viewport(1366,768);
  assert.equal(await evaluate("document.querySelectorAll('.inspector .selection-actions,.inspector-scroll > button').length"),0);

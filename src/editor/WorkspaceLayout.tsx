@@ -194,7 +194,13 @@ export function useWorkspaceLayout(controller: EditorController) {
     // field (where it docks once restored, the overlay ends at once).
     if (collapsed) update({ [`${pane}Collapsed`]: false });
     setOverlay(pane, collapsed);
-    requestAnimationFrame(() => document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus(clicked(pointer)));
+    requestAnimationFrame(() => {
+      // A preview started while the pane was opening owns focus. Do not let
+      // this earlier reveal callback replace its parameter control's focus.
+      const next = controller.store.getState().ui;
+      if (next.transformPreview || next.formationPreview || next.spacingPreview || next.coordinatePreview || next.selectionPreview) return;
+      document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus(clicked(pointer));
+    });
   }
   function toggleFocus() {
     if (controller.dispatch('layout.focus')) requestAnimationFrame(() => focusMode ? focusFirst('[aria-label="Focus field"]', '[aria-label="Project menu"]') : focusFirst('[aria-label="Exit focus"]'));

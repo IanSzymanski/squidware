@@ -218,6 +218,9 @@ async function installConfirmShim(run) { return run(`(${confirmShim.toString()})
 /** Reveal a toolbar action that moved into More, using acknowledged native input.
  * Existing owner suites keep testing the same operation after responsive layout. */
 async function revealFieldTool(window, selector) {
+  // Context updates can move a command between the row and More. Resolve its
+  // location after React and the responsive measurement have committed.
+  await window.webContents.executeJavaScript(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-command-toolbar'))requestAnimationFrame(()=>requestAnimationFrame(resolve));else resolve();})`);
   if(/(?:Line|Arc|Circle|Block|Wave|Bézier curve|Bézier wave|Scatter) formation/.test(selector)&&!await window.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(selector)})`)){
     // Let the responsive row finish moving actions after the owner resized.
     await window.webContents.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
@@ -230,8 +233,9 @@ async function revealFieldTool(window, selector) {
   const point=await window.webContents.executeJavaScript(`(()=>{const target=document.querySelector(${JSON.stringify(selector)});if(!target?.closest('.field-tools-menu[hidden]'))return null;const r=document.querySelector('[aria-label="More field tools"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
   if(point){
     await window.webContents.executeJavaScript("document.querySelector('[aria-label=\"More field tools\"]').focus()");
-    await keyWithRelease(window,'Return',[],{releaseKey:'Enter'});
+    await keyWithRelease(window,'Down',[],{releaseKey:'ArrowDown'});
     await waitFor(()=>window.webContents.executeJavaScript("!!document.querySelector('.field-tools-menu:not([hidden])')"),'More field tools open');
+    await waitFor(()=>window.webContents.executeJavaScript("!!document.activeElement?.closest('.field-tools-menu:not([hidden])')"),'More field tools keyboard entry');
   }
   await window.webContents.executeJavaScript(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-tools-menu'))n.scrollIntoView({block:'nearest'});})()`);
 }

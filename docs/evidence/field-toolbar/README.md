@@ -13,3 +13,5 @@ Native checks cover context changes; horizontal roving focus; More entry and Esc
 `desktop-initial.json` retains the complete 49-suite attempt: 46 passed. `desktop-followup.json` records all three remaining suites passing after their owner checks were updated; all 49 required suites have passing results. All 1,026 source tests, 35 contract checks and 99 native/service/harness tests also pass. The updated checks distinguish visible camera controls in focus mode, wait for manually opened Inspector focus before starting a preview, and allow a compact layout to keep the focused Set list beside a docked preview Inspector.
 
 The optional `stage3d` component harness was also investigated with SwiftShader. Its idle-after-orbit assertion fails on both this implementation and merged main `69f6109`; it is outside the default desktop matrix. The harness was left unchanged. Production WebGL tooltip and popout coverage remains in the required matrix.
+
+The subsequent cross-platform CI failures and focus fixes are documented in [CI focus follow-up](ci-focus.md), including native regression cases and exact targeted run records.

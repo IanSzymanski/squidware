@@ -191,10 +191,11 @@ app.whenReady().then(async () => {
       pass('narrow and zoomed windows tuck the set list, then the Inspector, open them over the field (closing with Escape or the heading button), show Cast docked or over the field from its tab, and restore the unchanged saved layout when the window grows');
       await viewport(1000, 700, 2);
       await preset('Write');
+      // Start the preview in the same turn as the native reveal click, before
+      // its scheduled heading focus. The preview must retain parameter focus.
+      await evaluate(`document.querySelector('[aria-label="Show Inspector"]').addEventListener('click',()=>queueMicrotask(()=>${editor}.dispatch('transform.preview',{})),{once:true})`);
       await control('[aria-label="Show Inspector"]');
-      await wait("document.querySelector('#workspace-pane-inspector').contains(document.activeElement)",'Inspector opening focus settled');
-      // The manually opened overlay owns pointer input; launch the shared command as setup here.
-      await evaluate(`${editor}.dispatch('transform.preview',{})`); await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
+      await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
       assert.equal(await evaluate("document.querySelector('[aria-label=\"Close Inspector\"]').getAttribute('aria-disabled')"), 'true');
       // No scrim hides the preview, and the field fits beside the overlay (this window is below the supported minimum,
       // so the workspace scrolls under the pinned timeline; the matrix checks hit-testing at supported sizes).

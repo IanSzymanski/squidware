@@ -576,8 +576,16 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     // and a UI scale change under Preferences.
     const onMore = async label => { await evaluate(`${byName('More playback options')}.focus()`); await wait("document.activeElement?.getAttribute('aria-label')==='More playback options'", label); };
     const lands = (name, label) => wait(`document.querySelector('.studio').dataset.transport==='full' && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(name)} && !!document.activeElement.closest('.transport-options')`, label);
-    await applySize(...MINIMUM); await onMore('More playback options in the narrow transport');
-    await applySize(1920, 1080, 1, true); await lands('Rehearsal passages', 'a resize to the full transport moves focus from More to Rehearsal passages');
+    // Keep UI scale and panel choices fixed during this native resize. Changing
+    // scale at the same time can pass through compact, whose first folded
+    // option is Loop. Tucked panels let this one resize span narrow and full.
+    const resizeLayout = await evaluate(`${state}.preferences.value.workspaceLayout`);
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:{...p.workspaceLayout,setsCollapsed:true,inspectorCollapsed:true}}))`);
+    await applySize(...MINIMUM);
+    await wait("document.querySelector('.studio').dataset.transport==='narrow'", 'narrow transport before the resize');
+    await onMore('More playback options in the narrow transport');
+    await applySize(1920, 1080, 1.5, true); await lands('Rehearsal passages', 'a resize to the full transport moves focus from More to Rehearsal passages');
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:${JSON.stringify(resizeLayout)}}))`);
     await applySize(1024, 700, 1); assert.equal(await evaluate("document.querySelector('.studio').dataset.transport"), 'compact'); await onMore('More playback options before focus mode');
     await evaluate(`${editor}.dispatch('layout.focus')`); await lands('Loop show', 'focus mode moves focus from More to Loop show');
     await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode ends');

@@ -18,7 +18,7 @@ export function FieldToolbar({controller:c}:{controller:EditorController}) {
   const state=c.store.getState(), model=fieldToolbar(state);
   const row=useRef<HTMLDivElement>(null), actions=useRef<HTMLDivElement>(null), measure=useRef<HTMLDivElement>(null), more=useRef<HTMLButtonElement|null>(null);
   const [count,setCount]=useState(0),[open,setOpen]=useState(false),[focused,setFocused]=useState('view-2d');
-  const focusWasInside=useRef(false),previousKey=useRef('');
+  const focusWasInside=useRef(false),previousKey=useRef(''),activeControl=useRef<HTMLElement|null>(null);
   const focusedKey=useRef(focused);focusedKey.current=focused;
   const signature=model.context+model.primary.map(a=>a.key+a.label).join('|');
   useLayoutEffect(()=>{
@@ -42,7 +42,12 @@ export function FieldToolbar({controller:c}:{controller:EditorController}) {
     const host=row.current;if(!host)return;more.current=host.querySelector('[data-toolbar-item="more"]');
     const items=toolbarItems(host),current=items.find(n=>n.dataset.toolbarItem===focused);
     if(!current){const fallback=more.current??items[0];if(fallback){setFocused(fallback.dataset.toolbarItem!);if(focusWasInside.current&&(!document.activeElement||document.activeElement===document.body))fallback.focus();}}
-    if(previousKey.current!==signature&&!c.dialog)setOpen(false);
+    if(previousKey.current!==signature&&!c.dialog){
+      // A context change can move the focused action between the row and its
+      // menu. Return to the stable trigger before hiding that menu.
+      if(host.querySelector('.field-tools-menu')?.contains(document.activeElement)||focusWasInside.current&&document.activeElement===document.body&&activeControl.current?.isConnected===false)more.current?.focus({preventScroll:true});
+      setOpen(false);
+    }
     previousKey.current=signature;
   },[signature,count,focused,c.dialog]);
   useEffect(()=>{
@@ -86,7 +91,7 @@ export function FieldToolbar({controller:c}:{controller:EditorController}) {
       onClick={()=>run(action)}><Icon name={action.icon}/><span>{action.label}</span>{menu&&<CommandKeycaps command={helpCommand}/>}</HelpButton>;
   }
   return <div className="canvas-toolbar field-command-toolbar" ref={row} role="toolbar" aria-label="Field tools" aria-orientation="horizontal" data-context={model.context} data-escape-scope={open||undefined}
-    onKeyDown={keyDown} onFocus={event=>{focusWasInside.current=true;const key=(event.target as HTMLElement).dataset.toolbarItem;if(key)setFocused(key);}}
+    onKeyDown={keyDown} onFocus={event=>{focusWasInside.current=true;activeControl.current=event.target as HTMLElement;const key=(event.target as HTMLElement).dataset.toolbarItem;if(key)setFocused(key);}}
     onBlur={event=>{if(event.relatedTarget&&!event.currentTarget.contains(event.relatedTarget as Node)){focusWasInside.current=false;if(!c.dialog)setOpen(false);}}}>
     <h1 className="canvas-set-title" title={c.visibleSet.name}><span className="canvas-set-number">SET {String(c.index+1).padStart(2,'0')}</span><span>{c.visibleSet.name}</span><span className="selection-count">{c.selectedIds.length} selected</span></h1>
     <div className="view-switch">{(['2d','3d'] as const).map(view=>{

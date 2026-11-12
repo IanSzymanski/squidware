@@ -110,6 +110,7 @@ app.whenReady().then(async () => {
       await evaluate(`${editor}.setValue('selection', 'selectedIds', []); ${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, inspectorFormationOpen: true})`); await focus('Shape selection');
       assert.match(await tooltip(), /Unavailable:.*Select performers.*first/);
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
+      await focus('Shape selection');
       assert.match(await tooltip(), /Preview a shape for 1 selected performer/);
       for (const name of ['Align selection']) {
         await focus(name); assert.match(await tooltip(), /Unavailable:.*Select at least two performers/);
