@@ -83,7 +83,7 @@ export function FieldToolbar({controller:c}:{controller:EditorController}) {
     const helpCommand=action.invocation.id==='transform.preview'&&action.invocation.args.operation==='across-50'?'transform.mirror':action.invocation.id;
     const stateText=action.invocation.id==='display.labels'? !c.showLabels?'Hidden':c.selectionLabelsOnly?'Selected / focused':'All':action.invocation.id.startsWith('field.')?`${Math.round(c.zoom*100)}%`:action.active===undefined?undefined:action.active?'On':'Off';
     const description=action.invocation.id==='formation.preview'?`Preview a shape for ${c.selectedIds.length} selected performers before applying.`:helpCommand==='transform.mirror'?'Preview a mirror across the 50. Apply or Cancel before editing other positions.':undefined;
-    return <HelpButton key={action.key} command={helpCommand} title={action.title} description={description} disabled={!!action.disabledReason} disabledReason={action.disabledReason??undefined}
+    return <HelpButton key={action.key} pointerPassThrough={menu} command={helpCommand} title={action.title} description={description} disabled={!!action.disabledReason} disabledReason={action.disabledReason??undefined}
       active={menu?undefined:action.active} state={stateText}
       role={menu?action.active===undefined?'menuitem':'menuitemcheckbox':undefined} aria-checked={menu?action.active:undefined}
       data-toolbar-item={menu?undefined:action.key} data-command={action.invocation.id} tabIndex={menu?-1:focused===action.key?0:-1}

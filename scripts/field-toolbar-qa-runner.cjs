@@ -52,6 +52,10 @@ app.whenReady().then(async()=>{try{
  await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(project.performers[0].id)}])`);
  await wait("document.querySelector('.field-command-toolbar').dataset.context==='performer' && document.activeElement?.getAttribute('aria-label')==='More field tools' && !document.querySelector('.field-tools-menu:not([hidden])')",'context change preserves a visible toolbar focus stop');
  pass('changing selection while More owns focus returns to the visible trigger');
+ await viewport(1024,720,1.5);await evaluate("document.querySelector('[aria-label=\"More field tools\"]').focus()");await key('Down');
+ await wait("!!document.activeElement?.closest('.field-tools-menu') && document.querySelector('[role=tooltip] strong')?.textContent===document.activeElement.getAttribute('aria-label')",'keyboard help in narrow overflow');
+ await action('Edit movement timing');await wait(`${state}.ui.dialog==='movement-schedule'`,'pointer opens timing beside keyboard menu help');await key('Escape');await wait(`!${state}.ui.dialog`,'timing dismissed');await viewport(1366,768);
+ pass('keyboard overflow help does not intercept a pointer click on a neighboring action');
  await evaluate(`${editor}.setValue('selection','selectedIds',${JSON.stringify(project.performers.slice(0,3).map(p=>p.id))})`);
  await wait("document.querySelector('.field-command-toolbar').dataset.context==='group'",'group context');await snapshot('group-1366');await viewport(1024,700);await snapshot('group-1024');await viewport(1366,768);
  assert.equal(await evaluate("document.querySelectorAll('.inspector .selection-actions,.inspector-scroll > button').length"),0);
