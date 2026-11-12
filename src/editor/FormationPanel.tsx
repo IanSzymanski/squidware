@@ -18,6 +18,9 @@ export function FormationPanel({ controller: c }: { controller: EditorController
     if (session && !previous) {
       c.preferences.update({inspectorFormationOpen:true});
       requestAnimationFrame(()=>{
+        // Keep focus the writer already moved into the new parameters while
+        // this initial focus callback was waiting for the section to open.
+        if(region.current?.contains(document.activeElement))return;
         region.current?.scrollIntoView({ block: 'nearest' });
         region.current?.querySelector<HTMLElement>('.formation-grid button[aria-pressed="true"]')?.focus();
       });

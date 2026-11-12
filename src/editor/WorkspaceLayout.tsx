@@ -189,6 +189,8 @@ export function useWorkspaceLayout(controller: EditorController) {
   function dismiss() { if (!overlay || locked) return; setOverlay(null); focusShow(overlay, clicked(true)); }
   function reveal(pane: PaneId, pointer = false) {
     if (controller.preferences.status === 'loading') return;
+    const currentPreview = controller.store.getState().ui;
+    const previewWasActive = !!(currentPreview.transformPreview || currentPreview.formationPreview || currentPreview.spacingPreview || currentPreview.coordinatePreview || currentPreview.selectionPreview);
     const collapsed = layout[`${pane}Collapsed`];
     // Only a pane the user collapsed changes the saved layout; a pane tucked away by a small window opens over the
     // field (where it docks once restored, the overlay ends at once).
@@ -198,7 +200,7 @@ export function useWorkspaceLayout(controller: EditorController) {
       // A preview started while the pane was opening owns focus. Do not let
       // this earlier reveal callback replace its parameter control's focus.
       const next = controller.store.getState().ui;
-      if (next.transformPreview || next.formationPreview || next.spacingPreview || next.coordinatePreview || next.selectionPreview) return;
+      if (!previewWasActive && (next.transformPreview || next.formationPreview || next.spacingPreview || next.coordinatePreview || next.selectionPreview)) return;
       document.querySelector<HTMLElement>(`#workspace-pane-${pane} button`)?.focus(clicked(pointer));
     });
   }

@@ -14,3 +14,8 @@ The production build, 1,026 source tests, 99 native/service/harness checks and 3
 
 
 The broader local matrix on `20d233e` exposed a keyboard-to-pointer case in movement timing at 150% browser zoom. Arrow Down correctly focused the first overflow item, but its keyboard tooltip could intercept the pointer click intended for the next item. The run was stopped after that failure. Overflow actions now use the shared pointer-through tooltip behavior, retaining keyboard descriptions while allowing adjacent mouse actions. A native regression opens the narrow menu by keyboard, waits for focus help, and clicks movement timing with real pointer input. `ci-pointer-targets.json` records movement timing, toolbar, tooltip and theme suites all passing with this fix.
+
+
+Intermediate macOS logs also exposed a boundary in the pane guard: opening Set list during an already active preview must still give Set list focus. The guard now yields only when a preview starts during the reveal. The same-frame native regression dispatches from window bubbling, after React's reveal handler and before its queued focus callback.
+
+Formation startup now preserves focus already moved into its parameter region instead of replacing it in a later frame. The live-formation owner explicitly focuses its member disclosure, waits through the startup frame, verifies that focus stayed, and retains Enter/Space expansion and collapse checks. `ci-preview-focus-targets.json` preserves field, live-formation and coordinate suites passing and the initial event-ordering fixture failure; `ci-preview-workspace.json` records the corrected workspace regression passing.

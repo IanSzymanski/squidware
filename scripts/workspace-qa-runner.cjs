@@ -192,8 +192,9 @@ app.whenReady().then(async () => {
       await viewport(1000, 700, 2);
       await preset('Write');
       // Start the preview in the same turn as the native reveal click, before
-      // its scheduled heading focus. The preview must retain parameter focus.
-      await evaluate(`document.querySelector('[aria-label="Show Inspector"]').addEventListener('click',()=>queueMicrotask(()=>${editor}.dispatch('transform.preview',{})),{once:true})`);
+      // its scheduled heading focus. Window bubbling follows React's click handler;
+      // a target listener would run before reveal and test a different ordering.
+      await evaluate(`window.addEventListener('click',()=>queueMicrotask(()=>${editor}.dispatch('transform.preview',{})),{once:true})`);
       await control('[aria-label="Show Inspector"]');
       await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
       assert.equal(await evaluate("document.querySelector('[aria-label=\"Close Inspector\"]').getAttribute('aria-disabled')"), 'true');
