@@ -1,0 +1,17 @@
+# Contextual field toolbar review
+
+Issue #176, reviewed with native Electron input on Linux x64, Node 24.19.0 and Electron 44.7.0 under Xvfb. These are software interaction and rendered-output checks; Windows and macOS coverage belongs to CI.
+
+The [before view](before.png) shows the two-row toolbar and Inspector launchers at 1366×768. After views cover [no selection](selection-1366.png), [a group](group-1366.png), [one performer](performer-1366.png), [a preview](preview-1366.png), [playback](playback-1366.png) and [3D camera controls](camera-1366.png). Each context also has a corresponding `*-1024.png` at 1024×700. The 3D toolbar screenshot uses the unavailable-WebGL fallback; production WebGL and its window lifecycle are exercised by the tooltip and popout suites.
+
+[Light](light-1366-1.png), [high contrast](high-contrast-1366-1.png), [high-contrast More](more-high-contrast-1366-1.png), [150% browser zoom](more-dark-1024-1.5.png) and [a 900×650 preview at 150% personal UI scale](preview-900-1.5.png) were inspected. The fixed row stays 42 effective pixels high. At 1366×768 it leaves 513 pixels of field height, exceeding the design guidance's 470-pixel target; at 1024×700 it leaves 445 pixels. `results.json` preserves context, bounds and one-Tab-stop measurements, and `run.json` records the exact implementation content hash before these evidence copies were added.
+
+Design guidance §§1–5 applies. The row reuses HelpButton/Tooltip, command metadata and shortcut keycaps, Lucide icons, theme tokens and the existing command/history implementations. Explicit selection still controls editing scope. Disabled buttons use the shared disabled colors and explain their reason. The Inspector retains details and preview parameters; More provides the displaced launchers and display controls. Modal spatial editors remain unchanged under #179; moving analysis launchers belongs to #180.
+
+Native checks cover context changes; horizontal roving focus; More entry and Escape; dialog focus restoration; preview Enter isolation and nested Escape; Apply and exact undo; path launch; active camera selection; playback Pause; narrow/enlarged layouts; all three themes; and unchanged physical coordinates/history. Existing owner suites reveal overflow before invoking the same commands and retain their geometry, save/reopen, focus, transport and native persistence assertions.
+
+`desktop-initial.json` retains the complete 49-suite attempt: 46 passed. `desktop-followup.json` records all three remaining suites passing after their owner checks were updated; all 49 required suites have passing results. All 1,026 source tests, 35 contract checks and 99 native/service/harness tests also pass. The updated checks distinguish visible camera controls in focus mode, wait for manually opened Inspector focus before starting a preview, and allow a compact layout to keep the focused Set list beside a docked preview Inspector.
+
+The optional `stage3d` component harness was also investigated with SwiftShader. Its idle-after-orbit assertion fails on both this implementation and merged main `69f6109`; it is outside the default desktop matrix. The harness was left unchanged. Production WebGL tooltip and popout coverage remains in the required matrix.
+
+The subsequent cross-platform CI failures and focus fixes are documented in [CI focus follow-up](ci-focus.md), including native regression cases and exact targeted run records.

@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const { capturePage, key: sendKey, waitFor: waitUntil, waitViewport, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
@@ -48,7 +49,7 @@ async function checkNeighbors(project) {
   await capture('neighbors-before.png');
   const previous = '[aria-label="Show paths from previous set"]';
   const next = '[aria-label="Show paths to next set"]';
-  const clickControl = async selector => { const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };
+  const clickControl = async selector => { await revealFieldTool(window,selector); const point = await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click(point); };
   await clickControl(previous); await wait(`${state}.ui.showPaths`, 'previous toggle');
   await clickControl(next); await wait("document.querySelectorAll('[data-neighbor]').length===2", 'both neighbors');
   assert.equal(await evaluate("document.querySelectorAll('[data-neighbor-dot]').length"), 8);
@@ -66,10 +67,12 @@ async function checkNeighbors(project) {
   assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-neighbor-performer]')].map(node=>node.dataset.neighborPerformer)"), [performers[1].id, performers[1].id]);
   await evaluate(`${editor}.setValue('ui','sectionFilter',${JSON.stringify(project.sections[2].id)})`);
   await wait("!document.querySelector('[data-neighbor]') && document.querySelector('.neighbor-legend').textContent.includes('No performers match')", 'empty review scope');
+  await revealFieldTool(window,previous);
   await evaluate(`${editor}.setValue('ui','sectionFilter','all'); document.querySelector(${JSON.stringify(previous)}).focus()`);
-  await key('Tab'); assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), 'Show paths to next set');
+  await key('Down'); assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), 'Show paths to next set');
   await key('Return'); await wait("document.querySelectorAll('[data-neighbor]').length===1", 'keyboard next off');
   assert.equal(await evaluate("document.querySelector('[data-neighbor]').dataset.neighbor"), 'previous');
+  await revealFieldTool(window,next);await evaluate(`document.querySelector(${JSON.stringify(next)}).focus()`);
   await key('Return'); await wait("document.querySelectorAll('[data-neighbor]').length===2", 'keyboard next on');
   pass('selection intersects the section filter and real Tab/Enter input controls the next overlay independently');
 
@@ -122,6 +125,7 @@ async function checkNeighbors(project) {
 const center = id => evaluate(`(() => { const n = [...document.querySelectorAll('.field-performer')].find(n=>n.dataset.performerId===${JSON.stringify(id)}); const p = new DOMPoint(0,0).matrixTransform(n.getScreenCTM()); return {x:p.x,y:p.y}; })()`);
 async function selected(id) { await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'selected '+id); }
 async function assertLabels() {
+  await wait("[...document.querySelectorAll('[data-performer-label]')].every(n=>Math.abs(Number(n.getAttribute('font-size'))*n.getScreenCTM().a-12)<.1)",'label geometry after viewport update');
   const result = await evaluate(`(() => {
     const box = n => { const r=n.getBoundingClientRect(); return {left:r.left,top:r.top,right:r.right,bottom:r.bottom}; };
     const labels=[...document.querySelectorAll('[data-performer-label]')].map(box);
@@ -183,11 +187,14 @@ app.whenReady().then(async () => {
     pass('Chromium touch input selects the nearest dense-field dot');
     await input('mouseMoved',await center(ids[213])); await wait("document.querySelector('.field-readout strong')?.textContent.startsWith('P214 ')", 'nearest hover readout');
     const button = '[aria-label="Show performer labels"]';
-    await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(ids[25])}]); document.querySelector(${JSON.stringify(button)}).focus()`);
+    await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(ids[25])}])`);
+    await revealFieldTool(window,button);await evaluate(`document.querySelector(${JSON.stringify(button)}).focus()`);
     await key('Return');
     await wait(`${state}.ui.selectionLabelsOnly && ${state}.ui.showLabels`, 'selected label mode');
     assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-performer-label]')].map(n=>n.getAttribute('data-performer-label'))"),[ids[25]]);
+    await revealFieldTool(window,button);await evaluate(`document.querySelector(${JSON.stringify(button)}).focus()`);
     await key('Return'); await wait("!document.querySelector('[data-performer-label]')", 'hidden labels');
+    await revealFieldTool(window,button);await evaluate(`document.querySelector(${JSON.stringify(button)}).focus()`);
     await key('Return'); await wait(`${state}.ui.showLabels && !${state}.ui.selectionLabelsOnly`, 'all labels');
     await assertLabels(); pass('the existing keyboard-accessible label button cycles all / selected-focus / hidden; hover uses the same nearest hit');
     assert.deepEqual(await evaluate(state+'.project.present.sets[0].positions'), positions);

@@ -1,0 +1,10 @@
+import {createRequire} from 'node:module';
+import {promises as fs} from 'node:fs';
+import path from 'node:path';
+import {createQa,root} from './testing/launcher.mjs';
+const require=createRequire(import.meta.url),qa=await createQa('field-toolbar',{timeoutMs:180000});
+const bundle=path.join(qa.output,'fixture.cjs');
+const esbuild=require(require.resolve('esbuild',{paths:[path.dirname(require.resolve('vite/package.json'))]}));
+await esbuild.build({stdin:{contents:"export {createDemoProject} from './src/domain'",resolveDir:root,loader:'ts'},bundle:true,outfile:bundle,platform:'node',format:'cjs',logLevel:'silent'});
+await fs.writeFile(path.join(qa.output,'fixture.json'),JSON.stringify(require(bundle).createDemoProject()));
+await qa.run('field-toolbar-qa-runner.cjs','toolbar-manifest',{});

@@ -1,0 +1,21 @@
+{
+  "scope": "Linux diagnostic profiling with temporary runner wrapper; production source unchanged",
+  "sourceRevision": "aab6af23b4566b9b118defda245fff52e4f76059",
+  "note": "These timings are observations, not budgets. The hidden run stopped at its existing watchdog; the inactive shown-window run completed all editor checks. Final uninstrumented desktop results are separate.",
+  "hidden": {
+    "calls": 163,
+    "totalHelperMs": 102805,
+    "maximumHelperMs": 3065,
+    "runState": "failed",
+    "runElapsedMs": []
+  },
+  "shownInactive": {
+    "calls": 197,
+    "totalHelperMs": 4536,
+    "maximumHelperMs": 166,
+    "runState": "passed",
+    "runElapsedMs": [
+      31586
+    ]
+  }
+}

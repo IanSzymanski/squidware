@@ -30,7 +30,7 @@ function native(label) {
   function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } }
   const item = find(Menu.getApplicationMenu()); if (!item) throw new Error(`Menu missing: ${label}`); item.click();
 }
-const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 5);
+const key = (keyCode, modifiers = []) => sendKey(window, keyCode, modifiers, 20);
 async function tabTo(selector, backwards = false) {
   // The maximum Cast has three controls per performer. Native workspace
   // activation may reset the focus origin, requiring a full traversal.
@@ -40,6 +40,19 @@ async function tabTo(selector, backwards = false) {
     await key('Tab', backwards ? ['shift'] : []);
   }
   throw new Error(`Tab could not reach ${selector}`);
+}
+async function toolbarEnd() {
+  await tabTo('.field-command-toolbar [data-toolbar-item][tabindex="0"]');
+  await key('End');
+  assert.equal(await evaluate('document.activeElement.dataset.toolbarItem'),'more');
+}
+async function toolbarMenuAction(title) {
+  await toolbarEnd();await key('Down');await uiWait("!!document.activeElement?.closest('.field-tools-menu:not([hidden])')",'keyboard enters toolbar menu');
+  for(let i=0;i<50;i++){
+    if(await evaluate(`document.activeElement?.getAttribute('aria-label')===${JSON.stringify(title)}`)){await key('Return');return;}
+    await key('Down');
+  }
+  throw Error('Toolbar menu could not reach '+title);
 }
 async function audit(label) {
   const result = await evaluate(`(${auditText.toString()})()`);
@@ -132,7 +145,7 @@ async function timelineProblemChecks() {
     await key('Escape'); await uiWait(`!document.querySelector('.problem-cluster-list') && document.activeElement?.getAttribute('aria-label') === ${JSON.stringify(opener)}`, 'Escape returns to the group marker');
   }
   await evaluate('document.activeElement?.blur()');
-  await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: false });
+  // Keep DOM focus events enabled for the toolbar's roving keyboard stop.
   pass(`timeline Tab order follows set order with one problem-row stop; ${group >= 0 ? 'its group list and ' : ''}markers meet 24 px targets, naming, ARIA and in-viewport help checks`);
 }
 
@@ -151,16 +164,16 @@ app.whenReady().then(async () => {
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
     await evaluate("document.querySelector('.field-legend button:last-child').focus()");
     const legendReachable = await evaluate("(() => { const button=document.activeElement.getBoundingClientRect(); const row=document.querySelector('.field-legend-scroll').getBoundingClientRect(); return button.left>=row.left-.5 && button.right<=row.right+.5 && button.top>=row.top && button.bottom<=row.bottom; })()");
-    await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: false });
+    // Keep DOM focus events enabled for the toolbar's roving keyboard stop.
     assert.equal(legendReachable, true);
     assert.equal(await revision(), baseline);
     pass('keyboard focus reveals the last section in the floating legend without editing the production');
     assert.equal(await evaluate("document.querySelectorAll('.field-stage__svg [tabindex=" + '"0"' + "]').length"), 1);
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').tabIndex"), -1);
-    await tabTo('[aria-label="Fit field"]'); await key('Tab'); assert.equal(await focusId(), ids[0]);
+    await toolbarEnd(); await key('Tab'); assert.equal(await focusId(), ids[0]);
     await key('Tab'); assert.equal(await evaluate("!!document.activeElement.closest('.field-stage__svg')"), false);
     await key('Tab', ['shift']); assert.equal(await focusId(), ids[0]);
-    await key('Tab', ['shift']); assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Fit field');
+    await key('Tab', ['shift']); assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'More field tools');
     await key('Tab');
     pass('Tab and Shift+Tab enter and leave a 500-performer field in one stop');
 
@@ -183,7 +196,7 @@ app.whenReady().then(async () => {
     assert.deepEqual(moved[ids[2]], initial.sets[0].positions[ids[2]]);
     pass('spatial focus does not edit; all 500 dots including overlaps are reachable; selection and modifier nudges are distinct');
 
-    await tabTo('[aria-label="Zoom in"]', true); await key('Return'); await key('Return'); await key('Return');
+    for(let i=0;i<3;i++)await toolbarMenuAction('Zoom in');
     await tabTo('.field-performer[tabindex="0"]'); await key('End');
     await uiWait("document.querySelector('.field-readout strong')?.textContent.includes('P500')", 'focused readout');
     assert.equal(await evaluate("document.activeElement.classList.contains('field-performer--focused')"), true);

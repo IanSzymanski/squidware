@@ -1,0 +1,543 @@
+{
+  "runId": "2026-11-12T23-26-08-337Z-7fda33ef",
+  "state": "completed",
+  "concurrency": 4,
+  "platform": "linux",
+  "node": "24.19.0",
+  "runtime": {
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "os": "6.18.57",
+    "githubRun": null,
+    "githubAttempt": null,
+    "githubRef": null,
+    "runnerImage": null,
+    "runnerImageVersion": null
+  },
+  "source": {
+    "revision": "aab6af23b4566b9b118defda245fff52e4f76059",
+    "tree": "4e6f6868c91453e8892dc8b4eeabd5609c8fe6c0",
+    "dirty": true,
+    "contentHash": "51d3a5b966a66a804b058602cdb3c184e3a5f5c8773b9e53d775f1bf92d6f0ed",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "full-desktop",
+  "selected": [
+    "field-toolbar",
+    "field-renderer",
+    "group-movement",
+    "formation-transitions",
+    "assignment-optimization",
+    "shared-routes",
+    "scatter-formations",
+    "bezier-formations",
+    "live-formations",
+    "path-authoring",
+    "detailed-analysis",
+    "path-operations",
+    "movement-schedule",
+    "paths",
+    "templates",
+    "smoke",
+    "editor",
+    "accessibility",
+    "field",
+    "formation-assignment",
+    "spacing",
+    "coordinate-entry",
+    "cast",
+    "selection",
+    "workspace",
+    "tooltips",
+    "tooltips-fallback",
+    "themes",
+    "commands",
+    "preferences",
+    "thumbnails",
+    "playback",
+    "audio-package",
+    "audio-clock",
+    "metronome",
+    "timeline",
+    "rehearsal",
+    "tempo-map",
+    "audio-alignment",
+    "score-map",
+    "production-sheet",
+    "set-creation",
+    "set-list",
+    "split-transition",
+    "analysis-rules",
+    "analysis",
+    "recovery",
+    "print",
+    "popout-3d"
+  ],
+  "checks": [
+    {
+      "name": "field-toolbar",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 100163,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/field-toolbar.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/field-toolbar"
+    },
+    {
+      "name": "field-renderer",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 34582,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/field-renderer.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/field-renderer"
+    },
+    {
+      "name": "group-movement",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 49258,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/group-movement.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/group-movement"
+    },
+    {
+      "name": "formation-transitions",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 30653,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/formation-transitions.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/formation-transitions"
+    },
+    {
+      "name": "assignment-optimization",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 31676,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/assignment-optimization.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/assignment-optimization"
+    },
+    {
+      "name": "shared-routes",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 25662,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/shared-routes.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/shared-routes"
+    },
+    {
+      "name": "scatter-formations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 17410,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/scatter-formations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/scatter-formations"
+    },
+    {
+      "name": "bezier-formations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10016,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/bezier-formations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/bezier-formations"
+    },
+    {
+      "name": "live-formations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10121,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/live-formations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/live-formations"
+    },
+    {
+      "name": "path-authoring",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 26382,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/path-authoring.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/path-authoring"
+    },
+    {
+      "name": "detailed-analysis",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 15716,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/detailed-analysis.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/detailed-analysis"
+    },
+    {
+      "name": "path-operations",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 15306,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/path-operations.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/path-operations"
+    },
+    {
+      "name": "movement-schedule",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 21807,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/movement-schedule.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/movement-schedule"
+    },
+    {
+      "name": "paths",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 15575,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/paths.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/paths"
+    },
+    {
+      "name": "templates",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 14823,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/templates.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/templates"
+    },
+    {
+      "name": "smoke",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 2882,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/smoke.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/smoke"
+    },
+    {
+      "name": "editor",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 52035,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/editor.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/editor"
+    },
+    {
+      "name": "accessibility",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 164038,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/accessibility.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/accessibility"
+    },
+    {
+      "name": "field",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 56937,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/field.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/field"
+    },
+    {
+      "name": "formation-assignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 14290,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/formation-assignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/formation-assignment"
+    },
+    {
+      "name": "spacing",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 15606,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/spacing.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/spacing"
+    },
+    {
+      "name": "coordinate-entry",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 12731,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/coordinate-entry.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/coordinate-entry"
+    },
+    {
+      "name": "cast",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 35369,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/cast.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/cast"
+    },
+    {
+      "name": "selection",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 14191,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/selection.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/selection"
+    },
+    {
+      "name": "workspace",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 44227,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/workspace.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/workspace"
+    },
+    {
+      "name": "tooltips",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 38600,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/tooltips.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/tooltips"
+    },
+    {
+      "name": "tooltips-fallback",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 7714,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/tooltips-fallback.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/tooltips-fallback"
+    },
+    {
+      "name": "themes",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 42756,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/themes.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/themes"
+    },
+    {
+      "name": "commands",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 23011,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/commands.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/commands"
+    },
+    {
+      "name": "preferences",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 22410,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/preferences.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/preferences"
+    },
+    {
+      "name": "thumbnails",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 16388,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/thumbnails.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/thumbnails"
+    },
+    {
+      "name": "playback",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 36768,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/playback.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/playback"
+    },
+    {
+      "name": "audio-package",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 10950,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/audio-package.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/audio-package"
+    },
+    {
+      "name": "audio-clock",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 23881,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/audio-clock.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/audio-clock"
+    },
+    {
+      "name": "metronome",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 27444,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/metronome.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/metronome"
+    },
+    {
+      "name": "timeline",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 36943,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/timeline.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/timeline"
+    },
+    {
+      "name": "rehearsal",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 17145,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/rehearsal.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/rehearsal"
+    },
+    {
+      "name": "tempo-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 25300,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/tempo-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/tempo-map"
+    },
+    {
+      "name": "audio-alignment",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 33528,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/audio-alignment.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/audio-alignment"
+    },
+    {
+      "name": "score-map",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 77849,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/score-map.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/score-map"
+    },
+    {
+      "name": "production-sheet",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 29462,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/production-sheet.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/production-sheet"
+    },
+    {
+      "name": "set-creation",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 18565,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/set-creation.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/set-creation"
+    },
+    {
+      "name": "set-list",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 42439,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/set-list.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/set-list"
+    },
+    {
+      "name": "split-transition",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 18241,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/split-transition.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/split-transition"
+    },
+    {
+      "name": "analysis-rules",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 13199,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/analysis-rules.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/analysis-rules"
+    },
+    {
+      "name": "analysis",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 37620,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/analysis.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/analysis"
+    },
+    {
+      "name": "recovery",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 26060,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/recovery.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/recovery"
+    },
+    {
+      "name": "print",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 15716,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/print.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/print"
+    },
+    {
+      "name": "popout-3d",
+      "status": "passed",
+      "exitCode": 0,
+      "signal": null,
+      "elapsedMs": 76117,
+      "logFile": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/popout-3d.log",
+      "output": "/workspace/squidware/.qa/desktop-matrix/2026-11-12T23-26-08-337Z-7fda33ef/popout-3d"
+    }
+  ],
+  "build": {
+    "schema": 1,
+    "builtAt": "2026-11-12T23:25:14.503Z",
+    "source": {
+      "revision": "aab6af23b4566b9b118defda245fff52e4f76059",
+      "tree": "4e6f6868c91453e8892dc8b4eeabd5609c8fe6c0",
+      "dirty": true,
+      "contentHash": "51d3a5b966a66a804b058602cdb3c184e3a5f5c8773b9e53d775f1bf92d6f0ed",
+      "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    },
+    "runtime": {
+      "node": "24.19.0",
+      "platform": "linux",
+      "arch": "x64",
+      "os": "6.18.57",
+      "githubRun": null,
+      "githubAttempt": null,
+      "githubRef": null,
+      "runnerImage": null,
+      "runnerImageVersion": null
+    },
+    "outputHash": "208a25b6c4b19f27f20eac4a3207b6a53f993965b22c28efcbbed7f4846be75c"
+  }
+}

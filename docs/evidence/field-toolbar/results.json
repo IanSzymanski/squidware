@@ -1,0 +1,1919 @@
+{
+  "checks": [
+    "field toolbar is one Tab stop with horizontal navigation and an escapable keyboard overflow menu",
+    "launchers move out of the Inspector; preview Apply/Cancel, nested Escape, exact geometry and named undo remain shared commands",
+    "individual path entry, active 3D camera presets and playback contexts expose only applicable actions",
+    "default, narrow, enlarged and all-theme rows keep the field clear, expose overflow and preserve physical geometry"
+  ],
+  "metrics": [
+    {
+      "name": "selection-1366",
+      "context": "selection",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Select performers",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 579.046875,
+            "bottom": 91.5,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "Lasso selection",
+          "rect": {
+            "x": 583.046875,
+            "y": 63.5,
+            "width": 65.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 648.078125,
+            "bottom": 91.5,
+            "left": 583.046875
+          }
+        },
+        {
+          "title": "Selection tools and groups",
+          "rect": {
+            "x": 652.078125,
+            "y": 63.5,
+            "width": 111.046875,
+            "height": 28,
+            "top": 63.5,
+            "right": 763.125,
+            "bottom": 91.5,
+            "left": 652.078125
+          }
+        },
+        {
+          "title": "Pan field",
+          "rect": {
+            "x": 767.125,
+            "y": 63.5,
+            "width": 54.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 821.484375,
+            "bottom": 91.5,
+            "left": 767.125
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "selection-1024",
+      "context": "selection",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 369,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 416.34375,
+            "bottom": 91.5,
+            "left": 369
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 416.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 463.6875,
+            "bottom": 91.5,
+            "left": 416.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 472.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 500.6875,
+            "bottom": 91.5,
+            "left": 472.6875
+          }
+        },
+        {
+          "title": "Select performers",
+          "rect": {
+            "x": 506.6875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 573.046875,
+            "bottom": 91.5,
+            "left": 506.6875
+          }
+        },
+        {
+          "title": "Lasso selection",
+          "rect": {
+            "x": 577.046875,
+            "y": 63.5,
+            "width": 65.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 642.078125,
+            "bottom": 91.5,
+            "left": 577.046875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "group-1366",
+      "context": "group",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Move selection",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.5,
+            "width": 62.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 575.03125,
+            "bottom": 91.5,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "Rotate selection",
+          "rect": {
+            "x": 579.03125,
+            "y": 63.5,
+            "width": 68.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 647.390625,
+            "bottom": 91.5,
+            "left": 579.03125
+          }
+        },
+        {
+          "title": "Shape selection",
+          "rect": {
+            "x": 651.390625,
+            "y": 63.5,
+            "width": 67.703125,
+            "height": 28,
+            "top": 63.5,
+            "right": 719.09375,
+            "bottom": 91.5,
+            "left": 651.390625
+          }
+        },
+        {
+          "title": "Align selection",
+          "rect": {
+            "x": 723.09375,
+            "y": 63.5,
+            "width": 59.6875,
+            "height": 28,
+            "top": 63.5,
+            "right": 782.78125,
+            "bottom": 91.5,
+            "left": 723.09375
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "group-1024",
+      "context": "group",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 369,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 416.34375,
+            "bottom": 91.5,
+            "left": 369
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 416.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 463.6875,
+            "bottom": 91.5,
+            "left": 416.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 472.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 500.6875,
+            "bottom": 91.5,
+            "left": 472.6875
+          }
+        },
+        {
+          "title": "Move selection",
+          "rect": {
+            "x": 506.6875,
+            "y": 63.5,
+            "width": 62.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 569.03125,
+            "bottom": 91.5,
+            "left": 506.6875
+          }
+        },
+        {
+          "title": "Rotate selection",
+          "rect": {
+            "x": 573.03125,
+            "y": 63.5,
+            "width": 68.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 641.390625,
+            "bottom": 91.5,
+            "left": 573.03125
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "preview-1366",
+      "context": "preview",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 244,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 291.34375,
+            "bottom": 91.5,
+            "left": 244
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 291.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 338.6875,
+            "bottom": 91.5,
+            "left": 291.34375
+          }
+        },
+        {
+          "title": "Apply transform",
+          "rect": {
+            "x": 347.6875,
+            "y": 63.5,
+            "width": 59.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 406.71875,
+            "bottom": 91.5,
+            "left": 347.6875
+          }
+        },
+        {
+          "title": "Cancel transform",
+          "rect": {
+            "x": 410.71875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 477.078125,
+            "bottom": 91.5,
+            "left": 410.71875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "preview-1024",
+      "context": "preview",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 238,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 285.34375,
+            "bottom": 91.5,
+            "left": 238
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 285.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 332.6875,
+            "bottom": 91.5,
+            "left": 285.34375
+          }
+        },
+        {
+          "title": "Apply transform",
+          "rect": {
+            "x": 341.6875,
+            "y": 63.5,
+            "width": 59.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 400.71875,
+            "bottom": 91.5,
+            "left": 341.6875
+          }
+        },
+        {
+          "title": "Cancel transform",
+          "rect": {
+            "x": 404.71875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 471.078125,
+            "bottom": 91.5,
+            "left": 404.71875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "performer-1366",
+      "context": "performer",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Enter coordinates",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.5,
+            "width": 97.71875,
+            "height": 28,
+            "top": 63.5,
+            "right": 610.40625,
+            "bottom": 91.5,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "Edit performer path",
+          "rect": {
+            "x": 614.40625,
+            "y": 63.5,
+            "width": 135.71875,
+            "height": 28,
+            "top": 63.5,
+            "right": 750.125,
+            "bottom": 91.5,
+            "left": 614.40625
+          }
+        },
+        {
+          "title": "Draw performer path",
+          "rect": {
+            "x": 754.125,
+            "y": 63.5,
+            "width": 143.046875,
+            "height": 28,
+            "top": 63.5,
+            "right": 897.171875,
+            "bottom": 91.5,
+            "left": 754.125
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "performer-1024",
+      "context": "performer",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 369,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 416.34375,
+            "bottom": 91.5,
+            "left": 369
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 416.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 463.6875,
+            "bottom": 91.5,
+            "left": 416.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 472.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 500.6875,
+            "bottom": 91.5,
+            "left": 472.6875
+          }
+        },
+        {
+          "title": "Enter coordinates",
+          "rect": {
+            "x": 506.6875,
+            "y": 63.5,
+            "width": 97.71875,
+            "height": 28,
+            "top": 63.5,
+            "right": 604.40625,
+            "bottom": 91.5,
+            "left": 506.6875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "camera-1366",
+      "context": "3d",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Perspective camera",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.703125,
+            "width": 99.703125,
+            "height": 27.59375,
+            "top": 63.703125,
+            "right": 612.390625,
+            "bottom": 91.296875,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "Front camera",
+          "rect": {
+            "x": 616.390625,
+            "y": 63.703125,
+            "width": 65.015625,
+            "height": 27.59375,
+            "top": 63.703125,
+            "right": 681.40625,
+            "bottom": 91.296875,
+            "left": 616.390625
+          }
+        },
+        {
+          "title": "Overhead camera",
+          "rect": {
+            "x": 685.40625,
+            "y": 63.703125,
+            "width": 89.703125,
+            "height": 27.59375,
+            "top": 63.703125,
+            "right": 775.109375,
+            "bottom": 91.296875,
+            "left": 685.40625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "camera-1024",
+      "context": "3d",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 369,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 416.34375,
+            "bottom": 91.5,
+            "left": 369
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 416.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 463.6875,
+            "bottom": 91.5,
+            "left": 416.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 472.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 500.6875,
+            "bottom": 91.5,
+            "left": 472.6875
+          }
+        },
+        {
+          "title": "Perspective camera",
+          "rect": {
+            "x": 506.6875,
+            "y": 63.703125,
+            "width": 99.703125,
+            "height": 27.59375,
+            "top": 63.703125,
+            "right": 606.390625,
+            "bottom": 91.296875,
+            "left": 506.6875
+          }
+        },
+        {
+          "title": "Front camera",
+          "rect": {
+            "x": 610.390625,
+            "y": 63.703125,
+            "width": 65.015625,
+            "height": 27.59375,
+            "top": 63.703125,
+            "right": 675.40625,
+            "bottom": 91.296875,
+            "left": 610.390625
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "playback-1366",
+      "context": "playback",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Pause playback",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.5,
+            "width": 67.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 579.71875,
+            "bottom": 91.5,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "playback-1024",
+      "context": "playback",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 369,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 416.34375,
+            "bottom": 91.5,
+            "left": 369
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 416.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 463.6875,
+            "bottom": 91.5,
+            "left": 416.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 472.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 500.6875,
+            "bottom": 91.5,
+            "left": 472.6875
+          }
+        },
+        {
+          "title": "Pause playback",
+          "rect": {
+            "x": 506.6875,
+            "y": 63.5,
+            "width": 67.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 573.71875,
+            "bottom": 91.5,
+            "left": 506.6875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "dark-1024-1",
+      "context": "selection",
+      "toolbar": {
+        "x": 228,
+        "y": 56,
+        "width": 520,
+        "height": 42,
+        "top": 56,
+        "right": 748,
+        "bottom": 98,
+        "left": 228
+      },
+      "field": {
+        "x": 228,
+        "y": 98,
+        "width": 520,
+        "height": 445,
+        "top": 98,
+        "right": 748,
+        "bottom": 543,
+        "left": 228
+      },
+      "viewport": [
+        1024,
+        700
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 369,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 416.34375,
+            "bottom": 91.5,
+            "left": 369
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 416.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 463.6875,
+            "bottom": 91.5,
+            "left": 416.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 472.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 500.6875,
+            "bottom": 91.5,
+            "left": 472.6875
+          }
+        },
+        {
+          "title": "Select performers",
+          "rect": {
+            "x": 506.6875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 573.046875,
+            "bottom": 91.5,
+            "left": 506.6875
+          }
+        },
+        {
+          "title": "Lasso selection",
+          "rect": {
+            "x": 577.046875,
+            "y": 63.5,
+            "width": 65.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 642.078125,
+            "bottom": 91.5,
+            "left": 577.046875
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 679.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 741,
+            "bottom": 91.5,
+            "left": 679.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "light-1366-1",
+      "context": "selection",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Select performers",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 579.046875,
+            "bottom": 91.5,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "Lasso selection",
+          "rect": {
+            "x": 583.046875,
+            "y": 63.5,
+            "width": 65.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 648.078125,
+            "bottom": 91.5,
+            "left": 583.046875
+          }
+        },
+        {
+          "title": "Selection tools and groups",
+          "rect": {
+            "x": 652.078125,
+            "y": 63.5,
+            "width": 111.046875,
+            "height": 28,
+            "top": 63.5,
+            "right": 763.125,
+            "bottom": 91.5,
+            "left": 652.078125
+          }
+        },
+        {
+          "title": "Pan field",
+          "rect": {
+            "x": 767.125,
+            "y": 63.5,
+            "width": 54.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 821.484375,
+            "bottom": 91.5,
+            "left": 767.125
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "high-contrast-1366-1",
+      "context": "selection",
+      "toolbar": {
+        "x": 234,
+        "y": 56,
+        "width": 856,
+        "height": 42,
+        "top": 56,
+        "right": 1090,
+        "bottom": 98,
+        "left": 234
+      },
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "viewport": [
+        1366,
+        768
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 422.34375,
+            "bottom": 91.5,
+            "left": 375
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 422.34375,
+            "y": 63.5,
+            "width": 47.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 469.6875,
+            "bottom": 91.5,
+            "left": 422.34375
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 478.6875,
+            "y": 63.5,
+            "width": 28,
+            "height": 28,
+            "top": 63.5,
+            "right": 506.6875,
+            "bottom": 91.5,
+            "left": 478.6875
+          }
+        },
+        {
+          "title": "Select performers",
+          "rect": {
+            "x": 512.6875,
+            "y": 63.5,
+            "width": 66.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 579.046875,
+            "bottom": 91.5,
+            "left": 512.6875
+          }
+        },
+        {
+          "title": "Lasso selection",
+          "rect": {
+            "x": 583.046875,
+            "y": 63.5,
+            "width": 65.03125,
+            "height": 28,
+            "top": 63.5,
+            "right": 648.078125,
+            "bottom": 91.5,
+            "left": 583.046875
+          }
+        },
+        {
+          "title": "Selection tools and groups",
+          "rect": {
+            "x": 652.078125,
+            "y": 63.5,
+            "width": 111.046875,
+            "height": 28,
+            "top": 63.5,
+            "right": 763.125,
+            "bottom": 91.5,
+            "left": 652.078125
+          }
+        },
+        {
+          "title": "Pan field",
+          "rect": {
+            "x": 767.125,
+            "y": 63.5,
+            "width": 54.359375,
+            "height": 28,
+            "top": 63.5,
+            "right": 821.484375,
+            "bottom": 91.5,
+            "left": 767.125
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 1021.65625,
+            "y": 63.5,
+            "width": 61.34375,
+            "height": 28,
+            "top": 63.5,
+            "right": 1083,
+            "bottom": 91.5,
+            "left": 1021.65625
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "dark-1024-1.5",
+      "context": "selection",
+      "toolbar": {
+        "x": 42,
+        "y": 52,
+        "width": 598.6666870117188,
+        "height": 42,
+        "top": 52,
+        "right": 640.6666870117188,
+        "bottom": 94,
+        "left": 42
+      },
+      "field": {
+        "x": 42,
+        "y": 94,
+        "width": 598.6666870117188,
+        "height": 237,
+        "top": 94,
+        "right": 640.6666870117188,
+        "bottom": 331,
+        "left": 42
+      },
+      "viewport": [
+        683,
+        467
+      ],
+      "uiScale": 1,
+      "items": [
+        {
+          "title": "2D field",
+          "rect": {
+            "x": 123.33333587646484,
+            "y": 59.333335876464844,
+            "width": 26,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 149.33333587646484,
+            "bottom": 87.33333587646484,
+            "left": 123.33333587646484
+          }
+        },
+        {
+          "title": "3D preview",
+          "rect": {
+            "x": 149.33334350585938,
+            "y": 59.333335876464844,
+            "width": 26,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 175.33334350585938,
+            "bottom": 87.33333587646484,
+            "left": 149.33334350585938
+          }
+        },
+        {
+          "title": "Open 3D window",
+          "rect": {
+            "x": 180,
+            "y": 59.333335876464844,
+            "width": 24,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 204,
+            "bottom": 87.33333587646484,
+            "left": 180
+          }
+        },
+        {
+          "title": "Select performers",
+          "rect": {
+            "x": 206,
+            "y": 59.333335876464844,
+            "width": 65.6875,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 271.6875,
+            "bottom": 87.33333587646484,
+            "left": 206
+          }
+        },
+        {
+          "title": "Lasso selection",
+          "rect": {
+            "x": 275.6875,
+            "y": 59.333335876464844,
+            "width": 64.36458587646484,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 340.05208587646484,
+            "bottom": 87.33333587646484,
+            "left": 275.6875
+          }
+        },
+        {
+          "title": "Selection tools and groups",
+          "rect": {
+            "x": 344.0520935058594,
+            "y": 59.333335876464844,
+            "width": 110.38542175292969,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 454.43751525878906,
+            "bottom": 87.33333587646484,
+            "left": 344.0520935058594
+          }
+        },
+        {
+          "title": "Pan field",
+          "rect": {
+            "x": 458.4375,
+            "y": 59.333335876464844,
+            "width": 53.6875,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 512.125,
+            "bottom": 87.33333587646484,
+            "left": 458.4375
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 573.3229370117188,
+            "y": 59.333335876464844,
+            "width": 60.677085876464844,
+            "height": 28,
+            "top": 59.333335876464844,
+            "right": 634.0000228881836,
+            "bottom": 87.33333587646484,
+            "left": 573.3229370117188
+          }
+        }
+      ],
+      "tabStops": 1
+    },
+    {
+      "name": "preview-900-1.5",
+      "context": "preview",
+      "toolbar": {
+        "x": 63,
+        "y": 78,
+        "width": 387,
+        "height": 63,
+        "top": 78,
+        "right": 450,
+        "bottom": 141,
+        "left": 63
+      },
+      "field": {
+        "x": 63,
+        "y": 141,
+        "width": 387,
+        "height": 305.5,
+        "top": 141,
+        "right": 450,
+        "bottom": 446.5,
+        "left": 63
+      },
+      "viewport": [
+        900,
+        650
+      ],
+      "uiScale": 1.5,
+      "items": [
+        {
+          "title": "Apply transform",
+          "rect": {
+            "x": 73,
+            "y": 89,
+            "width": 87.53125,
+            "height": 42,
+            "top": 89,
+            "right": 160.53125,
+            "bottom": 131,
+            "left": 73
+          }
+        },
+        {
+          "title": "Cancel transform",
+          "rect": {
+            "x": 166.53125,
+            "y": 89,
+            "width": 98.53125,
+            "height": 42,
+            "top": 89,
+            "right": 265.0625,
+            "bottom": 131,
+            "left": 166.53125
+          }
+        },
+        {
+          "title": "More field tools",
+          "rect": {
+            "x": 348.984375,
+            "y": 89,
+            "width": 91.015625,
+            "height": 42,
+            "top": 89,
+            "right": 440,
+            "bottom": 131,
+            "left": 348.984375
+          }
+        }
+      ],
+      "tabStops": 1
+    }
+  ]
+}

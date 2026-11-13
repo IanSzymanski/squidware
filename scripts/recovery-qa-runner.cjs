@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const { waitFor: waitUntil, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
@@ -20,7 +21,7 @@ app.on('browser-window-created', (_event, created) => { window = created; create
 require(path.join(root, 'electron/main.cjs'));
 const waitFor = (condition, label) => waitUntil(condition, label, { timeoutMs: 25000 });
 const uiWait = (source, label) => waitFor(() => evaluate(source), label);
-async function click(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await pause(35); }
+async function click(selector) { await revealFieldTool(window,selector); await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`); await pause(35); }
 function native(label) {
   function find(menu) { for (const item of menu?.items || []) { if (item.label === label) return item; const nested = find(item.submenu); if (nested) return nested; } }
   find(Menu.getApplicationMenu()).click();

@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -38,7 +39,7 @@ const ready = () => waitForProgress(async () => {
     error: failed ? `move ${failed.index}: ${failed.error}` : undefined };
 }, 'whole-show worker results', { idleTimeoutMs: 30000, timeoutMs: 120000, failure: () => failure });
 async function oracle() { await ready(); const p=await evaluate(state+'.project.present'), moves=await evaluate(snapshot+'.moves'); for(const m of moves)assert.deepEqual(m.issues,analyzeTransition(p,m.index)); return moves; }
-async function click(selector) {
+async function click(selector) { await revealFieldTool(window,selector);
   const point=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)throw Error('Unavailable '+${JSON.stringify(selector)});e.scrollIntoView({block:'nearest'});const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()`);
   for(const type of ['mouseMoved','mousePressed','mouseReleased'])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,...(type==='mouseMoved'?{}:{button:'left',clickCount:1})});await frames();
 }

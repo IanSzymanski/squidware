@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -36,7 +37,7 @@ async function point(selector) {
   await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__setListQA.point={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__setListQA.point.x,window.__setListQA.point.y)));}));})`, 'actionable ' + selector);
   return evaluate('window.__setListQA.point');
 }
-async function click(selector) {
+async function click(selector) { await revealFieldTool(window,selector);
   const p = await point(selector);
   for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await debug('Input.dispatchMouseEvent', { type, ...p, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
   await frames();

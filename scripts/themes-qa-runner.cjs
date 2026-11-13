@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
@@ -14,7 +15,7 @@ dialog.showMessageBox = async () => ({ response: 1 });
 let window, failure; const checks = [], audits = [], metrics = [];
 app.on('browser-window-created', (_event, created) => { window = created; window.webContents.setBackgroundThrottling(false); window.webContents.on('render-process-gone', (_e, d) => { failure = new Error('Renderer exited: ' + d.reason); }); });
 require(path.join(root, 'electron/main.cjs'));
-const evaluate = source => window.webContents.executeJavaScript(source);
+const evaluate = source => window.webContents.executeJavaScript(source).catch(error=>{throw Error(error.message+' · '+source.slice(0,250));});
 const editor = 'window.__themesQA.editor', state = editor + '.getState()';
 const wait = (source, label) => waitFor(() => evaluate(source), label, { timeoutMs: 15000, failure: () => failure });
 const key = (code, modifiers = []) => sendKey(window, code, modifiers, 20);
@@ -26,7 +27,7 @@ function instrument() {
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; },
     onCommitFiberRoot(_id, root) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) window.__themesQA.editor = v; visit(f.child); visit(f.sibling); } visit(root.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
-async function click(selector) {
+async function click(selector) { await revealFieldTool(window,selector);
   await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'nearest'})`);
   await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
   const point = await evaluate(`(() => { const n=document.querySelector(${JSON.stringify(selector)}), r=n.getBoundingClientRect(); const p={x:r.x+r.width/2,y:r.y+r.height/2}; if(!n.contains(document.elementFromPoint(p.x,p.y))) throw new Error('Obscured: '+${JSON.stringify(selector)}); return p; })()`);
@@ -54,7 +55,7 @@ async function audit(label) {
   const result = await evaluate(`(${auditText.toString()})({includeDisabled:true})`); audits.push({ label, ...result });
   assert.deepEqual(result.failures, [], label); assert.ok(result.checked > 40, label);
 }
-async function focus(selector) {
+async function focus(selector) { await revealFieldTool(window,selector);
   await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await key('Tab'); await key('Tab', ['shift']);
   if (selector.includes('data-performer-id')) return;
   const style = await evaluate(`(() => { const s=getComputedStyle(document.activeElement);return {width:s.outlineWidth,style:s.outlineStyle,color:s.outlineColor}; })()`);

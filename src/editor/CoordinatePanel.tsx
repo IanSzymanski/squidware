@@ -25,8 +25,8 @@ export function CoordinatePanel({controller:c}:{controller:EditorController}) {
     <label className="form-label">Drill phrase<Tooltip name="Drill phrase" pointerPassThrough description="Type a complete coordinate or movement phrase. Preview updates while typing. Enter focuses Apply; Escape cancels this preview."><textarea ref={input} aria-label="Drill phrase" spellCheck={false} autoComplete="off" rows={3} maxLength={DRILL_ENTRY_LIMIT} value={options.text} placeholder={example} aria-invalid={!!options.text.trim()&&!!result.error} aria-describedby={help}
       onChange={event=>update({text:event.target.value})} onKeyDown={event=>{
         if(event.nativeEvent.isComposing)return;
-        if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();if(!result.error&&result.changed)document.querySelector<HTMLElement>('[aria-label="Apply coordinates"]')?.focus();}
-        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();c.dispatch('coordinates.cancel');requestAnimationFrame(()=>document.querySelector<HTMLElement>('[aria-label="Enter coordinates"]')?.focus());}
+        if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();if(!result.error&&result.changed)document.querySelector<HTMLElement>('.selection-bar [aria-label="Apply coordinates"]')?.focus();}
+        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();c.dispatch('coordinates.cancel');requestAnimationFrame(()=>{const target=document.querySelector<HTMLElement>('#workspace-pane-inspector.workspace-pane--overlay:not([hidden]) .workspace-pane-heading button')??document.querySelector<HTMLElement>('.field-primary [aria-label="Enter coordinates"]')??document.querySelector<HTMLElement>('[aria-label="More field tools"]');target?.focus();});}
       }}/></Tooltip></label>
     <div className="form-row coordinate-examples">
       <HelpButton title="Use example phrase" description="Insert the displayed example for the current entry mode without committing it." className="button subtle" onClick={()=>update({text:example,side:null,defaultUnit:'steps'})}>Use example</HelpButton>

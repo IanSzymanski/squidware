@@ -1,6 +1,6 @@
 # Group route movement
 
-Pause at an arrival set in 2D and select at least two performers. Open **Group route movement…** in Formation tools or Commands. Choose a saved shared route, including a route drawn or placed through **Shared routes…**. Routes are production-local geometries; assigning a group is a separate reviewed edit. Each incoming move can contain up to 32 disjoint groups, with 2–500 ordered members per group.
+Pause at an arrival set in 2D and select at least two performers. Open **Group route movement…** from **More** above the field or the Command palette. Choose a saved shared route, including a route drawn or placed through **Shared routes…**. Routes are production-local geometries; assigning a group is a separate reviewed edit. Each incoming move can contain up to 32 disjoint groups, with 2–500 ordered members per group.
 
 **Members and leader** makes member 1 the leader/reference member. Choose a member and Move earlier/later to change rank, or explicitly check/uncheck performers. Performer identities stay attached to their existing source and destination dots. One performer cannot belong to two groups on the same move. Live formation geometry, membership and assignment restrictions are retained.
 

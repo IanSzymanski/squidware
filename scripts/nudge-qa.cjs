@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { settleNativeViewport } = require('./testing/renderer.cjs');
 
@@ -16,7 +17,7 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   async function focusField() { await evaluate("document.querySelector('.field-stage__svg').focus()"); }
   async function focusGlobal() { await evaluate('document.activeElement?.blur()'); }
   // Native input uses window (DIP) coordinates; getBoundingClientRect reports CSS pixels, which differ under page zoom.
-  async function button(selector,shift=false) { const zoom=window.webContents.getZoomFactor(); const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click({x:p.x*zoom,y:p.y*zoom},shift?1:0); }
+  async function button(selector,shift=false) { await revealFieldTool(window,selector); const zoom=window.webContents.getZoomFactor(); const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click({x:p.x*zoom,y:p.y*zoom},shift?1:0); }
   const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} vs ${b}`);
   await reset(); await capture('increments-before.png');
   for(const fast of [false,true]) {

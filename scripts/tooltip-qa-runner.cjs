@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const { key: sendKey, keyWithRelease, waitFor: waitUntil, capturePage, settleNativeViewport } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path'); const assert = require('node:assert/strict');
@@ -25,21 +26,26 @@ const frames = () => evaluate('new Promise(resolve => requestAnimationFrame(() =
 // Focus help follows :focus-visible. Programmatic focus after a pointer action
 // shows none, so reach each control with native Tab/Shift+Tab (keyboard modality).
 async function focus(name) {
+  await revealFieldTool(window,selector(name));
   const target = `document.querySelector(${JSON.stringify(selector(name))})`;
   await evaluate(`${target}.focus()`);
   await keyWithRelease(window, 'Tab', [], { releaseKey: 'Tab' }); await keyWithRelease(window, 'Tab', ['shift'], { releaseKey: 'Tab' });
+  await revealFieldTool(window,selector(name));
   await evaluate(`if (document.activeElement !== ${target}) ${target}.focus()`);
   await uiWait(`document.activeElement === ${target} && document.querySelector('[role=tooltip] strong')?.textContent === ${JSON.stringify(name)}`, 'focus help: ' + name);
 }
 async function click(name) {
+  await revealFieldTool(window,selector(name));
   const point = await evaluate(`(() => { const control = document.querySelector(${JSON.stringify(selector(name))}); control.scrollIntoView({ block: 'nearest' }); const rect = control.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`);
   for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
 }
 const contained = name => evaluate(`(() => { const a = document.querySelector(${JSON.stringify(selector(name))}).getBoundingClientRect(), p = document.querySelector('.tooltip-panel').getBoundingClientRect(), w = document.documentElement.clientWidth, h = document.documentElement.clientHeight;
   return (p.left >= 0 && p.top >= 0 && p.right <= w && p.bottom <= h && !(p.left < a.right && p.right > a.left && p.top < a.bottom && p.bottom > a.top)) || JSON.stringify({ name, anchor: a, panel: p, w, h }); })()`);
-async function hover(name) {
+async function hover(name, hidden = false) {
+  await revealFieldTool(window,selector(name));
   await evaluate('document.activeElement?.blur()');
   const point = await evaluate(`(() => { const control = document.querySelector(${JSON.stringify(selector(name))}); control.scrollIntoView({ block: 'nearest' }); const rect = control.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()`);
+  if(hidden){window.hide();assert.equal(window.isVisible(),false,'hidden capture exercises a hidden native window');}
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 }); await pause(120);
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
 }
@@ -99,12 +105,13 @@ app.whenReady().then(async () => {
 
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
       await focus('Show field grid'); assert.match(await tooltip(), /Current: On/);
-      await key('Escape'); assert.equal(await tooltip(), '');
+      await key('Escape');assert.equal(await evaluate("!!document.querySelector('.field-tools-menu:not([hidden])')"),false);
       assert.equal(await evaluate(`${editor}.getState().selection.selectedIds.length`), 1);
-      await key('Return'); await focus('Show field grid'); assert.match(await tooltip(), /Current: Off/);
-      await evaluate(`${editor}.setValue('selection', 'selectedIds', []); ${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, inspectorFormationOpen: true})`); await focus('Preview formation');
-      assert.match(await tooltip(), /Unavailable:.*Select performers first/);
+      await focus('Show field grid');await key('Return'); await focus('Show field grid'); assert.match(await tooltip(), /Current: Off/);
+      await evaluate(`${editor}.setValue('selection', 'selectedIds', []); ${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, inspectorFormationOpen: true})`); await focus('Shape selection');
+      assert.match(await tooltip(), /Unavailable:.*Select performers.*first/);
       await evaluate(`${editor}.setValue('selection', 'selectedIds', [${editor}.getState().project.present.performers[0].id])`);
+      await focus('Shape selection');
       assert.match(await tooltip(), /Preview a shape for 1 selected performer/);
       for (const name of ['Align selection']) {
         await focus(name); assert.match(await tooltip(), /Unavailable:.*Select at least two performers/);
@@ -140,12 +147,13 @@ app.whenReady().then(async () => {
       assert.ok(await evaluate("document.activeElement.getAttribute('aria-describedby').split(' ').every(id => document.getElementById(id))"));
       pass('Inspector fields retain native disabled behavior and expose focusable explanations');
 
-      await evaluate(`${editor}.dispatch('playback.scrub', { count: 1 })`); await focus('Preview formation');
-      assert.match(await tooltip(), /Unavailable:.*Return to a set/);
+      await evaluate(`${editor}.dispatch('playback.scrub', { count: 1 })`); await focus('Return to this set to edit');
+      assert.match(await tooltip(), /Return to this set to edit/);assert.equal(await evaluate("document.activeElement.getAttribute('aria-disabled')"),null);
       await key('Return'); assert.equal(await evaluate(`${editor}.getState().project.revision`), revision);
       await evaluate(`${editor}.dispatch('set.select', { index: 0 })`);
+      await focus('Shape selection');await key('Return');await uiWait("!!document.querySelector('.formation-grid button')",'formation help controls');
       const coverage = await evaluate("['.set-card', '.field-legend button', '.formation-grid button', '.view-switch button'].map(selector => Array.from(document.querySelectorAll(selector)).every(control => control.hasAttribute('data-tooltip-name'))) ");
-      assert.deepEqual(coverage, [true, true, true, true]);
+      assert.deepEqual(coverage, [true, true, true, true]);await key('Escape');
       pass('preview actions explain edit recovery; set, legend, formation and view controls all have help');
     }
 
@@ -171,12 +179,13 @@ app.whenReady().then(async () => {
             await uiWait(`!!document.querySelector('.field-preview-banner') === ${preview}`, '3D preview state');
             await settleNativeViewport(window, '3D overlay geometry');
             const layout = await evaluate(`(() => {
-              const camera=document.querySelector('.stage-three__controls').getBoundingClientRect();
+              const cameraGroup=document.querySelector('.studio--focus .field-container .stage-three__controls')??document.querySelector('.field-command-toolbar .stage-three__controls');
+              const camera=cameraGroup.getBoundingClientRect();
               const legend=document.querySelector('.field-legend').getBoundingClientRect();
               const banner=document.querySelector('.field-preview-banner')?.getBoundingClientRect();
               const restore=document.querySelector('.focus-restore')?.getBoundingClientRect();
               const overlap=r=>!!r && camera.left<r.right && camera.right>r.left && camera.top<r.bottom && camera.bottom>r.top;
-              const obscured=[...document.querySelectorAll('.stage-three__controls button,.stage-three__controls select')].filter(n=>{const r=n.getBoundingClientRect(); return !n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(n=>n.getAttribute('aria-label'));
+              const obscured=[...cameraGroup.querySelectorAll('button,select'),...document.querySelectorAll('.stage-three__quality select')].filter(n=>n.getClientRects().length).filter(n=>{const r=n.getBoundingClientRect(); return !n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}).map(n=>n.getAttribute('aria-label'));
               return { camera:camera.toJSON(), legend:legend.toJSON(), banner:banner?.toJSON(), restore:restore?.toJSON(), overlapsLegend:overlap(legend), overlapsPreview:overlap(banner), overlapsRestore:overlap(restore), obscured };
             })()`);
             assert.equal(layout.overlapsLegend, false, JSON.stringify(layout)); assert.equal(layout.overlapsPreview, false, JSON.stringify(layout)); assert.equal(layout.overlapsRestore, false, JSON.stringify(layout)); assert.deepEqual(layout.obscured, [], JSON.stringify(layout));
@@ -194,7 +203,7 @@ app.whenReady().then(async () => {
       await evaluate(`${editor}.dispatch('set.select', {index:0})`);
       pass('3D camera buttons and quality remain unobstructed by the section legend, preview banner and Exit focus at default and narrow enlarged sizes');
     }
-    await focus('Zoom in'); assert.match(await tooltip(), /Unavailable:.*Switch to 2D/);
+    assert.equal(await evaluate("!!document.querySelector('.field-command-toolbar [aria-label=\"Zoom in\"]')"),false,'3D hides 2D zoom tools');
     if (await evaluate("!!document.querySelector('.stage-three__fallback[role=alert]')")) {
       await focus('Return to 2D field'); assert.match(await tooltip(), /editable field/);
     } else { await focus('Overhead camera'); assert.match(await tooltip(), /straight down/); }
@@ -222,10 +231,11 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.setValue('preferences', 'value', {...${editor}.getState().preferences.value, uiScale: 1})`);
     await uiWait("!document.querySelector('.studio--focus') && document.documentElement.style.getPropertyValue('--ui-scale') === '1'", 'restored tooltip scale');
     await focus('Save');
-    await hover('Save'); await uiWait("!!document.querySelector('[role=tooltip]')", 'hover screenshot'); await pause(80);
+    await hover('Save', true); await uiWait("!!document.querySelector('[role=tooltip]')", 'hover screenshot'); await pause(80);
     // A hidden Linux window may stop producing compositor frames after 3D
     // fallback. Electron's capture API explicitly wakes it without showing it.
     await capturePage(window, output, 'focus-help.png');
+    assert.equal(window.isVisible(),false,'capture preserves the hidden window');
     pass('hidden-window screenshot completes after 3D controls or fallback');
     if (force3DFallback) { await finish(); return; }
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 600, y: 300 });

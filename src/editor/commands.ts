@@ -99,6 +99,9 @@ export interface CommandArguments {
   'tool.box': undefined; 'tool.pan': undefined; 'tool.lasso': undefined;
   'performers.add-dialog': undefined; 'set.new': undefined; 'set.duplicate': undefined; 'set.insert-before': undefined; 'set.hold': undefined; 'set.previous': undefined; 'set.next': undefined;
   'transform.mirror': undefined; 'view.toggle': undefined; 'display.paths': undefined; 'display.labels': undefined;
+  'display.grid': undefined; 'display.snap': undefined; 'display.next-paths': undefined;
+  'selection.move-controls': undefined;
+  'view.camera': { preset: 'perspective' | 'front' | 'top' };
   'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
   'view.select': { view: '2d' | '3d' }; 'view.popout': undefined; 'view.popout-close': undefined; 'workspace.show': { workspace: Workspace };
   'playback.count-previous': undefined; 'playback.count-next': undefined;
@@ -340,14 +343,25 @@ export const commandRegistry = {
   'set.previous': simple('set.previous', 'Previous set', 'Stop playback and arrive at the previous set.', s => canNavigate(s) && s.selection.activeIndex > 0, c => selectSet(c, c.getState().selection.activeIndex - 1)),
   'set.next': simple('set.next', 'Next set', 'Stop playback and arrive at the next set.', s => canNavigate(s) && s.selection.activeIndex < s.project.present.sets.length - 1, c => selectSet(c, c.getState().selection.activeIndex + 1)),
   'transform.mirror': simple('transform.mirror', 'Mirror across 50', 'Preview a physical midfield mirror on the selected performers.', canIncrement, c => beginTransform(c, { operation: 'across-50' })),
+  'selection.move-controls': simple('selection.move-controls','Move selection','Show precise position and nudge controls in the Inspector.',canIncrement,c=>{
+    const p=c.getState().preferences.value;
+    c.patch('preferences',{value:{...p,inspectorSelectionOpen:true,workspaceLayout:{...p.workspaceLayout,inspectorCollapsed:false}}});
+    c.patch('ui',{workspace:'design',view:'2d',castPanelOpen:false});
+  }),
   'view.toggle': simple('view.toggle', 'Toggle 2D / 3D', 'Switch between field editing and the 3D rehearsal preview.', canNavigate, c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: s.ui.view === '2d' ? '3d' : '2d' }); }),
+  'view.camera': define({ id: 'view.camera', name: 'Reset 3D camera', description: 'Perspective is an angled field view; Front faces the home sideline; Overhead looks straight down. Drag to orbit; this clears the active preset.', arguments: { preset: 'perspective | front | top' },
+    enabled: (s,a) => idle(s) && s.ui.workspace === 'design' && s.ui.view === '3d' && !!a && ['perspective','front','top'].includes(a.preset),
+    execute: (c,a) => c.patch('ui', { camera: { preset:a.preset, version:c.getState().ui.camera.version+1 } }) }),
   'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Open the 2D field or 3D rehearsal view.', arguments: { view: '2d | 3d' }, enabled: (s, a) => canNavigate(s) && !!a && ['2d', '3d'].includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
   // Opening moves an inline 3D view back to 2D so only one renderer runs; the window itself never edits.
   'view.popout': simple('view.popout', 'Open 3D window', 'Show the 3D preview in its own window that follows this editor’s set, count, playback and selection. If it is open, bring it to the front.', s => s.ui.popout3d !== 'unavailable',
     c => { const s = c.getState(); c.patch('ui', s.ui.popout3d === 'open' ? { popout3dFocus: s.ui.popout3dFocus + 1 } : { popout3d: 'open', ...(s.ui.view === '3d' ? { view: '2d' } : {}) }); }),
   'view.popout-close': simple('view.popout-close', 'Close 3D window', 'Close the separate 3D window. The 3D preview option returns to the field area.', s => s.ui.popout3d === 'open', c => c.patch('ui', { popout3d: 'closed' })),
   'workspace.show': define({ id: 'workspace.show', name: 'Show workspace', description: 'Open Design, Cast or the Production sheet.', arguments: { workspace: 'design | cast | production' }, enabled: (s, a) => canNavigate(s) && !!a && ['design', 'cast', 'production'].includes(a.workspace), execute: (c, a) => c.patch('ui', { workspace: a.workspace, castPanelOpen: false }) }),
-  'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', idle, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
+  'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', s=>idle(s)&&s.ui.view==='2d'&&canEditPositions(s)&&s.selection.activeIndex>0, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
+  'display.next-paths': simple('display.next-paths', 'Show paths to next set', 'Show outgoing paths to the next set without changing geometry.', s => idle(s) && s.ui.view === '2d' && canEditPositions(s) && s.selection.activeIndex < s.project.present.sets.length-1, c => c.patch('ui', { showNextPaths: !c.getState().ui.showNextPaths })),
+  'display.grid': simple('display.grid', 'Show field grid', 'Toggle the placement grid without changing performer positions.', idle, c => c.patch('ui', { showGrid: !c.getState().ui.showGrid })),
+  'display.snap': simple('display.snap', 'Snap to grid', 'Toggle snapping for direct position edits. Precise numeric coordinates remain exact.', idle, c => c.patch('ui', { snap: !c.getState().ui.snap })),
   'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle all labels, selected/focused labels and hidden labels.', idle, c => { const u = c.getState().ui; c.patch('ui', !u.showLabels ? { showLabels: true, selectionLabelsOnly: false } : !u.selectionLabelsOnly ? { selectionLabelsOnly: true } : { showLabels: false }); }),
   'field.zoom-in': simple('field.zoom-in', 'Zoom field in', 'Increase the 2D field magnification.', s => fieldView(s) && s.ui.zoom < 3, c => c.patch('ui', { zoom: Math.min(3, c.getState().ui.zoom + .2) })),
   'field.zoom-out': simple('field.zoom-out', 'Zoom field out', 'Reduce the 2D field magnification.', s => fieldView(s) && s.ui.zoom > .6, c => c.patch('ui', { zoom: Math.max(.6, c.getState().ui.zoom - .2) })),

@@ -1,5 +1,5 @@
 'use strict';
-const { capturePage, waitFor: waitUntil, key: sendKey, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
+const { capturePage, revealFieldTool, waitFor: waitUntil, key: sendKey, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -50,6 +50,7 @@ async function clickText(text, scope = 'body', allowDisabled = false) {
   await pause(30);
 }
 async function clickSelector(selector) {
+  await revealFieldTool(window,selector);
   await evaluate(`(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node || node.disabled || node.getAttribute('aria-disabled') === 'true') throw new Error('Control unavailable: ' + ${JSON.stringify(selector)}); node.click(); })()`);
   await pause(30);
   if (selector.startsWith('.set-card')) await uiWait(`document.querySelector(${JSON.stringify(selector)})?.classList.contains('selected')`, 'set selection');
@@ -101,7 +102,7 @@ const capture = name => capturePage(window, output, name);
 async function focusFieldPerformer(selector) {
   const index = await evaluate(`[...document.querySelectorAll('.field-performer')].findIndex(node => node.matches(${JSON.stringify(selector)}))`);
   assert.ok(index >= 0, `Performer exists: ${selector}`);
-  await evaluate("document.querySelector('[aria-label=\"Fit field\"]').focus()");
+  await evaluate("document.querySelector('[aria-label=\"More field tools\"]').focus()");
   await sendKey(window, 'Tab'); await sendKey(window, 'Home');
   for (let step = 0; step < index; step++) await sendKey(window, 'PageDown');
   await uiWait(`document.activeElement?.matches(${JSON.stringify(selector)})`, 'keyboard performer focus');
@@ -179,6 +180,7 @@ async function checkActionClarity() {
   assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
   await clickSelector('[aria-label="Select all performers"]');
   await uiWait("!!document.querySelector('.canvas-toolbar [aria-label=\"Clear selection\"]')", 'select-all becomes clear');
+  await revealFieldTool(window,'.canvas-toolbar [aria-label="Clear selection"]');
   await evaluate('document.querySelector(\'.canvas-toolbar [aria-label="Clear selection"]\').focus()'); await sendKey(window, 'Return');
   await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
   // Selection is not an edit: the untouched demo still has nothing to save.
@@ -202,7 +204,7 @@ async function checkCompactChrome() {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
       // #178: below the compact header breakpoint Help moves into Menu; a set list tucked by a narrow window keeps its Show button.
       const compactHeader = document.querySelector('.studio').dataset.header !== 'full', setsTucked = document.querySelector('#workspace-pane-sets').hidden;
-      const required = ['Save','Undo','Redo','Export','Design','Cast','Production sheet','Project menu','Play show','First set','Last set','Fit field','2D field','3D preview', compactHeader ? 'Command palette' : 'Help', setsTucked ? 'Show Set list' : 'Add set'];
+      const required = ['Save','Undo','Redo','Export','Design','Cast','Production sheet','Project menu','Play show','First set','Last set','More field tools','2D field','3D preview', compactHeader ? 'Command palette' : 'Help', setsTucked ? 'Show Set list' : 'Add set'];
       const clipped = required.filter(name => { const node = document.querySelector('[aria-label="'+name+'"]'); if (!node) return true; const r=node.getBoundingClientRect(); const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2); return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !node.contains(top); });
       return { viewport:{width:innerWidth,height:innerHeight}, compactHeader, setsTucked, header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), statusbar:rect('.statusbar'), clipped, emptyAudioLane:!!document.querySelector('.audio-track'), legendInField:!!document.querySelector('.field-container .field-legend') };
     })()`);
@@ -282,10 +284,11 @@ async function checkSelectionInspector() {
     return saved;
   }
   async function pointer(selector) {
+    await revealFieldTool(window,selector);
     const point = await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}; })()`);
     for (const type of ['mouseDown', 'mouseUp']) window.webContents.sendInputEvent({ type, ...point, button: 'left', clickCount: 1 });
   }
-  async function keyboard(selector) {
+  async function keyboard(selector) { await revealFieldTool(window,selector);
     await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window, 'Return');
   }
   const section = name => `summary[aria-label="${name} section"]`;
@@ -300,11 +303,11 @@ async function checkSelectionInspector() {
   }
 
   // Inspect collapsed sections without discarding their mounted drafts.
-  if (await evaluate("document.querySelector('.formation-section').open")) await keyboard(section('Formation tools'));
+  if (await evaluate("document.querySelector('.formation-section')?.open")) await keyboard(section('Formation tools'));
   if (!await evaluate("document.querySelector('[data-inspector-section=inspectorSetOpen]').open")) await keyboard(section('Set properties'));
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Shape selection\"]').getAttribute('aria-disabled')"), 'true');
-  await keyboard(section('Formation tools'));
-  await keyboard('[aria-label="Preview formation"]');
+  await keyboard('[aria-label="Shape selection"]');
+  await sendKey(window,'Escape');
   assert.deepEqual(await snapshot(), fixture, 'empty selection does not reshape the ensemble');
   await selectionCapture('selection-empty.png');
 
@@ -389,10 +392,14 @@ async function checkSelectionInspector() {
     window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
     await settleNativeViewport(window, 'selection viewport');
     await evaluate('document.activeElement?.blur()');
-    const clipped = await evaluate(`['Move selection','Rotate selection','Shape selection','Mirror selection','Align selection'].filter(name => {
-      const n=document.querySelector('[aria-label="'+name+'"]'); const r=n.getBoundingClientRect(); const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
-      return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !n.contains(hit);
-    })`);
+    // Contextual tools are reachable either in the row or its keyboard More menu.
+    const clipped=[];
+    for(const name of ['Move selection','Rotate selection','Shape selection','Mirror selection','Align selection']){
+      await revealFieldTool(window,`[aria-label="${name}"]`);
+      const visible=await evaluate(`(()=>{const n=document.querySelector('[aria-label="${name}"]');n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return r.width>0&&r.left>=0&&r.right<=innerWidth+.5&&r.top>=0&&r.bottom<=innerHeight+.5;})()`);
+      if(!visible)clipped.push(name);
+    }
+    if(await evaluate("!!document.querySelector('.field-tools-menu:not([hidden])')"))await sendKey(window,'Escape');
     assert.deepEqual(clipped, []);
     const fieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
     if (width===1366 && scale===1) assert.ok(fieldHeight>=470);
@@ -403,16 +410,15 @@ async function checkSelectionInspector() {
   await settleNativeViewport(window, 'restored selection viewport');
   await keyboard('[aria-label="Mirror selection"]');
   await uiWait("!!document.querySelector('.transform-panel')", 'mirror preview open');
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Mirror selection\"]').getAttribute('aria-disabled')"), 'true');
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Align selection\"]').getAttribute('aria-disabled')"), 'true');
+  assert.equal(await evaluate("document.querySelector('.field-command-toolbar').dataset.context"),'preview');
+  assert.equal(await evaluate("document.querySelector('.field-command-toolbar [data-command=\"spacing.preview\"]')"),null);
   assert.deepEqual(await snapshot(), fixture);
   await keyboard('[aria-label="Cancel transform"]');
   await uiWait("!document.querySelector('.transform-panel')", 'mirror preview canceled');
   await scrubCount(1);
   await uiWait("document.querySelector('.selection-bar .return-to-set') !== null", 'preview selection recovery');
-  for (const name of ['Move selection','Rotate selection','Shape selection','Preview formation']) {
-    assert.equal(await evaluate(`document.querySelector('[aria-label="${name}"]').getAttribute('aria-disabled')`), 'true');
-  }
+  assert.equal(await evaluate("document.querySelector('.field-command-toolbar').dataset.context"),'scrub');
+  assert.equal(await evaluate("document.querySelector('.field-command-toolbar [data-command=\"formation.preview\"]')"),null);
   await selectionCapture('selection-preview.png');
   await keyboard('.selection-bar .return-to-set');
   await uiWait("!document.querySelector('.field-preview-banner')", 'selection return to set');
@@ -428,7 +434,7 @@ async function checkExactTransforms() {
   await settleNativeViewport(window, 'exact transform viewport');
   const fixture=JSON.parse(await fs.readFile(openPath,'utf8')); const ids=fixture.performers.slice(0,2).map(p=>p.id);
   let sequence=0;
-  async function keyboard(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window,'Return'); }
+  async function keyboard(selector) { await revealFieldTool(window,selector); await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window,'Return'); }
   async function savedSnapshot() {
     destination=path.join(output,`transform-${process.pid}-${sequence++}.squid`); menuAction('Save As…');
     const project=await savedProject(p=>p.title===fixture.title,destination);
@@ -705,11 +711,11 @@ app.whenReady().then(async () => {
     await uiWait("!!document.querySelector('.field-preview-banner')", 'visible between-set banner');
     assert.match(await evaluate("document.querySelector('.field-preview-banner').textContent"), /Move 1 → 2.*Count 512.*512 \/ 1024/);
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled && ${numberSelector('Y · yards from back')}.disabled`), true);
-    assert.equal(await evaluate("document.querySelector('.preview-formation').getAttribute('aria-disabled') === 'true'"), true);
+    assert.equal(await evaluate("document.querySelector('.preview-formation') === null"), true);
     assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(dotSelector)})).cursor`), 'default');
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby').split(/\\s+/).includes('field-preview-message')"), true);
     const beforePreview = JSON.stringify(saved.sets[1].positions);
-    await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); document.querySelector('.preview-formation').click()`);
+    await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))`);
     const previewDot = await evaluate(`(() => { const element = document.querySelector(${JSON.stringify(dotSelector)}); const point = new DOMPoint(0, 0).matrixTransform(element.getScreenCTM()); return { x: point.x, y: point.y }; })()`);
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', ...previewDot, button: 'left', clickCount: 1 });
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: previewDot.x + 40, y: previewDot.y, buttons: 1 });

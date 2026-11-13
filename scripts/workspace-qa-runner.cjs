@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path');
@@ -24,6 +25,8 @@ function instrument() {
 }
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 async function control(selector) {
+  // These cases own focus recovery from the Inspector's pinned preview controls.
+  if(['Apply transform','Cancel transform','Apply formation','Cancel formation','Apply spacing','Cancel spacing','Apply coordinates','Cancel coordinate entry'].some(name=>selector==='[aria-label="'+name+'"]'))selector='.selection-bar '+selector; await revealFieldTool(window,selector);
   await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n || n.disabled || n.getAttribute('aria-disabled')==='true' || !n.getClientRects().length){resolve(false);return;}n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__workspacePoint={x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};resolve(n.contains(document.elementFromPoint(window.__workspacePoint.x,window.__workspacePoint.y)));}));})`, 'actionable ' + selector);
   await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
   const point = await evaluate('window.__workspacePoint');
@@ -145,8 +148,8 @@ app.whenReady().then(async () => {
       const docked = await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]");
       // castOverlay: whether Cast shown from its header tab docks beside a narrower field (false) or opens over it (true).
       // 1366 × 768 at zoom 2 (683 × 384, below the smallest supported height) already scrolls; docking Cast beside the
-      // narrower field would scroll it further, so Cast opens over the field there.
-      for (const [width, height, zoom, tucked, castOverlay] of [[1000, 700, 1, [false, false]], [850, 680, 1, [true, false]], [1366, 768, 2, [true, true], true], [1000, 700, 2, [true, true], true]]) {
+      // single-row toolbar lets Cast dock without adding scrolling; the narrower 500px view still overlays it.
+      for (const [width, height, zoom, tucked, castOverlay] of [[1000, 700, 1, [false, false]], [850, 680, 1, [true, false]], [1366, 768, 2, [true, true], false], [1000, 700, 2, [true, true], true]]) {
         await viewport(width, height, zoom); await measure(`${width}x${height}@${zoom}`);
         assert.deepEqual(await evaluate("[document.querySelector('#workspace-pane-sets').hidden, document.querySelector('#workspace-pane-inspector').hidden]"), tucked, `${width}x${height}@${zoom} tucks the set list first`);
         const hiddenPane = await evaluate("document.querySelector('#workspace-pane-sets').hidden ? 'Set list' : document.querySelector('#workspace-pane-inspector').hidden ? 'Inspector' : null");
@@ -188,8 +191,12 @@ app.whenReady().then(async () => {
       pass('narrow and zoomed windows tuck the set list, then the Inspector, open them over the field (closing with Escape or the heading button), show Cast docked or over the field from its tab, and restore the unchanged saved layout when the window grows');
       await viewport(1000, 700, 2);
       await preset('Write');
+      // Start the preview in the same turn as the native reveal click, before
+      // its scheduled heading focus. Window bubbling follows React's click handler;
+      // a target listener would run before reveal and test a different ordering.
+      await evaluate(`window.addEventListener('click',()=>queueMicrotask(()=>${editor}.dispatch('transform.preview',{})),{once:true})`);
       await control('[aria-label="Show Inspector"]');
-      await control('[aria-label="Rotate selection"]'); await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
+      await wait(`!!${state}.ui.transformPreview`, 'preview in narrow Inspector overlay');
       assert.equal(await evaluate("document.querySelector('[aria-label=\"Close Inspector\"]').getAttribute('aria-disabled')"), 'true');
       // No scrim hides the preview, and the field fits beside the overlay (this window is below the supported minimum,
       // so the workspace scrolls under the pinned timeline; the matrix checks hit-testing at supported sizes).

@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const {settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs');
@@ -7,7 +8,7 @@ const {settleNativeViewport,selectNativeOption}=require('./testing/renderer.cjs'
 module.exports=async function({project,editor,state,evaluate,wait,key,capture:takeScreenshot,window,pass,saved,Menu}) {
   const ids=project.performers.slice(0,4).map(p=>p.id);const layouts=[];
   const capture=async name=>{await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('.tooltip-panel')",'dismissed help before capture');await takeScreenshot(name);};
-  const control=async selector=>{
+  const control=async selector=>{ await revealFieldTool(window,selector);
     await evaluate('document.activeElement?.blur()');
     // Move off the previous help trigger before approaching a different control.
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
@@ -21,6 +22,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   const menu=label=>{function find(m){for(const item of m?.items??[]){if(item.label===label)return item;const child=find(item.submenu);if(child)return child;}}const item=find(Menu.getApplicationMenu());assert.ok(item?.click);item.click(item,window,{});};
   window.setContentSize(1366,768);window.webContents.setZoomFactor(1);await settleNativeViewport(window,'live baseline');
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('selection','selectedIds',${JSON.stringify(ids)});${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom',inspectorFormationOpen:true});`);
+  await revealFieldTool(window,'[aria-label="Line formation"]');
   await wait("!!document.querySelector('[aria-label=\"Line formation\"]')",'formation panel');
   await capture('live-before.png');
   await control('[aria-label="Line formation"]');await edit('Width · yd',24);await edit('Center X · yd',50);await edit('Center Y · yd',25);
@@ -52,7 +54,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
     applied=await evaluate(`${state}.project.present`);assert.equal(applied.sets[0].liveFormations[0].kind,kind);
     menu('Undo drill edit');await wait(`${state}.project.future.length===1`,'live geometry undo');menu('Redo drill edit');await wait(`${state}.project.future.length===0`,'live geometry redo');assert.deepEqual(await evaluate(`${state}.project.present`),applied);
   }
-  await control('[aria-label="Edit Front line"]');await evaluate("document.querySelector('.live-members summary').focus()");await key('Return');await wait("document.querySelector('.live-members').open",'keyboard member expansion');await key('Space');await wait("!document.querySelector('.live-members').open",'Space collapses members');assert.equal(await evaluate(`${state}.playback.playing`),false);await key('Return');await wait("document.querySelector('.live-members').open",'Enter reopens members');
+  await control('[aria-label="Edit Front line"]');await wait("!!document.querySelector('.live-members summary')",'live parameters mounted');await evaluate("document.querySelector('.live-members summary').focus();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");assert.equal(await evaluate("document.activeElement===document.querySelector('.live-members summary')"),true,'formation opening keeps focus already moved into its parameters');await key('Return');await wait("document.querySelector('.live-members').open",'keyboard member expansion');await key('Space');await wait("!document.querySelector('.live-members').open",'Space collapses members');assert.equal(await evaluate(`${state}.playback.playing`),false);await key('Return');await wait("document.querySelector('.live-members').open",'Enter reopens members');
   await control('.live-member-list label:first-child input');await wait(`${state}.ui.formationPreview.ids.length===3`,'removed member preview');
   assert.deepEqual(await evaluate(`${state}.project.present`),applied);
   await capture('live-members.png');await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'member applied');

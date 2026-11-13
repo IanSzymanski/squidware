@@ -1,8 +1,9 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { key, pause } = require('./testing/renderer.cjs');
+const { key, keyWithRelease, pause } = require('./testing/renderer.cjs');
 
 // Formation integration belongs to the editor owner; field QA continues to own hit testing.
 module.exports = async function ({window,output,evaluate,uiWait,clickSelector,editNumber,numberSelector,capture,pass,menuAction,openHistory,fixture,snapshot}) {
@@ -11,7 +12,7 @@ module.exports = async function ({window,output,evaluate,uiWait,clickSelector,ed
   const ids=fixture.performers.slice(0,2).map(p=>p.id); let sequence=0;
   const saved=()=>snapshot(path.join(output,`formation-${process.pid}-${sequence++}.squid`));
   async function screenshot(name) { await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:12,y:70}); await evaluate("document.querySelector('.toast button')?.click()"); await pause(40); await capture(name); }
-  async function keyboard(selector) { await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await key(window,'Return'); }
+  async function keyboard(selector) { await revealFieldTool(window,selector); await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await keyWithRelease(window,'Return',[],{releaseKey:'Enter'}); }
   async function shown() { return evaluate(`Object.fromEntries(${JSON.stringify(ids)}.map(id=>{const n=document.querySelector('[data-performer-id="'+id+'"]');const p=n.transform.baseVal.consolidate().matrix;return [id,{x:p.e,y:p.f}]}))`); }
   function near(actual,expected) { for(const id of ids) for(const axis of ['x','y']) assert.ok(Math.abs(actual[id][axis]-expected[id][axis])<.00002,`${id} ${axis}: ${actual[id][axis]} vs ${expected[id][axis]}`); }
   async function cancel() { await keyboard('[aria-label="Cancel formation"]'); await uiWait("!document.querySelector('.formation-parameters')",'formation canceled'); }

@@ -1,4 +1,5 @@
 'use strict';
+const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert=require('node:assert/strict');const fs=require('node:fs/promises');
 const {settleNativeViewport}=require('./testing/renderer.cjs');
 module.exports=async function({project,editor,state,evaluate,wait,key,capture:takeScreenshot,window,pass,saved,Menu}){
@@ -6,7 +7,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   const debug=(method,args)=>window.webContents.debugger.sendCommand(method,args);
   const button=title=>'[aria-label='+JSON.stringify(title)+']';
   const capture=async name=>{await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('.tooltip-panel')",'dismissed help before capture');await takeScreenshot(name);};
-  const control=async selector=>{
+  const control=async selector=>{ await revealFieldTool(window,selector);
     await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
     await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();window.__entryPoint={x:r.x+r.width/2,y:r.y+r.height/2};resolve(n.contains(document.elementFromPoint(window.__entryPoint.x,window.__entryPoint.y)));}));})`,'actionable '+selector);
     await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});const point=await evaluate('window.__entryPoint');
