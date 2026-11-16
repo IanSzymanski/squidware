@@ -175,7 +175,9 @@ export function useEditorController() {
         if (!await confirmer.confirm({ title: 'Replace this production?', message: 'Your unsaved changes will be discarded. Save a project file first to keep them.', confirmLabel: 'Discard changes' })) return;
         assertCanReplace(store.getState()); assertUnchangedSince(before, store.getState());
       }
-      loadProject({ ...next, analysisRules: { defaults: { minimumSpacing: preferences.value.minimumSpacing, maximumStride: preferences.value.maximumStride } }, snapping: { ...preferences.value.snapDefaults } });
+      // Personal defaults seed a new production; authored examples retain the
+      // rules and placement settings their geometry was designed against.
+      loadProject({ ...next, analysisRules: next.analysisRules ?? { defaults: { minimumSpacing: preferences.value.minimumSpacing, maximumStride: preferences.value.maximumStride } }, snapping: next.snapping ?? { ...preferences.value.snapDefaults } });
       // Blank, demo and template productions have nothing to lose until their first edit.
       markProductionClean(store); window.squidware?.resetProject();
       if (cast) setWorkspace('cast');

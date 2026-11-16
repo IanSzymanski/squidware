@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  { name: 'demo-show', title: 'Bundled Tether startup, clean state, whole-show checks, playback and recording arrivals', script: 'demo-show-qa.mjs', timeoutMs: 300000 },
   {name:'workspaces',title:'Unified workspaces, named arrangements, migrations, draft preservation and restart persistence',script:'workspaces-qa.mjs',timeoutMs:330000},
   {name:'field-toolbar',title:'Contextual field commands, one-stop keyboard navigation, overflow, preview transactions and camera choices',script:'field-toolbar-qa.mjs',timeoutMs:210000},
   {name:'field-renderer',title:'Canvas/engine/vector parity, DPI/zoom, retained keyboard focus, context fallback and themes',script:'field-renderer-qa.mjs',timeoutMs:180000},

@@ -12,7 +12,9 @@ The demo Squidware opens with. An original drum corps production in four movemen
 
 **Analysis.** The show opens with one deliberate finding: the rifle duet counter-march in set TE 5, where the model places both rifles on one line as they pass. The set notes explain it.
 
-**Recording.** The release also publishes `tether-space-show.squidpack`, the same production with the Space show recording bundled. The recording was rendered from the Squidwriter score (synthesized brass, sampled percussion) and aligned with recording anchors at every set arrival that needs one. It is the project owner's own music, distributed with Squidware for this demo.
+**Recording and redistribution.** The repository and app ship **without a recording**. The drill, score timing, tempo map, recording anchors and metronome work without audio. No redistribution license for a Space show recording or its instrument samples is recorded here, so releases must not promise or include that recording until those rights are documented. The timing data describes the Squidwriter Space show; it is not an audio file or a license to redistribute one.
+
+You can attach your own authorized recording. The optional packaging command below bundles a recording you supply; it does not download audio or establish redistribution rights.
 
 **Rebuilding.** The show is generated so it can be revised and re-checked in one step:
 
@@ -22,3 +24,9 @@ node scripts/demo-show/package.cjs <recording.mp3> <out.squidpack>
 ```
 
 `scripts/demo-show/show.ts` holds the set-by-set design, `forms.ts` and `lib.ts` the authoring helpers, and `space-show-timing.json` the per-count timing exported from Squidwriter. Set `DRAFT=1` to skip the automatic stagger repair while iterating.
+
+**Validation.** `pnpm test` checks the cast, fixed front ensemble, every set arrival against the source score timing (within 1 ms), and the single explained teaching finding. After `pnpm build`, run `pnpm test:workflows --suite=demo-show`. This suite is also part of the Windows/macOS/Linux desktop certification plan. It loads the real bundled demo, verifies clean startup and Explore the demo, preserves its authored rules despite different personal defaults, checks all 66 moves through the production worker, measures playback frame cadence, and tests real media seeks at all 67 arrivals and playback in all four movements. Existing desktop suites keep the smaller Tidal forces fixture.
+
+The suite generates test-only silence for the media clock. This verifies transport against the authored timing data, not audible synchronization to an unavailable music recording. Its `results.json` records startup readiness, median/p95 frame intervals, native media readings and source provenance; `tether-1366.png` captures the 1366 × 768 default layout with the shared design guidance's minimum 470 px field height. Performance values describe the test host against the [documented investigation targets](../docs/performance.md#fixtures-and-budgets).
+
+See the [recorded demo validation and design review](../docs/evidence/demo-show/README.md).

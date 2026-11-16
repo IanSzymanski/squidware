@@ -1,0 +1,456 @@
+{
+  "checks": [
+    "ordinary startup loads the authored 165-member/67-set Tether cleanly, without a recording",
+    "personal defaults seed blank productions; native Explore the demo preserves the authored show and opens cleanly",
+    "production worker completes show-wide analysis with exactly the explained teaching finding",
+    "tempo-map playback advances count and field geometry; frame cadence is recorded",
+    "real media seeks match the independent score timing at all 67 set arrivals",
+    "aligned media drives playback in all four movements at rehearsal speeds and remains still when paused"
+  ],
+  "readyMs": 675.257793,
+  "cadence": {
+    "samples": 120,
+    "medianMs": 16.69999999999709,
+    "p95Ms": 16.799999999999272
+  },
+  "viewport": {
+    "width": 1366,
+    "height": 768,
+    "fieldHeight": 513
+  },
+  "analysis": "66 / 66 moves checked · 1 findings. Geometric spacing and stride checks.",
+  "arrivals": [
+    {
+      "set": "EH 1 · Starfield",
+      "count": 0,
+      "expectedSeconds": 0,
+      "mediaSeconds": 0
+    },
+    {
+      "set": "EH 2 · Accretion",
+      "count": 32,
+      "expectedSeconds": 34.285714285714285,
+      "mediaSeconds": 34.285706
+    },
+    {
+      "set": "EH 3 · Accretion disc",
+      "count": 52,
+      "expectedSeconds": 42.285714285714285,
+      "mediaSeconds": 42.285704
+    },
+    {
+      "set": "EH 4 · The disc turns",
+      "count": 68,
+      "expectedSeconds": 48.68571428571428,
+      "mediaSeconds": 48.685703
+    },
+    {
+      "set": "EH 5 · Horizon opens",
+      "count": 80,
+      "expectedSeconds": 53.48571428571428,
+      "mediaSeconds": 53.485702
+    },
+    {
+      "set": "EH 6 · Boil",
+      "count": 92,
+      "expectedSeconds": 58.285714285714285,
+      "mediaSeconds": 58.285701
+    },
+    {
+      "set": "EH 7 · Impact",
+      "count": 104,
+      "expectedSeconds": 63.08571428571429,
+      "mediaSeconds": 63.0857
+    },
+    {
+      "set": "EH 8 · Counter-rotation",
+      "count": 116,
+      "expectedSeconds": 67.88571428571429,
+      "mediaSeconds": 67.8857
+    },
+    {
+      "set": "EH 9 · Lament",
+      "count": 138,
+      "expectedSeconds": 76.68571428571428,
+      "mediaSeconds": 76.685701
+    },
+    {
+      "set": "EH 10 · Drive",
+      "count": 148,
+      "expectedSeconds": 80.68571428571428,
+      "mediaSeconds": 80.685702
+    },
+    {
+      "set": "EH 11 · Final push",
+      "count": 158,
+      "expectedSeconds": 84.68571428571428,
+      "mediaSeconds": 84.685702
+    },
+    {
+      "set": "EH 12 · Never resolves",
+      "count": 178,
+      "expectedSeconds": 95.87131045298055,
+      "mediaSeconds": 95.8713
+    },
+    {
+      "set": "GA 1 · Parking orbits",
+      "count": 194,
+      "expectedSeconds": 102.87131045298055,
+      "mediaSeconds": 102.8713
+    },
+    {
+      "set": "GA 2 · Orbit climbs I",
+      "count": 202,
+      "expectedSeconds": 105.87131045298055,
+      "mediaSeconds": 105.8713
+    },
+    {
+      "set": "GA 3 · Orbit climbs II",
+      "count": 210,
+      "expectedSeconds": 108.87131045298055,
+      "mediaSeconds": 108.8713
+    },
+    {
+      "set": "GA 4 · Rise",
+      "count": 218,
+      "expectedSeconds": 111.87131045298055,
+      "mediaSeconds": 111.8713
+    },
+    {
+      "set": "GA 5 · Drumline break",
+      "count": 226,
+      "expectedSeconds": 114.87131045298055,
+      "mediaSeconds": 114.8713
+    },
+    {
+      "set": "GA 6 · Theme",
+      "count": 238,
+      "expectedSeconds": 119.37131045298055,
+      "mediaSeconds": 119.3713
+    },
+    {
+      "set": "GA 7 · Waves",
+      "count": 258,
+      "expectedSeconds": 126.87131045298055,
+      "mediaSeconds": 126.871299
+    },
+    {
+      "set": "GA 8 · Tenor feature",
+      "count": 274,
+      "expectedSeconds": 132.87131045298054,
+      "mediaSeconds": 132.871299
+    },
+    {
+      "set": "GA 9 · Calls and answers",
+      "count": 290,
+      "expectedSeconds": 138.87131045298054,
+      "mediaSeconds": 138.8713
+    },
+    {
+      "set": "GA 10 · Battery orbit of three",
+      "count": 306,
+      "expectedSeconds": 144.87131045298054,
+      "mediaSeconds": 144.8713
+    },
+    {
+      "set": "GA 11 · Stabs",
+      "count": 322,
+      "expectedSeconds": 150.87131045298054,
+      "mediaSeconds": 150.8713
+    },
+    {
+      "set": "GA 12 · Gravity takes hold",
+      "count": 338,
+      "expectedSeconds": 156.87131045298054,
+      "mediaSeconds": 156.8713
+    },
+    {
+      "set": "GA 13 · Slingshot",
+      "count": 354,
+      "expectedSeconds": 162.87131045298054,
+      "mediaSeconds": 162.8713
+    },
+    {
+      "set": "GA 14 · Mellophone feature",
+      "count": 378,
+      "expectedSeconds": 171.87131045298054,
+      "mediaSeconds": 171.871308
+    },
+    {
+      "set": "GA 15 · Cradle",
+      "count": 394,
+      "expectedSeconds": 177.87131045298054,
+      "mediaSeconds": 177.871313
+    },
+    {
+      "set": "GA 16 · Closest approach",
+      "count": 418,
+      "expectedSeconds": 186.87131045298054,
+      "mediaSeconds": 186.871321
+    },
+    {
+      "set": "GA 17 · Snap",
+      "count": 424,
+      "expectedSeconds": 189.37885268913476,
+      "mediaSeconds": 189.378866
+    },
+    {
+      "set": "GA 18 · Canon",
+      "count": 444,
+      "expectedSeconds": 196.87885268913476,
+      "mediaSeconds": 196.878872
+    },
+    {
+      "set": "GA 19 · Shout",
+      "count": 460,
+      "expectedSeconds": 202.87885268913476,
+      "mediaSeconds": 202.878878
+    },
+    {
+      "set": "GA 20 · Swing",
+      "count": 476,
+      "expectedSeconds": 208.87885268913476,
+      "mediaSeconds": 208.878883
+    },
+    {
+      "set": "GA 21 · Trade",
+      "count": 492,
+      "expectedSeconds": 214.87885268913476,
+      "mediaSeconds": 214.878889
+    },
+    {
+      "set": "GA 22 · Planet pulls",
+      "count": 508,
+      "expectedSeconds": 220.87885268913476,
+      "mediaSeconds": 220.878894
+    },
+    {
+      "set": "GA 23 · C7♭9",
+      "count": 524,
+      "expectedSeconds": 226.87885268913476,
+      "mediaSeconds": 226.8789
+    },
+    {
+      "set": "GA 24 · Captured",
+      "count": 540,
+      "expectedSeconds": 233.2588672061177,
+      "mediaSeconds": 233.25891
+    },
+    {
+      "set": "TE 1 · Alone",
+      "count": 556,
+      "expectedSeconds": 248.15886720611775,
+      "mediaSeconds": 248.1589
+    },
+    {
+      "set": "TE 2 · Breath",
+      "count": 600,
+      "expectedSeconds": 292.2804540079075,
+      "mediaSeconds": 292.2805
+    },
+    {
+      "set": "TE 3 · Tether",
+      "count": 644,
+      "expectedSeconds": 332.28045400790745,
+      "mediaSeconds": 332.2805
+    },
+    {
+      "set": "TE 4 · Reel in",
+      "count": 664,
+      "expectedSeconds": 349.66104559454266,
+      "mediaSeconds": 349.661
+    },
+    {
+      "set": "TE 5 · Layers",
+      "count": 700,
+      "expectedSeconds": 379.9242034892795,
+      "mediaSeconds": 379.9242
+    },
+    {
+      "set": "TE 6 · Accelerando",
+      "count": 732,
+      "expectedSeconds": 405.1873613840163,
+      "mediaSeconds": 405.1874
+    },
+    {
+      "set": "TE 7 · Boiling",
+      "count": 764,
+      "expectedSeconds": 429.2073914376922,
+      "mediaSeconds": 429.2074
+    },
+    {
+      "set": "TE 8 · Turn to the front",
+      "count": 770,
+      "expectedSeconds": 433.4931057234064,
+      "mediaSeconds": 433.4931
+    },
+    {
+      "set": "TE 9 · Chorus",
+      "count": 792,
+      "expectedSeconds": 451.9021966324974,
+      "mediaSeconds": 451.9022
+    },
+    {
+      "set": "TE 10 · Sustain",
+      "count": 828,
+      "expectedSeconds": 484.63667801437566,
+      "mediaSeconds": 484.6367
+    },
+    {
+      "set": "TE 11 · Let go",
+      "count": 844,
+      "expectedSeconds": 503.8421971259704,
+      "mediaSeconds": 503.8422
+    },
+    {
+      "set": "RE 1 · Cold",
+      "count": 864,
+      "expectedSeconds": 525.978560762334,
+      "mediaSeconds": 525.9786
+    },
+    {
+      "set": "RE 2 · Double time",
+      "count": 888,
+      "expectedSeconds": 547.9609790926716,
+      "mediaSeconds": 547.961
+    },
+    {
+      "set": "RE 3 · Streaks",
+      "count": 920,
+      "expectedSeconds": 558.6276457593382,
+      "mediaSeconds": 558.6276
+    },
+    {
+      "set": "RE 4 · Drumline feature",
+      "count": 948,
+      "expectedSeconds": 567.9609790926716,
+      "mediaSeconds": 567.961
+    },
+    {
+      "set": "RE 5 · Heat shield",
+      "count": 980,
+      "expectedSeconds": 578.6276457593382,
+      "mediaSeconds": 578.6276
+    },
+    {
+      "set": "RE 6 · Buffet",
+      "count": 996,
+      "expectedSeconds": 583.9609790926716,
+      "mediaSeconds": 583.961
+    },
+    {
+      "set": "RE 7 · Buffet back",
+      "count": 1012,
+      "expectedSeconds": 589.2943124260049,
+      "mediaSeconds": 589.2943
+    },
+    {
+      "set": "RE 8 · Build",
+      "count": 1028,
+      "expectedSeconds": 594.6276457593382,
+      "mediaSeconds": 594.6276
+    },
+    {
+      "set": "RE 9 · Cutoff",
+      "count": 1040,
+      "expectedSeconds": 598.6276457593382,
+      "mediaSeconds": 598.6276
+    },
+    {
+      "set": "RE 10 · Silence",
+      "count": 1048,
+      "expectedSeconds": 601.2943124260049,
+      "mediaSeconds": 601.2943
+    },
+    {
+      "set": "RE 11 · Impact",
+      "count": 1056,
+      "expectedSeconds": 603.9609790926716,
+      "mediaSeconds": 603.961
+    },
+    {
+      "set": "RE 12 · Debris field",
+      "count": 1080,
+      "expectedSeconds": 611.9609790926716,
+      "mediaSeconds": 611.961
+    },
+    {
+      "set": "RE 13 · Suspension",
+      "count": 1108,
+      "expectedSeconds": 621.2943124260049,
+      "mediaSeconds": 621.2943
+    },
+    {
+      "set": "RE 14 · Release",
+      "count": 1116,
+      "expectedSeconds": 626.2405449449241,
+      "mediaSeconds": 626.2405
+    },
+    {
+      "set": "RE 15 · Stabs",
+      "count": 1156,
+      "expectedSeconds": 639.5738782782574,
+      "mediaSeconds": 639.5739
+    },
+    {
+      "set": "RE 16 · Gears",
+      "count": 1172,
+      "expectedSeconds": 644.9072116115908,
+      "mediaSeconds": 644.9072
+    },
+    {
+      "set": "RE 17 · Turning",
+      "count": 1188,
+      "expectedSeconds": 650.2405449449241,
+      "mediaSeconds": 650.2405
+    },
+    {
+      "set": "RE 18 · Company front",
+      "count": 1204,
+      "expectedSeconds": 656.1764159452001,
+      "mediaSeconds": 656.1764
+    },
+    {
+      "set": "RE 19 · Release",
+      "count": 1214,
+      "expectedSeconds": 662.4031213825576,
+      "mediaSeconds": 662.4031
+    },
+    {
+      "set": "RE 20 · Hold",
+      "count": 1226,
+      "expectedSeconds": 673.907674284059,
+      "mediaSeconds": 673.907699
+    }
+  ],
+  "playback": [
+    {
+      "count": 9.006542706191734,
+      "seconds": 9.666292,
+      "rate": 0.75
+    },
+    {
+      "count": 321.00196800000003,
+      "seconds": 150.515574,
+      "rate": 1.5
+    },
+    {
+      "count": 649.0102008011401,
+      "seconds": 336.84501,
+      "rate": 1
+    },
+    {
+      "count": 1001.0691076819231,
+      "seconds": 585.658824,
+      "rate": 1.5
+    }
+  ],
+  "source": {
+    "revision": "f2af9b89b4c297103d5ec84e4d9c0e512ace6b2a",
+    "tree": "f6b3074c9d701bac02c37b269feec53f8a44fdf7",
+    "dirty": true,
+    "contentHash": "0eb2c3f8a39c891db60f9e798d2d7ad4315a24845665bbb4860290c303c69859",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "note": "Generated silence verifies media transport against authored timing, not audible synchronization to an unavailable Space show recording. Cadence is host evidence; 16.7 ms is an investigation target, not a hardware qualification."
+}
