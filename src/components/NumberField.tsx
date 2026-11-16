@@ -43,7 +43,10 @@ export function NumberField({ label, value, onChange, min, max, step = 1, intege
   const input = <input type="number" value={draft} min={min} max={max} step={step} disabled={disabled}
     aria-invalid={!!error} aria-describedby={error ? errorId : undefined}
     onChange={event => { setDraft(event.target.value); onDraftChange?.(event.target.value !== String(value), errorId); }}
-    onBlur={commit}
+    onBlur={event => {
+      if (event.currentTarget.closest('[hidden]') || event.relatedTarget instanceof Element && event.relatedTarget.closest('[data-preserve-drafts]')) return;
+      commit();
+    }}
     onKeyDown={event => {
       if (event.key === 'Enter') event.currentTarget.blur();
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(String(value)); onDraftChange?.(false, errorId); event.currentTarget.blur(); }

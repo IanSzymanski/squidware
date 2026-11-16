@@ -1,3 +1,4 @@
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
@@ -98,9 +99,9 @@ app.whenReady().then(async () => {
         assert.equal(dot.fill, '#c3e889'); assert.notEqual(dot.selection, 'rgb(195, 232, 137)'); assert.equal(dot.focus, dot.selection);
         await audit(theme + ' selected Brass'); await capture(`themes-${theme}-field.png`);
         const fieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height"); metrics.push({ theme, fieldHeight }); assert.ok(fieldHeight >= 470, String(fieldHeight));
-        await click('.workspace-tab[aria-label="Cast"]'); await audit(theme + ' Cast');
-        await click('.workspace-tab[aria-label="Production sheet"]'); await audit(theme + ' sheet');
-        await click('.workspace-tab[aria-label="Design"]');
+        await showRightPanel(window,'cast'); await audit(theme + ' Cast');
+        await activateWorkspace(window,'production'); await audit(theme + ' sheet');
+        await activateWorkspace(window,'design');
         await click('.header-actions [aria-label="Export"]'); await audit(theme + ' Export'); await close();
         await preferences();
         const number = '.preferences-fields input[type=number]'; await click(number); await evaluate(`document.querySelector(${JSON.stringify(number)}).select()`); await key('Backspace'); await key('Tab');
@@ -109,7 +110,7 @@ app.whenReady().then(async () => {
         await click('.canvas-toolbar [aria-label="Fit field"]');
         await viewport(1000, 700); await preferences(); await select('UI scale', 1.25); await audit(theme + ' 125% preferences'); await close();
         // #178: at 125% in a 1000 px window the effective width is 800 px, so Layout lives in Menu.
-        await click('[aria-label="Project menu"]'); await click('.dropdown [aria-label="Workspace layout"]'); await wait("!!document.querySelector('#workspace-layout-options')", 'layout options from Menu'); await audit(theme + ' enlarged layout controls'); await capture(`themes-${theme}-layout.png`); await key('Escape');
+        await click('[aria-label="Switch workspace"]'); await wait("!!document.querySelector('#workspace-options')", 'layout options from Menu'); await audit(theme + ' enlarged layout controls'); await capture(`themes-${theme}-layout.png`); await key('Escape');
         await click('[aria-label="Selection tools and groups"]'); await audit(theme + ' enlarged selection tools'); await capture(`themes-${theme}-selection.png`); await click('[aria-label="Close selection tools"]');
         await click('.header-actions [aria-label="Save"]'); await wait(`${state}.fileSession.fileOperation===null`, 'native save');
         const hit = await evaluate(`(() => { const svg=document.querySelector('.field-stage__svg'), matrix=document.querySelector('[data-field-geometry]').getScreenCTM(); const bounds=svg.getBoundingClientRect(); for(const person of ${state}.project.present.performers){const p=${state}.project.present.sets[0].positions[person.id], point=new DOMPoint(p.x,p.y).matrixTransform(matrix); const target=document.elementFromPoint(point.x,point.y); if(point.x>bounds.left && point.x<bounds.right && target?.closest('.field-stage__svg')) return {id:person.id,x:point.x,y:point.y};} return null;})()`);

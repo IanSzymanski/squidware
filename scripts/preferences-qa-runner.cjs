@@ -1,3 +1,4 @@
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const { waitFor: waitUntil, capturePage, key: sendKey, installConfirmShim } = require('./testing/renderer.cjs');
@@ -104,11 +105,11 @@ async function checkCoordinateOutput(project) {
       window.webContents.setZoomFactor(1); window.setContentSize(1120, 768); await capturePage(window, output, 'coordinate-narrow.png');
       window.setContentSize(1366, 768);
     }
-    await click('.workspace-tab[aria-label="Cast"]');
+    await showRightPanel(window,'cast');
     await uiWait("!!document.querySelector('[aria-label=\"Full Cast table\"]')", 'Cast dock');
     await click('[aria-label="Full Cast table"]');
     await uiWait(`document.querySelector('.coordinate-cell')?.textContent === ${JSON.stringify(expected)}`, 'Cast coordinate precision');
-    await click('.workspace-tab[aria-label="Design"]');
+    await activateWorkspace(window,'design');
     savedFile = path.join(output, `coordinates-${precision}-${process.pid}.csv`);
     native('Export drill book PDF…'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
     await click('.export-options label:nth-child(2) input');

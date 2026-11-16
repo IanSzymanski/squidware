@@ -1,3 +1,4 @@
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
 const { capturePage, revealFieldTool, waitFor: waitUntil, key: sendKey, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
@@ -185,9 +186,9 @@ async function checkActionClarity() {
   await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
   // Selection is not an edit: the untouched demo still has nothing to save.
   assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'No changes');
-  await clickSelector('.workspace-tab[aria-label="Cast"]'); await uiWait("!!document.querySelector('.cast-dock h2') && !!document.querySelector('.field-stage__svg')", 'Cast beside field');
-  await clickSelector('.workspace-tab[aria-label="Production sheet"]'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
-  await clickSelector('.workspace-tab[aria-label="Design"]');
+  await showRightPanel(window,'cast'); await uiWait("!!document.querySelector('.cast-dock h2') && !!document.querySelector('.field-stage__svg')", 'Cast beside field');
+  await activateWorkspace(window,'production'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
+  await activateWorkspace(window,'design');
   pass('native pointer and Tab/Enter select sections with pressed state; hint stays retired after clearing; Cast and Production sheet have direct headings');
 }
 
@@ -204,7 +205,7 @@ async function checkCompactChrome() {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
       // #178: below the compact header breakpoint Help moves into Menu; a set list tucked by a narrow window keeps its Show button.
       const compactHeader = document.querySelector('.studio').dataset.header !== 'full', setsTucked = document.querySelector('#workspace-pane-sets').hidden;
-      const required = ['Save','Undo','Redo','Export','Design','Cast','Production sheet','Project menu','Play show','First set','Last set','More field tools','2D field','3D preview', compactHeader ? 'Command palette' : 'Help', setsTucked ? 'Show Set list' : 'Add set'];
+      const required = ['Save','Undo','Redo','Export','Switch workspace','Project menu','Play show','First set','Last set','More field tools','2D field','3D preview', compactHeader ? 'Command palette' : 'Help', setsTucked ? 'Show Set list' : 'Add set'];
       const clipped = required.filter(name => { const node = document.querySelector('[aria-label="'+name+'"]'); if (!node) return true; const r=node.getBoundingClientRect(); const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2); return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !node.contains(top); });
       return { viewport:{width:innerWidth,height:innerHeight}, compactHeader, setsTucked, header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), statusbar:rect('.statusbar'), clipped, emptyAudioLane:!!document.querySelector('.audio-track'), legendInField:!!document.querySelector('.field-container .field-legend') };
     })()`);
@@ -594,14 +595,14 @@ app.whenReady().then(async () => {
     await uiWait(`${numberSelector('Counts')}.value === '1024'`, 'native redo');
     pass('native undo/redo use the shared commands');
 
-    await clickText('Cast');
+    await showRightPanel(window,'cast');
     await clickSelector('[aria-label="Add performers"]');
     await editNumber('Number of performers', 0);
     await clickText('Add performers', '.modal', true);
     assert.equal(await evaluate("!!document.querySelector('.modal[open]')"), true);
     await keyOnNumber('Number of performers', 'Escape');
     await clickSelector('.modal [aria-label="Close dialog"]');
-    await clickText('Design');
+    await activateWorkspace(window,'design');
     menuAction('Save');
     saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(saved.performers.length, 64);
@@ -801,12 +802,12 @@ app.whenReady().then(async () => {
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('Escape cancels a text draft without creating history or changing the production');
 
-    await clickText('Cast');
+    await showRightPanel(window,'cast');
     await clickSelector('[aria-label="Full Cast table"]');
     await uiWait("!!document.querySelector('.cast-table')", 'full Cast table');
     await typeText('.cast-table input[placeholder="Add a name"]', 'A'.repeat(40));
     await fieldKey('.cast-table input[placeholder="Add a name"]', 'Enter');
-    await clickText('Design');
+    await activateWorkspace(window,'design');
     await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="Production settings"]');
     await typeText('.modal label.form-label input', 'History QA production');
     await fieldKey('.modal label.form-label input', 'Enter');
@@ -974,7 +975,7 @@ app.whenReady().then(async () => {
     assert.equal(saves, savesBefore + 1);
     await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'new production saved');
     pass('in-app confirmations focus Cancel; Escape and Cancel preserve edits and New production; confirming creates a production with no changes whose first save still asks for a destination');
-    await clickText('Design');
+    await activateWorkspace(window,'design');
     await capture('file-save-status.png');
 
     await checkCompactChrome();

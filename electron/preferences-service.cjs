@@ -16,7 +16,7 @@ function createPreferencesService(directory, atomicWrite) {
       finally { await handle.close(); }
       const parsed = JSON.parse(content);
       const preferences = validatePreferences(parsed);
-      preserve = parsed.version !== 1;
+      preserve = parsed.version !== 1 || !!preferences.workspaces.notice;
       return { preferences, ...(preserve ? { warning: 'Older preferences were upgraded with defaults. The original is preserved before saving.' } : {}) };
     } catch (error) {
       if (error.code === 'ENOENT') return { preferences: defaultPreferences() };

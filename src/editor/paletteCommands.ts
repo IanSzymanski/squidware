@@ -1,3 +1,4 @@
+import { canSwitchWorkspace } from './workspaceCommands';
 import { commandRegistry, type CommandArguments, type CommandDefinition, type CommandId } from './commands';
 import { PROJECT_LIMITS } from '../domain';
 import { canEditPositions, isAtActiveSet } from './editMode';
@@ -13,6 +14,7 @@ export type CommandInvocation = { [I in CommandId]: { id: I; args: CommandArgume
 export interface PaletteEntry { key: string; name: string; description: string; keywords: string; invocation: CommandInvocation; disabledReason: string | null }
 export function commandUnavailable(state: EditorState, invocation: CommandInvocation): string | null {
   const { id, args } = invocation;
+  if (id.startsWith('workspace.') && canSwitchWorkspace(state)) return null;
   if (state.ui.pendingDraft || state.project.transactionName || state.ui.dialog) return 'Finish or cancel the current input, gesture or dialog first.';
   if (state.fileSession.fileOperation && id.startsWith('file.')) return 'Wait for the current file operation to finish.';
   if (id === 'dialog.open' && args.dialog === 'remove-cast' && !state.selection.selectedIds.length) return 'Select performers to remove first.';
@@ -84,7 +86,7 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   add('view.select', { view: '2d' }, 'Open 2D field', 'view-2d');
   add('view.select', { view: '3d' }, 'Open 3D preview', 'view-3d');
   for (const [preset,name] of [['perspective','Perspective camera'],['front','Front camera'],['top','Overhead camera']] as const) add('view.camera',{preset},name,`camera-${preset}`);
-  add('workspace.show', { workspace: 'production' }, 'Production sheet');
+  for (const w of state.preferences.value.workspaces.entries.filter(w => w.id.startsWith('custom-'))) add('workspace.select', { id: w.id }, `${w.name} workspace`, `workspace-${w.id}`);
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
   for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);
   add('formation.bezier',{wave:false},'Preview Bézier curve formation','formation-bezier-curve');
@@ -93,8 +95,8 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
     add('live.edit',{id:shape.id},`Edit live formation: ${shape.name}`,`live-edit-${shape.id}`);
     add('live.detach',{id:shape.id},`Detach live formation: ${shape.name}`,`live-detach-${shape.id}`);
   }
-  for (const preset of ['write', 'review', 'rehearse'] as const) add('layout.preset', { preset }, `${preset[0].toUpperCase()}${preset.slice(1)} workspace preset`, `layout-${preset}`);
-  for (const [mode, name] of [['panel', 'Show Cast beside field'], ['table', 'Edit Cast table'], ['closed', 'Show Design workspace']] as const) add('cast.show', { mode }, name, `cast-${mode}`);
+
+  for (const [mode, name] of [['panel', 'Show Cast beside field'], ['closed', 'Show Inspector']] as const) add('cast.show', { mode }, name, `cast-${mode}`);
   for (const [dialog, name] of [['package', 'Export portable production with audio'], ['metronome', 'Metronome and count-in'], ['settings', 'Production settings'], ['snapping', 'Grid and snapping'], ['remove-cast', 'Remove selected performers'], ['remove-set', 'Delete current set']] as const) {
     add('dialog.open', { dialog }, name, `dialog-${dialog}`);
   }

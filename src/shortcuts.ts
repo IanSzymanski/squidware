@@ -5,6 +5,7 @@ export const defaultShortcuts = {
   'file.save-as': 'Primary+Shift+S', 'file.export': 'Primary+P',
   'history.undo': 'Primary+Z', 'history.redo': 'Primary+Shift+Z',
   'selection.all': 'Primary+A', 'layout.focus': 'Primary+Shift+F', 'help.open': 'F1',
+  'workspace.field': 'Primary+1', 'workspace.design': 'Primary+2', 'workspace.production': 'Primary+3', 'workspace.rehearse': 'Primary+4',
   'preferences.open': 'Primary+,',
   'tool.box': 'V', 'tool.pan': 'H', 'tool.lasso': 'L',
   'performers.add-dialog': 'A', 'set.new': 'N', 'set.duplicate': 'D', 'set.insert-before': 'Shift+N', 'set.hold': 'Shift+D', 'transform.mirror': 'M',

@@ -1,5 +1,8 @@
 # Workspace layout
 
+The unified [workspace switcher](WORKSPACES.md) replaces the former Layout popover and Design/Cast/Sheet header tabs. Field, Design, Production and Rehearse arrangements can be named and saved. The older preset descriptions below document the underlying migration/layout fixtures; use the named header switcher for current controls. Panel resizing, temporary tucking, overlays and focus behavior below remain applicable.
+
+
 Open **Layout** in the header (in **Menu** on narrow windows or at large UI scales) to choose a preset, show or hide panels, or adjust widths. These choices are saved on this device, separately from `.squid` files. They never add production history, move performers or change print coordinates.
 
 - **Write** shows the Set list and Inspector at their default widths.

@@ -64,3 +64,13 @@ test('failed storage preserves data and subsequent writes retry in request order
   assert.throws(() => service.save({ ...defaultPreferences(), zoom: NaN }), /zoom/);
 });
 
+test('a damaged workspace falls back locally and preserves its original before saving', async t => {
+  const original = JSON.stringify({ ...defaultPreferences(), theme: 'light', workspaces: { active: 'custom-broken', entries: [{id:'custom-broken',name:'Broken',arrangement:null}] } });
+  const h = await setup(t, original); const { preferences } = await h.service.read();
+  assert.equal(preferences.theme, 'light'); assert.equal(preferences.workspaces.active, 'design'); assert.match(preferences.workspaces.notice, /could not be read/);
+  await h.service.save(preferences);
+  const preserved = (await fs.readdir(h.directory)).find(name => name.startsWith('preferences-preserved-'));
+  assert.equal(await fs.readFile(path.join(h.directory,preserved),'utf8'),original);
+  const restarted = await createPreferencesService(h.directory,h.atomic).read();
+  assert.equal(restarted.preferences.workspaces.active,'design'); assert.equal(restarted.preferences.theme,'light');
+});

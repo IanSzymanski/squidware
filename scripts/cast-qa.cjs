@@ -1,3 +1,4 @@
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
 const assert = require('node:assert/strict');
 const { settleNativeViewport } = require('./testing/renderer.cjs');
@@ -29,12 +30,12 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   };
   window.setContentSize(1366,768); window.webContents.setZoomFactor(1); await settleNativeViewport(window,'Cast baseline');
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('ui','workspace','design');${editor}.setValue('ui','castPanelOpen',false);${editor}.setValue('ui','view','2d');${editor}.setValue('ui','zoom',1);${editor}.setValue('ui','showPaths',false);${editor}.setValue('ui','showNextPaths',false);${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom'})`);
-  await wait("document.querySelectorAll('.field-performer').length===500 && !!document.querySelector('.inspector')",'Cast baseline field');
+  await wait("document.querySelectorAll('.field-performer').length===500 && !document.querySelector('#panel-content-inspector').hidden",'Cast baseline field');
   const before = await evaluate(`${state}.project`);
   const fieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
   await capture('cast-before.png');
-  await control('.workspace-tab[aria-label="Cast"]');
-  await wait("document.querySelectorAll('.cast-list li').length===500 && !!document.querySelector('.field-stage__svg') && !document.querySelector('.inspector')",'Cast dock beside field');
+  await showRightPanel(window,'cast');
+  await wait("document.querySelectorAll('.cast-list li').length===500 && !!document.querySelector('.field-stage__svg') && document.querySelector('#panel-content-inspector').hidden",'Cast dock beside field');
   assert.equal(await evaluate("document.querySelector('.field-container').getBoundingClientRect().height"),fieldHeight);
   await control(row(ids[212])); await selected([ids[212]]);
   assert.equal(await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').getAttribute('aria-pressed')`),'true');
@@ -105,7 +106,7 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
 
   await control('[aria-label="Full Cast table"]'); await wait("document.querySelectorAll('.cast-table tbody tr').length===500",'full table');
   await selected([ids[212]]); await capture('cast-full-table.png');
-  await control('[aria-label="Dock Cast beside field"]'); await wait("!!document.querySelector('.cast-dock') && !!document.querySelector('.field-stage__svg')",'redocked');
+  await control('[aria-label="Return to Cast panel"]'); await wait("!document.querySelector('#panel-content-cast').hidden && !!document.querySelector('.field-stage__svg')",'redocked');
   await control('[aria-label="Remove selected performers"]'); await wait("!!document.querySelector('dialog[open]')",'remove Cast confirmation');
   // showModal focuses Close after a pointer click: no :focus-visible, so no help covers the confirmation buttons.
   await wait("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(document.activeElement.matches('dialog[open] [aria-label=\"Close dialog\"]')))))",'confirmation initial focus');
@@ -127,7 +128,7 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
     await capture(name);
   }
   window.webContents.setZoomFactor(1);window.setContentSize(1366,768);await settleNativeViewport(window,'Cast layout restore');
-  await control('[aria-label="Show Inspector"]'); await wait("!!document.querySelector('.inspector') && !document.querySelector('.cast-dock')",'Inspector restored');
+  await control('[aria-label="Show Inspector"]'); await wait("!document.querySelector('#panel-content-inspector').hidden && document.querySelector('#panel-content-cast').hidden",'Inspector restored');
   await selected([ids[212]]);
   pass('Cast, editing controls and field remain visible at 1366/1120px and 125% UI zoom; closing the dock restores Inspector without changing selection');
   return { beforeFieldHeight:fieldHeight, layouts };

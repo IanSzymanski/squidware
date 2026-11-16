@@ -24,7 +24,10 @@ export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, 
   const props = {
     'aria-label': label, value: draft, maxLength, placeholder,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { setDraft(event.target.value); onDraftChange(event.target.value !== value, fieldId); },
-    onBlur: commit,
+    onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (event.currentTarget.closest('[hidden]') || event.relatedTarget instanceof Element && event.relatedTarget.closest('[data-preserve-drafts]')) return;
+      commit();
+    },
     onKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       if (event.nativeEvent.isComposing) return;
       if (event.key === 'Enter' && (!multiline || !event.shiftKey)) { event.preventDefault(); event.currentTarget.blur(); }

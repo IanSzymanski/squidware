@@ -1,3 +1,4 @@
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
 const { capturePage, key: sendKey, waitFor: waitUntil, settleNativeViewport, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
@@ -216,14 +217,14 @@ app.whenReady().then(async () => {
     await uiWait("document.querySelector('.inspector textarea').value==='Keyboard-only rehearsal note'", 'note draft entered'); await key('Return');
     await uiWait(`${editor}.getState().project.present.sets[0].notes==='Keyboard-only rehearsal note'`, 'note committed');
     native('Save As…'); await waitFor(async () => { try { return JSON.parse(await fs.readFile(savedFile, 'utf8')).sets[0].notes === 'Keyboard-only rehearsal note'; } catch { return false; } }, 'native save');
-    await tabTo('.workspace-tab[aria-label="Production sheet"]', true); await key('Space');
+    await activateWorkspace(window,'production');
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');
     assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);
     await audit('production overview');
-    await tabTo('.workspace-tab[aria-label="Cast"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-list li').length === 500", 'docked Cast review');
-    await tabTo('[aria-label="Full Cast table"]'); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'full Cast review');
+    await showRightPanel(window,'cast'); await uiWait("document.querySelectorAll('.cast-list li').length === 500", 'docked Cast review');
+    await tabTo('[aria-label="Full Cast table"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'full Cast review');
     await audit('cast');
-    await tabTo('.workspace-tab[aria-label="Design"]', true); await key('Return');
+    await activateWorkspace(window,'design');
     await tabTo('[aria-label="Next set"]'); await key('Return');
     await tabTo('.timeline-scrubber'); await key('Right');
     await uiWait("!!document.querySelector('.field-preview-banner')", 'keyboard preview');
