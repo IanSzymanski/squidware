@@ -1,14 +1,17 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { app, dialog } = require('electron');
-const { capturePage, key, waitFor, pause, revealFieldTool } = require('./testing/renderer.cjs');
+const { app, BrowserWindow, dialog } = require('electron');
+const { capturePage, key, waitFor, pause, revealFieldTool, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--demo-show-manifest=')).slice('--demo-show-manifest='.length));
 const { root, output, profile, bundle, recording } = manifest;
 const { parseProject, setStartCount } = require(bundle);
 const timing = require(path.join(root, 'scripts/demo-show/space-show-timing.json'));
 process.argv.push('--squidware-showcase-demo');
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
+// Match the other fixed-size screenshot suites: showing a window lets macOS
+// constrain it to the runner display's smaller visible work area.
+BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
 dialog.showOpenDialog = async () => ({ filePaths: [recording] });
 let window, failure;
@@ -62,7 +65,6 @@ app.whenReady().then(async () => {
     await wait(`!!${editor} && document.querySelectorAll('.field-performer').length===165 && ${state}.preferences.status==='saved'`, 'instrumented production ready');
     const readyMs = performance.now() - start;
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
-    window.show(); window.focus();
     const expected = parseProject(await fs.readFile(path.join(root, 'examples/tether-space-show.squid'), 'utf8'));
     assert.deepEqual(await evaluate(state + '.project.present'), expected);
     assert.equal(await clean(), true);
@@ -89,6 +91,7 @@ app.whenReady().then(async () => {
     assert.ok(expected.sets.find(s => s.name === 'TE 5 · Layers').notes.includes('TEACHING FINDING'));
     await key(window, 'Escape'); await wait(`${state}.ui.dialog===null`, 'analysis closed');
     pass('production worker completes show-wide analysis with exactly the explained teaching finding');
+    await settleNativeViewport(window, 'Tether screenshot viewport');
     const viewport = await evaluate("({width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height})");
     assert.equal(viewport.width, 1366); assert.equal(viewport.height, 768); assert.ok(viewport.fieldHeight >= 470);
     await capturePage(window, output, 'tether-1366.png');
