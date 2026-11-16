@@ -62,7 +62,9 @@
 .workspace-switcher { flex: 0 0 auto; }
 .workspace-trigger { min-width: 95px; max-width: 150px; }
 .workspace-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.workspace-options { width: min(360px, calc(var(--viewport-width) - 16px)); }
+/* Keep the switcher's width stronger than shared .layout-popover theme rules,
+   which can load later. Placement uses the same effective-CSS-pixel width. */
+.workspace-options.layout-popover { --workspace-options-width: 360px; width: min(var(--workspace-options-width), calc(var(--viewport-width) - 16px)); }
 .workspace-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .workspace-choices .workspace-choice { justify-content: space-between; min-width: 0; padding: 6px; }
 .workspace-choice > span { display: flex; align-items: center; gap: 4px; overflow-wrap: anywhere; }

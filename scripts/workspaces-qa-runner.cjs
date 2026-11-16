@@ -70,11 +70,17 @@ app.whenReady().then(async()=>{try{
  assert.equal(await evaluate(`${state}.preferences.value.workspaces.entries.some(w=>w.id===${JSON.stringify(id)})`),false);
  await choose('Field');window.setContentSize(900,650);await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1.5}))`);await settleNativeViewport(window,'reset with an open panel');await click('[aria-label="Show Set list"]');await wait("!!document.querySelector('.workspace-pane--overlay')",'set list open over the Field workspace');await click('[aria-label="Switch workspace"]');await click('.workspace-manage button:last-child');await wait(`${state}.preferences.value.workspaceLayout.setsCollapsed && !document.querySelector('.workspace-pane--overlay, .workspace-overlay-dismiss')`,'reset built-in closes its temporary panel');await click('[aria-label="Close workspace options"]');window.setContentSize(1366,768);await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1}))`);await settleNativeViewport(window,'reset viewport restored');
  pass('save, rename, switch, delete and reset use native controls without adding an undo entry');
- for(const [theme,scale] of [['light',1],['high-contrast',1],['dark',1.5]]) {
+ // Exercise the packaged cascade even if component CSS happened to load last:
+ // the shared UI-scale rule must never widen this specifically sized popover.
+ await evaluate(`document.head.insertAdjacentHTML('beforeend','<style id="qa-shared-popover-width">@media screen { .layout-popover { width: min(390px, calc(var(--viewport-width) - 24px)); } }</style>')`);
+ for(const [theme,scale] of [['light',1],['high-contrast',1],['dark',1.25],['dark',1.5]]) {
    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,theme:${JSON.stringify(theme)},uiScale:${scale}}))`);window.setContentSize(1024,700);await settleNativeViewport(window,'theme/scale');
    await click('[aria-label="Switch workspace"]');await screenshot(`switcher-${theme}-${scale}`);
-   const r=await evaluate("document.querySelector('#workspace-options').getBoundingClientRect().toJSON()");assert.ok(r.left>=0&&r.right<=1025,JSON.stringify(r));await key('Escape');
+   const bounds=await evaluate("({rect:document.querySelector('#workspace-options').getBoundingClientRect().toJSON(),viewport:[innerWidth,innerHeight]})"),r=bounds.rect;
+   assert.ok(r.width<=360*scale+1,`shared theme styles cannot widen the workspace menu: ${JSON.stringify(bounds)}`);
+   assert.ok(r.left>=0&&r.right<=bounds.viewport[0]+1&&r.top>=0&&r.bottom<=bounds.viewport[1]+1,JSON.stringify(bounds));await key('Escape');
  }
+ await evaluate("document.getElementById('qa-shared-popover-width').remove()");
  await evaluate(`${editor}.setValue('preferences','value',p=>({...p,theme:'dark',uiScale:1}))`);window.setContentSize(1366,768);await choose('Design');await click('#panel-tab-cast');
  await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:290}})`);await click('[aria-label="Switch workspace"]');await click('.workspace-manage button:first-child');await text('[aria-label="Workspace name"]','Daily writing');await click('.workspace-name-form .primary');await click('[aria-label="Close workspace options"]');
  await wait(`${state}.preferences.status==='saved'`,'preferences durable');assert.equal(await evaluate(`JSON.stringify(${state}.project)`),original);
