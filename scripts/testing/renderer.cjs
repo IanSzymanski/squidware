@@ -270,8 +270,12 @@ async function showRightPanel(window, tab) {
     await evaluate("document.querySelector('[aria-label=\"Show Cast\"], [aria-label=\"Show Inspector\"]').focus()");
     await keyWithRelease(window,'Return',[],{releaseKey:'Enter'});
   }
-  await waitFor(()=>evaluate(`!!document.querySelector(${JSON.stringify(target)})?.getClientRects().length`),'right panel tabs');
+  // Revealing the pane queues heading focus in the next animation frame. Its
+  // tabs can be visible before that callback runs, especially on Windows.
+  // Finish reveal/layout before choosing the native key's target.
+  await waitFor(()=>evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(!!document.querySelector(${JSON.stringify(target)})?.getClientRects().length))))`),'right panel reveal settled');
   await evaluate(`document.querySelector(${JSON.stringify(target)}).focus()`);
+  await waitFor(()=>evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const tab=document.querySelector(${JSON.stringify(target)});resolve(!!tab&&!tab.disabled&&!!tab.getClientRects().length&&document.activeElement===tab&&document.hasFocus());})))`),tab+' tab native focus');
   await keyWithRelease(window,'Return',[],{releaseKey:'Enter'});
   await waitFor(()=>evaluate(`document.querySelector(${JSON.stringify(target)}).getAttribute('aria-selected')==='true'`),tab+' tab');
 }
