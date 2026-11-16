@@ -103,7 +103,7 @@ describe('workspace layout boundaries', () => {
   });
   it('leaves focus mode to show Cast beside the field, which focus mode would hide', () => {
     const store = createEditorStore(createDemoProject());
-    for (const mode of ['table', 'closed'] as const) { store.setValue('ui', 'focusMode', true); store.dispatch('cast.show', { mode }); expect(store.getState().ui.focusMode).toBe(true); }
+    for (const mode of ['table', 'closed'] as const) { store.setValue('ui', 'focusMode', true); store.dispatch('cast.show', { mode }); expect(store.getState().ui.focusMode).toBe(true); store.setValue('ui','dialog',null); }
     store.dispatch('cast.show', { mode: 'panel' });
     expect(store.getState().ui).toMatchObject({ focusMode: false, castPanelOpen: true, castReveal: 1, workspace: 'design' });
   });

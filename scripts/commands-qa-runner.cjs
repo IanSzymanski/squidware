@@ -1,4 +1,5 @@
 'use strict';
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog, Menu, clipboard } = require('electron');
@@ -101,13 +102,13 @@ app.whenReady().then(async () => {
       pass('mirror/interval cancel preserves geometry; labelled coordinate Apply and undo restore the production; invalid syntax and empty selection cannot mutate');
       // Check keyboard navigation and ordinary text entry rather than dispatching edit commands.
       await field();await key('Right');const view=await evaluate(`${state}.ui.view`);await key('Tab');assert.equal(await evaluate(`${state}.ui.view`),view);
-      await click('.workspace-tab[aria-label="Cast"]');await wait("!!document.querySelector('[aria-label=\"Find a performer\"]')",'Cast search');
+      await showRightPanel(window,'cast');await wait("!!document.querySelector('[aria-label=\"Find a performer\"]')",'Cast search');
       const typingBefore=await evaluate(`({project:${state}.project,tool:${state}.ui.tool,view:${state}.ui.view,paths:${state}.ui.showPaths})`);
       await type(button('Find a performer'),'vhlpadmtj');await key('a',[primary]);
       await key('c',[primary]);await waitFor(async()=>await clipboard.readText()==='vhlpadmtj','native copy in text entry',{timeoutMs:15000});await key('x',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value===''",'native cut in text entry');await key('v',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value==='vhlpadmtj'",'native paste in text entry');await key('z',[primary]);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value===''",'native text undo');await key('z',[primary,'shift']);await wait("document.querySelector('[aria-label=\"Find a performer\"]').value==='vhlpadmtj'",'native text redo');
       assert.deepEqual(await evaluate(`({project:${state}.project,tool:${state}.ui.tool,view:${state}.ui.view,paths:${state}.ui.showPaths})`),typingBefore);
       assert.deepEqual(await evaluate(`${state}.selection.selectedIds`),[]);await type(button('Find a performer'),'');
-      await click('.workspace-tab[aria-label="Design"]');
+      await activateWorkspace(window,'design');
       pass('Tab keeps focus navigation, field arrows remain available, and ordinary typing/select-all in Cast never invokes editor shortcuts');
       await preferences();await shortcuts();await record('Select performers','F2');await wait(`${state}.preferences.value.shortcutBindings['tool.box']==='F2'`,'recorded F2');
       await record('Pan field','F2');assert.match(await evaluate("document.querySelector('.shortcut-preferences [role=alert]').textContent"),/Already used/);

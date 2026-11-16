@@ -1,12 +1,17 @@
+import { activeWorkspace } from '../workspaces';
 import { defaultPreferences, validatePreferences } from '../preferences';
 import type { Preferences, PreferencesBridge } from '../preferences';
 import type { EditorState } from './state';
 import type { EditorStore } from './store';
 const UI_KEYS = ['castPanelOpen', 'selectionLabelsOnly', 'view', 'showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
 const KEYS = Object.keys(defaultPreferences()) as (keyof Preferences)[];
-const sameValue = (a: Preferences, b: Preferences, key: keyof Preferences) => key === 'snapDefaults' || key === 'workspaceLayout' || key === 'shortcutBindings' || key === 'popout3dBounds' ? JSON.stringify(a[key]) === JSON.stringify(b[key]) : a[key] === b[key];
+const sameValue = (a: Preferences, b: Preferences, key: keyof Preferences) => key === 'workspaces' || key === 'snapDefaults' || key === 'workspaceLayout' || key === 'shortcutBindings' || key === 'popout3dBounds' ? JSON.stringify(a[key]) === JSON.stringify(b[key]) : a[key] === b[key];
 const equal = (a: Preferences, b: Preferences) => KEYS.every(key => sameValue(a, b, key));
-export const preferencesSnapshot = (state: EditorState) => validatePreferences({ ...state.preferences.value, ...Object.fromEntries(UI_KEYS.map(key => [key, state.ui[key]])) });
+export function preferencesSnapshot(state: EditorState): Preferences {
+  const p = state.preferences.value;
+  const workspaces = { ...p.workspaces, entries: p.workspaces.entries.map(w => w.id === p.workspaces.active ? { ...w, arrangement: { ...w.arrangement, layout: p.workspaceLayout, rightPanel: state.ui.castPanelOpen ? 'cast' as const : 'inspector' as const, view: state.ui.view, sheet: state.ui.workspace === 'production' } } : w) };
+  return validatePreferences({ ...p, workspaces, ...Object.fromEntries(UI_KEYS.map(key => [key, state.ui[key]])) });
+}
 function apply(store: EditorStore, value: Preferences) {
   store.setValue('preferences', 'value', value);
   for (const key of UI_KEYS) store.setValue('ui', key, value[key]);
@@ -39,7 +44,10 @@ export function startPreferencesController(store: EditorStore, bridge: Preferenc
   const ready = bridge.readPreferences().then(result => {
     if (!active) return;
     last = validatePreferences(result.preferences);
-    apply(store, mergeIntervening(before, preferencesSnapshot(store.getState()), last));
+    const merged = mergeIntervening(before, preferencesSnapshot(store.getState()), last);
+    const a = activeWorkspace(merged.workspaces).arrangement;
+    apply(store, { ...merged, workspaceLayout: a.layout, castPanelOpen: a.rightPanel === 'cast', view: a.view });
+    store.setValue('ui', 'workspace', a.sheet ? 'production' : 'design');
     store.setValue('preferences', 'status', result.readOnly ? 'unavailable' : 'saved');
     store.setValue('preferences', 'error', result.warning ?? '');
   }).catch(error => { if (active) { store.setValue('preferences', 'status', 'unavailable'); store.setValue('preferences', 'error', (error as Error).message); } }).then(() => {
@@ -61,7 +69,7 @@ export function startPreferencesController(store: EditorStore, bridge: Preferenc
       submitted = undefined;
       const before = preferencesSnapshot(store.getState());
       store.setValue('preferences', 'status', 'saving');
-      try { const defaults = validatePreferences(await bridge.resetPreferences()); if (!active) return false; if (request >= durableSequence) { last = defaults; durableSequence = request; } apply(store, mergeIntervening(before, preferencesSnapshot(store.getState()), defaults)); store.setValue('preferences', 'error', ''); store.setValue('preferences', 'status', 'saved'); schedule(); return true; }
+      try { const defaults = validatePreferences(await bridge.resetPreferences()); if (!active) return false; if (request >= durableSequence) { last = defaults; durableSequence = request; } apply(store, mergeIntervening(before, preferencesSnapshot(store.getState()), defaults)); store.setValue('ui', 'workspace', 'design'); store.setValue('preferences', 'error', ''); store.setValue('preferences', 'status', 'saved'); schedule(); return true; }
       catch (error) { if (active) { store.setValue('preferences', 'status', 'unavailable'); store.setValue('preferences', 'error', (error as Error).message); } return false; }
     },
     stop() { active = false; unsubscribers.forEach(unsubscribe => unsubscribe()); },

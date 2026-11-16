@@ -3,7 +3,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { createQa, root } from './testing/launcher.mjs';
 const require = createRequire(import.meta.url);
-const qa = await createQa('accessibility', { timeoutMs: 240000 });
+// Maximum-cast keyboard review includes the workspace switcher and the full breakpoint matrix.
+const qa = await createQa('accessibility', { timeoutMs: 420000 });
 const { output } = qa;
 const bundle = path.join(output, 'fixture.cjs');
 const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));

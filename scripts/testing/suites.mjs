@@ -1,5 +1,6 @@
 /** Each desktop behavior has one owner. Unit/contract checks live in CI's fast job. */
 export const desktopSuites = [
+  {name:'workspaces',title:'Unified workspaces, named arrangements, migrations, draft preservation and restart persistence',script:'workspaces-qa.mjs',timeoutMs:330000},
   {name:'field-toolbar',title:'Contextual field commands, one-stop keyboard navigation, overflow, preview transactions and camera choices',script:'field-toolbar-qa.mjs',timeoutMs:210000},
   {name:'field-renderer',title:'Canvas/engine/vector parity, DPI/zoom, retained keyboard focus, context fallback and themes',script:'field-renderer-qa.mjs',timeoutMs:180000},
   {name:'group-movement',title:'Delayed followers, counter-march cues, conveyor laps, connectors, shared checks, scoped copy/undo and native v12 files',script:'group-movement-qa.mjs',timeoutMs:390000},
@@ -17,7 +18,7 @@ export const desktopSuites = [
   { name: 'templates', title: 'Personal templates, native import/export, guarded previews and persistence', script: 'templates-qa.mjs', timeoutMs: 300000 },
   { name: 'smoke', title: 'Sandbox and native bridge', timeoutMs: 60000 },
   { name: 'editor', title: 'Editing, file dialogs, drafts and undo', script: 'editor-qa.mjs', timeoutMs: 270000 },
-  { name: 'accessibility', title: 'Keyboard navigation and rendered text', script: 'accessibility-qa.mjs', timeoutMs: 270000 },
+  { name: 'accessibility', title: 'Keyboard navigation and rendered text', script: 'accessibility-qa.mjs', timeoutMs: 450000 },
   { name: 'field', title: 'Nearest selection, labels and display scale', script: 'field-presentation-qa.mjs', timeoutMs: 270000 },
   { name: 'formation-assignment', title: 'Positional assignment, paths, travel and acceptance', script: 'formation-assignment-qa.mjs', timeoutMs: 180000 },
   { name: 'spacing', title: 'Alignment, distribution, intervals and field guides', script: 'spacing-qa.mjs', timeoutMs: 210000 },

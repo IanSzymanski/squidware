@@ -1,0 +1,437 @@
+{
+  "date": "2026-11-16",
+  "platform": "Linux Electron with isolated virtual displays",
+  "sourceTests": 1034,
+  "contractChecks": 35,
+  "nativeServiceHarnessChecks": 100,
+  "requiredDesktopSuites": 50,
+  "allLatestResultsPassed": true,
+  "note": "Results retain the full-run failures and identify the latest targeted pass for each owner. Application fixes and fixture updates were verified in the follow-ups; the captured source identity is recorded per run.",
+  "runs": [
+    {
+      "id": "2026-11-16T16-11-41-081Z-925c74ea",
+      "scope": "full-desktop",
+      "platform": "linux",
+      "source": {
+        "revision": "e89aea3986e54444ccd8801d6bc236f16ad3ab90",
+        "tree": "1249e6116718297e6235224255195737301f97eb",
+        "dirty": true,
+        "contentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a",
+        "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+      },
+      "passed": 45,
+      "total": 50,
+      "failed": [
+        "accessibility",
+        "field",
+        "themes",
+        "thumbnails",
+        "production-sheet"
+      ]
+    },
+    {
+      "id": "2026-11-16T16-26-26-020Z-a1f0a993",
+      "scope": "targeted",
+      "platform": "linux",
+      "source": {
+        "revision": "a71b82dbf883cd0bbe546fe8c24c019a835c5b1b",
+        "tree": "ce06d01e00818484222e84bf561653b955f57b83",
+        "dirty": true,
+        "contentHash": "4a3ae6c2349d4babe5cc36d179948295d1c50f2414d451aa79b5711ac1b4e0db",
+        "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+      },
+      "passed": 4,
+      "total": 8,
+      "failed": [
+        "field",
+        "production-sheet",
+        "themes",
+        "workspace"
+      ]
+    },
+    {
+      "id": "2026-11-16T16-32-39-402Z-43209b29",
+      "scope": "targeted",
+      "platform": "linux",
+      "source": {
+        "revision": "a71b82dbf883cd0bbe546fe8c24c019a835c5b1b",
+        "tree": "ce06d01e00818484222e84bf561653b955f57b83",
+        "dirty": true,
+        "contentHash": "d9cf6ca8e3ed5cec079aca73c87cd257b729d5f2ca6ae9acc849b1c125912780",
+        "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+      },
+      "passed": 4,
+      "total": 5,
+      "failed": [
+        "workspace"
+      ]
+    },
+    {
+      "id": "2026-11-16T16-39-46-472Z-515547f1",
+      "scope": "targeted",
+      "platform": "linux",
+      "source": {
+        "revision": "a71b82dbf883cd0bbe546fe8c24c019a835c5b1b",
+        "tree": "ce06d01e00818484222e84bf561653b955f57b83",
+        "dirty": true,
+        "contentHash": "5cac3528700d550adb5c0a432ca806378a9f20a6168615c3bf480227dbb02b25",
+        "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+      },
+      "passed": 1,
+      "total": 1,
+      "failed": []
+    }
+  ],
+  "latestDesktopResults": [
+    {
+      "suite": "workspace",
+      "status": "passed",
+      "elapsedMs": 34249,
+      "runId": "2026-11-16T16-39-46-472Z-515547f1",
+      "sourceContentHash": "5cac3528700d550adb5c0a432ca806378a9f20a6168615c3bf480227dbb02b25"
+    },
+    {
+      "suite": "accessibility",
+      "status": "passed",
+      "elapsedMs": 173537,
+      "runId": "2026-11-16T16-26-26-020Z-a1f0a993",
+      "sourceContentHash": "4a3ae6c2349d4babe5cc36d179948295d1c50f2414d451aa79b5711ac1b4e0db"
+    },
+    {
+      "suite": "cast",
+      "status": "passed",
+      "elapsedMs": 47050,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "workspaces",
+      "status": "passed",
+      "elapsedMs": 200531,
+      "runId": "2026-11-16T16-32-39-402Z-43209b29",
+      "sourceContentHash": "d9cf6ca8e3ed5cec079aca73c87cd257b729d5f2ca6ae9acc849b1c125912780"
+    },
+    {
+      "suite": "field-toolbar",
+      "status": "passed",
+      "elapsedMs": 104193,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "field-renderer",
+      "status": "passed",
+      "elapsedMs": 37433,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "group-movement",
+      "status": "passed",
+      "elapsedMs": 71177,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "formation-transitions",
+      "status": "passed",
+      "elapsedMs": 56127,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "assignment-optimization",
+      "status": "passed",
+      "elapsedMs": 79544,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "shared-routes",
+      "status": "passed",
+      "elapsedMs": 58412,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "scatter-formations",
+      "status": "passed",
+      "elapsedMs": 48553,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "bezier-formations",
+      "status": "passed",
+      "elapsedMs": 24457,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "live-formations",
+      "status": "passed",
+      "elapsedMs": 27785,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "path-authoring",
+      "status": "passed",
+      "elapsedMs": 47646,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "detailed-analysis",
+      "status": "passed",
+      "elapsedMs": 31454,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "path-operations",
+      "status": "passed",
+      "elapsedMs": 28193,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "movement-schedule",
+      "status": "passed",
+      "elapsedMs": 27722,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "paths",
+      "status": "passed",
+      "elapsedMs": 24337,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "templates",
+      "status": "passed",
+      "elapsedMs": 27707,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "smoke",
+      "status": "passed",
+      "elapsedMs": 4413,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "editor",
+      "status": "passed",
+      "elapsedMs": 87682,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "field",
+      "status": "passed",
+      "elapsedMs": 88325,
+      "runId": "2026-11-16T16-32-39-402Z-43209b29",
+      "sourceContentHash": "d9cf6ca8e3ed5cec079aca73c87cd257b729d5f2ca6ae9acc849b1c125912780"
+    },
+    {
+      "suite": "formation-assignment",
+      "status": "passed",
+      "elapsedMs": 17356,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "spacing",
+      "status": "passed",
+      "elapsedMs": 21679,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "coordinate-entry",
+      "status": "passed",
+      "elapsedMs": 19504,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "selection",
+      "status": "passed",
+      "elapsedMs": 29316,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "tooltips",
+      "status": "passed",
+      "elapsedMs": 81415,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "tooltips-fallback",
+      "status": "passed",
+      "elapsedMs": 10193,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "themes",
+      "status": "passed",
+      "elapsedMs": 66516,
+      "runId": "2026-11-16T16-32-39-402Z-43209b29",
+      "sourceContentHash": "d9cf6ca8e3ed5cec079aca73c87cd257b729d5f2ca6ae9acc849b1c125912780"
+    },
+    {
+      "suite": "commands",
+      "status": "passed",
+      "elapsedMs": 42810,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "preferences",
+      "status": "passed",
+      "elapsedMs": 47705,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "thumbnails",
+      "status": "passed",
+      "elapsedMs": 34677,
+      "runId": "2026-11-16T16-26-26-020Z-a1f0a993",
+      "sourceContentHash": "4a3ae6c2349d4babe5cc36d179948295d1c50f2414d451aa79b5711ac1b4e0db"
+    },
+    {
+      "suite": "playback",
+      "status": "passed",
+      "elapsedMs": 36738,
+      "runId": "2026-11-16T16-26-26-020Z-a1f0a993",
+      "sourceContentHash": "4a3ae6c2349d4babe5cc36d179948295d1c50f2414d451aa79b5711ac1b4e0db"
+    },
+    {
+      "suite": "audio-package",
+      "status": "passed",
+      "elapsedMs": 22964,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "audio-clock",
+      "status": "passed",
+      "elapsedMs": 43631,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "metronome",
+      "status": "passed",
+      "elapsedMs": 44440,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "timeline",
+      "status": "passed",
+      "elapsedMs": 73912,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "rehearsal",
+      "status": "passed",
+      "elapsedMs": 26155,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "tempo-map",
+      "status": "passed",
+      "elapsedMs": 36498,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "audio-alignment",
+      "status": "passed",
+      "elapsedMs": 53276,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "score-map",
+      "status": "passed",
+      "elapsedMs": 148858,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "production-sheet",
+      "status": "passed",
+      "elapsedMs": 52155,
+      "runId": "2026-11-16T16-32-39-402Z-43209b29",
+      "sourceContentHash": "d9cf6ca8e3ed5cec079aca73c87cd257b729d5f2ca6ae9acc849b1c125912780"
+    },
+    {
+      "suite": "set-creation",
+      "status": "passed",
+      "elapsedMs": 28812,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "set-list",
+      "status": "passed",
+      "elapsedMs": 68242,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "split-transition",
+      "status": "passed",
+      "elapsedMs": 37365,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "analysis-rules",
+      "status": "passed",
+      "elapsedMs": 23565,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "analysis",
+      "status": "passed",
+      "elapsedMs": 78620,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "recovery",
+      "status": "passed",
+      "elapsedMs": 49732,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "print",
+      "status": "passed",
+      "elapsedMs": 35747,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    },
+    {
+      "suite": "popout-3d",
+      "status": "passed",
+      "elapsedMs": 95192,
+      "runId": "2026-11-16T16-11-41-081Z-925c74ea",
+      "sourceContentHash": "f8a0ae7b85c19d9826f7427cacd1e8e1ae8e945a64d487d7a0568788df79703a"
+    }
+  ]
+}

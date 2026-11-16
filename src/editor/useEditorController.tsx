@@ -43,7 +43,6 @@ export function useEditorController() {
   const [workspace, setWorkspace] = useEditorValue('ui', 'workspace');
   const castPanelOpen = useEditorSelector(state => state.ui.castPanelOpen);
   function showCast(mode: 'panel' | 'table' | 'closed') {
-    flushSync(() => (document.activeElement as HTMLElement | null)?.blur());
     // Cast beside the field takes focus once it docks or opens over the field (useWorkspaceLayout), on every route.
     if (dispatch('cast.show', { mode }) === true && mode !== 'panel') requestAnimationFrame(() => {
       const target = document.querySelector<HTMLElement>(mode === 'closed' ? '.selection-bar button' : '[aria-label="Find a performer"]');
@@ -165,7 +164,7 @@ export function useEditorController() {
   function loadProject(next: Project) {
     draftTracker.current.clear();
     patchAudio({ audioDuration: 0, audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '' });
-    dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setWorkspace('design'); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
+    dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
   }
   async function replaceProduction(next: Project, cast = false) {
     try {

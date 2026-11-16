@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { AlignHorizontalJustifyCenter, ArrowDownLeft, ArrowUpRight, Box, Camera, Check, Clock3, FlipHorizontal2, Grid2X2, Hand, Lasso, LayoutGrid, Magnet, MapPin, Maximize, Minus, MoreHorizontal, MousePointer2, Move, Pause, Pencil, Plus, RotateCw, Route, Shapes, SlidersHorizontal, Sparkles, SquareDashed, Tags, Users, Waypoints, X } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, ArrowDownLeft, ArrowUpRight, Box, Camera, Check, Clock3, FlipHorizontal2, Grid2X2, Hand, Lasso, LayoutGrid, Magnet, MapPin, Maximize, Minus, MoreHorizontal, MousePointer2, Move, Pause, Play, Pencil, Plus, RotateCw, Route, Shapes, SlidersHorizontal, Sparkles, SquareDashed, Tags, Users, Waypoints, X } from 'lucide-react';
 import { HelpButton, CommandKeycaps } from './ControlHelp';
 import { fieldAction, fieldToolbar, type FieldAction } from './fieldToolbarModel';
 import type { EditorController } from './useEditorController';
@@ -7,7 +7,7 @@ import { useEditorSelector } from './react';
 import { Popout3DButton } from './Popout3D';
 import './fieldToolbar.css';
 
-const icons = {move:Move,select:MousePointer2,lasso:Lasso,selection:SquareDashed,pan:Hand,all:Users,cancel:X,rotate:RotateCw,shape:Sparkles,align:AlignHorizontalJustifyCenter,place:MapPin,mirror:FlipHorizontal2,path:Waypoints,draw:Pencil,timing:Clock3,route:Route,operations:SlidersHorizontal,saved:Shapes,group:Users,transition:Waypoints,previous:ArrowDownLeft,next:ArrowUpRight,snap:Magnet,settings:SlidersHorizontal,grid:LayoutGrid,labels:Tags,minus:Minus,plus:Plus,fit:Maximize,apply:Check,pause:Pause,camera:Camera};
+const icons = {move:Move,select:MousePointer2,lasso:Lasso,selection:SquareDashed,pan:Hand,all:Users,cancel:X,rotate:RotateCw,shape:Sparkles,align:AlignHorizontalJustifyCenter,place:MapPin,mirror:FlipHorizontal2,path:Waypoints,draw:Pencil,timing:Clock3,route:Route,operations:SlidersHorizontal,saved:Shapes,group:Users,transition:Waypoints,previous:ArrowDownLeft,next:ArrowUpRight,snap:Magnet,settings:SlidersHorizontal,grid:LayoutGrid,labels:Tags,minus:Minus,plus:Plus,fit:Maximize,apply:Check,pause:Pause,play:Play,camera:Camera};
 function Icon({name}:{name:string}) { const Glyph=icons[name as keyof typeof icons]??MousePointer2;return <Glyph size={15} aria-hidden="true"/>; }
 const toolbarItems = (root:HTMLElement) => [...root.querySelectorAll<HTMLButtonElement>('[data-toolbar-item]')].filter(n=>n.getClientRects().length);
 

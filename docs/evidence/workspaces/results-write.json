@@ -1,0 +1,236 @@
+{
+  "checks": [
+    "all built-ins at laptop and desktop sizes preserve the project and give Field at least 470px of height",
+    "keyboard and pointer workspace switches retain an uncommitted draft, project data and undo history",
+    "Cast and Inspector tabs support native pointer and keyboard input; full roster remains reachable",
+    "choosing a tucked Inspector keeps focus in its open panel, and Escape dismisses workspace options from the page",
+    "save, rename, switch, delete and reset use native controls without adding an undo entry",
+    "all themes and 150% UI scale keep the switcher on screen; final custom arrangement is durable"
+  ],
+  "metrics": [
+    {
+      "workspace": "Field",
+      "viewport": [
+        1366,
+        768
+      ],
+      "field": {
+        "x": 42,
+        "y": 98,
+        "width": 1282,
+        "height": 513,
+        "top": 98,
+        "right": 1324,
+        "bottom": 611,
+        "left": 42
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 48,
+        "top": 0,
+        "right": 1366,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Design",
+      "viewport": [
+        1366,
+        768
+      ],
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 856,
+        "height": 513,
+        "top": 98,
+        "right": 1090,
+        "bottom": 611,
+        "left": 234
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 48,
+        "top": 0,
+        "right": 1366,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Production",
+      "viewport": [
+        1366,
+        768
+      ],
+      "field": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 48,
+        "top": 0,
+        "right": 1366,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Rehearse",
+      "viewport": [
+        1366,
+        768
+      ],
+      "field": {
+        "x": 42,
+        "y": 98,
+        "width": 1282,
+        "height": 513,
+        "top": 98,
+        "right": 1324,
+        "bottom": 611,
+        "left": 42
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 48,
+        "top": 0,
+        "right": 1366,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Field",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "field": {
+        "x": 42,
+        "y": 98,
+        "width": 1836,
+        "height": 825,
+        "top": 98,
+        "right": 1878,
+        "bottom": 923,
+        "left": 42
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 48,
+        "top": 0,
+        "right": 1920,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Design",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "field": {
+        "x": 234,
+        "y": 98,
+        "width": 1410,
+        "height": 825,
+        "top": 98,
+        "right": 1644,
+        "bottom": 923,
+        "left": 234
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 48,
+        "top": 0,
+        "right": 1920,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Production",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "field": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 48,
+        "top": 0,
+        "right": 1920,
+        "bottom": 48,
+        "left": 0
+      }
+    },
+    {
+      "workspace": "Rehearse",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "field": {
+        "x": 42,
+        "y": 98,
+        "width": 1836,
+        "height": 825,
+        "top": 98,
+        "right": 1878,
+        "bottom": 923,
+        "left": 42
+      },
+      "overflow": false,
+      "header": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 48,
+        "top": 0,
+        "right": 1920,
+        "bottom": 48,
+        "left": 0
+      }
+    }
+  ]
+}

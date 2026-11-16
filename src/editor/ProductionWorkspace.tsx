@@ -125,7 +125,7 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
               // Empty Notes/Mark cells announce they are editable only in the active row, keeping 128 rows quiet.
               placeholder: column === 4 && row > 0 ? `inherit ${meterText(scorePosition(score,start).meter)}` : active && (column === 3 || column === 5) ? (column === 3 ? 'Add note' : 'Add mark') : undefined,
               readOnly: row === 0 && column === 1,
-              onFocus: () => begin(cell), onBlur: () => { commit(); },
+              onFocus: () => begin(cell), onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => { if (event.currentTarget.closest('[hidden]') || event.relatedTarget instanceof Element && event.relatedTarget.closest('[data-preserve-drafts]')) return; commit(); },
               onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                 if (draftRef.current && !same(draftRef.current, cell) && !commit()) return;
                 if (!draftRef.current && store.getState().ui.pendingDraft) { setError('Finish or cancel the other pending input before editing the sheet.'); return; }

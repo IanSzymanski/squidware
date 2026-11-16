@@ -1,3 +1,4 @@
+import { activeWorkspace } from '../workspaces';
 import { commandRegistry, type CommandArguments, type CommandDefinition, type CommandId } from './commands';
 import { commandUnavailable, type CommandInvocation } from './paletteCommands';
 import { isAtActiveSet } from './editMode';
@@ -30,6 +31,7 @@ export function fieldToolbar(state: EditorState) {
     ['perspective','Perspective'],['front','Front'],['top','Overhead']] as const).map(([preset,label]) => action('view.camera',{preset},'camera',label,`${label} camera`,state.ui.camera.preset===preset)),secondary:[]};
   if (state.playback.playing) return {context:'playback',primary:[action('playback.toggle',undefined,'pause','Pause','Pause playback')],secondary:[action('playback.count-previous',undefined,'previous','Previous count'),action('playback.count-next',undefined,'next','Next count'),...display]};
   if (!isAtActiveSet(state) || state.playback.rehearsalId) return {context:'scrub',primary:[action('set.select',{index:state.selection.activeIndex},'select','Return to set','Return to this set to edit')],secondary:display};
+  if (activeWorkspace(state.preferences.value.workspaces).arrangement.toolbar === 'rehearsal') return {context:'rehearsal',primary:[action('playback.toggle',undefined,'play','Play','Play show')],secondary:display};
   const select = [action('tool.box',undefined,'select','Select','Select performers',state.ui.tool==='select'),action('tool.lasso',undefined,'lasso','Lasso','Lasso selection',state.ui.tool==='lasso'),
     action('selection.tools',undefined,'selection','Selection tools','Selection tools and groups'),action('tool.pan',undefined,'pan','Pan','Pan field',state.ui.tool==='pan'),
     action(selection ? 'selection.clear':'selection.all',undefined,selection?'cancel':'all',selection?'Clear selection':'Select all performers')];

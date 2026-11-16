@@ -353,3 +353,46 @@ test('the confirmation shim answers each in-app confirmation once, like the wind
   assert.deepEqual(clicks, ['Replace .confirm-dialog__confirm', 'Open .confirm-dialog__cancel']);
   assert.deepEqual(JSON.parse(JSON.stringify(context.__qaConfirmations)), [{ title: 'Replace', response: true }, { title: 'Open', response: false }, { title: 'Remove', response: 'manual' }]);
 });
+
+test('right-panel navigation lets the reveal callback finish before activating its requested tab', async () => {
+  const frames = [], listeners = new Set(), activated = [];
+  let visible = false, selected = false, revealed = false;
+  const control = (name, tab) => ({
+    name, disabled: false,
+    focus() { context.document.activeElement = this; },
+    getClientRects() { return visible || tab === 'show' ? [{}] : []; },
+    getAttribute(key) { return key === 'aria-selected' ? String(tab === 'cast' && selected) : null; },
+  });
+  const show = control('Show Inspector','show'), inspector = control('Inspector','inspector'), cast = control('Cast','cast');
+  const page = {addEventListener(_type,listener){listeners.add(listener);},removeEventListener(_type,listener){listeners.delete(listener);}};
+  const context = {window:page,requestAnimationFrame:callback=>frames.push(callback),document:{
+    activeElement:null,hasFocus:()=>true,
+    querySelector:selector=>selector==='#panel-tab-cast'?cast:selector==='#panel-tab-inspector'?inspector:show,
+  }};
+  const window = {webContents:{
+    executeJavaScript:async source=>vm.runInNewContext(source,context),
+    sendInputEvent(event) {
+      if(event.type==='keyDown'&&context.document.activeElement===cast) assert.equal(revealed,true,'Cast must not receive Enter before the queued reveal focus finishes');
+      if(event.type==='char') {
+        const target=context.document.activeElement; activated.push(target.name);
+        if(target===show){visible=true;frames.push(()=>{inspector.focus();revealed=true;});}
+        else if(target===cast)selected=true;
+      }
+      if(event.type==='keyUp')for(const listener of listeners)listener({isTrusted:true,key:'Enter'});
+    },
+  }};
+  let done=false;
+  const navigating=renderer.showRightPanel(window,'cast');
+  navigating.then(()=>{done=true;},()=>{done=true;});
+  const deadline=Date.now()+2000;
+  while(!done){
+    await new Promise(resolve=>setImmediate(resolve));
+    // The application's reveal is already queued; do not deliver it until the
+    // helper has requested its own frame barrier, reproducing the Windows race.
+    if(frames.length>=2||revealed)while(frames.length)frames.shift()();
+    assert.ok(Date.now()<deadline,'navigation should settle with its queued frames');
+  }
+  await navigating;
+  assert.equal(selected,true);
+  assert.deepEqual(activated,['Show Inspector','Cast'],'each control receives exactly one native activation');
+});

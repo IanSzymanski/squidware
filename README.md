@@ -35,6 +35,7 @@ Pause at an arrival set and select one performer to **Edit performer path**. Ref
 | Build on your work | Current tools |
 | --- | --- |
 | Keep formations editable | [Live formations](docs/live-formations.md) retain shape parameters and member slots. Refine [Bézier curves and waves](docs/bezier-formations.md) or preview [seeded scatter](docs/scatter-formations.md) with spacing constraints. |
+| Arrange your tools | Switch Field, Design, Production or Rehearse, and save named [personal workspaces](docs/WORKSPACES.md). |
 | Reuse a starting point | Save anonymous ensemble setups and formation presets in a [personal template library](docs/template-library.md), then preview placement on the current cast. |
 | Compare destinations | [Optimize assignment](docs/assignment-optimization.md) compares travel and movement checks while respecting pins, section slots and explicit role constraints. |
 | Control ensemble travel | Review [formation transitions](docs/formation-transitions.md), or use [shared routes](docs/shared-routes.md) for [follow-the-leader, counter-march and conveyor movement](docs/group-movement.md). Preview connectors, count ticks and spacing/stride findings before committing. |

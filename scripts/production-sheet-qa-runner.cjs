@@ -1,4 +1,5 @@
 'use strict';
+const {showRightPanel}=require('./testing/renderer.cjs');
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
@@ -115,6 +116,7 @@ app.whenReady().then(async () => {
     pass('native Tab/Enter navigate cells and synchronize active set/timeline; invalid edits and Escape preserve data');
     await evaluate('document.activeElement?.blur()'); await click(button('Undo')); await click(button('Undo'));
     assert.deepEqual(await present(),project);
+    await showRightPanel(window,'inspector');
     await type('.inspector .form-row input[type=number]','-1'); await click(cell(0,0));
     assert.equal(await evaluate(state+'.selection.activeIndex'),2);
     assert.equal(await evaluate("document.querySelector('.inspector .form-row input[type=number]').value"),'-1');

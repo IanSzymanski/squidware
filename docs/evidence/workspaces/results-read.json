@@ -1,0 +1,6 @@
+{
+  "checks": [
+    "named custom workspace, widths, right-panel tab and active header survive a new process"
+  ],
+  "metrics": []
+}

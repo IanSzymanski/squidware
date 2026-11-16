@@ -46,7 +46,7 @@ export function useCommandController() {
       if (state.ui.paletteOpen) { if (id === 'palette.open') { event.preventDefault(); store.setValue('ui', 'paletteOpen', false); } return; }
       if (id) {
         const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];
-        if (input && id !== 'palette.open' && !standardFile) return;
+        if (input && id !== 'palette.open' && !id.startsWith('workspace.') && !standardFile) return;
         if (event.repeat && !['playback.count-previous', 'playback.count-next'].includes(id)) return;
         if ((event.code === 'Space' || event.key === ' ') && target.closest('button, summary, a[href], [role="button"], .field-stage__svg')) return;
         event.preventDefault();

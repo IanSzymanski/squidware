@@ -1,3 +1,4 @@
+import { defaultWorkspaces, migrateWorkspaces, validateWorkspaces, type Workspaces } from './workspaces';
 import type { CoordinatePrecision } from './coordinates';
 import { PROJECT_LIMITS } from './projectValidation';
 import { DEFAULT_SNAPPING, validateSnapSettings, type SnapSettings } from './snapping';
@@ -11,7 +12,7 @@ export interface Preferences {
   shortcutBindings: ShortcutBindings;
   theme: 'dark' | 'light' | 'high-contrast'; uiScale: 1 | 1.1 | 1.25 | 1.5;
   panelLayout: 'comfortable' | 'compact'; view: '2d' | '3d';
-  workspaceLayout: WorkspaceLayout; castPanelOpen: boolean;
+  workspaceLayout: WorkspaceLayout; castPanelOpen: boolean; workspaces: Workspaces;
   setThumbnails: boolean;
   showLabels: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; zoom: number;
   selectionHintDismissed: boolean; selectionLabelsOnly: boolean;
@@ -39,7 +40,7 @@ export interface PreferencesBridge {
   resetPreferences: () => Promise<Preferences>;
 }
 export function defaultPreferences(): Preferences {
-  return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
+  return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), workspaces: defaultWorkspaces(), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
     selectionLabelsOnly: false, setThumbnails: false, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
@@ -61,6 +62,7 @@ export function validatePreferences(input: unknown): Preferences {
     if (source[key] === undefined) continue;
     const value = source[key];
     if (key === 'shortcutBindings') { result[key] = validateShortcutBindings(value); continue; }
+    if (key === 'workspaces') { result[key] = validateWorkspaces(value); continue; }
     if (key === 'workspaceLayout') { result[key] = validateWorkspaceLayout(value); continue; }
     if (key === 'snapDefaults') { result[key] = validateSnapSettings(value); continue; }
     if (key === 'popout3dBounds') { result[key] = validatePopoutBounds(value); continue; }
@@ -73,5 +75,6 @@ export function validatePreferences(input: unknown): Preferences {
     if (allowed ? !allowed.includes(value) : range ? typeof value !== 'number' || !Number.isFinite(value) || value < range[0] || value > range[1] || ['formationColumns', 'newSetCounts'].includes(key) && !Number.isInteger(value) : typeof value !== 'boolean') throw new Error(`Invalid preference: ${key}.`);
     result[key] = value;
   }
+  if (source.workspaces === undefined) result.workspaces = migrateWorkspaces(result.workspaceLayout as WorkspaceLayout, result.castPanelOpen as boolean, result.view as '2d' | '3d');
   return result as unknown as Preferences;
 }

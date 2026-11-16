@@ -1,4 +1,5 @@
 'use strict';
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow, dialog } = require('electron');
@@ -82,7 +83,7 @@ app.whenReady().then(async () => {
       await evaluate(`document.querySelector(${JSON.stringify(`[aria-label=${JSON.stringify(sectionButtons[1])}]`)}).focus()`); await key('Return', ['shift']);
       await wait(`${state}.selection.selectedIds.length===5`, 'native Shift-Enter additive section'); assert.deepEqual(await selected(), ids);
       await capture('selection-sections.png');
-      await control('.workspace-tab[aria-label="Cast"]'); await text('[aria-label="Find a performer"]', 'A');
+      await showRightPanel(window,'cast'); await text('[aria-label="Find a performer"]', 'A');
       await control('#workspace-pane-cast [aria-label="Selection tools and groups"]'); await control('[aria-label="Invert visible selection"]');
       assert.deepEqual(await selected(), ids.slice(3)); assert.equal(await evaluate("document.querySelectorAll('.cast-list li.selected').length"), 0);
       assert.ok(await evaluate("document.querySelector('.cast-filter-notice').textContent.includes('2 selected')"));
@@ -97,7 +98,7 @@ app.whenReady().then(async () => {
       await control('[aria-label="Delete group Overlap"]'); await control('[aria-label="Undo"]'); await wait(`${state}.project.present.selectionGroups.length===2`, 'group delete undo');
       assert.deepEqual(await evaluate(`${state}.project.present.sets`), project.sets); assert.deepEqual(await evaluate(`${state}.project.present.performers`), project.performers);
       await capture('selection-groups.png'); pass('overlapping named ID groups, rename validation and delete/undo preserve every position and section');
-      await close(); await control('.workspace-tab[aria-label="Cast"]');
+      await close(); await showRightPanel(window,'cast');
       // Rank/file review is a selection session, not an edit preview.
       await open(); await control('[aria-label="Preview rank"]'); await wait(`!!${state}.ui.selectionPreview`, 'rank preview');
       // The default anchor is A2, already selected. Choose A1 explicitly for the boundary fixture.

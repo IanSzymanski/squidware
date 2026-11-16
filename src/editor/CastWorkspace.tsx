@@ -77,7 +77,8 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
   }
   const content = <>
     <div className="cast-panel-heading"><h2>Cast <span className="count-badge">{project.performers.length}</span></h2><div><SelectionToolsButton controller={controller} />
-      <Button command="cast.show" title={docked ? 'Full Cast table' : 'Dock Cast beside field'} description={docked ? 'Expand Cast to the full table. Keep the selection and filters.' : 'Show Cast beside the field. Keep the selection and filters.'} disabled={locked} disabledReason={lockReason} onClick={() => controller.showCast(docked ? 'table' : 'panel')}>{docked ? <List size={16} /> : <PanelRight size={16} />}</Button>
+
+      <Button title={docked ? 'Full Cast table' : 'Return to Cast panel'} description="Review the full roster table, then return to the right panel." onClick={() => docked ? controller.showCast('table') : controller.setDialog(null)}>{docked ? <List size={16} /> : <PanelRight size={16} />}</Button>
       {docked && <Button command="cast.show" title="Show Inspector" description="Close the Cast panel and show selection tools beside the field." disabled={locked} disabledReason={lockReason} onClick={() => controller.showCast('closed')}><X size={16} /></Button>}
     </div></div>
     <div className="cast-controls"><label className="search-field"><Search size={16} /><input aria-label="Find a performer" placeholder="Find a performer…" value={castQuery} onChange={e => setCastQuery(e.target.value)} /></label><select aria-label="Filter section" value={sectionFilter} onChange={e => setSectionFilter(e.target.value)}><option value="all">All sections</option>{project.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>

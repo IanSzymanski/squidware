@@ -39,7 +39,7 @@ describe('shared Cast selection', () => {
     const project = createDemoProject(); const store = createEditorStore(project); const selected = project.performers.slice(0, 3).map(p => p.id);
     store.setValue('selection', 'selectedIds', selected); store.setValue('ui', 'castQuery', 'B');
     const before = store.getState().project; const file = store.getState().fileSession;
-    for (const mode of ['panel', 'table', 'closed', 'panel'] as const) expect(store.dispatch('cast.show', { mode })).toBe(true);
+    for (const mode of ['panel', 'table', 'closed', 'panel'] as const) { expect(store.dispatch('cast.show', { mode })).toBe(true); if(mode==='table') { expect(store.getState().ui.dialog).toBe('cast-table'); store.setValue('ui','dialog',null); } }
     expect(store.getState().selection.selectedIds).toEqual(selected); expect(store.getState().ui.castQuery).toBe('B');
     expect(store.getState().ui).toMatchObject({ workspace: 'design', castPanelOpen: true });
     expect(store.getState().project).toBe(before); expect(store.getState().fileSession).toBe(file);

@@ -244,3 +244,40 @@ async function revealFieldTool(window, selector) {
   await window.webContents.executeJavaScript(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-tools-menu'))n.scrollIntoView({block:'nearest'});})()`);
 }
 module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport, installConfirmShim, revealFieldTool };
+
+/** Navigate through the unified header using native keyboard activation. */
+async function activateWorkspace(window, id) {
+  const evaluate = code => window.webContents.executeJavaScript(code);
+  if (await evaluate("!!document.querySelector('dialog[open] .cast-table')")) {
+    await keyWithRelease(window, 'Escape', [], {releaseKey:'Escape'});
+    await waitFor(() => evaluate("!document.querySelector('dialog[open] .cast-table')"), 'full Cast dismissed');
+  }
+  await evaluate("document.querySelector('[aria-label=\"Switch workspace\"]').focus()");
+  await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
+  await waitFor(() => evaluate("!!document.querySelector('#workspace-options')"), 'workspace options');
+  const name = id[0].toUpperCase() + id.slice(1);
+  await evaluate(`document.querySelector(${JSON.stringify('#workspace-options [aria-label="'+name+' workspace"]')}).focus()`);
+  await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
+  await waitFor(() => evaluate(`!document.querySelector('#workspace-options') && document.querySelector('.workspace-trigger').textContent===${JSON.stringify(name)}`), name+' workspace');
+  // Existing editing owners explicitly return to Inspector after choosing Design.
+  if (id === 'design') await showRightPanel(window, 'inspector');
+}
+async function showRightPanel(window, tab) {
+  const evaluate = code => window.webContents.executeJavaScript(code);
+  const target = '#panel-tab-'+tab;
+  const show = await evaluate(`!document.querySelector(${JSON.stringify(target)})?.getClientRects().length`);
+  if (show) {
+    await evaluate("document.querySelector('[aria-label=\"Show Cast\"], [aria-label=\"Show Inspector\"]').focus()");
+    await keyWithRelease(window,'Return',[],{releaseKey:'Enter'});
+  }
+  // Revealing the pane queues heading focus in the next animation frame. Its
+  // tabs can be visible before that callback runs, especially on Windows.
+  // Finish reveal/layout before choosing the native key's target.
+  await waitFor(()=>evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(!!document.querySelector(${JSON.stringify(target)})?.getClientRects().length))))`),'right panel reveal settled');
+  await evaluate(`document.querySelector(${JSON.stringify(target)}).focus()`);
+  await waitFor(()=>evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const tab=document.querySelector(${JSON.stringify(target)});resolve(!!tab&&!tab.disabled&&!!tab.getClientRects().length&&document.activeElement===tab&&document.hasFocus());})))`),tab+' tab native focus');
+  await keyWithRelease(window,'Return',[],{releaseKey:'Enter'});
+  await waitFor(()=>evaluate(`document.querySelector(${JSON.stringify(target)}).getAttribute('aria-selected')==='true'`),tab+' tab');
+}
+module.exports.activateWorkspace = activateWorkspace;
+module.exports.showRightPanel = showRightPanel;
