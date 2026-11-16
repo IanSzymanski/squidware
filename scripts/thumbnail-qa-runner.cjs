@@ -94,11 +94,11 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelectorAll('.field-legend button')[1].classList.contains('selected')"), true);
     measurements.emptySectionSelected = await evaluate("document.querySelectorAll('.field-legend button')[4].classList.contains('selected')");
     if (!baseline) assert.equal(measurements.emptySectionSelected, false);
-    await evaluate(`${store}.setValue('ui','workspace','cast')`); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'Cast');
+    await evaluate(`${store}.dispatch('cast.show',{mode:'table'})`); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'Cast');
     assert.equal(await evaluate("document.querySelectorAll('.cast-table tbody input[type=checkbox]:checked').length"), 126);
     await evaluate("document.querySelector('.cast-table tbody input[type=checkbox]').click()"); await pause(90);
     assert.equal(await evaluate(state + '.selection.selectedIds.includes(' + JSON.stringify(id) + ')'), false);
-    await evaluate(`${store}.setValue('ui','workspace','design')`); await pause(90);
+    await evaluate(`${store}.setValue('ui','dialog',null)`); await pause(90);
     assert.equal(await evaluate("document.querySelectorAll('.field-legend button')[1].classList.contains('selected')"), false);
     await counts('undo-section', dispatch('history.undo'), 128); assert.equal((await thumbnail()).color, '#112233');
     await counts('redo-section', dispatch('history.redo'), 128); assert.equal((await thumbnail()).color, project.sections[1].color);

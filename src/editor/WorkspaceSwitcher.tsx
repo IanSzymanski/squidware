@@ -19,7 +19,12 @@ export function WorkspaceSwitcher({ controller: c, layout: l }: { controller: Ed
   useEffect(() => {
     if (!open) return;
     const outside = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) { setOpen(false); setEditing(null); } };
-    document.addEventListener('pointerdown', outside); return () => document.removeEventListener('pointerdown', outside);
+    const focusOutside = (e: FocusEvent) => { if (!root.current?.contains(e.target as Node)) { setOpen(false); setEditing(null); } };
+    const escape = (e: KeyboardEvent) => { if (e.key !== 'Escape' || e.isComposing) return; e.preventDefault(); e.stopPropagation(); close(); };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('focusin', focusOutside);
+    document.addEventListener('keydown', escape, true);
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('focusin', focusOutside); document.removeEventListener('keydown', escape, true); };
   }, [open]);
   useEffect(() => { if (open) root.current?.querySelector<HTMLButtonElement>('.workspace-choice[aria-pressed=true]')?.focus(pointer.current ? { focusVisible: false } as FocusOptions : undefined); }, [open]);
   const rect = root.current?.querySelector('.workspace-trigger')?.getBoundingClientRect();

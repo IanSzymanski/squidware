@@ -15,7 +15,7 @@ export interface Workspaces { active: string; entries: SavedWorkspace[]; notice:
 export const isBuiltInWorkspace = (id: string): id is BuiltInWorkspaceId => (builtInWorkspaceIds as readonly string[]).includes(id);
 export function builtInWorkspace(id: BuiltInWorkspaceId): SavedWorkspace {
   return { id, name: id[0].toUpperCase() + id.slice(1), arrangement: {
-    layout: workspacePreset(id === 'design' || id === 'production' ? 'write' : 'rehearse'),
+    layout: { ...workspacePreset(id === 'design' || id === 'production' ? 'write' : 'rehearse'), ...(id === 'production' ? { setsWidth: 176 } : {}) },
     rightPanel: id === 'production' ? 'cast' : 'inspector', toolbar: id === 'rehearse' ? 'rehearsal' : 'contextual',
     timeline: id === 'field' || id === 'production' ? 'compact' : 'full', view: id === 'rehearse' ? '3d' : '2d', sheet: id === 'production',
   } };

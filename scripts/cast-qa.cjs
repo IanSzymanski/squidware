@@ -1,5 +1,5 @@
-const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { settleNativeViewport } = require('./testing/renderer.cjs');
 

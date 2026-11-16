@@ -1,5 +1,5 @@
-const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
 const { app, BrowserWindow } = require('electron');
@@ -60,6 +60,7 @@ async function openLayout() {
   await wait("!!document.querySelector('#workspace-options')", 'workspace options');
 }
 async function preset(name) {
+  if (await evaluate("!!document.querySelector('.workspace-pane--overlay')")) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'prior panel overlay dismissed'); }
   await evaluate(`${editor}.dispatch('layout.preset',{preset:${JSON.stringify(name.toLowerCase())}})`);
   await wait(`${state}.preferences.value.workspaceLayout.preset==='${name.toLowerCase()}'`, name + ' layout fixture');
 }
@@ -167,7 +168,10 @@ app.whenReady().then(async () => {
           assert.equal(await evaluate("document.querySelector('#workspace-pane-cast').classList.contains('workspace-pane--overlay')"), castOverlay, `${width}x${height}@${zoom} Cast ${castOverlay ? 'opens over' : 'docks beside'} the field`);
           assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'), true, 'Cast fits without overflow');
           await capture(`workspace-cast-${width}-${zoom}.png`);
-          await showRightPanel(window,'inspector'); await wait(`!${state}.ui.castPanelOpen && !document.querySelector('.workspace-pane--overlay')`, 'Design returns to the Inspector');
+          await showRightPanel(window,'inspector'); await wait(`!${state}.ui.castPanelOpen && !document.querySelector('#workspace-pane-inspector').hidden && document.querySelector('#workspace-pane-inspector').contains(document.activeElement)`, 'Inspector tab returns to the visible Inspector with focus');
+          // The tab explicitly opens a tucked Inspector. End that requested
+          // overlay before the next viewport tests automatic tucking from idle.
+          if (await evaluate("!!document.querySelector('.workspace-pane--overlay')")) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'chosen Inspector overlay dismissed before the next size'); }
         }
         assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), savedLayout, 'auto-tucking and overlays leave the saved layout unchanged');
       }

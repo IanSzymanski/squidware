@@ -14,7 +14,7 @@ export function switchWorkspace(c: CommandContext, id: string, reset = false) {
   const target = entries.find(e => e.id === id); if (!target) throw new Error('This workspace is no longer available.');
   const a = target.arrangement;
   c.patch('preferences', { value: { ...p, workspaces: { ...w, active: id, entries, notice: '' }, workspaceLayout: a.layout, castPanelOpen: a.rightPanel === 'cast', view: a.view } });
-  c.patch('ui', { workspace: a.sheet ? 'production' : 'design', castPanelOpen: a.rightPanel === 'cast', view: a.view, focusMode: false });
+  c.patch('ui', { workspace: a.sheet ? 'production' : 'design', workspaceVersion: s.ui.workspaceVersion + 1, castPanelOpen: a.rightPanel === 'cast', view: a.view, focusMode: false });
 }
 export function saveWorkspace(c: CommandContext, raw: string) {
   const s = c.getState(), p = s.preferences.value, w = p.workspaces, name = workspaceName(raw);

@@ -1,5 +1,5 @@
-const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
+const {activateWorkspace,showRightPanel}=require('./testing/renderer.cjs');
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const { waitFor: waitUntil, capturePage, key: sendKey, installConfirmShim } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');

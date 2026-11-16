@@ -108,9 +108,9 @@ app.whenReady().then(async () => {
     assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.EditorShell, 0); assert.equal(diff.InspectorCounts, 0); assert.ok(diff.EditorTimeline > 0);
     await evaluate(`${editor}.dispatch('playback.toggle')`);
     pass('real playback advances geometry and count without redrawing the static field or unrelated shell controls');
-    await evaluate(`${editor}.setValue('ui','workspace','cast'); ${editor}.dispatch('playback.toggle')`); await pause(250);
+    await evaluate(`${editor}.dispatch('workspace.select',{id:'production'}); ${editor}.dispatch('playback.toggle')`); await pause(250);
     diff = await measureRenders('cast-playback', () => pause(400)); assert.equal(diff.CastWorkspace, 0); assert.equal(diff.EditorShell, 0);
-    await evaluate(`${editor}.dispatch('playback.toggle'); ${editor}.setValue('ui','workspace','design'); ${editor}.dispatch('set.select',{index:0})`); await pause(200);
+    await evaluate(`${editor}.dispatch('playback.toggle'); ${editor}.dispatch('workspace.select',{id:'design'}); ${editor}.dispatch('set.select',{index:0})`); await pause(200);
     pass('Cast remains idle during playback');
     diff = await measureRenders('grid-invalidation', () => evaluate(`${editor}.setValue('ui','showGrid', !${state}.ui.showGrid)`)); assert.equal(diff.StaticFieldMarkings, 1);
     diff = await measureRenders('field-invalidation', () => evaluate(`${editor}.dispatch('project.update',{preset:'high-school'})`)); assert.equal(diff.StaticFieldMarkings, 1);

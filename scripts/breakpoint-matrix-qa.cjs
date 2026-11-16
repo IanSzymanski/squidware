@@ -1,5 +1,5 @@
-const {showRightPanel}=require('./testing/renderer.cjs');
 'use strict';
+const {showRightPanel}=require('./testing/renderer.cjs');
 // UI-scale-aware breakpoints (#178): the window size × UI scale matrix shared by the field presentation and
 // accessibility suites. Native window sizes and the UI scale preference drive the layout; assertions read the
 // rendered result (rows, hit tests, drawn field), never the thresholds in src/editor/breakpoints.ts.

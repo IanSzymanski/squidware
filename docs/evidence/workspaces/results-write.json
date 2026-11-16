@@ -3,6 +3,7 @@
     "all built-ins at laptop and desktop sizes preserve the project and give Field at least 470px of height",
     "keyboard and pointer workspace switches retain an uncommitted draft, project data and undo history",
     "Cast and Inspector tabs support native pointer and keyboard input; full roster remains reachable",
+    "choosing a tucked Inspector keeps focus in its open panel, and Escape dismisses workspace options from the page",
     "save, rename, switch, delete and reset use native controls without adding an undo entry",
     "all themes and 150% UI scale keep the switcher on screen; final custom arrangement is durable"
   ],
