@@ -49,18 +49,37 @@ module.exports = async function ({ project, geometry, editor, state, evaluate, w
   assert.equal(await evaluate(`${editor}.dispatch('history.undo')`), false);
   assert.deepEqual(await evaluate(`${state}.selection.selectedIds`), []);
   await type('Route name', 'S stroke'); await click('Draw shared route stroke');
-  await evaluate("document.querySelector('[aria-label=\"Editable shared route field\"]').scrollIntoView({block:'center'})");
-  const matrix = await evaluate("(()=>{const m=document.querySelector('[aria-label=\"Editable shared route field\"]').getScreenCTM();return {a:m.a,b:m.b,c:m.c,d:m.d,e:m.e,f:m.f}})()");
-  const screen = p => ({ x: matrix.a * p.x + matrix.c * p.y + matrix.e, y: matrix.b * p.x + matrix.d * p.y + matrix.f });
+  const drawing = '.field-stage__svg .travel-field.is-drawing';
+  await wait(`!!document.querySelector(${JSON.stringify(drawing)})`, 'shared route stroke mode enabled');
   const physicalPoints = Array.from({ length: 41 }, (_, i) => ({ x: 15 + 70 * i / 40, y: 26 + 10 * Math.sin(i / 40 * Math.PI * 2) }));
-  const points = physicalPoints.map(screen);
+  // Project from the committed drawing surface and use the same coordinates
+  // for hit testing and input. A point behind a panel cannot start a stroke.
+  const projected = await evaluate(`(() => {
+    const field = document.querySelector(${JSON.stringify(drawing)});
+    const matrix = field.getScreenCTM();
+    return ${JSON.stringify(physicalPoints)}.map(point => {
+      const { x, y } = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+      return { point: { x, y }, hit: field.contains(document.elementFromPoint(x, y)) };
+    });
+  })()`);
+  assert.ok(projected.every(({ hit }) => hit), `Route stroke must hit the drawing field: ${JSON.stringify(projected.filter(({ hit }) => !hit))}`);
+  const points = projected.map(({ point }) => point);
+  const pointer = (type, point, button, buttons, clickCount = 0) =>
+    window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button, buttons, clickCount });
+  const capturedPoints = "document.querySelector('.travel-field.is-drawing .travel-stroke')?.points.numberOfItems";
   const began = performance.now();
-  for (let i = 0; i < points.length; i++) {
-    if (!i) { await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...points[i] }); await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', ...points[i], button: 'left', buttons: 1, clickCount: 1 }); }
-    else await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...points[i], button: 'left', buttons: 1 });
+  await pointer('mouseMoved', points[0], 'none', 0);
+  await pointer('mousePressed', points[0], 'left', 1, 1);
+  await wait(`${capturedPoints} === 1`, 'shared route stroke captured its start');
+  for (const [index, point] of points.slice(1).entries()) {
+    await pointer('mouseMoved', point, 'left', 1);
+    // A debugger reply can precede the renderer update on a busy runner.
+    // Observe each rendered point to keep rapid moves from coalescing.
+    await wait(`${capturedPoints} === ${index + 2}`, `shared route stroke captured point ${index + 2}`);
   }
-  await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseReleased', ...points.at(-1), button: 'left', buttons: 0, clickCount: 1 });
-  await wait("Number(document.querySelector('[aria-label=\"Route captured points\"]').textContent.split(' ')[0])>30", 'native captured stroke');
+  await pointer('mouseReleased', points.at(-1), 'left', 0, 1);
+  await wait(`Number(document.querySelector('[aria-label="Route captured points"]')?.textContent.split(' ')[0]) >= ${points.length}
+    && !!document.querySelector('button[aria-label="Fit shared route"]:not([aria-disabled="true"]):enabled')`, 'shared route stroke released and ready to fit');
   assert.deepEqual(await present(), project);
   await click('Fit shared route'); await wait("!document.querySelector('[aria-label=\"Route captured points\"]')", 'fitted native stroke');
   timings.push({ captureAndFitMs: performance.now() - began, sourcePoints: 41 });
