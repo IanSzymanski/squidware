@@ -38,8 +38,9 @@ async function boundedRead(filename, limit, noFollow = false) {
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
-// Desktop QA runners (--<suite>-manifest=…) assert against the small generated demo fixture, not the bundled show.
-const legacyDemo = process.argv.some(argument => /^--[a-z0-9-]+-manifest=/.test(argument));
+// Existing desktop suites retain their small generated fixture. The demo-show
+// suite explicitly exercises the same bundled production as ordinary startup.
+const legacyDemo = process.argv.some(argument => /^--[a-z0-9-]+-manifest=/.test(argument)) && !process.argv.includes('--squidware-showcase-demo');
 const smokeArtifactsArg = process.argv.find(argument => argument.startsWith('--smoke-artifacts='));
 const smokeArtifacts = smokeArtifactsArg?.slice('--smoke-artifacts='.length);
 if (smokeArtifactsArg && (!smokeTest || !smokeArtifacts || !path.isAbsolute(smokeArtifacts))) {

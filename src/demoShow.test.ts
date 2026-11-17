@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createShowcaseProject } from './demoShow';
-import { countToSeconds, totalCounts } from './domain';
+import { countToSeconds, secondsToCount, setStartCount, totalCounts } from './domain';
+import timing from '../scripts/demo-show/space-show-timing.json';
 import { transitionInput } from './analysis/input';
 import { TransitionAnalyzer } from './analysis/engine';
 
@@ -26,4 +27,20 @@ describe('bundled demo production', () => {
     expect(flagged).toEqual(['TE 5 · Layers']);
     expect(project.sets.find(s => s.name === 'TE 5 · Layers')!.notes).toContain('TEACHING FINDING');
   }, 120000);
+  it('aligns every set arrival with the source score timing, including movement gaps', () => {
+    for (let i = 0; i < project.sets.length; i++) {
+      const count = setStartCount(project, i);
+      const movement = timing.movements.find(m => count <= m.offsetCount + m.counts)!;
+      const expected = movement.offsetSeconds + movement.times[count - movement.offsetCount];
+      // The authoring generator adds anchors for arrivals more than 1 ms off
+      // the tempo map and rounds anchors to four decimal places.
+      expect(Math.abs(countToSeconds(project, count) - expected), project.sets[i].name).toBeLessThan(.001);
+      expect(Math.abs(secondsToCount(project, expected) - count), project.sets[i].name).toBeLessThan(.005);
+    }
+  });
+  it('keeps the front ensemble fixed at every authored set', () => {
+    for (const performer of project.performers.filter(p => p.sectionId === 'sec-pit')) {
+      for (const set of project.sets) expect(set.positions[performer.id]).toEqual(project.sets[0].positions[performer.id]);
+    }
+  });
 });
