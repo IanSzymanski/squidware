@@ -1,3 +1,4 @@
+import { isMovementEditor } from './movementEditor';
 import { isNudgeKey } from '../editIncrements';
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
@@ -43,6 +44,7 @@ export function useCommandController() {
       const id = shortcutForEvent(event, state.preferences.value.shortcutBindings, platform, !!window.squidware);
       // Keys inside a confirmation (Escape, Tab, Enter) belong to that dialog.
       if (isModalOpen(state)) return;
+      if (isMovementEditor(state.ui.dialog) && event.key === 'Escape') return;
       if (state.ui.paletteOpen) { if (id === 'palette.open') { event.preventDefault(); store.setValue('ui', 'paletteOpen', false); } return; }
       if (id) {
         const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];

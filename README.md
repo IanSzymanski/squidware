@@ -28,7 +28,7 @@ The workspace adapts to window size and UI scale. The compact transport moves lo
 
 ## Shape the movement
 
-Pause at an arrival set and select one performer to **Edit performer path**. Refine a cubic curve with field handles or exact coordinates, then scrub its count ticks before Apply. **Draw performer path** adds stroke fitting and intermediate anchors; holds and timed submoves let performers depart and arrive independently.
+Pause at an arrival set and select one performer to **Edit performer path**. Refine a cubic curve with field handles or exact coordinates, then scrub its count ticks before Apply. **Draw performer path** and **Edit movement timing** preview on the main field with docked parameters and pinned Apply/Cancel controls. Stroke fitting, intermediate anchors, holds and timed submoves let performers depart and arrive independently.
 
 ![An unapplied Bézier travel-path preview for Tether performer S16 into Lament at 2× field zoom, with draggable handles, exact control coordinates, count ticks and Apply/Cancel controls](docs/images/travel-path.png)
 

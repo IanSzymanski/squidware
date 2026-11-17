@@ -4,7 +4,6 @@ import { AssignmentPanel } from './AssignmentPanel';
 import { FormationTransitionPanel } from './FormationTransitionPanel';
 import { SharedRoutesPanel } from './SharedRoutesPanel';
 import { PathOperationsPanel } from './PathOperationsPanel';
-import { MovementSchedulePanel } from './MovementSchedulePanel';
 import { PathPanel } from './PathPanel';
 import { AudioAlignmentPanel } from './AudioAlignmentPanel';
 import { TempoPanel } from './TempoPanel';
@@ -47,8 +46,6 @@ export function EditorDialogs({ controller }: { controller: EditorController }) 
     {dialog === 'assignment' && <AssignmentPanel controller={controller} />}
     {dialog === 'routes' && <SharedRoutesPanel controller={controller} />}
     {dialog === 'path-operations' && <PathOperationsPanel controller={controller} />}
-    {dialog === 'path-draw' && <MovementSchedulePanel controller={controller} drawInitially />}
-    {dialog === 'movement-schedule' && <MovementSchedulePanel controller={controller} />}
     {dialog === 'path' && <PathPanel controller={controller} />}
     {dialog === 'templates' && <TemplatesPanel controller={controller} />}
     {dialog === 'new' && <NewProductionPanel controller={controller} />}

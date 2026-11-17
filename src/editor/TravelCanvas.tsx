@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { PointerEvent, KeyboardEvent } from 'react';
 import { FieldDrawing } from '../components/Field2D';
 import { formatYards } from '../coordinates';
@@ -9,7 +9,7 @@ import { DRAW_LIMIT, travelTicks, type TravelHandle } from './pathAuthoring';
 import { HelpButton } from './ControlHelp';
 import { formatTimelineCount } from './timelineNavigation';
 
-interface Props {
+export interface TravelPreview {
   project: Project; positions: Record<string, Point>; performerId: string;
   from: Point; to: Point; path?: PerformerPath; original?: PerformerPath; originalFrom?: Point;
   counts: number; transition: Move['transition']; handles: TravelHandle[];
@@ -20,22 +20,46 @@ interface Props {
   onCancelCapture?: () => void;
   onError?: (message: string) => void; onGesture?: (active: boolean) => void;
   label?: string;
+  snapHandles?: boolean;
+  onApply?: () => void; onCancel?: () => void;
   routeMode?: boolean; routeClosed?: boolean; samples?: { count: number; point: Point }[];
 }
 type Gesture = { pointer: number; handle?: TravelHandle; before: Point[]; points: Point[] };
 
-/** One field tab stop. Internal handle navigation never changes cast selection.
- * Screen CTM inversion makes capture/drag independent of zoom and letterboxing. */
-export function TravelCanvas(props: Props) {
-  const { project, from, to, path, original, positions, performerId, counts, transition, handles, onHandle, capture, stroke = [], onStroke, onError, onGesture, selectedRow, onSelectRow } = props;
-  const svg = useRef<SVGSVGElement>(null), gesture = useRef<Gesture | null>(null);
-  const [active, setActive] = useState(''), [zoom, setZoom] = useState(1), [snap, setSnap] = useState(false);
-  const handle = handles.find(h => h.id === active && (!selectedRow || h.rowId === selectedRow)) ?? handles.find(h => h.rowId === selectedRow) ?? (!selectedRow ? handles[0] : undefined);
-  const travels = movementTravels(from, to, path), ticks = props.samples ?? travelTicks(from, to, path, counts, transition);
+export function TravelCanvas(props: TravelPreview) {
+  const [zoom, setZoom] = useState(1), [snap, setSnap] = useState(false);
+  const [activeHandle, setActiveHandle] = useState<TravelHandle>();
+  const { project, from, to } = props;
   const center = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
   const width = (project.field.width + 14) / zoom, height = (project.field.height + 16) / zoom;
   const origin = zoom === 1 ? { x: -7, y: -8 } : { x: Math.max(-7, Math.min(project.field.width + 7 - width, center.x - width / 2)), y: Math.max(-8, Math.min(project.field.height + 8 - height, center.y - height / 2)) };
-  function local(event: PointerEvent<SVGSVGElement>): Point {
+  return <div className="travel-canvas">
+    <div className="schedule-actions">
+      <label className="form-label">Field zoom<select aria-label="Path field zoom" value={zoom} onChange={e => setZoom(Number(e.target.value))}>{[1, 2, 4].map(n => <option key={n} value={n}>{n}×</option>)}</select></label>
+      <HelpButton title="Snap path handles" active={snap} description="Snap handle drags and arrow keys using the production's field snapping settings. Numeric entries remain exact." className="button subtle" onClick={() => setSnap(s => !s)}>Snap handles {snap ? 'on' : 'off'}</HelpButton>
+    </div>
+    <svg className="path-preview" viewBox={`${origin.x} ${origin.y} ${width} ${height}`}>
+      <g pointerEvents="none"><FieldDrawing project={project} positions={props.positions} selectedIds={[props.performerId]} showLabels={false} /></g>
+      <TravelOverlay {...props} zoom={zoom} snap={snap} onActiveHandle={setActiveHandle} />
+    </svg>
+    {!props.capture && <p className="microcopy" role="status" aria-label="Active path handle">{activeHandle ? `${activeHandle.label}: X ${formatYards(activeHandle.point.x)}, Y ${formatYards(activeHandle.point.y)} yd` : 'Straight travel has no control handles. Choose cubic geometry to add them.'}</p>}
+    <TravelDetails {...props} />
+  </div>;
+}
+
+/** This same SVG geometry is mounted inside the main field's transformed group.
+ * CTM inversion includes its zoom, pan, orientation, letterboxing and UI scale. */
+export function TravelOverlay(props: TravelPreview & { zoom: number; snap: boolean; flipped?: boolean; mainField?: boolean; pan?: boolean; scale?: number; onActiveHandle?: (handle: TravelHandle | undefined) => void }) {
+  const { project, from, to, path, original, counts, transition, handles, onHandle, capture, stroke = [], onStroke, onError, onGesture, selectedRow, onSelectRow, snap } = props;
+  const svg = useRef<SVGGElement>(null), gesture = useRef<Gesture | null>(null);
+  const [active, setActive] = useState('');
+  const helpId = useId();
+  // Legacy diagrams scale in field units; the main field keeps a ten-pixel handle target at every zoom.
+  const zoom = props.mainField ? (props.scale ?? 4) / 4 : props.zoom;
+  const handle = handles.find(h => h.id === active && (!selectedRow || h.rowId === selectedRow)) ?? handles.find(h => h.rowId === selectedRow) ?? (!selectedRow ? handles[0] : undefined);
+  useEffect(() => { props.onActiveHandle?.(handle); }, [handle, props.onActiveHandle]);
+  const travels = movementTravels(from, to, path), ticks = props.samples ?? travelTicks(from, to, path, counts, transition);
+  function local(event: PointerEvent<SVGGElement>): Point {
     const matrix = svg.current?.getScreenCTM();
     if (!matrix) throw new Error('Field coordinates are unavailable.');
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
@@ -63,6 +87,7 @@ export function TravelCanvas(props: Props) {
     const result = moveSelection({ handle: h.point }, ['handle'], { x: p.x - h.point.x, y: p.y - h.point.y }, project.field, project.snapping, snap, 'handle', { x: p.x !== h.point.x, y: p.y !== h.point.y, advance });
     onHandle(h, result.handle);
   }
+  useEffect(() => () => { onGesture?.(false); }, []);
   function rollback() {
     const g = gesture.current;
     if (!g) return false;
@@ -71,8 +96,9 @@ export function TravelCanvas(props: Props) {
     if (svg.current?.hasPointerCapture(g.pointer)) svg.current.releasePointerCapture(g.pointer);
     onGesture?.(false); return true;
   }
-  function start(event: PointerEvent<SVGSVGElement>) {
-    if (event.button !== 0 || gesture.current) return;
+  function start(event: PointerEvent<SVGGElement>) {
+    if (event.button !== 0 || event.altKey || props.pan || gesture.current) return;
+    event.stopPropagation();
     const target = (event.target as Element).closest('[data-travel-handle]');
     const h = handles.find(item => item.id === target?.getAttribute('data-travel-handle'));
     if (h && !capture) {
@@ -95,7 +121,7 @@ export function TravelCanvas(props: Props) {
     }
     svg.current?.setPointerCapture(event.pointerId); onGesture?.(true);
   }
-  function update(event: PointerEvent<SVGSVGElement>) {
+  function update(event: PointerEvent<SVGGElement>) {
     const g = gesture.current;
     if (!g || g.pointer !== event.pointerId) return;
     const p = local(event);
@@ -107,7 +133,7 @@ export function TravelCanvas(props: Props) {
       g.points.push(p); onStroke?.([...g.points]);
     }
   }
-  function finish(event: PointerEvent<SVGSVGElement>) {
+  function finish(event: PointerEvent<SVGGElement>) {
     if (gesture.current?.pointer !== event.pointerId) return;
     const g = gesture.current;
     if (g.handle) update(event);
@@ -122,46 +148,51 @@ export function TravelCanvas(props: Props) {
     if (svg.current?.hasPointerCapture(event.pointerId)) svg.current.releasePointerCapture(event.pointerId);
     onGesture?.(false);
   }
-  function keyboard(event: KeyboardEvent<SVGSVGElement>) {
+  function keyboard(event: KeyboardEvent<SVGGElement>) {
+    if (event.nativeEvent.isComposing) return;
     if (event.key === 'Escape') {
       if (rollback()) { event.preventDefault(); event.stopPropagation(); return; }
       if (capture) { event.preventDefault(); event.stopPropagation(); props.onCancelCapture?.(); return; }
     }
+    if (event.key === 'Escape' && props.onCancel) { event.preventDefault(); event.stopPropagation(); props.onCancel(); return; }
+    if (event.key === 'Enter' && props.onApply) { event.preventDefault(); event.stopPropagation(); props.onApply(); return; }
     if (capture || !handle || gesture.current) return;
     if (event.key === '[' || event.key === ']') {
-      event.preventDefault(); const available = handles.filter(h => !selectedRow || h.rowId === selectedRow), i = available.findIndex(h => h.id === handle.id), next = available[(i + (event.key === ']' ? 1 : available.length - 1)) % available.length];
+      event.preventDefault(); event.stopPropagation(); const available = handles.filter(h => !selectedRow || h.rowId === selectedRow), i = available.findIndex(h => h.id === handle.id), next = available[(i + (event.key === ']' ? 1 : available.length - 1)) % available.length];
       setActive(next.id); onSelectRow?.(next.rowId); return;
     }
-    const step = event.shiftKey ? 1 : .1;
+    const step = (event.shiftKey ? 1 : .1) * (props.flipped ? -1 : 1);
     const deltas: Record<string, Point> = { ArrowLeft: { x: -step, y: 0 }, ArrowRight: { x: step, y: 0 }, ArrowUp: { x: 0, y: -step }, ArrowDown: { x: 0, y: step } };
     const delta = deltas[event.key];
-    if (delta) { event.preventDefault(); move(handle, { x: handle.point.x + delta.x, y: handle.point.y + delta.y }, true); }
+    if (delta) { event.preventDefault(); event.stopPropagation(); move(handle, { x: handle.point.x + delta.x, y: handle.point.y + delta.y }, true); }
   }
-  const description = props.routeMode ? capture ? 'Draw a free route, or place anchors. Closed strokes must finish near their start; anchor mode adds an explicit closing segment. Escape cancels the capture.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.' : capture ? 'Draw from the start square to the end square. Stroke endpoints snap within 8 screen pixels. Fit stroke reviews the captured, attached polyline.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.';
   const endpoints = capture ? [props.captureFrom ?? from, props.captureTo ?? to] : [from, to];
-  return <div className="travel-canvas">
-    <div className="schedule-actions">
-      <label className="form-label">Field zoom<select aria-label="Path field zoom" value={zoom} onChange={e => setZoom(Number(e.target.value))}>{[1, 2, 4].map(n => <option key={n} value={n}>{n}×</option>)}</select></label>
-      <HelpButton title="Snap path handles" active={snap} description="Snap handle drags and arrow keys using the production's field snapping settings. Numeric entries remain exact." className="button subtle" onClick={() => setSnap(s => !s)}>Snap handles {snap ? 'on' : 'off'}</HelpButton>
-    </div>
-    <svg ref={svg} className={`path-preview travel-field ${capture ? 'is-drawing' : ''}`} viewBox={`${origin.x} ${origin.y} ${width} ${height}`} tabIndex={0} role="group" aria-label={props.label ?? 'Editable travel field'} aria-describedby="travel-field-help"
+  return <g ref={svg} className={`travel-field ${capture ? 'is-drawing' : ''}`} tabIndex={0} role="group" aria-label={props.label ?? 'Editable travel field'} aria-describedby={helpId}
       onPointerDown={start} onPointerMove={update} onPointerUp={finish} onPointerCancel={() => rollback()} onLostPointerCapture={() => rollback()} onKeyDown={keyboard}>
-      <g pointerEvents="none"><FieldDrawing project={project} positions={positions} selectedIds={[performerId]} showLabels={false} />{(!props.routeMode || original) && <path className="path-original" d={movementSvg(props.originalFrom ?? from, to, original)} />}</g>
+      <desc id={helpId}>Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Alt-drag or middle-drag pans; scroll zooms. Escape rolls back a drag, then exits drawing, then cancels the editor. Use numeric anchors in the panel for keyboard drawing. {handle ? `${handle.label}: X ${formatYards(handle.point.x)}, Y ${formatYards(handle.point.y)} yd.` : 'No active control handle.'}</desc>
+      <rect x={-7} y={-8} width={project.field.width + 14} height={project.field.height + 16} fill="transparent" />
+      {(!props.routeMode || original) && <path className="path-original" pointerEvents="none" d={movementSvg(props.originalFrom ?? from, to, original)} />}
       {travels.map(part => <g key={part.segment.id}>
         <path className={`path-proposed ${part.segment.id === selectedRow ? 'is-selected' : ''}`} d={movementSvg(part.from, part.to, { segments: [part.segment] })} pointerEvents="none" />
         {onSelectRow && !capture && <path data-travel-segment={part.segment.id} className="travel-segment-hit" d={movementSvg(part.from, part.to, { segments: [part.segment] })} />}
       </g>)}
-      <g className="travel-ticks" pointerEvents="none">{ticks.map(({ count, point }, i) => <g key={count} data-travel-count={count} transform={`translate(${point.x} ${point.y})`}><circle r={.18 / zoom} />{tickLabel(i) && <text x={.45 / zoom} y={-1 / zoom} fontSize={3 / zoom}>{tickLabel(i)}</text>}</g>)}</g>
+      <g className="travel-ticks" pointerEvents="none">{ticks.map(({ count, point }, i) => <g key={count} data-travel-count={count} transform={`translate(${point.x} ${point.y})`}><circle r={.18 / zoom} />{tickLabel(i) && <text transform={props.flipped ? "rotate(180)" : undefined} x={.45 / zoom} y={-1 / zoom} fontSize={3 / zoom}>{tickLabel(i)}</text>}</g>)}</g>
       {!capture && <g className="path-polygon">{travels.map(({ from: a, to: b, segment: s }) => s.kind === 'cubic' && <path key={s.id} d={`M${a.x} ${a.y}L${s.control1.x} ${s.control1.y}M${b.x} ${b.y}L${s.control2.x} ${s.control2.y}`} pointerEvents="none" />)}
         {handles.filter(h => !selectedRow || h.rowId === selectedRow).map(h => <g key={h.id} data-travel-handle={h.id} className={`travel-handle ${h.id === handle?.id ? 'is-active' : ''}`} aria-label={h.label} transform={`translate(${h.point.x} ${h.point.y})`}>
-          <circle className="travel-handle-hit" r={2.5 / zoom} /><circle r={.6 / zoom} /><text x={1 / zoom} y={-1 / zoom} style={{fontSize: `${3 / zoom}px`}}>{h.kind === 'start' ? 'S' : h.kind === 'arrival' ? 'A' : h.kind === 'control1' ? '1' : '2'}</text>
+          <circle className="travel-handle-hit" r={2.5 / zoom} /><circle r={.6 / zoom} /><text transform={props.flipped ? "rotate(180)" : undefined} x={1 / zoom} y={-1 / zoom} style={{fontSize: `${3 / zoom}px`}}>{h.kind === 'start' ? 'S' : h.kind === 'arrival' ? 'A' : h.kind === 'control1' ? '1' : '2'}</text>
         </g>)}
       </g>}
-      <g className="travel-endpoints" pointerEvents="none">{endpoints.map((p, i) => <g key={i} transform={`translate(${p.x} ${p.y})`}><rect x={-.6 / zoom} y={-.6 / zoom} width={1.2 / zoom} height={1.2 / zoom} /><text x={1 / zoom} y={2.5 / zoom} fontSize={3 / zoom}>{props.routeClosed ? i ? '' : 'Seam' : i ? 'End' : 'Start'}</text></g>)}</g>
+      <g className="travel-endpoints" pointerEvents="none">{endpoints.map((p, i) => <g key={i} transform={`translate(${p.x} ${p.y})`}><rect x={-.6 / zoom} y={-.6 / zoom} width={1.2 / zoom} height={1.2 / zoom} /><text transform={props.flipped ? "rotate(180)" : undefined} x={1 / zoom} y={2.5 / zoom} fontSize={3 / zoom}>{props.routeClosed ? i ? '' : 'Seam' : i ? 'End' : 'Start'}</text></g>)}</g>
       {!!stroke.length && <polyline className="travel-stroke" points={stroke.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)).map(p => `${p.x},${p.y}`).join(' ')} pointerEvents="none" />}
-    </svg>
-    <p className="microcopy" id="travel-field-help">{description} Zoom centers on the endpoints. {props.routeMode ? 'Route endpoints are independent of set pictures.' : 'Square endpoints stay attached to the sets.'}</p>
-    {!capture && <p className="microcopy" role="status" aria-label="Active path handle">{handle ? `${handle.label}: X ${formatYards(handle.point.x)}, Y ${formatYards(handle.point.y)} yd` : 'Straight travel has no control handles. Choose cubic geometry to add them.'}</p>}
+    </g>;
+}
+
+export function TravelDetails(props: TravelPreview & { mainField?: boolean }) {
+  const { from, to, path, counts, transition, capture } = props;
+  const ticks = props.samples ?? travelTicks(from, to, path, counts, transition);
+  const description = props.routeMode ? capture ? 'Draw a free route, or place anchors. Closed strokes must finish near their start; anchor mode adds an explicit closing segment. Escape cancels the capture.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.' : capture ? 'Draw from the start square to the end square. Stroke endpoints snap within 8 screen pixels. Fit stroke reviews the captured, attached polyline.' : 'Click a segment or handle. Brackets select handles; arrows move 0.1 yard, Shift arrows 1 yard. Numeric coordinates are also available. Escape cancels an active drag.';
+  return <div className="travel-details">
+    <p className="microcopy">{description} {props.mainField ? 'Use the main field zoom and Alt-drag to pan.' : 'Zoom centers on the endpoints.'} {props.routeMode ? 'Route endpoints are independent of set pictures.' : 'Square endpoints stay attached to the sets.'}</p>
     <details><summary>{props.routeMode ? 'Distance tick coordinates · yards' : 'Count tick coordinates · includes holds'}</summary><div className="travel-tick-table"><table><thead><tr><th>{props.routeMode ? 'Distance yd' : 'Count'}</th><th>X yd</th><th>Y yd</th></tr></thead><tbody>{ticks.map(({ count, point }) => <tr key={count}><td>{props.routeMode ? formatYards(count) : formatTimelineCount(count)}</td><td>{formatYards(point.x)}</td><td>{formatYards(point.y)}</td></tr>)}</tbody></table></div></details>
   </div>;
 }

@@ -34,7 +34,8 @@ function instrument() {
     onCommitFiberRoot(_id, r) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; visit(f.child); visit(f.sibling); } visit(r.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
 async function click(selector) { await revealFieldTool(window,selector);
-  const point = await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}); if(!e) throw Error('Missing '+${JSON.stringify(selector)}); e.scrollIntoView({block:'nearest'}); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+  await evaluate(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({block:'nearest'})`);await frames();
+  const point = await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}); if(!e) throw Error('Missing '+${JSON.stringify(selector)}); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
   for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
   await frames();
 }
@@ -56,6 +57,8 @@ const apply = '[aria-label="Apply movement timing"]';
 async function openSchedule() {
  await evaluate('document.activeElement?.blur()');await click(button('Edit movement timing'));
  await wait(`${state}.ui.dialog==='movement-schedule'`,'schedule editor');
+ assert.equal(await evaluate("document.querySelectorAll('dialog[open],.movement-schedule-panel svg').length"),0);
+ assert.equal(await evaluate("!!document.querySelector('.field-stage__svg .travel-field')"),true);
 }
 async function choose(name,value) { await selectNativeOption(window,button(name),value);await frames(); }
 async function fillSchedule() {
@@ -91,8 +94,10 @@ app.whenReady().then(async()=>{
   await choose('Interval 1 movement','line');await fillSchedule();
   assert.match(await evaluate("document.querySelector('[aria-label=\"Movement schedule summary\"]').textContent"),/Hold 0–2; Travel 2–6; Hold 6–8; Curve 8–12; Hold 12–16/);
   assert.match(await evaluate("document.querySelector('[aria-label=\"Movement preview position\"]').textContent"),/: X 20, Y 25 yd/);
+  assert.equal(await evaluate("document.querySelector('.field-stage__svg [data-performer-id=a]').getAttribute('transform')"),'translate(20 25)');
+  assert.equal(await evaluate("document.querySelectorAll('.field-readout').length"),0);
   await evaluate("document.querySelector('[data-schedule-row=\"0\"]').scrollIntoView({block:'start'})");await capture('schedule-intervals.png');
-  await evaluate("document.querySelector('.path-preview').scrollIntoView({block:'center'})");await capture('schedule-preview.png');assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);
+  await evaluate("document.querySelector('.field-stage__svg .travel-field').scrollIntoView({block:'center'})");await capture('schedule-preview.png');assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);
   await type(button('Interval 2 Start count'),5);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');
   assert.match(await evaluate("document.querySelector('.movement-schedule-panel [role=alert]').textContent"),/overlaps/);await capture('schedule-invalid.png');
   await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'cancel');assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.ui.pendingDraft'),false);

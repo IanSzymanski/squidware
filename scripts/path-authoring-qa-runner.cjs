@@ -136,9 +136,52 @@ app.whenReady().then(async () => { try {
   await press('Escape');assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);
   pass('native freehand capture, attachment rejection, explicit capture reversal and canceled fit');
 
+  // The docked editor uses the existing field viewport, with no modal or inset.
+  await load(p);await evaluate(`${editor}.setValue('ui','zoom',1.25);${editor}.dispatch('schedule.open')`);await frames();
+  assert.equal(await evaluate("document.querySelectorAll('dialog[open],.movement-schedule-panel svg').length"),0);
+  assert.equal(await evaluate("!!document.querySelector('.field-stage__svg [data-field-geometry] .travel-field')"),true);
+  assert.equal(await evaluate(state+'.ui.zoom'),1.25);
+  await selectNativeOption(window,button('Interval 1 movement'),'cubic');
+  for (const [name,value] of [['Control 1 X',18],['Control 1 Y',20],['Control 2 X',25],['Control 2 Y',22]]) await type(`Interval 1 ${name}`,value);
+  await evaluate("document.querySelector('.travel-field').focus()");await press('Right');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Interval 1 Control 1 X\"]').value"),'18.1');
+  const beforePan=await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')");
+  const center=await field({x:20,y:20});
+  for(const [type,x] of [['mouseDown',center.x],['mouseMove',center.x+40],['mouseUp',center.x+40]]) {
+    window.webContents.sendInputEvent({type,x:Math.round(x),y:Math.round(center.y),button:'middle',modifiers:type==='mouseMove'?['middleButtonDown']:[]});await frames();
+  }
+  assert.notEqual(await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')"),beforePan);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'})`);await frames();
+  await evaluate("document.querySelector('.travel-field').focus()");await press('Right');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Interval 1 Control 1 X\"]').value"),'18');
+  start=await field({x:18,y:20});end=await field({x:20,y:22});await mouse('mousePressed',start);await mouse('mouseMoved',end);await press('Escape');await mouse('mouseReleased',end);
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Interval 1 Control 1 X\"]').value"),'18');
+  assert.equal(await evaluate(state+'.ui.dialog'),'movement-schedule');
+  await capture('authoring-docked-flipped.png');await press('Escape');assert.deepEqual(await present(),p);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom'});${editor}.setValue('ui','zoom',1)`);await frames();
+  pass('docked geometry uses the current main zoom, supports native pan and flipped keyboard/drag rollback, and has no modal or inset field');
+
+  await load(p);
+  const layoutBefore=await evaluate(`${state}.preferences.value.workspaceLayout`);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,workspaceLayout:{...${state}.preferences.value.workspaceLayout,inspectorCollapsed:true}});${editor}.setValue('ui','focusMode',true);${editor}.dispatch('schedule.open')`);await frames();
+  assert.equal(await evaluate("!!document.querySelector('.studio--focus')"),false);
+  assert.equal(await evaluate("document.querySelector('#workspace-pane-inspector').hidden"),false);
+  assert.equal(await evaluate("document.querySelectorAll('.field-readout').length"),0);
+  assert.equal(await evaluate(`${state}.preferences.value.workspaceLayout.inspectorCollapsed`),true);
+  await press('Escape');await frames();
+  assert.equal(await evaluate("!!document.querySelector('.studio--focus')"),true);
+  await evaluate(`${editor}.setValue('ui','focusMode',false);${editor}.setValue('preferences','value',{...${state}.preferences.value,workspaceLayout:${JSON.stringify(layoutBefore)}})`);await frames();
+  pass('collapsed Inspector and focus mode are temporarily restored for movement parameters without changing saved layout; readout cannot cover path geometry');
+
   const zoomSamples=[];
   for(const zoom of [1,2]) {
-    await load(p);await evaluate(`${editor}.dispatch('path.draw-open')`);await frames();await selectNativeOption(window,button('Path field zoom'),String(zoom));
+    await load(p);await evaluate(`${editor}.dispatch('path.draw-open')`);await frames();await evaluate(`${editor}.setValue('ui','zoom',${zoom})`);await frames();
+    if(zoom>1) {
+      const pan=await evaluate("(()=>{const s=document.querySelector('.field-stage__svg'),m=document.querySelector('[data-field-geometry]').getScreenCTM(),r=s.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,dx:30*m.a,dy:10*m.d};})()");
+      for(const [type,x,y] of [['mouseDown',pan.x,pan.y],['mouseMove',pan.x+pan.dx,pan.y+pan.dy],['mouseUp',pan.x+pan.dx,pan.y+pan.dy]]) {
+        window.webContents.sendInputEvent({type,x:Math.round(x),y:Math.round(y),button:'middle',modifiers:type==='mouseMove'?['middleButtonDown']:[]});await frames();
+      }
+    }
     const forward=[...points].reverse();await mouse('mousePressed',await field(forward[0]));for(const point of forward.slice(1))await mouse('mouseMoved',await field(point));await mouse('mouseReleased',await field(forward.at(-1)));
     await click(button('Fit drawn path'));await frames();
     assert.ok(await evaluate("document.querySelectorAll('[data-schedule-row]').length")>1);
@@ -151,8 +194,8 @@ app.whenReady().then(async () => { try {
   assert.equal(await evaluate("!!document.querySelector('[aria-label=\"Cancel drawn stroke\"]')"),false);assert.equal(await evaluate(state+'.ui.dialog'),'path-draw');await press('Escape');assert.equal(await evaluate(state+'.ui.dialog'),null);
   pass('native field-space strokes at 1x/2x agree within 0.35 yd including pixel quantization; Escape exits capture then dialog');
 
-  for(const [theme,width,scale] of [['light',1366,1],['high-contrast',1366,1],['dark',1024,1.5]]) {
-    await load(p);await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)},uiScale:${scale}})`);window.setContentSize(width,768);await settleNativeViewport(window,'authoring theme');
+  for(const [theme,width,scale] of [['dark',1366,1],['light',1366,1],['high-contrast',1366,1],['dark',1024,1.5]]) {
+    await load(p);await evaluate(`${editor}.dispatch('field.fit');${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)},uiScale:${scale}})`);window.setContentSize(width,768);await settleNativeViewport(window,'authoring theme');
     await evaluate(`${editor}.dispatch('path.draw-open')`);await frames();await click(button('Place path anchors'));await capture(`authoring-${theme}-${width}.png`);await evaluate("document.querySelector('.travel-field').scrollIntoView({block:'center'})");await capture(`authoring-field-${theme}-${width}.png`);
     for(const name of ['Fit drawn path','Cancel drawn stroke','Apply movement timing']) { await evaluate(`document.querySelector(${JSON.stringify(button(name))}).scrollIntoView({block:'nearest'})`); assert.ok(await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(button(name))}).getBoundingClientRect();return r.width>0&&r.top>=0&&r.bottom<=innerHeight})()`)); }
     await press('Escape');
