@@ -47,6 +47,57 @@ async function mouse(type, p, button = 'left') {
   await frames();
 }
 async function field(p) { return evaluate(`(()=>{const s=document.querySelector('.travel-field');s.scrollIntoView({block:'center'});const p=new DOMPoint(${p.x},${p.y}).matrixTransform(s.getScreenCTM());return {x:p.x,y:p.y};})()`); }
+async function panToStroke(points) {
+  // Compute the drag from the current viewBox. Start far enough left that
+  // the whole drag stays in the field, even when moving over half its width.
+  const { center, start, end, hit } = await evaluate(`(() => {
+    const field = document.querySelector('.field-stage__svg');
+    const view = field.viewBox.baseVal;
+    const points = ${JSON.stringify(points)};
+    const mid = axis => {
+      const values = points.map(point => point[axis]);
+      return (Math.min(...values) + Math.max(...values)) / 2;
+    };
+    const center = { x: mid('x'), y: mid('y') };
+    const x = view.x + view.width / 4, y = view.y + view.height / 2;
+    const project = (x, y) => {
+      const p = new DOMPoint(x, y).matrixTransform(field.getScreenCTM());
+      return { x: p.x, y: p.y };
+    };
+    const start = project(x, y);
+    const end = project(x + view.x + view.width / 2 - center.x, y + view.y + view.height / 2 - center.y);
+    const hits = point => Boolean(document.elementFromPoint(point.x, point.y)?.closest('.travel-field.is-drawing'));
+    return { center, start, end, hit: hits(start) && hits(end) };
+  })()`);
+  assert.ok(hit, 'Both ends of the pan must hit the drawing field');
+  // CDP sends the same trusted Alt-drag on each platform with the held button
+  // explicit. A window-level pointer acknowledgement alone cannot prove pan.
+  const send = (type, point, button, buttons) => window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+    type, ...point, button, buttons, modifiers: 1, clickCount: type === 'mouseMoved' ? 0 : 1,
+  });
+  await send('mouseMoved', start, 'none', 0);
+  await send('mousePressed', start, 'left', 1);
+  await send('mouseMoved', end, 'none', 1);
+  await send('mouseReleased', end, 'left', 0);
+  await wait(`(() => {
+    const view = document.querySelector('.field-stage__svg').viewBox.baseVal;
+    return Math.abs(view.x + view.width / 2 - ${center.x}) < .5
+      && Math.abs(view.y + view.height / 2 - ${center.y}) < .5;
+  })()`, '2× field panned to the stroke');
+}
+async function visibleStrokePoints(points) {
+  const projected = await evaluate(`(() => {
+    const drawing = document.querySelector('.travel-field.is-drawing');
+    const matrix = drawing.getScreenCTM();
+    return ${JSON.stringify(points)}.map(({ x, y }) => {
+      const p = new DOMPoint(x, y).matrixTransform(matrix);
+      const screen = { x: Math.round(p.x), y: Math.round(p.y) };
+      return { ...screen, hit: drawing.contains(document.elementFromPoint(screen.x, screen.y)) };
+    });
+  })()`);
+  assert.ok(projected.every(point => point.hit), `Stroke must fit the drawing field: ${JSON.stringify(projected)}`);
+  return projected;
+}
 async function type(name, value) {
   await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(button(name))});n.focus();n.select();})()`);
   await window.webContents.debugger.sendCommand('Input.insertText', { text: String(value) }); await frames();
@@ -188,15 +239,18 @@ app.whenReady().then(async () => { try {
   pass('collapsed Inspector and focus mode are temporarily restored for movement parameters without changing saved layout; readout cannot cover path geometry');
 
   const zoomSamples=[];
+  const forward=[...points].reverse();
   for(const zoom of [1,2]) {
-    await load(p);await evaluate(`${editor}.dispatch('path.draw-open')`);await frames();await evaluate(`${editor}.setValue('ui','zoom',${zoom})`);await frames();
-    if(zoom>1) {
-      const pan=await evaluate("(()=>{const s=document.querySelector('.field-stage__svg'),m=document.querySelector('[data-field-geometry]').getScreenCTM(),r=s.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,dx:30*m.a,dy:10*m.d};})()");
-      for(const [type,x,y] of [['mouseDown',pan.x,pan.y],['mouseMove',pan.x+pan.dx,pan.y+pan.dy],['mouseUp',pan.x+pan.dx,pan.y+pan.dy]]) {
-        await mouse(type==='mouseDown'?'mousePressed':type==='mouseUp'?'mouseReleased':'mouseMoved',{x,y},'middle');
-      }
-    }
-    const forward=[...points].reverse();await mouse('mousePressed',await field(forward[0]));for(const point of forward.slice(1))await mouse('mouseMoved',await field(point));await mouse('mouseReleased',await field(forward.at(-1)));
+    await load(p);
+    await evaluate(`${editor}.dispatch('field.fit');${editor}.dispatch('path.draw-open');${editor}.setValue('ui','zoom',${zoom})`);
+    await frames();
+    assert.equal(await evaluate(`${state}.ui.zoom`), zoom);
+    if (zoom === 2) await panToStroke(forward);
+    const screen = await visibleStrokePoints(forward);
+    await mouse('mousePressed', screen[0]);
+    await wait("!!document.querySelector('.travel-stroke')", `stroke capture started at ${zoom}×`);
+    for (const point of screen.slice(1)) await mouse('mouseMoved', point);
+    await mouse('mouseReleased', screen.at(-1));
     await click(button('Fit drawn path'));
     await wait("!document.querySelector('[aria-label=\"Fit drawn path\"]')", `fitted captured stroke at ${zoom}x`);
     assert.ok(await evaluate("document.querySelectorAll('[data-schedule-row]').length")>1);
