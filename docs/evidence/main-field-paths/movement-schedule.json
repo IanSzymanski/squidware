@@ -1,0 +1,83 @@
+{
+  "checks": [
+    "explicit single selection, native interval/control/waypoint input, implicit gaps, overlapping validation and Escape preserve production/history",
+    "independent A/B schedules, one transaction each, atomic undo/redo, analytic boundary scrubs and live stationary A while B/show clock advance",
+    "v6 native save/reopen, CSV/PDF, safe path-editor routing, themes and narrow 150% keyboard apply retain identities and independent timing"
+  ],
+  "viewports": [
+    {
+      "name": "schedule-before.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-intervals.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-preview.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-invalid.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-applied.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-dark.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-light.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-high-contrast.png",
+      "width": 1366,
+      "height": 768,
+      "fieldHeight": 513
+    },
+    {
+      "name": "schedule-enlarged.png",
+      "width": 683,
+      "height": 480,
+      "fieldHeight": 250.33334350585938
+    }
+  ],
+  "liveHold": {
+    "before": {
+      "count": 6.511224489795918,
+      "a": "translate(20 25)",
+      "b": "translate(25.022448979591836 12.511224489795918)"
+    },
+    "after": {
+      "count": 7.289092970521541,
+      "a": "translate(20 25)",
+      "b": "translate(26.57818594104308 13.28909297052154)"
+    }
+  },
+  "source": {
+    "revision": "18ff041b29adf63d67f1c3349417454cf0d6edca",
+    "tree": "29b134f1327b8e11652e36f65f66f24659c0812c",
+    "dirty": true,
+    "contentHash": "39fecac384808c4c65a985550e34c683d5c3f4fa6d0a38dd6b921d6f47fe45a7",
+    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+  },
+  "scope": "targeted"
+}

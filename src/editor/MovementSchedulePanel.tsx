@@ -1,83 +1,52 @@
-import { useEffect, useState } from 'react';
-import { Modal } from '../components/Modal';
+import { useLayoutEffect, useRef } from 'react';
 import { FormattedNumberInput, formattedNumber } from '../components/NumberField';
 import { formatYards } from '../coordinates';
 import { Tooltip } from '../components/Tooltip';
-import { TravelCanvas } from './TravelCanvas';
+import { TravelDetails } from './TravelCanvas';
 import { DrawTravel } from './DrawTravel';
-import { moveTravelHandle, selectedTravel, travelHandles } from './pathAuthoring';
-import type { Point } from '../types';
-import { PROJECT_LIMITS, sampleProject, setStartCount, validateProject } from '../domain';
+import { PROJECT_LIMITS } from '../domain';
 import { movementLength, movementSchedule } from '../movementPaths';
 import { HelpButton } from './ControlHelp';
-import { editMovementSchedule, newScheduleRow, pathFromRows, scheduleRows } from './movementScheduleEditing';
-import type { ScheduleEdit, ScheduleRow } from './movementScheduleEditing';
+import { newScheduleRow } from './movementScheduleEditing';
+import type { ScheduleRow } from './movementScheduleEditing';
 import { formatTimelineCount } from './timelineNavigation';
-import type { EditorController } from './useEditorController';
+import type { MovementScheduleSession } from './useMovementSchedule';
 import './paths.css';
 
-export function MovementSchedulePanel({ controller: c, drawInitially = false }: { controller: EditorController; drawInitially?: boolean }) {
-  const [initial] = useState(() => {
-    const project = c.project, index = c.index - 1, id = c.selectedIds[0];
-    return { project, index, id, rows: scheduleRows(project, index, id), revision: c.store.getState().project.revision, epoch: c.projectEpoch };
-  });
-  const { project, index, id } = initial, move = project.moves[index];
-  const from = project.sets[index].positions[id], to = project.sets[index + 1].positions[id];
-  const [rows, setRows] = useState(initial.rows), [count, setCount] = useState(move.counts / 2), [submitError, setSubmitError] = useState('');
-  const [selectedRow, setSelectedRow] = useState(initial.rows.find(r => r.kind !== 'hold')?.id ?? ''), [gesture, setGesture] = useState(false);
-  const [capture, setCapture] = useState<'stroke' | 'anchors' | null>(drawInitially && initial.rows.some(r => r.kind !== 'hold') ? 'stroke' : null), [stroke, setStroke] = useState<Point[]>([]);
-  useEffect(() => { if (!rows.some(r => r.id === selectedRow)) setSelectedRow(rows.find(r => r.kind !== 'hold')?.id ?? rows[0]?.id ?? ''); }, [rows, selectedRow]);
-  const dirty = !!stroke.length || JSON.stringify(rows) !== JSON.stringify(initial.rows);
-  useEffect(() => { c.setPendingDraft(dirty, 'movement-schedule'); return () => c.setPendingDraft(false, 'movement-schedule'); }, [dirty, c.setPendingDraft]);
-  let error = '', path: ScheduleEdit['path'] = null, candidate = project;
-  try {
-    path = pathFromRows(rows);
-    candidate = editMovementSchedule(project, { moveId: move.id, performerId: id, path, revision: initial.revision, epoch: initial.epoch });
-    validateProject(candidate);
-  } catch (e) {
-    error = (e as Error).message.replace(/^Invalid project:.*\.segments\[(\d+)\]/, (_match, n: string) => `Interval ${Number(n) + 1}`)
-      .replace(/^Invalid project:.*\.paths\.[A-Za-z0-9_-]+/, 'Movement schedule');
-  }
-  const state = c.store.getState(), stale = state.project.revision !== initial.revision || c.projectEpoch !== initial.epoch || c.index !== index + 1 || c.selectedIds.length !== 1 || c.selectedIds[0] !== id;
-  const changed = dirty && JSON.stringify(path) !== JSON.stringify(move.paths[id] ?? null);
-  const lastTravel = rows.reduce((last, row, i) => row.kind !== 'hold' ? i : last, -1);
-  const preview = sampleProject(candidate, setStartCount(candidate, index) + count).positions;
-  const label = project.performers.find(p => p.id === id)!.label;
-  function update(rowId: string, key: keyof ScheduleRow, value: string) { setRows(old => old.map(row => row.id === rowId ? { ...row, [key]: value } : row)); }
+export function MovementSchedulePanel({ editor: e }: { editor: MovementScheduleSession }) {
+  const { project, index, id, move, from, to, rows, count, selectedRow, gesture, capture, stroke, submitError,
+    path, error, stale, changed, travel, preview, label, lastTravel, drawInitially, update, close, apply, selectRow, setRows, patch } = e;
+  const region = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    region.current?.querySelector<HTMLElement>('[aria-label="Cancel movement timing"]')?.focus();
+    return () => { requestAnimationFrame(() => { if (document.activeElement === document.body) document.querySelector<HTMLElement>('.field-container')?.focus(); }); };
+  }, []);
   function numeric(row: ScheduleRow, i: number, key: keyof ScheduleRow, title: string, maximum: number) {
     const name = `Interval ${i + 1} ${title}`;
-    return <label className="form-label">{title}<Tooltip name={name} description="Change this interval's local written count or field coordinate. Preview updates before Apply."><FormattedNumberInput aria-label={name} step={key === 'start' || key === 'end' ? .25 : .1} min={0} max={maximum} value={row[key]} format={key === 'start' || key === 'end' ? formatTimelineCount : formatYards} disabled={!!capture || gesture} onChange={text => update(row.id, key, text)} /></Tooltip></label>;
+    return <label className="form-label">{title}<Tooltip pointerPassThrough name={name} description="Change this interval's local written count or field coordinate. Preview updates before Apply."><FormattedNumberInput aria-label={name} step={key === 'start' || key === 'end' ? .25 : .1} min={0} max={maximum} value={row[key]} format={key === 'start' || key === 'end' ? formatTimelineCount : formatYards} disabled={!!capture || gesture} onChange={text => update(row.id, key, text)} /></Tooltip></label>;
   }
-  function close() { c.setPendingDraft(false, 'movement-schedule'); c.setDialog(null); }
-  function apply() {
-    if (error || stale || !changed || gesture || capture) return;
-    c.setPendingDraft(false, 'movement-schedule');
-    if (c.dispatch('schedule.save', { moveId: move.id, performerId: id, path, revision: initial.revision, epoch: initial.epoch }) !== true) {
-      c.setPendingDraft(dirty, 'movement-schedule'); setSubmitError(c.store.getState().ui.toast || 'Cancel and reopen to review the current move.');
-    }
-  }
-  const travel = !error ? selectedTravel(rows, selectedRow, from, to) : undefined;
-  function selectRow(id: string) { if (capture || gesture) return; setSelectedRow(id); }
-  return <Modal title={drawInitially ? 'Draw performer path' : 'Edit movement timing'} onClose={close} wide className="path-panel movement-schedule-panel">
+  return <section ref={region} aria-label={drawInitially ? 'Draw performer path' : 'Edit movement timing'} className="path-panel movement-schedule-panel docked-path-editor"
+    onKeyDown={event => { if (event.key === 'Escape' && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); close(); } }}>
+    <div className="docked-path-heading"><h2>{drawInitially ? 'Draw performer path' : 'Edit movement timing'}</h2></div>
+    <div className="docked-path-actions"><HelpButton pointerPassThrough title="Cancel movement timing" className="button subtle" onClick={close}>Cancel</HelpButton><HelpButton pointerPassThrough title="Apply movement timing" description="Validate the complete schedule and apply it as one named undo action." disabled={!changed || !!error || stale || gesture || !!capture} disabledReason={capture ? 'Fit or cancel the drawn stroke before applying.' : error || (stale ? 'Cancel and reopen after the production changed.' : 'Edit the movement intervals first.')} className="button primary" onClick={apply}>Apply timing · one undo</HelpButton></div>
     <div className="path-fields">
       <p className="modal-intro">{label} · {project.sets[index].name} → {project.sets[index + 1].name} · {move.counts} written counts. Other performers keep their own timing.</p>
       <details><summary>Movement timing notes</summary><p className="microcopy">Before departure, in a gap and after the final arrival, hold the preceding position. Each travel begins at the preceding arrival; the last travel ends at the next set. These movement holds do not stop the show clock, recording or other performers.</p></details>
       {(error || stale || submitError) && <p className="field-error" role="alert">{stale ? 'The production or selection changed. Copy your draft, then cancel and reopen.' : error || submitError}</p>}
       {!error && <>
         <label className="form-label">Selected interval<select aria-label="Selected travel interval" value={selectedRow} disabled={!!capture || gesture} onChange={e => selectRow(e.target.value)}>{rows.map((row, i) => <option key={row.id} value={row.id}>{`Interval ${i + 1} · ${row.kind} · ${formattedNumber(row.start, formatTimelineCount)}–${formattedNumber(row.end, formatTimelineCount)}`}</option>)}</select></label>
-        {travel ? <DrawTravel key={selectedRow} rows={rows} rowId={selectedRow} from={travel.from} to={travel.to} mode={capture} setMode={setCapture} stroke={stroke} setStroke={setStroke} onFit={draft => { const checked = editMovementSchedule(project, { moveId: move.id, performerId: id, path: pathFromRows(draft), revision: initial.revision, epoch: initial.epoch }); validateProject(checked); setRows(draft); setSubmitError(''); }} disabled={gesture || stale} />
+        {travel ? <DrawTravel docked key={selectedRow} rows={rows} rowId={selectedRow} from={travel.from} to={travel.to} mode={capture} setMode={capture => patch({ capture })} stroke={stroke} setStroke={stroke => patch({ stroke })} onFit={e.fit} disabled={gesture || stale} />
           : <p className="microcopy">Select a travel interval to draw. Holds have no travel handles.</p>}
-        <TravelCanvas project={project} positions={preview} performerId={id} from={from} to={to} path={path ?? undefined} original={move.paths[id]} counts={move.counts} transition={move.transition}
-          handles={travelHandles(from, to, path ?? undefined)} selectedRow={selectedRow} onSelectRow={selectRow} onHandle={(handle, point) => setRows(old => moveTravelHandle(old, handle, point))}
-          capture={travel ? capture : null} captureFrom={travel?.from} captureTo={travel?.to} stroke={stroke} onStroke={setStroke} onCancelCapture={() => { setCapture(null); setStroke([]); }} onError={setSubmitError} onGesture={setGesture} label="Timed movement preview" />
-        <label className="form-label">Preview local count · {formatTimelineCount(count)}<input type="range" aria-label="Preview movement count" min={0} max={move.counts} step={.01} value={count} onChange={e => setCount(Number(e.target.value))} /></label>
+        <HelpButton pointerPassThrough title="Snap path handles" active={e.snapHandles} description="Snap handle drags and arrow keys using the production's field snapping settings. Numeric entries remain exact." className="button subtle" onClick={() => patch({ snapHandles: !e.snapHandles })}>Snap handles {e.snapHandles ? 'on' : 'off'}</HelpButton>
+        <TravelDetails {...e.field} mainField />
+        <label className="form-label">Preview local count · {formatTimelineCount(count)}<input type="range" aria-label="Preview movement count" min={0} max={move.counts} step={.01} value={count} onChange={e => patch({ count: Number(e.target.value) })} /></label>
         <p role="status" aria-label="Movement preview position">{label}: X {formatYards(preview[id].x)}, Y {formatYards(preview[id].y)} yd · travel {formatYards(movementLength(from, to, path ?? undefined))} yd.</p>
         <p className="microcopy" aria-label="Movement schedule summary">{path ? movementSchedule(path, move.counts) : `Travel 0–${move.counts}`}. Solid: proposed path. Dashed: saved path. Ring: sampled position.</p>
       </>}
       <ol className="schedule-rows" aria-label="Movement intervals">{rows.map((row, i) => <li key={row.id} data-schedule-row={i}>
-        <div className="schedule-row-header"><HelpButton title={`Select interval ${i + 1}`} active={row.id === selectedRow} className="button subtle" disabled={!!capture || gesture} onClick={() => selectRow(row.id)}>Interval {i + 1}{row.id === selectedRow ? " · selected" : ""}</HelpButton><HelpButton title={`Remove interval ${i + 1}`} className="button subtle" disabled={!!capture || gesture} onClick={() => setRows(old => old.filter(r => r.id !== row.id))}>Remove</HelpButton></div>
+        <div className="schedule-row-header"><HelpButton pointerPassThrough title={`Select interval ${i + 1}`} active={row.id === selectedRow} className="button subtle" disabled={!!capture || gesture} onClick={() => selectRow(row.id)}>Interval {i + 1}{row.id === selectedRow ? " · selected" : ""}</HelpButton><HelpButton pointerPassThrough title={`Remove interval ${i + 1}`} className="button subtle" disabled={!!capture || gesture} onClick={() => setRows(old => old.filter(r => r.id !== row.id))}>Remove</HelpButton></div>
         <div className="schedule-timing">
-          <label className="form-label">Movement<Tooltip name={`Interval ${i + 1} movement`} description="Choose straight travel, a cubic curve or a stationary hold at the preceding arrival."><select aria-label={`Interval ${i + 1} movement`} value={row.kind} disabled={!!capture || gesture} onChange={e => update(row.id, 'kind', e.target.value)}><option value="line">Straight travel</option><option value="cubic">Cubic curve</option><option value="hold">Hold position</option></select></Tooltip></label>
+          <label className="form-label">Movement<Tooltip pointerPassThrough name={`Interval ${i + 1} movement`} description="Choose straight travel, a cubic curve or a stationary hold at the preceding arrival."><select aria-label={`Interval ${i + 1} movement`} value={row.kind} disabled={!!capture || gesture} onChange={e => update(row.id, 'kind', e.target.value)}><option value="line">Straight travel</option><option value="cubic">Cubic curve</option><option value="hold">Hold position</option></select></Tooltip></label>
           {numeric(row, i, 'start', row.kind === 'hold' ? 'Start count' : 'Departure count', move.counts)}
           {numeric(row, i, 'end', row.kind === 'hold' ? 'End count' : 'Arrival count', move.counts)}
         </div>
@@ -87,9 +56,8 @@ export function MovementSchedulePanel({ controller: c, drawInitially = false }: 
         {row.kind === 'cubic' && <div className="path-controls">{numeric(row, i, 'c1x', 'Control 1 X', project.field.width)}{numeric(row, i, 'c1y', 'Control 1 Y', project.field.height)}{numeric(row, i, 'c2x', 'Control 2 X', project.field.width)}{numeric(row, i, 'c2y', 'Control 2 Y', project.field.height)}</div>}
       </li>)}</ol>
       {!rows.length && <p role="status">Default travel: straight from the previous set to the next set over the whole move.</p>}
-      <div className="schedule-actions"><HelpButton title="Add movement interval" description="Append an interval after the preceding end count. Leave room within the move before adding another interval." className="button subtle" disabled={rows.length >= PROJECT_LIMITS.pathSegments || !!capture || gesture} disabledReason={`Use at most ${PROJECT_LIMITS.pathSegments} intervals.`} onClick={() => setRows(old => [...old, newScheduleRow(from, to, move.counts, old.at(-1)?.end ?? '0')])}>Add interval</HelpButton><HelpButton title="Use default straight travel" description="Preview removal of the custom schedule; Apply records the change." className="button subtle" disabled={!!capture || gesture} onClick={() => setRows([])}>Use default straight travel</HelpButton></div>
+      <div className="schedule-actions"><HelpButton pointerPassThrough title="Add movement interval" description="Append an interval after the preceding end count. Leave room within the move before adding another interval." className="button subtle" disabled={rows.length >= PROJECT_LIMITS.pathSegments || !!capture || gesture} disabledReason={`Use at most ${PROJECT_LIMITS.pathSegments} intervals.`} onClick={() => setRows(old => [...old, newScheduleRow(from, to, move.counts, old.at(-1)?.end ?? '0')])}>Add interval</HelpButton><HelpButton pointerPassThrough title="Use default straight travel" description="Preview removal of the custom schedule; Apply records the change." className="button subtle" disabled={!!capture || gesture} onClick={() => setRows([])}>Use default straight travel</HelpButton></div>
       <p className="microcopy">Intervals must have positive duration, stay in count order and not overlap. Fractional counts are allowed. Easing applies within each travel interval; curves use parameter timing. Problems reports conservative spacing and peak-stride bounds. Count changes uniformly rescale all intervals. Move operations previews resize, reverse and interval copy/paste. Detailed splitting or changing a custom move's preceding set remains guarded.</p>
     </div>
-    <div className="modal-actions"><HelpButton title="Cancel movement timing" className="button subtle" onClick={close}>Cancel</HelpButton><HelpButton title="Apply movement timing" description="Validate the complete schedule and apply it as one named undo action." disabled={!changed || !!error || stale || gesture || !!capture} disabledReason={capture ? 'Fit or cancel the drawn stroke before applying.' : error || (stale ? 'Cancel and reopen after the production changed.' : 'Edit the movement intervals first.')} className="button primary" onClick={apply}>Apply timing · one undo</HelpButton></div>
-  </Modal>;
+  </section>;
 }

@@ -1,3 +1,4 @@
+import { TravelOverlay, type TravelPreview } from '../editor/TravelCanvas';
 import { FieldCanvas } from './FieldCanvas';
 import { fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from './fieldScene';
 import { ScatterFormationHandles } from './ScatterFormationHandles';
@@ -139,6 +140,7 @@ const NO_POSITIONS: Record<string, Point> = {};
 const NO_NEIGHBORS: NeighborOverlay[] = [];
 
 interface Field2DProps extends DrawingProps {
+  travelPreview?: TravelPreview;
   transformPreview?: FieldTransformPreview;
   spacingPreview?: FieldSpacingPreview;
   coordinatePreview?: FieldCoordinatePreview;
@@ -171,7 +173,7 @@ type Gesture =
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const performerNodes = useRef<SVGGElement[]>([]);
@@ -339,6 +341,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
 
   function startGesture(event: ReactPointerEvent<SVGSVGElement>) {
     if (event.button !== 0 && event.button !== 1) return;
+    if (travelPreview && event.button !== 1 && !event.altKey) return;
     event.preventDefault();
     event.currentTarget.focus({ preventScroll: true });
     const point = pointAt(event.clientX, event.clientY);
@@ -432,6 +435,11 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
 
   function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
     if (event.nativeEvent.isComposing) return;
+    if (travelPreview) {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); travelPreview.onCancel?.(); }
+      if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); travelPreview.onApply?.(); }
+      return;
+    }
     if (event.key === 'Escape' && gesture.current?.kind === 'move') {
       event.preventDefault(); event.stopPropagation(); gesture.current = null; setPreview({}); setMoving(false); onMovePreview?.(null); return;
     }
@@ -488,12 +496,13 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       <g transform={fieldViewTransform(project.field, orientation)}><StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} /></g>
     </svg>
     {screen && <FieldCanvas project={project} positions={displayedPositions} selectedIds={selectedIds} display={display} screen={screen} orientation={orientation} focusedId={keyboardFocus ? focusedId : null} showLabels={showLabels} enabled={wantsCanvas} neighbors={moving ? NO_NEIGHBORS : neighbors} selectionPreview={selectionPreview} snapPreview={moving ? preview : NO_POSITIONS} original={positions} onReady={setCanvasReady} />}
-    <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={focusedId ? -1 : 0} role="group" aria-label={selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={`${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
+    <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={travelPreview || focusedId ? -1 : 0} role="group" aria-label={travelPreview ? 'Movement path preview. Draw or edit handles on the field, then Apply or Cancel in the panel.' : selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={travelPreview ? undefined : `${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
       <g ref={geometryRef} data-field-geometry={orientation} transform={fieldViewTransform(project.field, orientation)}>
       <g className="field-drawing" opacity={canvasActive ? 0 : 1}>
-      <InteractiveFieldDrawing dynamicOnly deferMotion={canvasActive} project={project} positions={displayedPositions} neighbors={moving ? NO_NEIGHBORS : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
+      <InteractiveFieldDrawing dynamicOnly deferMotion={canvasActive} project={project} positions={displayedPositions} neighbors={moving ? NO_NEIGHBORS : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={travelPreview ? undefined : readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
       </g>
-      {problemOverlay}
+      {!travelPreview && problemOverlay}
+      {travelPreview && <TravelOverlay {...travelPreview} zoom={safeZoom} snap={travelPreview.snapHandles ?? snap} mainField pan={tool === 'pan'} scale={screen?.scale} flipped={orientation === 'audience-top'} />}
       {selectionPreview && <g opacity={canvasActive ? 0 : 1} aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
       {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && (formationPreview.session.scatter ? <ScatterFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : formationPreview.session.bezier ? <BezierFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />)}
@@ -504,11 +513,11 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#8dc8ff18" stroke="#8dc8ff" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
       </g>
     </svg>
-    <div id={keyboardHelpId} className="field-keyboard-help">{coordinatePreview ? 'Enter: apply coordinates · Escape: cancel preview · Type the phrase in the Inspector.' : spacingPreview ? 'Enter: apply spacing · Escape: cancel preview · Use Inspector numbers or the interval handle to adjust.' : formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · {nudgeHelp} · Page Up/Down: roster · Home/End: first/last</>}</div>
+    <div id={keyboardHelpId} className="field-keyboard-help">{travelPreview ? 'Edit handles with brackets and arrows, or draw using the panel. Enter: apply · Escape: cancel.' : coordinatePreview ? 'Enter: apply coordinates · Escape: cancel preview · Type the phrase in the Inspector.' : spacingPreview ? 'Enter: apply spacing · Escape: cancel preview · Use Inspector numbers or the interval handle to adjust.' : formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · {nudgeHelp} · Page Up/Down: roster · Home/End: first/last</>}</div>
     {moving && Object.keys(preview).length > 0 && <div className="field-drag-status">Release to apply · Escape to cancel</div>}
-    <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />
+    {!travelPreview && <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />}
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
-    <div className="field-stage__hint">{coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : selectionPreview ? 'SELECTION PREVIEW · APPLY OR CANCEL' : tool === 'lasso' ? 'Draw lasso · Shift to add · Review before Apply' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
+    <div className="field-stage__hint">{travelPreview ? 'MOVEMENT PATH PREVIEW' : coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : selectionPreview ? 'SELECTION PREVIEW · APPLY OR CANCEL' : tool === 'lasso' ? 'Draw lasso · Shift to add · Review before Apply' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit</span></div>
     <div className="field-stage__orientation" aria-label={orientation === 'audience-top' ? 'Flipped field: audience and front sideline at top' : 'Audience and front sideline at bottom'}><span>↑</span> {orientation === 'audience-top' ? 'FRONT · AUDIENCE TOP' : 'BACK · AUDIENCE BOTTOM'}</div>
   </div>;
 }

@@ -1,3 +1,4 @@
+import { duringMovementEditor, isMovementEditor } from './movementEditor';
 import { canSwitchWorkspace, switchWorkspace, saveWorkspace, renameWorkspace, updateWorkspace } from './workspaceCommands';
 import { isBuiltInWorkspace, type WorkspaceArrangement } from '../workspaces';
 import { canOpenGroupMotion, groupMotionPlan, groupReviewCurrent, type GroupMotionReview } from './groupMotionReview';
@@ -201,12 +202,13 @@ function canSaveMovement(s: EditorState, a: Pick<ScheduleEdit, 'revision' | 'epo
     && canEditMovement({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === dialog ? null : s.ui.dialog } })
     && s.project.present.moves[s.selection.activeIndex - 1]?.id === a.moveId && s.selection.selectedIds[0] === a.performerId;
 }
-const fieldView = (s: EditorState) => idle(s) && s.ui.workspace === 'design' && s.ui.view === '2d';
+const fieldView = (s: EditorState) => (idle(s) || isMovementEditor(s.ui.dialog)) && s.ui.workspace === 'design' && s.ui.view === '2d';
 export const canChangeLayout = (s: EditorState) => !s.ui.selectionPreview && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
   const state = context.getState();
   if (state.ui.dialog !== dialog && state.ui.pendingDraft) throw new Error('Finish or cancel the pending edit before changing dialogs.');
   if (dialog) context.patch('playback', { playing: false });
+  if (isMovementEditor(dialog)) context.patch('ui', { workspace: 'design', view: '2d', tool: 'select' });
   context.patch('ui', { dialog });
 };
 const editable = canEditPositions;
@@ -636,8 +638,15 @@ export const commandRegistry = {
 export const commandMetadata = Object.values(commandRegistry).map(({ id, name, description, arguments: args }) => ({ id, name, description, arguments: args }));
 export const shortcutCommands = [...shortcutIds.map(id => commandRegistry[id]), commandRegistry['selection.clear'], commandRegistry['selection.nudge']];
 export function executeCommand<I extends CommandId>(context: CommandContext, id: I, args: CommandArguments[I]): boolean | Promise<boolean> {
+  const state = context.getState();
   const definition = commandRegistry[id] as unknown as CommandDefinition<I>;
-  if (!definition.enabled(context.getState(), args)) return false;
+  if (!definition.enabled(state, args)) return false;
+  if (isMovementEditor(state.ui.dialog)) {
+    if (!duringMovementEditor(id) || id === 'dialog.open' && (args as CommandArguments['dialog.open'])?.dialog !== null) return false;
+    // Like a formation preview, seeking a set/count or starting playback ends
+    // the local draft. Preview sampling itself stays on the panel's count slider.
+    if (['set.select', 'playback.scrub', 'playback.toggle'].includes(id)) context.patch('ui', { dialog: null, pendingDraft: false });
+  }
   const result = definition.execute(context, args);
   return result instanceof Promise ? result.then(() => true) : true;
 }

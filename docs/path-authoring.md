@@ -6,6 +6,12 @@ scheduled move. **Draw performer path** opens the interval editor in Draw Path
 mode. Both actions are also in the command palette. Empty or multiple selections
 never implicitly target the cast.
 
+Draw performer path and Edit movement timing preview directly on the main field,
+with parameters in the docked Inspector and Apply/Cancel above its scrolling
+contents. The simple cubic editor opened by Edit performer path remains a dialog.
+Shared routes and Move operations keep their existing editors during the
+incremental [main-field port](evidence/main-field-paths/README.md).
+
 ## Field editing
 
 Select an interval with the interval selector, its row button or its field path.
@@ -19,15 +25,23 @@ segment's start, preserving the shared endpoint chain. Holds have no handles.
 The field is one Tab stop. `[` / `]` choose handles within the selected interval;
 arrows move 0.1 yard and Shift+arrows move 1 yard. Optional **Snap handles** uses
 the production's shared grid/marking settings; numeric entry remains exact.
-Handle hit areas and labels retain their screen size at 1×, 2× and 4× field zoom.
-Zoom centers on the move endpoints; return to 1× or use numeric fields for points
-outside the zoomed viewport. Display zoom never changes physical geometry.
+Main-field handles and labels retain their screen size as you zoom. Drawing and
+timing preserve the field's current zoom, pan and orientation; scroll to zoom,
+Alt-drag or middle-drag to pan, or Fit field before capturing endpoints outside
+the viewport. Arrow directions follow the displayed field orientation. The
+simple cubic dialog retains its endpoint-centered 1×/2×/4× zoom. Display zoom
+never changes physical geometry.
 
 Escape or pointer cancellation during a drag restores its starting coordinate.
 Escape in field drawing mode cancels the captured stroke; another Escape closes
 the editor. Apply accepts the reviewed draft as one named undo action. Until
 Apply, the production and history are unchanged. Stale revisions, project sessions,
 move targets and selections are rejected by the shared movement command.
+Unrelated editing and project undo are locked while the docked editor is active.
+Its local count slider samples the draft; seeking the main timeline, navigating
+to a set or starting playback ends the draft without applying it. A collapsed
+Inspector or focus mode is temporarily restored to expose the parameters, with
+personal layout choices retained after editing.
 
 ## Drawing one travel interval
 
@@ -90,4 +104,5 @@ identity preservation, count ticks, transaction guards and native-codec reload.
 cancel, numeric equivalence, attachment/reversal, persistence, themes, enlarged
 UI and 2/64/500 performer previews. It is registered in the common desktop suite.
 Rendered review and measured host limits are recorded in
-[the evidence directory](evidence/path-authoring/README.md).
+[the original evidence directory](evidence/path-authoring/README.md) and
+[the main-field port review](evidence/main-field-paths/README.md).
