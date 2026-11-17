@@ -31,7 +31,7 @@ export function useWorkspaceLayout(controller: EditorController) {
   const [menu, setMenu] = useState(false);
   const layout = controller.preferences.value.workspaceLayout;
   const workspaceVersion = useEditorSelector(state => state.ui.workspaceVersion);
-  const preview = !!(controller.movementEditor || controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview);
+  const preview = !!(controller.routeEditor || controller.movementEditor || controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview);
   // A preview shows an Inspector the writer collapsed for as long as it runs; the saved layout and preset stay as chosen.
   const placed = preview && layout.inspectorCollapsed ? { ...layout, inspectorCollapsed: false } : layout;
   const side: 'cast' | 'inspector' = controller.castPanelOpen && !preview ? 'cast' : 'inspector';
@@ -43,7 +43,7 @@ export function useWorkspaceLayout(controller: EditorController) {
   const fit = fitWorkspaceLayout(placed, available, side, demanded);
   // Without demand: a writer's pane that docks this way no longer needs its overlay.
   const idle = fitWorkspaceLayout(placed, available, side);
-  const focusMode = useEditorSelector(state => state.ui.focusMode) && controller.workspace === 'design' && !controller.movementEditor;
+  const focusMode = useEditorSelector(state => state.ui.focusMode) && controller.workspace === 'design' && !controller.movementEditor && !controller.routeEditor;
   // Focus mode hides every panel, so nothing opens over the field there: no overlay, scrim or preview margin. A
   // preview's Inspector is over the field wherever it does not dock, ahead of any other pane so Apply and Cancel stay
   // reachable; that placement is derived, so it ends with the preview.

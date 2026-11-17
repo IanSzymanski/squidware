@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const { settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
 
-module.exports = async function ({ project, editor, state, evaluate, wait, key, capture: screenshot, window, pass, saved, Menu }) {
+module.exports = async function ({ project, geometry, editor, state, evaluate, wait, key, capture: screenshot, window, pass, saved, Menu }) {
   const layouts = [], timings = [];
   const control = async selector => { await revealFieldTool(window,selector);
     await evaluate('document.activeElement?.blur()');
@@ -32,7 +32,7 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
   const present = () => evaluate(`${state}.project.present`);
   // Small or enlarged windows tuck the Inspector (#178); open it over the field, as a user would, before using its launchers.
   const showInspector = async () => { if (await evaluate("!!document.querySelector('#workspace-pane-inspector')?.hidden")) { await click('Show Inspector'); await wait("!!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay:not([hidden])')", 'Inspector overlay'); } };
-  async function open() {  await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'route dialog'); }
+  async function open() {  await click('Shared routes'); await wait("!!document.querySelector('.shared-routes-panel')", 'docked route editor'); }
   async function apply(count) { await click('Apply shared route'); await wait(`!${state}.ui.dialog && ${state}.project.present.sharedRoutes?.length===${count}`, 'accepted route'); }
 
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1); await settleNativeViewport(window, 'route baseline');
@@ -43,12 +43,17 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
     assert.match(await evaluate("document.querySelector('[aria-label=\"Route geometry summary\"]').textContent"), /^Open · 1 segments · 50 yd · /);
   };
   await capture('routes-before.png'); await open(); await newRouteShown();
+  assert.equal(await evaluate("document.querySelectorAll('dialog[open], .shared-routes-panel svg').length"), 0);
+  assert.equal(await evaluate("document.querySelector('.travel-field').closest('.field-stage__svg')!==null"), true);
+  assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"), 'Cancel shared routes');
+  assert.equal(await evaluate(`${editor}.dispatch('history.undo')`), false);
   assert.deepEqual(await evaluate(`${state}.selection.selectedIds`), []);
   await type('Route name', 'S stroke'); await click('Draw shared route stroke');
   await evaluate("document.querySelector('[aria-label=\"Editable shared route field\"]').scrollIntoView({block:'center'})");
   const matrix = await evaluate("(()=>{const m=document.querySelector('[aria-label=\"Editable shared route field\"]').getScreenCTM();return {a:m.a,b:m.b,c:m.c,d:m.d,e:m.e,f:m.f}})()");
   const screen = p => ({ x: matrix.a * p.x + matrix.c * p.y + matrix.e, y: matrix.b * p.x + matrix.d * p.y + matrix.f });
-  const points = Array.from({ length: 41 }, (_, i) => screen({ x: 15 + 70 * i / 40, y: 26 + 10 * Math.sin(i / 40 * Math.PI * 2) }));
+  const physicalPoints = Array.from({ length: 41 }, (_, i) => ({ x: 15 + 70 * i / 40, y: 26 + 10 * Math.sin(i / 40 * Math.PI * 2) }));
+  const points = physicalPoints.map(screen);
   const began = performance.now();
   for (let i = 0; i < points.length; i++) {
     if (!i) { await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...points[i] }); await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', ...points[i], button: 'left', buttons: 1, clickCount: 1 }); }
@@ -60,7 +65,15 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
   await click('Fit shared route'); await wait("!document.querySelector('[aria-label=\"Route captured points\"]')", 'fitted native stroke');
   timings.push({ captureAndFitMs: performance.now() - began, sourcePoints: 41 });
   await capture('route-fitted-stroke.png'); await apply(1);
-  let accepted = await present(); assert.ok(accepted.sharedRoutes[0].segments.length > 4); assert.equal(accepted.sharedRoutes[0].name, 'S stroke');
+  let accepted = await present();
+  // Compare native capture against the existing canonical fit, allowing one native pixel.
+  const expected = geometry.compileRoute(geometry.fitSharedRoute(accepted.sharedRoutes[0], physicalPoints, .15, true, false, project.field));
+  const actual = geometry.compileRoute(accepted.sharedRoutes[0]);
+  for (let i = 0; i <= 100; i++) {
+    const a = actual.atDistance(actual.length * i / 100), b = expected.atDistance(expected.length * i / 100);
+    assert.ok(Math.hypot(a.x - b.x, a.y - b.y) < .35, 'Main-field fit differs from canonical geometry');
+  }
+  assert.ok(accepted.sharedRoutes[0].segments.length > 4); assert.equal(accepted.sharedRoutes[0].name, 'S stroke');
   assert.deepEqual(accepted.sets, project.sets); assert.deepEqual(accepted.moves, project.moves); assert.equal(await evaluate(`${state}.project.past.length`), 1);
   menu('Undo drill edit'); await wait(`!${state}.project.present.sharedRoutes`, 'undo stroke'); menu('Redo drill edit'); await wait(`${state}.project.present.sharedRoutes?.length===1`, 'redo stroke'); assert.deepEqual(await present(), accepted);
   menu('Save As…'); await wait("document.querySelector('.save-state').textContent==='Project file saved'", 'native route save');
@@ -102,11 +115,11 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
   await click('Cancel shared routes'); assert.deepEqual(await present(), closed);
   pass('closed numeric anchors add a seam, split/reverse/seam edits preserve closure, duplicate names block Apply, cancel preserves both routes');
 
-  for (const [theme, width, scale] of [['dark', 1366, 1], ['light', 1366, 1], ['high-contrast', 1366, 1], ['dark', 900, 1.25]]) {
+  for (const [theme, width, scale] of [['dark', 1366, 1], ['light', 1366, 1], ['high-contrast', 1366, 1], ['dark', 900, 1.25], ['dark', 1024, 1.5]]) {
     window.setContentSize(width, 768); await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)},uiScale:${scale}})`); await settleNativeViewport(window, 'route layout'); await open();
-    await evaluate("document.querySelector('[aria-label=\"Editable shared route field\"]').scrollIntoView({block:'center'})");
-    const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),modal:rect('.shared-routes-panel'),apply:rect('[aria-label=\"Apply shared route\"]'),cancel:rect('[aria-label=\"Cancel shared routes\"]'),canvas:rect('[aria-label=\"Editable shared route field\"]')}})()");
-    for (const r of [metrics.modal, metrics.apply, metrics.cancel, metrics.canvas]) assert.ok(r.left >= 0 && r.right <= metrics.viewport.width + .5 && r.top >= 0 && r.bottom <= metrics.viewport.height + .5, JSON.stringify(metrics));
+    await evaluate("document.querySelector('.shared-routes-panel .path-fields').scrollTop=0");
+    const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),panel:rect('.shared-routes-panel'),apply:rect('[aria-label=\"Apply shared route\"]'),cancel:rect('[aria-label=\"Cancel shared routes\"]'),canvas:rect('[aria-label=\"Editable shared route field\"]')}})()");
+    for (const r of [metrics.panel, metrics.apply, metrics.cancel, metrics.canvas]) assert.ok(r.left >= 0 && r.right <= metrics.viewport.width + .5 && r.top >= 0 && r.bottom <= metrics.viewport.height + .5, JSON.stringify(metrics));
     if (width === 1366) assert.ok(metrics.field.height >= 470, JSON.stringify(metrics));
     layouts.push({ theme, width, scale, ...metrics }); await capture(`route-${theme}-${width}-${scale}.png`); await click('Cancel shared routes');
   }
@@ -115,6 +128,71 @@ module.exports = async function ({ project, editor, state, evaluate, wait, key, 
   menu('Undo drill edit'); await wait(`${state}.project.present.sharedRoutes.length===2`, 'undo deletion'); assert.deepEqual(await present(), closed);
   menu('Save As…'); await wait("document.querySelector('.save-state').textContent==='Project file saved'", 'final native save'); menu('Open project…'); await wait(`${state}.project.past.length===0`, 'final native reopen'); assert.deepEqual(await present(), closed);
   pass('dark/light/high-contrast and enlarged narrow layouts retain controls; deletion confirmation and undo restore geometry; final native save/reopen retains route IDs and seam');
+  // The real viewport survives entering a docked editor; pan and flipped keys use its CTM.
+  const frames = () => evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
+  await evaluate(`${editor}.setValue('ui','zoom',1.25)`); await open();
+  assert.equal(await evaluate(`${state}.ui.zoom`), 1.25);
+  const beforePan = await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')");
+  const center = await evaluate("(()=>{const r=document.querySelector('.field-stage__svg').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()");
+  for (const [type,x] of [['mouseDown',center.x],['mouseMove',center.x+40],['mouseUp',center.x+40]]) {
+    window.webContents.sendInputEvent({type,x:Math.round(x),y:Math.round(center.y),button:'middle',modifiers:type==='mouseMove'?['middleButtonDown']:[]}); await frames();
+  }
+  assert.notEqual(await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')"), beforePan);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'})`); await frames();
+  await evaluate("document.querySelector('.travel-field').focus()"); await key('Right');
+  assert.equal(Number(await evaluate("document.querySelector('[aria-label=\"Start X\"]').value")), Number((closed.sharedRoutes[0].start.x - .1).toFixed(3)));
+  await capture('route-flipped-panned.png'); await key('Escape'); await wait(`!${state}.ui.dialog`, 'field Escape cancel');
+  assert.deepEqual(await present(), closed);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom'});${editor}.setValue('ui','zoom',1)`); await frames();
+  const layoutBefore = await evaluate(`${state}.preferences.value.workspaceLayout`);
+  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,workspaceLayout:{...${state}.preferences.value.workspaceLayout,inspectorCollapsed:true}});${editor}.setValue('ui','focusMode',true);${editor}.dispatch('routes.open')`); await frames();
+  assert.equal(await evaluate("!!document.querySelector('.studio--focus')"), false);
+  assert.equal(await evaluate("document.querySelector('#workspace-pane-inspector').hidden"), false);
+  assert.equal(await evaluate("document.querySelectorAll('.field-readout').length"), 0);
+  assert.equal(await evaluate(`${state}.preferences.value.workspaceLayout.inspectorCollapsed`), true);
+  await key('Escape'); await frames();
+  assert.equal(await evaluate("!!document.querySelector('.studio--focus')"), true);
+  await evaluate(`${editor}.setValue('ui','focusMode',false);${editor}.setValue('preferences','value',{...${state}.preferences.value,workspaceLayout:${JSON.stringify(layoutBefore)}})`); await frames();
+  for (const action of ["dispatch('playback.scrub',{count:4})", "dispatch('set.select',{index:1})", "dispatch('playback.toggle')"]) {
+    await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(closed)}});${editor}.dispatch('routes.open')`); await frames();
+    await type('Route name', 'Discard on navigation');
+    await evaluate(`${editor}.${action}`); await wait(`!${state}.ui.dialog`, 'transport discards route draft');
+    assert.deepEqual(await present(), closed);
+  }
+  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(closed)}})`); await frames();
+  pass('current zoom, native pan, flipped keyboard edits, field Escape, collapsed Inspector and focus restoration, transport discard and unobstructed main geometry');
+  // Start with the command as setup, then use only native Tab, Space and text input.
+  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('routes.open')`); await frames();
+  async function tabTo(label) {
+    for (let i = 0; i < 100; i++) {
+      if (await evaluate(`document.activeElement?.getAttribute('aria-label')===${JSON.stringify(label)}`)) return;
+      await key('Tab');
+    }
+    throw Error('Keyboard could not reach '+label);
+  }
+  async function enter(label, value) {
+    await tabTo(label); await key('A',[process.platform==='darwin'?'meta':'control']);
+    await window.webContents.debugger.sendCommand('Input.insertText',{text:String(value)}); await key('Tab');
+  }
+  await enter('Route name','Keyboard route');
+  await tabTo('Place shared route anchors'); await key('Space');
+  await wait("!!document.querySelector('[aria-label=\"Route captured points\"]')", 'keyboard anchors enabled');
+  for (const [x,y] of [[20,15],[50,35],[80,15]]) {
+    await enter('Route anchor X',x); await enter('Route anchor Y',y);
+    await tabTo('Add numeric route anchor'); await key('Space');
+  }
+  await tabTo('Fit shared route'); await key('Space');
+  await wait("!document.querySelector('[aria-label=\"Route captured points\"]')", 'keyboard fit');
+  await tabTo('Apply shared route'); await key('Space'); await wait(`!${state}.ui.dialog`, 'keyboard apply');
+  const keyboardProject = await present();
+  assert.equal(keyboardProject.sharedRoutes[0].name, 'Keyboard route');
+  assert.deepEqual(keyboardProject.sharedRoutes[0].start, {x:20,y:15});
+  assert.deepEqual(keyboardProject.sharedRoutes[0].segments.map(s=>s.to), [{x:50,y:35},{x:80,y:15}]);
+  assert.deepEqual(keyboardProject.sets, project.sets); assert.deepEqual(keyboardProject.moves, project.moves);
+  assert.equal(await evaluate(`${state}.project.past.length`), 1);
+  menu('Undo drill edit'); await wait(`!${state}.project.present.sharedRoutes`, 'undo keyboard route');
+  assert.deepEqual(await present(), project);
+  pass('native keyboard-only route naming, numeric anchors, Fit and Apply complete the primary task as one undo');
   for (const count of [2, 64, 500]) {
     const performers = Array.from({ length: count }, (_, i) => ({ id: `route-member-${i}`, label: `P${i + 1}`, name: '', sectionId: project.sections[0].id }));
     const positions = Object.fromEntries(performers.map((p, i) => [p.id, { x: 5 + 90 * (i % 25) / 24, y: 5 + 40 * Math.floor(i / 25) / 19 }]));

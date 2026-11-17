@@ -1,16 +1,26 @@
 # Shared route authoring
 
-Open **Shared routes…** from the Inspector or Commands while paused at a set.
+Open **Shared routes** from the field toolbar’s More menu or Commands while paused at a set.
 No cast selection is required: these are named, production-local geometries,
 independent of formation shapes, performer identity, set endpoints and timing.
 Creating or editing a route does not assign performers or alter their playback.
+
+Route geometry, handles and distance ticks appear on the main field at its
+current zoom, pan and orientation. Parameters borrow the docked Inspector, with
+Apply/Cancel pinned above the scrolling form. Scroll to zoom; Alt-drag or
+middle-drag pans. The separate inset field and modal are removed.
 
 **Draw stroke** captures an open stroke with free endpoints. **Place anchors**
 accepts clicks and exact numeric coordinates. **Fit route** replaces the entire
 draft route; inspect its handles and distance dots before **Apply route**. Raw
 capture is never saved. Fit/Apply are separate steps, and switching saved routes
 requires finishing the current draft. Cancel/Escape leaves the production and
-history unchanged. Escape during a handle drag restores its starting geometry;
+history unchanged. Unrelated editing and project history are locked until the
+route editor ends. Main timeline scrubbing, set navigation or starting playback
+discards the unapplied route draft, as with formation previews. A collapsed
+Inspector or focus mode is temporarily restored to show the parameters, without
+changing saved layout preferences. Escape during a handle drag restores its
+starting geometry;
 Escape during capture discards the capture before closing the editor.
 
 The fitter reuses individual-path RDP simplification: 2,048 captured points,
@@ -38,7 +48,8 @@ most three decimals (a new route starts at Y 26.667 on a college field); the
 stored coordinates stay exact until you type or drag a new value. The field is
 one Tab stop: brackets choose handles, arrows move 0.1 yard, Shift+arrows 1
 yard, and optional snapping uses the existing production settings. Hit regions
-keep their screen size at 1×/2×/4× zoom.
+keep their screen size as the main field zoom changes. Arrow directions follow
+the displayed orientation; numeric coordinates always use canonical field yards.
 Moving an anchor translates its adjacent controls; invalid boundary-crossing
 drags reject while numeric drafts retain a visible error. Split inserts an exact
 de Casteljau midpoint without changing the locus. Remove reconnects the next
@@ -64,9 +75,8 @@ and native file bridge use the same codec.
 
 Shared-route geometry is consumed by [Group route movement](group-movement.md): ordered delayed followers, explicit counter-march cues, and open/closed arc-length conveyors. A route still owns no performers or timing on its own. The group editor adds count ticks, connectors and shared stride/spacing analysis, completing the route-consumption integration for #75/#50. Geometry edits/deletion are blocked while any group references the route; reroute/remove those groups first. Name-only changes remain available. Along-route intervals do not guarantee physical clearance.
 
-Design guidance §§1–4 uses the existing Inspector, command registry, modal,
-HelpButton, field controls, CSS tokens and Apply/Cancel conventions. The modal
-keeps its footer fixed and its fields scrollable at enlarged/narrow sizes;
-the underlying field layout retains its established height. Before/after,
-theme, keyboard/pointer and native persistence evidence is recorded in
-[the evidence directory](evidence/shared-routes/README.md).
+Design guidance §§1–4 uses the existing Inspector, command registry,
+HelpButton, main-field overlay, numeric inputs, CSS tokens and Apply/Cancel
+conventions. Before/after, theme, keyboard/pointer and native persistence evidence
+for the docked editor is recorded in [the main-field review](evidence/main-field-routes/README.md).
+[Original route evidence](evidence/shared-routes/README.md) preserves the earlier modal implementation.

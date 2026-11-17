@@ -1,4 +1,4 @@
-import { duringMovementEditor, isMovementEditor } from './movementEditor';
+import { duringSpatialEditor, isDockedSpatialEditor } from './movementEditor';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Tooltip, Keycaps } from '../components/Tooltip';
 import { commandRegistry } from './commands';
@@ -19,9 +19,9 @@ export interface ControlHelpProps {
 }
 
 export function HelpButton({ title, description, command, shortcutVariant, showShortcut = true, active, state, disabledReason, pointerPassThrough, disabled, children, onClick, ...props }: ControlHelpProps & ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
-  const movementLocked = useEditorSelector(state => !!command && isMovementEditor(state.ui.dialog) && !duringMovementEditor(command));
-  disabled = disabled || movementLocked;
-  if (movementLocked) disabledReason = 'Apply or cancel movement editing first.';
+  const spatialLocked = useEditorSelector(state => !!command && isDockedSpatialEditor(state.ui.dialog) && !duringSpatialEditor(command, state.ui.dialog));
+  disabled = disabled || spatialLocked;
+  if (spatialLocked) disabledReason = 'Apply or cancel spatial editing first.';
   const definition = command ? commandRegistry[command] : undefined;
   const bindings = useEditorSelector(state => state.preferences.value.shortcutBindings);
   const pressed = active ?? props['aria-pressed'];

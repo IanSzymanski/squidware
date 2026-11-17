@@ -1,10 +1,10 @@
-import { isMovementEditor } from './movementEditor';
+import { isDockedSpatialEditor } from './movementEditor';
 import type { EditorState } from './state';
 import type { EditorStore } from './store';
 
 export type ConfirmationRequest = NonNullable<EditorState['ui']['confirmation']>;
 /** Menus, shortcuts, the palette and selection tools treat a pending confirmation like an open dialog. */
-export const isModalOpen = (state: EditorState) => !!state.ui.dialog && !isMovementEditor(state.ui.dialog) || !!state.ui.confirmation;
+export const isModalOpen = (state: EditorState) => !!state.ui.dialog && !isDockedSpatialEditor(state.ui.dialog) || !!state.ui.confirmation;
 
 /** One promise-based in-app confirmation at a time. The request lives in
  * ui.confirmation so command, menu and shortcut guards treat it like a dialog.

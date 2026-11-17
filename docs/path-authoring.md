@@ -9,8 +9,9 @@ never implicitly target the cast.
 Draw performer path and Edit movement timing preview directly on the main field,
 with parameters in the docked Inspector and Apply/Cancel above its scrolling
 contents. The simple cubic editor opened by Edit performer path remains a dialog.
-Shared routes and Move operations keep their existing editors during the
-incremental [main-field port](evidence/main-field-paths/README.md).
+[Shared routes](shared-routes.md) also uses the main field with docked controls.
+Move operations keeps its existing editor during the incremental
+[main-field port](evidence/main-field-paths/README.md).
 
 ## Field editing
 
