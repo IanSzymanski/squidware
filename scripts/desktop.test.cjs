@@ -17,7 +17,7 @@ const legacyProject = syncFs.readFileSync(path.join(root, 'src/fixtures/schema-v
 
 // Run the actual main-process handlers with controlled dialogs and real files.
 // No Electron binary, GUI, remote server, or production user profile is needed.
-async function harness(t, { failRename = false, development = false, platform = 'win32', displays = [{ id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }] } = {}) {
+async function harness(t, { failRename = false, renameFile, development = false, platform = 'win32', displays = [{ id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }] } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'squidware-desktop-test-'));
   t.after(async () => {
     const relative = path.relative(os.tmpdir(), directory);
@@ -78,7 +78,7 @@ async function harness(t, { failRename = false, development = false, platform = 
   };
   const context = {
     require: name => name === 'electron' ? electron
-      : name === 'node:fs/promises' && failRename ? { ...fs, rename: async () => { throw new Error('Simulated disk failure'); } }
+      : name === 'node:fs/promises' && (failRename || renameFile) ? { ...fs, rename: renameFile ?? (async () => { throw new Error('Simulated disk failure'); }) }
       : name.startsWith('./') ? require(path.join(root, 'electron', name)) : require(name),
     __dirname: path.join(root, 'electron'),
     process: { argv: [], env: development ? { ELECTRON_RENDERER_URL: 'http://127.0.0.1:5173/' } : {}, platform },
@@ -801,4 +801,38 @@ test('native v12 group motion round-trips and invalid programs cannot overwrite 
   const bad=JSON.parse(content);mutate(bad.moves[0].groupMotions[0]);await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Group movement'),/Group movement/);assert.equal(await fs.readFile(filename,'utf8'),content);
  }
  assert.equal(h.saveDialogCount(),0);
+});
+
+test('Windows atomic replacement survives transient sharing failures without removing the previous file', async t => {
+  const attempts = [], codes = ['EPERM', 'EBUSY', 'EACCES'];
+  const h = await harness(t, { renameFile: async (from, to) => {
+    attempts.push(from);
+    assert.equal(await fs.readFile(to, 'utf8'), 'previous contents');
+    if (attempts.length <= codes.length) throw Object.assign(new Error('Sharing violation'), { code: codes[attempts.length - 1] });
+    await fs.rename(from, to);
+  } });
+  const filename = path.join(h.directory, 'show.squid'); await fs.writeFile(filename, 'previous contents');
+  h.dialog({ canceled: false, filePath: filename });
+  assert.equal(await h.invoke('save-project', project, 'Show'), filename);
+  assert.equal(attempts.length, 4); assert.equal(new Set(attempts).size, 1, 'retry the same complete temporary file');
+  assert.equal(await fs.readFile(filename, 'utf8'), project);
+  assert.deepEqual(await fs.readdir(h.directory), ['show.squid']);
+});
+test('persistent Windows replacement failures stop, preserve the previous file and clean up the temporary file', async t => {
+  let attempts = 0;
+  const h = await harness(t, { renameFile: async () => { attempts++; throw Object.assign(new Error('Locked destination'), { code: 'EPERM' }); } });
+  const filename = path.join(h.directory, 'show.squid'); await fs.writeFile(filename, 'previous contents');
+  h.dialog({ canceled: false, filePath: filename });
+  await assert.rejects(h.invoke('save-project', project, 'Show'), /Locked destination/);
+  assert.equal(attempts, 7); assert.equal(await fs.readFile(filename, 'utf8'), 'previous contents');
+  assert.deepEqual(await fs.readdir(h.directory), ['show.squid']);
+});
+test('non-sharing errors and non-Windows replacement failures are reported without retrying', async t => {
+  for (const [platform, code] of [['linux', 'EPERM'], ['win32', 'ENOSPC']]) {
+    let attempts = 0;
+    const h = await harness(t, { platform, renameFile: async () => { attempts++; throw Object.assign(new Error('Cannot replace'), { code }); } });
+    h.dialog({ canceled: false, filePath: path.join(h.directory, 'show.squid') });
+    await assert.rejects(h.invoke('save-project', project, 'Show'), /Cannot replace/);
+    assert.equal(attempts, 1); assert.deepEqual(await fs.readdir(h.directory), []);
+  }
 });

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useDockedEditorFocus } from './useDockedEditorFocus';
 import { FormattedNumberInput } from '../components/NumberField';
 import { formatYards } from '../coordinates';
 import { reverseRoute, routeSeam } from '../sharedRoutes';
@@ -14,11 +14,7 @@ export function SharedRoutesPanel({ editor: e }: { editor: SharedRoutesSession }
   const { initial, route, stroke, capture, curved, sourceMode, tolerance, coordinates, message, gesture, deleting,
     routes, original, changed, pending, stale, preview, selected, index, close, change, reset, attempt, save, closure,
     setRow, setStroke, setCapture, setCurved, setSourceMode, setTolerance, setCoordinates, setMessage, setDeleting, setSnapHandles } = e;
-  const region = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    region.current?.querySelector<HTMLElement>('[aria-label="Cancel shared routes"]')?.focus();
-    return () => { requestAnimationFrame(() => { if (document.activeElement === document.body) document.querySelector<HTMLElement>('.field-container')?.focus(); }); };
-  }, []);
+  const region = useDockedEditorFocus('Cancel shared routes');
   const numeric = (label: string, point: Point, update: (point: Point) => void) => <div className="route-coordinates" key={label}>{(['x', 'y'] as const).map(axis => <label className="form-label" key={axis}>{label} {axis.toUpperCase()} · yd<FormattedNumberInput aria-label={`${label} ${axis.toUpperCase()}`} step="0.1" value={point[axis]} onChange={text => update({ ...point, [axis]: text.trim() ? Number(text) : NaN })} /></label>)}</div>;
   return <section ref={region} aria-label="Shared routes" className="path-panel shared-routes-panel docked-path-editor"
     onKeyDown={event => { if (event.key === 'Escape' && !event.nativeEvent.isComposing) { event.preventDefault(); event.stopPropagation(); close(); } }}>

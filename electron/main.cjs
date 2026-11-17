@@ -157,7 +157,16 @@ async function atomicWrite(filename, content) {
     await handle.sync();
     await handle.close();
     handle = null;
-    await fs.rename(temporary, filename);
+    // Windows readers and virus scanners can briefly hold the destination.
+    // Retry only sharing/access failures, keeping the completed temporary file
+    // and the previous destination intact. Persistent failures still surface.
+    for (let attempt = 0; ; attempt++) {
+      try { await fs.rename(temporary, filename); break; }
+      catch (error) {
+        if (process.platform !== 'win32' || !['EPERM', 'EACCES', 'EBUSY'].includes(error.code) || attempt >= 6) throw error;
+        await new Promise(resolve => setTimeout(resolve, 20 * 2 ** attempt));
+      }
+    }
   } catch (error) {
     if (handle) await handle.close().catch(() => {});
     await fs.unlink(temporary).catch(() => {});

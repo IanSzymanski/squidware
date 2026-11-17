@@ -46,7 +46,7 @@ app.whenReady().then(async()=>{try{
  await evaluate("document.querySelector('[data-toolbar-item=\"view-2d\"]').focus()");await key('Right');assert.equal(await evaluate('document.activeElement.dataset.toolbarItem'),'view-3d');await key('End');assert.equal(await evaluate('document.activeElement.dataset.toolbarItem'),'more');await key('Down');
  await wait("!!document.activeElement.closest('.field-tools-menu')",'arrow enters More');await key('Escape');assert.equal(await evaluate('document.activeElement.dataset.toolbarItem'),'more');
  pass('field toolbar is one Tab stop with horizontal navigation and an escapable keyboard overflow menu');
- await action('Shared routes');await wait(`${state}.ui.dialog==='routes'`,'shared routes from More');await key('Escape');await wait(`!${state}.ui.dialog`,'route dialog dismissed');
+ await action('Shared routes');await wait(`${state}.ui.dialog==='routes'`,'shared routes from More');await key('Escape');await wait(`!${state}.ui.dialog && document.activeElement?.getAttribute('aria-label')==='More field tools'`,'route editor returns focus to More');
  assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"),'More field tools','dialog returns to More');
  await key('Down');await wait("!!document.activeElement.closest('.field-tools-menu')",'menu focus before changing context');
  await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(project.performers[0].id)}])`);
@@ -54,7 +54,7 @@ app.whenReady().then(async()=>{try{
  pass('changing selection while More owns focus returns to the visible trigger');
  await viewport(1024,720,1.5);await evaluate("document.querySelector('[aria-label=\"More field tools\"]').focus()");await key('Down');
  await wait("!!document.activeElement?.closest('.field-tools-menu') && document.querySelector('[role=tooltip] strong')?.textContent===document.activeElement.getAttribute('aria-label')",'keyboard help in narrow overflow');
- await action('Edit movement timing');await wait(`${state}.ui.dialog==='movement-schedule'`,'pointer opens timing beside keyboard menu help');await key('Escape');await wait(`!${state}.ui.dialog`,'timing dismissed');await viewport(1366,768);
+ await action('Edit movement timing');await wait(`${state}.ui.dialog==='movement-schedule'`,'pointer opens timing beside keyboard menu help');await key('Escape');await wait(`!${state}.ui.dialog && document.activeElement?.getAttribute('aria-label')==='More field tools'`,'timing editor returns focus to More');await viewport(1366,768);
  pass('keyboard overflow help does not intercept a pointer click on a neighboring action');
  await evaluate(`${editor}.setValue('selection','selectedIds',${JSON.stringify(project.performers.slice(0,3).map(p=>p.id))})`);
  await wait("document.querySelector('.field-command-toolbar').dataset.context==='group'",'group context');await snapshot('group-1366');await viewport(1024,700);await snapshot('group-1024');await viewport(1366,768);
