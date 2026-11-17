@@ -1,4 +1,4 @@
-import { isMovementEditor } from './movementEditor';
+import { isDockedSpatialEditor } from './movementEditor';
 import { setStartCount } from '../domain';
 import type { EditorState } from './state';
 
@@ -8,5 +8,5 @@ export function isAtActiveSet(state: EditorState): boolean {
 }
 
 export function canEditPositions(state: EditorState): boolean {
-  return !isMovementEditor(state.ui.dialog) && !state.playback.rehearsalId && !state.ui.selectionPreview && !state.playback.playing && isAtActiveSet(state) && !state.ui.transformPreview && !state.ui.formationPreview && !state.ui.spacingPreview && !state.ui.coordinatePreview;
+  return !isDockedSpatialEditor(state.ui.dialog) && !state.playback.rehearsalId && !state.ui.selectionPreview && !state.playback.playing && isAtActiveSet(state) && !state.ui.transformPreview && !state.ui.formationPreview && !state.ui.spacingPreview && !state.ui.coordinatePreview;
 }

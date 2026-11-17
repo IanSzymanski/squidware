@@ -252,11 +252,19 @@ async function activateWorkspace(window, id) {
     await keyWithRelease(window, 'Escape', [], {releaseKey:'Escape'});
     await waitFor(() => evaluate("!document.querySelector('dialog[open] .cast-table')"), 'full Cast dismissed');
   }
-  await evaluate("document.querySelector('[aria-label=\"Switch workspace\"]').focus()");
+  // Closing a modal or revealing a pane can queue focus in a later frame.
+  // Finish that layout before choosing the native Enter target, then observe
+  // its focus settlement. Never resend an activation that timed out.
+  const focus = async selector => {
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    await evaluate(`document.querySelector(${JSON.stringify(selector)})?.focus()`);
+    await waitFor(() => evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const n=document.querySelector(${JSON.stringify(selector)});resolve(!!n&&!!n.getClientRects().length&&document.activeElement===n&&document.hasFocus());})))`), 'workspace native focus '+selector);
+  };
+  await focus('[aria-label="Switch workspace"]');
   await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
   await waitFor(() => evaluate("!!document.querySelector('#workspace-options')"), 'workspace options');
   const name = id[0].toUpperCase() + id.slice(1);
-  await evaluate(`document.querySelector(${JSON.stringify('#workspace-options [aria-label="'+name+' workspace"]')}).focus()`);
+  await focus('#workspace-options [aria-label="'+name+' workspace"]');
   await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
   await waitFor(() => evaluate(`!document.querySelector('#workspace-options') && document.querySelector('.workspace-trigger').textContent===${JSON.stringify(name)}`), name+' workspace');
   // Existing editing owners explicitly return to Inspector after choosing Design.

@@ -1,4 +1,4 @@
-import { duringMovementEditor, isMovementEditor } from './movementEditor';
+import { duringSpatialEditor, isDockedSpatialEditor } from './movementEditor';
 import { canSwitchWorkspace, switchWorkspace, saveWorkspace, renameWorkspace, updateWorkspace } from './workspaceCommands';
 import { isBuiltInWorkspace, type WorkspaceArrangement } from '../workspaces';
 import { canOpenGroupMotion, groupMotionPlan, groupReviewCurrent, type GroupMotionReview } from './groupMotionReview';
@@ -202,13 +202,13 @@ function canSaveMovement(s: EditorState, a: Pick<ScheduleEdit, 'revision' | 'epo
     && canEditMovement({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === dialog ? null : s.ui.dialog } })
     && s.project.present.moves[s.selection.activeIndex - 1]?.id === a.moveId && s.selection.selectedIds[0] === a.performerId;
 }
-const fieldView = (s: EditorState) => (idle(s) || isMovementEditor(s.ui.dialog)) && s.ui.workspace === 'design' && s.ui.view === '2d';
+const fieldView = (s: EditorState) => (idle(s) || isDockedSpatialEditor(s.ui.dialog)) && s.ui.workspace === 'design' && s.ui.view === '2d';
 export const canChangeLayout = (s: EditorState) => !s.ui.selectionPreview && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
   const state = context.getState();
   if (state.ui.dialog !== dialog && state.ui.pendingDraft) throw new Error('Finish or cancel the pending edit before changing dialogs.');
   if (dialog) context.patch('playback', { playing: false });
-  if (isMovementEditor(dialog)) context.patch('ui', { workspace: 'design', view: '2d', tool: 'select' });
+  if (isDockedSpatialEditor(dialog)) context.patch('ui', { workspace: 'design', view: '2d', tool: 'select' });
   context.patch('ui', { dialog });
 };
 const editable = canEditPositions;
@@ -270,7 +270,7 @@ export const commandRegistry = {
     enabled:(s,a)=>!!a&&assignmentReviewCurrent(s,a),execute:(c,a)=>{const formationPreview=acceptedAssignment(c.getState(),a);c.patch('ui',{formationPreview,dialog:null});} }),
   'routes.open': simple('routes.open', 'Shared routes', 'Draw and edit production-local open or closed route geometry independently of performers and move timing.', s => canNavigate(s) && canEditPositions(s), c => showDialog(c, 'routes')),
   'routes.save': define({ id: 'routes.save', name: 'Save shared route', description: 'Apply or delete reviewed route geometry as one undo action.', arguments: { route: 'reviewed geometry, or null to delete', routeId: 'reviewed ID', existing: 'whether the route already exists', revision: 'reviewed revision', epoch: 'project session' },
-    enabled: (s, a) => !!a && s.ui.dialog === 'routes' && !s.ui.pendingDraft && !s.project.transactionName && canEditPositions(s) && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch,
+    enabled: (s, a) => !!a && s.ui.dialog === 'routes' && !s.ui.pendingDraft && !s.project.transactionName && canEditPositions({ ...s, ui: { ...s.ui, dialog: null } }) && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch,
     execute: (c, a) => { c.edit(p => editSharedRoute(p, a)); c.patch('ui', { dialog: null }); } }),
   'templates.open': simple('templates.open', 'Templates', 'Save ensemble setups and formations, import a library or preview reusable formations.', canNavigate,
     c => { showDialog(c, 'templates'); c.patch('ui', { menu: false }); }),
@@ -641,8 +641,8 @@ export function executeCommand<I extends CommandId>(context: CommandContext, id:
   const state = context.getState();
   const definition = commandRegistry[id] as unknown as CommandDefinition<I>;
   if (!definition.enabled(state, args)) return false;
-  if (isMovementEditor(state.ui.dialog)) {
-    if (!duringMovementEditor(id) || id === 'dialog.open' && (args as CommandArguments['dialog.open'])?.dialog !== null) return false;
+  if (isDockedSpatialEditor(state.ui.dialog)) {
+    if (!duringSpatialEditor(id, state.ui.dialog) || id === 'dialog.open' && (args as CommandArguments['dialog.open'])?.dialog !== null) return false;
     // Like a formation preview, seeking a set/count or starting playback ends
     // the local draft. Preview sampling itself stays on the panel's count slider.
     if (['set.select', 'playback.scrub', 'playback.toggle'].includes(id)) context.patch('ui', { dialog: null, pendingDraft: false });

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useDockedEditorFocus } from './useDockedEditorFocus';
 import { FormattedNumberInput, formattedNumber } from '../components/NumberField';
 import { formatYards } from '../coordinates';
 import { Tooltip } from '../components/Tooltip';
@@ -16,11 +16,7 @@ import './paths.css';
 export function MovementSchedulePanel({ editor: e }: { editor: MovementScheduleSession }) {
   const { project, index, id, move, from, to, rows, count, selectedRow, gesture, capture, stroke, submitError,
     path, error, stale, changed, travel, preview, label, lastTravel, drawInitially, update, close, apply, selectRow, setRows, patch } = e;
-  const region = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    region.current?.querySelector<HTMLElement>('[aria-label="Cancel movement timing"]')?.focus();
-    return () => { requestAnimationFrame(() => { if (document.activeElement === document.body) document.querySelector<HTMLElement>('.field-container')?.focus(); }); };
-  }, []);
+  const region = useDockedEditorFocus('Cancel movement timing');
   function numeric(row: ScheduleRow, i: number, key: keyof ScheduleRow, title: string, maximum: number) {
     const name = `Interval ${i + 1} ${title}`;
     return <label className="form-label">{title}<Tooltip pointerPassThrough name={name} description="Change this interval's local written count or field coordinate. Preview updates before Apply."><FormattedNumberInput aria-label={name} step={key === 'start' || key === 'end' ? .25 : .1} min={0} max={maximum} value={row[key]} format={key === 'start' || key === 'end' ? formatTimelineCount : formatYards} disabled={!!capture || gesture} onChange={text => update(row.id, key, text)} /></Tooltip></label>;

@@ -23,16 +23,81 @@ function instrument() {
   window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = { supportsFiber: true, renderers: new Map(), inject() { return 1; }, onCommitFiberRoot(_id, r) { function visit(f) { if (!f) return; const v = f.memoizedProps?.value; if (v?.getState && v?.dispatch) qa.editor = v; visit(f.child); visit(f.sibling); } visit(r.current); }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {} };
 }
 const button = s => `[aria-label=${JSON.stringify(s)}]`;
-async function click(selector) { await revealFieldTool(window,selector);
-  const p = await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n)throw Error('Missing '+${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
-  await mouse('mousePressed', p); await mouse('mouseReleased', p); await frames();
+async function click(selector) {
+  await revealFieldTool(window,selector);
+  // Native input can arrive after a compositor frame on Windows. Finish the
+  // gesture and scroll/layout first, then hit-test the enabled target. Send
+  // the activation once and observe its trusted release instead of resending.
+  await evaluate('document.activeElement?.blur()');
+  await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0});
+  await wait(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(!n||n.disabled||n.getAttribute('aria-disabled')==='true')return resolve(false);n.scrollIntoView({block:'nearest'});requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=n.getBoundingClientRect();const p={x:r.x+r.width/2,y:r.y+r.height/2};if(!n.contains(document.elementFromPoint(p.x,p.y)))return resolve(false);window.__drawQA.clickPoint=p;resolve(true);}));})`, 'ready click '+selector);
+  const point = await evaluate(`(()=>{window.__drawQA.released=false;const release=e=>{if(!e.isTrusted||e.button!==0)return;window.__drawQA.released=true;document.removeEventListener('pointerup',release,true);};document.addEventListener('pointerup',release,true);return window.__drawQA.clickPoint;})()`);
+  for(const type of ['mouseMoved','mousePressed','mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
+  await wait('window.__drawQA.released','native pointer release '+selector);
+  await frames();
 }
-async function mouse(type, p) {
-  const types = { mousePressed: 'mouseDown', mouseReleased: 'mouseUp', mouseMoved: 'mouseMove' };
-  window.webContents.sendInputEvent({ type: types[type], x: Math.round(p.x), y: Math.round(p.y), button: 'left', ...(type === 'mouseMoved' ? { modifiers: ['leftButtonDown'] } : { clickCount: 1 }) });
+async function mouse(type, p, button = 'left') {
+  const types = { mousePressed: ['mouseDown','pointerdown'], mouseReleased: ['mouseUp','pointerup'], mouseMoved: ['mouseMove','pointermove'] };
+  const [nativeType, domType] = types[type], x = Math.round(p.x), y = Math.round(p.y);
+  const token = await evaluate(`(()=>{const qa=window.__drawQA;qa.pointerSequence=(qa.pointerSequence??0)+1;const token=qa.pointerSequence;qa.pointerAck=null;const listen=e=>{if(!e.isTrusted||Math.abs(e.clientX-${x})>1||Math.abs(e.clientY-${y})>1)return;qa.pointerAck=token;};document.addEventListener(${JSON.stringify(domType)},listen,true);qa.clearPointer=()=>document.removeEventListener(${JSON.stringify(domType)},listen,true);return token;})()`);
+  try {
+    window.webContents.sendInputEvent({type:nativeType,x,y,button,...(type==='mouseMoved'?{modifiers:[button==='middle'?'middleButtonDown':'leftButtonDown']}:{clickCount:1})});
+    await wait(`window.__drawQA.pointerAck===${token}`, 'native '+domType+' at '+x+','+y);
+  } finally { await evaluate('window.__drawQA.clearPointer?.()'); }
   await frames();
 }
 async function field(p) { return evaluate(`(()=>{const s=document.querySelector('.travel-field');s.scrollIntoView({block:'center'});const p=new DOMPoint(${p.x},${p.y}).matrixTransform(s.getScreenCTM());return {x:p.x,y:p.y};})()`); }
+async function panToStroke(points) {
+  // Compute the drag from the current viewBox. Start far enough left that
+  // the whole drag stays in the field, even when moving over half its width.
+  const { center, start, end, hit } = await evaluate(`(() => {
+    const field = document.querySelector('.field-stage__svg');
+    const view = field.viewBox.baseVal;
+    const points = ${JSON.stringify(points)};
+    const mid = axis => {
+      const values = points.map(point => point[axis]);
+      return (Math.min(...values) + Math.max(...values)) / 2;
+    };
+    const center = { x: mid('x'), y: mid('y') };
+    const x = view.x + view.width / 4, y = view.y + view.height / 2;
+    const project = (x, y) => {
+      const p = new DOMPoint(x, y).matrixTransform(field.getScreenCTM());
+      return { x: p.x, y: p.y };
+    };
+    const start = project(x, y);
+    const end = project(x + view.x + view.width / 2 - center.x, y + view.y + view.height / 2 - center.y);
+    const hits = point => Boolean(document.elementFromPoint(point.x, point.y)?.closest('.travel-field.is-drawing'));
+    return { center, start, end, hit: hits(start) && hits(end) };
+  })()`);
+  assert.ok(hit, 'Both ends of the pan must hit the drawing field');
+  // CDP sends the same trusted Alt-drag on each platform with the held button
+  // explicit. A window-level pointer acknowledgement alone cannot prove pan.
+  const send = (type, point, button, buttons) => window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+    type, ...point, button, buttons, modifiers: 1, clickCount: type === 'mouseMoved' ? 0 : 1,
+  });
+  await send('mouseMoved', start, 'none', 0);
+  await send('mousePressed', start, 'left', 1);
+  await send('mouseMoved', end, 'none', 1);
+  await send('mouseReleased', end, 'left', 0);
+  await wait(`(() => {
+    const view = document.querySelector('.field-stage__svg').viewBox.baseVal;
+    return Math.abs(view.x + view.width / 2 - ${center.x}) < .5
+      && Math.abs(view.y + view.height / 2 - ${center.y}) < .5;
+  })()`, '2× field panned to the stroke');
+}
+async function visibleStrokePoints(points) {
+  const projected = await evaluate(`(() => {
+    const drawing = document.querySelector('.travel-field.is-drawing');
+    const matrix = drawing.getScreenCTM();
+    return ${JSON.stringify(points)}.map(({ x, y }) => {
+      const p = new DOMPoint(x, y).matrixTransform(matrix);
+      const screen = { x: Math.round(p.x), y: Math.round(p.y) };
+      return { ...screen, hit: drawing.contains(document.elementFromPoint(screen.x, screen.y)) };
+    });
+  })()`);
+  assert.ok(projected.every(point => point.hit), `Stroke must fit the drawing field: ${JSON.stringify(projected)}`);
+  return projected;
+}
 async function type(name, value) {
   await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(button(name))});n.focus();n.select();})()`);
   await window.webContents.debugger.sendCommand('Input.insertText', { text: String(value) }); await frames();
@@ -148,7 +213,7 @@ app.whenReady().then(async () => { try {
   const beforePan=await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')");
   const center=await field({x:20,y:20});
   for(const [type,x] of [['mouseDown',center.x],['mouseMove',center.x+40],['mouseUp',center.x+40]]) {
-    window.webContents.sendInputEvent({type,x:Math.round(x),y:Math.round(center.y),button:'middle',modifiers:type==='mouseMove'?['middleButtonDown']:[]});await frames();
+    await mouse(type==='mouseDown'?'mousePressed':type==='mouseUp'?'mouseReleased':'mouseMoved',{x,y:center.y},'middle');
   }
   assert.notEqual(await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')"),beforePan);
   await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'})`);await frames();
@@ -174,16 +239,20 @@ app.whenReady().then(async () => { try {
   pass('collapsed Inspector and focus mode are temporarily restored for movement parameters without changing saved layout; readout cannot cover path geometry');
 
   const zoomSamples=[];
+  const forward=[...points].reverse();
   for(const zoom of [1,2]) {
-    await load(p);await evaluate(`${editor}.dispatch('path.draw-open')`);await frames();await evaluate(`${editor}.setValue('ui','zoom',${zoom})`);await frames();
-    if(zoom>1) {
-      const pan=await evaluate("(()=>{const s=document.querySelector('.field-stage__svg'),m=document.querySelector('[data-field-geometry]').getScreenCTM(),r=s.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,dx:30*m.a,dy:10*m.d};})()");
-      for(const [type,x,y] of [['mouseDown',pan.x,pan.y],['mouseMove',pan.x+pan.dx,pan.y+pan.dy],['mouseUp',pan.x+pan.dx,pan.y+pan.dy]]) {
-        window.webContents.sendInputEvent({type,x:Math.round(x),y:Math.round(y),button:'middle',modifiers:type==='mouseMove'?['middleButtonDown']:[]});await frames();
-      }
-    }
-    const forward=[...points].reverse();await mouse('mousePressed',await field(forward[0]));for(const point of forward.slice(1))await mouse('mouseMoved',await field(point));await mouse('mouseReleased',await field(forward.at(-1)));
-    await click(button('Fit drawn path'));await frames();
+    await load(p);
+    await evaluate(`${editor}.dispatch('field.fit');${editor}.dispatch('path.draw-open');${editor}.setValue('ui','zoom',${zoom})`);
+    await frames();
+    assert.equal(await evaluate(`${state}.ui.zoom`), zoom);
+    if (zoom === 2) await panToStroke(forward);
+    const screen = await visibleStrokePoints(forward);
+    await mouse('mousePressed', screen[0]);
+    await wait("!!document.querySelector('.travel-stroke')", `stroke capture started at ${zoom}×`);
+    for (const point of screen.slice(1)) await mouse('mouseMoved', point);
+    await mouse('mouseReleased', screen.at(-1));
+    await click(button('Fit drawn path'));
+    await wait("!document.querySelector('[aria-label=\"Fit drawn path\"]')", `fitted captured stroke at ${zoom}x`);
     assert.ok(await evaluate("document.querySelectorAll('[data-schedule-row]').length")>1);
     zoomSamples.push(await evaluate("[...document.querySelectorAll('.travel-field .path-proposed')].flatMap(p=>Array.from({length:21},(_,i)=>{const q=p.getPointAtLength(p.getTotalLength()*i/20);return {x:q.x,y:q.y}}))"));
     await press('Escape');
@@ -213,4 +282,4 @@ app.whenReady().then(async () => { try {
   pass('2/64/500 performer render cost recorded with bounded selected-path ticks and handles');
   assert.deepEqual(await evaluate('window.__drawQA.errors'),[]);
   await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,viewports,timings,source:manifest.source,scope:manifest.scope},null,2)); app.exit(0);
-} catch(e) {console.error(e.stack);try{await capture('authoring-failed.png');}catch{}app.exit(1);} });
+} catch(e) {console.error(e.stack);try{console.error(await evaluate("({zoom:window.__drawQA.editor?.getState().ui.zoom,viewBox:document.querySelector('.field-stage__svg')?.getAttribute('viewBox'),capture:document.querySelector('.travel-stroke')?.getAttribute('points'),fit:document.querySelector('[aria-label=\"Fit drawn path\"]')?.outerHTML,errors:[...document.querySelectorAll('[role=alert]')].map(n=>n.textContent),rows:document.querySelectorAll('[data-schedule-row]').length})"));await capture('authoring-failed.png');}catch{}app.exit(1);} });

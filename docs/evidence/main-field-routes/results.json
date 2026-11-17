@@ -1,0 +1,279 @@
+{
+  "passed": [
+    "native freehand S capture and fit, single undo/redo, unselected cast isolation and native v8 save/reopen",
+    "native keyboard and control drag previews, Escape rollback, numeric cancel/apply, and explicit direction reversal",
+    "closed numeric anchors add a seam, split/reverse/seam edits preserve closure, duplicate names block Apply, cancel preserves both routes",
+    "dark/light/high-contrast and enlarged narrow layouts retain controls; deletion confirmation and undo restore geometry; final native save/reopen retains route IDs and seam",
+    "current zoom, native pan, flipped keyboard edits, field Escape, collapsed Inspector and focus restoration, transport discard and unobstructed main geometry",
+    "native keyboard-only route naming, numeric anchors, Fit and Apply complete the primary task as one undo",
+    "2, 64 and 500-performer route previews report readiness while route geometry remains independent of cast size"
+  ],
+  "metrics": {
+    "layouts": [
+      {
+        "theme": "dark",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 98,
+          "bottom": 611,
+          "width": 856,
+          "height": 513
+        },
+        "panel": {
+          "left": 1108,
+          "right": 1366,
+          "top": 82,
+          "bottom": 740,
+          "width": 258,
+          "height": 658
+        },
+        "apply": {
+          "left": 1193.359375,
+          "right": 1352.6875,
+          "top": 121,
+          "bottom": 157,
+          "width": 159.328125,
+          "height": 36
+        },
+        "cancel": {
+          "left": 1120,
+          "right": 1187.359375,
+          "top": 121,
+          "bottom": 157,
+          "width": 67.359375,
+          "height": 36
+        },
+        "canvas": {
+          "left": 216.1785888671875,
+          "right": 1107.8214111328125,
+          "top": 83.35714721679688,
+          "bottom": 625.6429138183594,
+          "width": 891.642822265625,
+          "height": 542.2857666015625
+        }
+      },
+      {
+        "theme": "light",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 98,
+          "bottom": 611,
+          "width": 856,
+          "height": 513
+        },
+        "panel": {
+          "left": 1108,
+          "right": 1366,
+          "top": 82,
+          "bottom": 740,
+          "width": 258,
+          "height": 658
+        },
+        "apply": {
+          "left": 1193.359375,
+          "right": 1352.6875,
+          "top": 121,
+          "bottom": 157,
+          "width": 159.328125,
+          "height": 36
+        },
+        "cancel": {
+          "left": 1120,
+          "right": 1187.359375,
+          "top": 121,
+          "bottom": 157,
+          "width": 67.359375,
+          "height": 36
+        },
+        "canvas": {
+          "left": 216.1785888671875,
+          "right": 1107.8214111328125,
+          "top": 83.35714721679688,
+          "bottom": 625.6429138183594,
+          "width": 891.642822265625,
+          "height": 542.2857666015625
+        }
+      },
+      {
+        "theme": "high-contrast",
+        "width": 1366,
+        "scale": 1,
+        "viewport": {
+          "width": 1366,
+          "height": 768
+        },
+        "field": {
+          "left": 234,
+          "right": 1090,
+          "top": 98,
+          "bottom": 611,
+          "width": 856,
+          "height": 513
+        },
+        "panel": {
+          "left": 1108,
+          "right": 1366,
+          "top": 82,
+          "bottom": 740,
+          "width": 258,
+          "height": 658
+        },
+        "apply": {
+          "left": 1193.359375,
+          "right": 1352.6875,
+          "top": 121,
+          "bottom": 157,
+          "width": 159.328125,
+          "height": 36
+        },
+        "cancel": {
+          "left": 1120,
+          "right": 1187.359375,
+          "top": 121,
+          "bottom": 157,
+          "width": 67.359375,
+          "height": 36
+        },
+        "canvas": {
+          "left": 216.1785888671875,
+          "right": 1107.8214111328125,
+          "top": 83.35714721679688,
+          "bottom": 625.6429138183594,
+          "width": 891.642822265625,
+          "height": 542.2857666015625
+        }
+      },
+      {
+        "theme": "dark",
+        "width": 900,
+        "scale": 1.25,
+        "viewport": {
+          "width": 900,
+          "height": 768
+        },
+        "field": {
+          "left": 52.5,
+          "right": 583.75,
+          "top": 117.5,
+          "bottom": 598.25,
+          "width": 531.25,
+          "height": 480.75
+        },
+        "panel": {
+          "left": 606.25,
+          "right": 900,
+          "top": 102.5,
+          "bottom": 738,
+          "width": 293.75,
+          "height": 635.5
+        },
+        "apply": {
+          "left": 621.25,
+          "right": 819.90625,
+          "top": 203.5,
+          "bottom": 248,
+          "width": 198.65625,
+          "height": 44.5
+        },
+        "cancel": {
+          "left": 621.25,
+          "right": 704.953125,
+          "top": 151.5,
+          "bottom": 196,
+          "width": 83.703125,
+          "height": 44.5
+        },
+        "canvas": {
+          "left": 38.79861068725586,
+          "right": 597.4513816833496,
+          "top": 187.99227905273438,
+          "bottom": 527.7576904296875,
+          "width": 558.6527709960938,
+          "height": 339.7654113769531
+        }
+      },
+      {
+        "theme": "dark",
+        "width": 1024,
+        "scale": 1.5,
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "field": {
+          "left": 63,
+          "right": 644.5,
+          "top": 141,
+          "bottom": 564.5,
+          "width": 581.5,
+          "height": 423.5
+        },
+        "panel": {
+          "left": 671.5,
+          "right": 1024,
+          "top": 123,
+          "bottom": 732,
+          "width": 352.5,
+          "height": 609
+        },
+        "apply": {
+          "left": 689.5,
+          "right": 927.484375,
+          "top": 244,
+          "bottom": 297,
+          "width": 237.984375,
+          "height": 53
+        },
+        "cancel": {
+          "left": 689.5,
+          "right": 789.53125,
+          "top": 182,
+          "bottom": 235,
+          "width": 100.03125,
+          "height": 53
+        },
+        "canvas": {
+          "left": 47.90277862548828,
+          "right": 659.5972366333008,
+          "top": 166.73764038085938,
+          "bottom": 538.7623291015625,
+          "width": 611.6944580078125,
+          "height": 372.0246887207031
+        }
+      }
+    ],
+    "timings": [
+      {
+        "captureAndFitMs": 786.6066040000005,
+        "sourcePoints": 41
+      },
+      {
+        "performers": 2,
+        "previewReadyMs": 43.5
+      },
+      {
+        "performers": 64,
+        "previewReadyMs": 32.09999999997672
+      },
+      {
+        "performers": 500,
+        "previewReadyMs": 72.40000000002328
+      }
+    ]
+  },
+  "platform": "linux"
+}

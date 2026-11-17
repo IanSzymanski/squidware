@@ -2,7 +2,7 @@
 const { capturePage, key: sendKey, waitFor } = require('./testing/renderer.cjs');
 const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('node:fs/promises'); const path = require('node:path');
-const { root, output, profile, fixture } = require(process.argv.find(arg=>arg.startsWith('--route-manifest=')).slice('--route-manifest='.length));
+const { root, output, profile, fixture, bundle } = require(process.argv.find(arg=>arg.startsWith('--route-manifest=')).slice('--route-manifest='.length));
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
@@ -36,7 +36,7 @@ app.whenReady().then(async()=>{
     window.webContents.reload(); await wait(`!!${editor}`,'Assignment store');
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
     const project = JSON.parse(await fs.readFile(fixture,'utf8'));
-    const metrics = await require('./shared-routes-qa.cjs')({project,editor,state,evaluate,wait,key,capture,window,pass,saved,Menu});
+    const metrics = await require('./shared-routes-qa.cjs')({project,geometry:require(bundle),editor,state,evaluate,wait,key,capture,window,pass,saved,Menu});
     await fs.writeFile(path.join(output,'results.json'),JSON.stringify({passed:checks,metrics,platform:process.platform},null,2));
     app.exit(0);
   } catch(error) {console.error(error);if(window && !window.isDestroyed())await capture('failure.png').catch(()=>{});app.exit(1);}
