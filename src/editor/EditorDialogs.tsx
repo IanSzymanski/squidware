@@ -2,7 +2,6 @@ import { CastWorkspace } from './CastWorkspace';
 import { GroupMotionPanel } from './GroupMotionPanel';
 import { AssignmentPanel } from './AssignmentPanel';
 import { FormationTransitionPanel } from './FormationTransitionPanel';
-import { PathOperationsPanel } from './PathOperationsPanel';
 import { PathPanel } from './PathPanel';
 import { AudioAlignmentPanel } from './AudioAlignmentPanel';
 import { TempoPanel } from './TempoPanel';
@@ -43,7 +42,6 @@ export function EditorDialogs({ controller }: { controller: EditorController }) 
     {dialog === 'group-motion' && <GroupMotionPanel controller={controller} />}
     {dialog === 'formation-transition' && <FormationTransitionPanel controller={controller} />}
     {dialog === 'assignment' && <AssignmentPanel controller={controller} />}
-    {dialog === 'path-operations' && <PathOperationsPanel controller={controller} />}
     {dialog === 'path' && <PathPanel controller={controller} />}
     {dialog === 'templates' && <TemplatesPanel controller={controller} />}
     {dialog === 'new' && <NewProductionPanel controller={controller} />}

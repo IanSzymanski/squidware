@@ -1,3 +1,4 @@
+import { PathOperationsPanel } from './PathOperationsPanel';
 import { SharedRoutesPanel } from './SharedRoutesPanel';
 import { MovementSchedulePanel } from './MovementSchedulePanel';
 import { nudgeLabel } from '../editIncrements';
@@ -53,6 +54,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
   const format = (n: number) => Number(n.toFixed(2));
   const unavailable = controller.selectionPreview ? 'Apply or cancel the selection preview in Selection tools before editing positions.' : controller.coordinatePreview ? 'Apply or cancel coordinate entry before other position edits.' : controller.spacingPreview ? 'Apply or cancel the spacing preview before other position edits.' : controller.formationPreview ? 'Apply or cancel the formation preview before other position edits.' : controller.transformPreview ? 'Apply or cancel the transform preview before other position edits.' : controller.pendingDraft ? 'Finish or cancel the pending input first.' : readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   const single = selectedPerformers.length === 1 ? selectedPerformers[0] : undefined;
+  if (controller.pathOperations) return <PathOperationsPanel editor={controller.pathOperations} />;
   if (controller.routeEditor) return <SharedRoutesPanel editor={controller.routeEditor} />;
   if (controller.movementEditor) return <MovementSchedulePanel editor={controller.movementEditor} />;
   return <aside className="inspector">

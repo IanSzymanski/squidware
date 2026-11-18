@@ -9,8 +9,10 @@ function setup(){const p=parseProject(wire),store=createEditorStore(p);store.dis
 describe('reviewed path operation commands',()=>{
  it('resizes as one undo action and rejects stale review context without partial edits',()=>{
   const{p,store,context}=setup(),request:PathOperationRequest={...context,operation:{kind:'resize',counts:32}};
+  expect(store.dispatch('path.operations-open')).toBe(true);
+  expect(store.dispatch('schedule.open')).toBe(false);
   for(const patch of [{revision:-1},{epoch:-1},{activeSetId:'missing'},{ids:[]}])expect(store.dispatch('path.operation-apply',{...request,...patch})).toBe(false);
-  expect(store.dispatch('path.operation-apply',request)).toBe(true);expect(store.getState().project.past).toHaveLength(1);expect(store.getState().playback.count).toBe(32);
+  expect(store.dispatch('path.operation-apply',request)).toBe(true);expect(store.getState().project.past).toHaveLength(1);expect(store.getState().playback.count).toBe(32);expect(store.getState().ui.dialog).toBeNull();
   store.dispatch('history.undo');expect(store.getState().project.present).toEqual(p);store.dispatch('history.redo');expect(parseProject(serializeProject(store.getState().project.present))).toEqual(store.getState().project.present);
  });
  it('rejects an unchanged resize or a reverse that changes nothing without history, and never summarizes a same-count rescale',()=>{
@@ -23,7 +25,8 @@ describe('reviewed path operation commands',()=>{
  });
  it('copies without history or dirty revision, clones clipboard and clears it on project replacement',()=>{
   const{p,store,context}=setup(),request:PathCopyRequest={...context,performerId:'a',segmentIds:p.moves[0].paths.a.segments.map(s=>s.id),wholeMove:true};
-  expect(store.dispatch('path.copy-intervals',request)).toBe(true);expect(store.getState().project.past).toHaveLength(0);expect(store.getState().project.revision).toBe(context.revision);expect(store.getState().ui.movementClipboard?.intervals).toHaveLength(3);
+  expect(store.dispatch('path.operations-open')).toBe(true);
+  expect(store.dispatch('path.copy-intervals',request)).toBe(true);expect(store.getState().ui.dialog).toBeNull();expect(store.getState().project.past).toHaveLength(0);expect(store.getState().project.revision).toBe(context.revision);expect(store.getState().ui.movementClipboard?.intervals).toHaveLength(3);
   store.dispatch('project.load',{project:p});expect(store.getState().ui.movementClipboard).toBeNull();
  });
  it('reverses atomically, preserves IDs and restores the full production with undo',()=>{
