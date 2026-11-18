@@ -71,7 +71,7 @@ export class ShowAnalysis {
     const old = this.value, reusable = epoch === old.epoch && project.id === old.project.id;
     let count = 0;
     const moves = project.moves.map((move, i): MoveCheck => {
-      const signature = [epoch, project.id, project.field, project.performers, project.sections, project.analysisRules, move, project.sets[i].positions, project.sets[i + 1].positions, count];
+      const signature = [epoch, project.id, project.field, project.performers, project.sections, project.analysisRules, move, project.sets[i].positions, project.sets[i + 1].positions, project.sets[i].facings, project.sets[i + 1].facings, count];
       count += move.counts;
       const previous = reusable ? old.moves.find(m => m.moveId === move.id) : undefined;
       return previous && same(previous.signature, signature) ? (previous.index === i + 1 ? previous : { ...previous, index: i + 1 })

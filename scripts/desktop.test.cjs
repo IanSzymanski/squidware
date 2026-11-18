@@ -198,7 +198,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 13 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 14 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -801,6 +801,19 @@ test('native v12 group motion round-trips and invalid programs cannot overwrite 
   const bad=JSON.parse(content);mutate(bad.moves[0].groupMotions[0]);await assert.rejects(h.invoke('save-project',JSON.stringify(bad),'Group movement'),/Group movement/);assert.equal(await fs.readFile(filename,'utf8'),content);
  }
  assert.equal(h.saveDialogCount(),0);
+});
+
+test('native v13 retains facing and appearance and rejects an invalid heading before replacement', async t => {
+  const h = await harness(t), filename = path.join(h.directory, 'facing.squid');
+  const content = await fs.readFile(path.join(root, 'format/examples/facing-v13.squid'), 'utf8');
+  await fs.writeFile(filename, content);
+  h.dialog({ canceled: false, filePaths: [filename] });
+  assert.equal((await h.invoke('open-project')).content, content);
+  assert.equal(await h.invoke('save-project', content, 'Facing'), filename);
+  const invalid = JSON.parse(content);
+  invalid.sets[0].facings.a = 360;
+  await assert.rejects(h.invoke('save-project', JSON.stringify(invalid), 'Facing'), /up to 360/);
+  assert.equal(await fs.readFile(filename, 'utf8'), content);
 });
 
 test('Windows atomic replacement survives transient sharing failures without removing the previous file', async t => {

@@ -70,6 +70,8 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'group.remove': name = `Delete selection group · ${project.selectionGroups?.find(g => g.id === a.id)?.name ?? 'group'}`; break;
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;
+    case 'performer.facing': name = a.angle === null ? 'Clear performer facing' : 'Set performer facing'; break;
+    case 'performer.appearance': name = 'Edit performer appearance'; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;
     case 'section.add': name = 'Add section'; break;
     case 'section.update': name = `${Object.hasOwn(update, 'color') ? 'Recolor' : 'Rename'} ${project.sections.find(s => s.id === a.id)?.name ?? 'section'}`; break;

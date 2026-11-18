@@ -173,7 +173,7 @@ Switch from **2D field** to **3D preview** to see the same positions and playbac
 
 Click a performer to select them; Shift-click modifies the selection. Selection appears as a ground ring. Use the 2D field or Inspector to edit positions.
 
-The 3D performers are section-colored rehearsal markers. Their appearance does not model actual uniforms, instruments, guard equipment, body orientation, or marching technique. If a graphics context cannot initialize, the app shows a fallback message. Switch to 2D to continue designing; after a temporary graphics interruption, leave and reopen 3D to retry.
+The 3D performers are section-colored rehearsal markers by default. Select performers and use **Performer facing** in the Inspector to author a heading at a set. Select one performer in Cast and expand **Appearance** to add an instrument or guard marker or a costume color. These are simple visual cues. If 3D cannot initialize, switch to 2D to keep editing. [Performer facing and appearance](performer-facing.md)
 
 ### 3D window
 

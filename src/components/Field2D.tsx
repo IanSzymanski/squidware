@@ -1,3 +1,4 @@
+import { describeFacing, facingAt } from '../performerFacing';
 import { TravelOverlay, type TravelPreview } from '../editor/TravelCanvas';
 import { FieldCanvas } from './FieldCanvas';
 import { fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from './fieldScene';
@@ -8,7 +9,7 @@ import { DEFAULT_SNAPPING, gridInterval, hashLines, moveSelection } from '../sna
 import type { CoordinateOptions } from '../coordinates';
 import { memo, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
-import type { Point, Project } from '../types';
+import type { Performer, PerformerFacings, Point, Project } from '../types';
 import { selectionMembership } from '../selection';
 import type { SelectionReview } from '../selectionTools';
 import { coordinateDescription } from '../domain';
@@ -29,6 +30,7 @@ import { fieldViewBox, fieldViewPoint, fieldViewTransform, type FieldOrientation
 interface DrawingProps {
   orientation?: FieldOrientation;
   project: Project;
+  facings?: PerformerFacings;
   positions: Record<string, Point>;
   neighbors?: NeighborOverlay[];
   selectedIds?: string[];
@@ -87,7 +89,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, he
 StaticFieldMarkings.displayName = 'StaticFieldMarkings';
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, dynamicOnly = false, deferMotion = false, orientation = 'audience-bottom' }: DrawingProps) {
+export function FieldDrawing({ project, facings, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, dynamicOnly = false, deferMotion = false, orientation = 'audience-bottom' }: DrawingProps) {
   const { width, height, preset } = project.field;
   const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
@@ -110,7 +112,7 @@ export function FieldDrawing({ project, positions, neighbors, selectedIds = [], 
       const sectionColor = colors.get(performer.sectionId) ?? '#b9ed85';
       const color = screen ? fieldDotColor(sectionColor, isSelected, display) : sectionColor;
       const labelPoint = viewPoint(point);
-      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), !deferMotion && coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ');
+      const details = [performer.label, performer.name, sectionNames.get(performer.sectionId), describeFacing(facingAt(facings, performer.id)), !deferMotion && coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ');
       const label = labels?.get(performer.id);
       const focusRadius = screen ? (display.dotRadiusPx + 5) / scale : 1.35;
       return <g key={performer.id} data-performer-id={performer.id} tabIndex={readoutId ? focusedId === performer.id ? 0 : -1 : undefined} role={readoutId ? 'button' : undefined} aria-label={readoutId ? `${details}${isSelected ? ', selected' : ''}` : undefined} aria-describedby={keyboardHelpId} aria-pressed={readoutId ? isSelected : undefined} className={`field-performer${keyboardFocusId === performer.id ? ' field-performer--focused' : ''}`} transform={`translate(${point.x} ${point.y})`}>
@@ -133,11 +135,35 @@ export function FieldDrawing({ project, positions, neighbors, selectedIds = [], 
 // paint on every clock tick. Canonical positions are synchronized below.
 const InteractiveFieldDrawing = memo(FieldDrawing, (before, after) => {
   if (!before.deferMotion || !after.deferMotion) return false;
-  return (Object.keys(after) as (keyof DrawingProps)[]).every(key => ['positions', 'screen'].includes(key) || before[key] === after[key]);
+  return (Object.keys(after) as (keyof DrawingProps)[]).every(key => ['positions', 'facings', 'screen'].includes(key) || before[key] === after[key]);
 });
 InteractiveFieldDrawing.displayName = 'InteractiveFieldDrawing';
 const NO_POSITIONS: Record<string, Point> = {};
 const NO_NEIGHBORS: NeighborOverlay[] = [];
+
+function PerformerMarks({ facings, performers, positions, scale, radius }: {
+  facings?: PerformerFacings; performers: Performer[]; positions: Record<string, Point>; scale: number; radius: number;
+}) {
+  const start = radius + 4;
+  return <g className="performer-marks" pointerEvents="none" aria-hidden="true">
+    {Object.entries(facings ?? {}).map(([id, angle]) => {
+      const point = Object.hasOwn(positions, id) ? positions[id] : undefined;
+      return point && <path key={id} data-performer-facing={id} data-facing-degrees={angle}
+        transform={`translate(${point.x} ${point.y}) scale(${1 / scale}) rotate(${-angle})`}
+        d={`M -3 ${start} L 0 ${start + 5} L 3 ${start} Z`} fill="#f5f5e8" stroke="#142920" strokeWidth="1" />;
+    })}
+    {performers.map(({ id, appearance }) => {
+      const point = positions[id];
+      return point && <g key={id} data-performer-appearance={id} data-performer-role={appearance?.role}
+        transform={`translate(${point.x} ${point.y}) scale(${1 / scale})`}>
+        {appearance?.costumeColor && <circle r={Math.max(1.4, radius * .6)} fill={appearance.costumeColor} stroke="#142920" strokeWidth="1" />}
+        {appearance?.role && <path transform={`translate(${-start - 5} ${-start - 5})`}
+          d={appearance.role === 'guard' ? 'M -2 3 V -3 H 3 L 1 0 H -2 Z' : 'M -3 -2 H 3 V 2 H -3 Z'}
+          fill="#f5f5e8" stroke="#142920" strokeWidth="1" />}
+      </g>;
+    })}
+  </g>;
+}
 
 interface Field2DProps extends DrawingProps {
   travelPreview?: TravelPreview;
@@ -174,7 +200,7 @@ type Gesture =
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, moveOperationPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, facings, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, moveOperationPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const performerNodes = useRef<SVGGElement[]>([]);
@@ -204,6 +230,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
   const viewport = `${view.x} ${view.y} ${viewWidth} ${viewHeight}`;
   const displayedPositions = useMemo(() => Object.keys(preview).length ? { ...positions, ...preview } : positions, [positions, preview]);
   const spatialPreview = moveOperationPreview ?? travelPreview;
+  const markedPerformers = useMemo(() => project.performers.filter(person => person.appearance), [project.performers]);
   const wantsCanvas = readOnly || moving || !!selectionPreview || !!neighbors?.length;
   const canvasActive = wantsCanvas && canvasReady;
   const focusedId = rememberedFocus?.project === project.id && positions[rememberedFocus.id]
@@ -225,7 +252,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
       if (canvasActive && id === focusedId) {
         const person = project.performers.find(person => person.id === id)!;
         const section = project.sections.find(section => section.id === person.sectionId)?.name;
-        node.setAttribute('aria-label', [person.label, person.name, section, coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ') + (selectionMembership(selectedIds).has(id) ? ', selected' : ''));
+        node.setAttribute('aria-label', [person.label, person.name, section, describeFacing(facingAt(facings, id)), coordinateDescription(point, project.field, coordinateFormat)].filter(Boolean).join(' · ') + (selectionMembership(selectedIds).has(id) ? ', selected' : ''));
       }
     }
   });
@@ -501,8 +528,10 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={moveOperationPreview ? 0 : travelPreview || focusedId ? -1 : 0} role="group" aria-label={moveOperationPreview ? 'Move operation field preview. Enter to apply or Escape to cancel.' : travelPreview?.routeMode ? 'Shared route preview. Draw or edit handles on the field, then Apply or Cancel in the panel.' : travelPreview ? 'Movement path preview. Draw or edit handles on the field, then Apply or Cancel in the panel.' : selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={spatialPreview ? undefined : `${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>
       <g ref={geometryRef} data-field-geometry={orientation} transform={fieldViewTransform(project.field, orientation)}>
       <g className="field-drawing" opacity={canvasActive ? 0 : 1}>
-      <InteractiveFieldDrawing dynamicOnly deferMotion={canvasActive} project={project} positions={displayedPositions} neighbors={moving ? NO_NEIGHBORS : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={spatialPreview ? undefined : readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
+      <InteractiveFieldDrawing dynamicOnly deferMotion={canvasActive} project={project} facings={facings} positions={displayedPositions} neighbors={moving ? NO_NEIGHBORS : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={spatialPreview ? undefined : readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
       </g>
+      {(facings || markedPerformers.length > 0) && screen && <PerformerMarks facings={facings}
+        performers={markedPerformers} positions={displayedPositions} scale={screen.scale} radius={display.dotRadiusPx} />}
       {!spatialPreview && problemOverlay}
       {moveOperationPreview?.overlay}
       {travelPreview && <TravelOverlay {...travelPreview} zoom={safeZoom} snap={travelPreview.snapHandles ?? snap} mainField pan={tool === 'pan'} scale={screen?.scale} flipped={orientation === 'audience-top'} />}
@@ -518,7 +547,7 @@ export function Field2D({ project, positions, neighbors, selectedIds, onSelect, 
     </svg>
     <div id={keyboardHelpId} className="field-keyboard-help">{moveOperationPreview ? 'Review the saved and proposed paths. Enter: apply · Escape: cancel.' : travelPreview ? 'Edit handles with brackets and arrows, or draw using the panel. Enter: apply · Escape: cancel.' : coordinatePreview ? 'Enter: apply coordinates · Escape: cancel preview · Type the phrase in the Inspector.' : spacingPreview ? 'Enter: apply spacing · Escape: cancel preview · Use Inspector numbers or the interval handle to adjust.' : formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · {nudgeHelp} · Page Up/Down: roster · Home/End: first/last</>}</div>
     {moving && Object.keys(preview).length > 0 && <div className="field-drag-status">Release to apply · Escape to cancel</div>}
-    {!spatialPreview && <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />}
+    {!spatialPreview && <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} facings={facings} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />}
     <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
     <div className="field-stage__hint">{moveOperationPreview ? 'MOVE OPERATION PREVIEW' : travelPreview?.routeMode ? 'SHARED ROUTE PREVIEW' : travelPreview ? 'MOVEMENT PATH PREVIEW' : coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : selectionPreview ? 'SELECTION PREVIEW · APPLY OR CANCEL' : tool === 'lasso' ? 'Draw lasso · Shift to add · Review before Apply' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit{moveOperationPreview && ' · Alt-drag to pan'}</span></div>
     <div className="field-stage__orientation" aria-label={orientation === 'audience-top' ? 'Flipped field: audience and front sideline at top' : 'Audience and front sideline at bottom'}><span>↑</span> {orientation === 'audience-top' ? 'FRONT · AUDIENCE TOP' : 'BACK · AUDIENCE BOTTOM'}</div>

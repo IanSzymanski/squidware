@@ -1,3 +1,4 @@
+import { validateAppearance, validateFacings } from './performerFacing';
 import { validateGroupMotions, effectiveMove } from './groupMotion';
 import { validateSharedRoutes } from './sharedRoutes';
 import { validateLiveFormations } from './liveFormations';
@@ -45,10 +46,10 @@ function timing(value: unknown, path: string): OpeningTiming {
   };
 }
 function versionError(version: unknown): never {
-  if (typeof version === 'number' && Number.isInteger(version) && version > 12) {
-    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 and 12.`);
+  if (typeof version === 'number' && Number.isInteger(version) && version > 13) {
+    throw new Error(`This project uses schema version ${version}. Update Squidware to a version that supports it before opening or saving this file. Supported format versions: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 and 13.`);
   }
-  return invalid('schemaVersion', 'must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 or 12. Open a supported Squidware project (.squid) file.');
+  return invalid('schemaVersion', 'must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 or 13. Open a supported Squidware project (.squid) file.');
 }
 function assertSize(content: string): void {
   if (content.length > PROJECT_LIMITS.projectBytes || new TextEncoder().encode(content).byteLength > PROJECT_LIMITS.projectBytes) {
@@ -85,7 +86,7 @@ export function migrateProjectV1(input: unknown): ProjectV2 {
 export function validateProjectV2(input: unknown, geometry: GeometryValidation = {}): ProjectV2 {
   const data = object(input, 'root');
   if (data.schemaVersion === 1) invalid('schemaVersion', 'must be 2 for v2 validation. Use migrateProjectV1 or parseProjectV2 to migrate a v1 file.');
-  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5 && data.schemaVersion !== 6 && data.schemaVersion !== 7 && data.schemaVersion !== 8 && data.schemaVersion !== 9 && data.schemaVersion !== 10 && data.schemaVersion !== 11 && data.schemaVersion !== 12) versionError(data.schemaVersion);
+  if (data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4 && data.schemaVersion !== 5 && data.schemaVersion !== 6 && data.schemaVersion !== 7 && data.schemaVersion !== 8 && data.schemaVersion !== 9 && data.schemaVersion !== 10 && data.schemaVersion !== 11 && data.schemaVersion !== 12 && data.schemaVersion !== 13) versionError(data.schemaVersion);
   if (!Array.isArray(data.sets) || data.sets.length < 1 || data.sets.length > PROJECT_LIMITS.sets) {
     invalid('sets', `must contain 1 to ${PROJECT_LIMITS.sets} items.`);
   }
@@ -190,7 +191,18 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
     return { id: moveId, fromSetId, toSetId, counts, ...moveTiming, paths, ...(move.marchingDirections === undefined ? {} : { marchingDirections: validateMarchingDirections(move.marchingDirections, performerIds, `${path}.marchingDirections`) }) };
   });
   const { schemaVersion: _version, sets: checkedSets, ...common } = base;
-  const project: Project = { schemaVersion: 2, ...common, ...(data.score === undefined ? {} : { score: validateScore(data.score) }), ...(data.meter === undefined ? {} : { meter: validateMeter(data.meter) }), ...(data.analysisRules === undefined ? {} : { analysisRules: validateAnalysisRules(data.analysisRules, new Set(base.sections.map(s => s.id))) }), ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sets: checkedSets.map((set, index) => { const liveFormations = validateLiveFormations(object((data.sets as unknown[])[index], `sets[${index}]`).liveFormations, set.positions, base.field,base.performers,base.sections.map(s=>s.id)); return { ...picture(set), ...(liveFormations ? { liveFormations } : {}) }; }), moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
+  const performers = base.performers.map((performer, index) => {
+    const raw = object((data.performers as unknown[])[index], `performers[${index}]`);
+    const appearance = validateAppearance(raw.appearance, `performers[${index}].appearance`);
+    return appearance ? { ...performer, appearance } : performer;
+  });
+  const pictures = checkedSets.map((set, index) => {
+    const key = `sets[${index}]`, raw = object((data.sets as unknown[])[index], key);
+    const liveFormations = validateLiveFormations(raw.liveFormations, set.positions, base.field, base.performers, base.sections.map(s => s.id));
+    const facings = validateFacings(raw.facings, performerIds, `${key}.facings`);
+    return { ...picture(set), ...(liveFormations ? { liveFormations } : {}), ...(facings ? { facings } : {}) };
+  });
+  const project: Project = { schemaVersion: 2, ...common, ...(data.score === undefined ? {} : { score: validateScore(data.score) }), ...(data.meter === undefined ? {} : { meter: validateMeter(data.meter) }), ...(data.analysisRules === undefined ? {} : { analysisRules: validateAnalysisRules(data.analysisRules, new Set(base.sections.map(s => s.id))) }), ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), performers, sets: pictures, moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
   const routes = validateSharedRoutes(data.sharedRoutes, project.field);
   if (routes) project.sharedRoutes = routes;
   project.moves=project.moves.map((move,index)=>{const groups=validateGroupMotions(object((data.moves as unknown[])[index],'move').groupMotions,project,index);return groups?{...move,groupMotions:groups}:move;});
@@ -219,8 +231,12 @@ export function parseProjectV2(content: string): ProjectV2 {
   if (Number(data.schemaVersion)<10 && Array.isArray(data.sets) && data.sets.some(set=>Array.isArray(object(set,'set').liveFormations) && (object(set,'set').liveFormations as unknown[]).some(f=>Object.hasOwn(object(f,'formation'),'scatter')))) invalid('sets.liveFormations.scatter','requires schema version 10 so older applications cannot discard scatter settings and dots.');
   if (Number(data.schemaVersion)<11 && Array.isArray(data.sets) && data.sets.some(set=>Array.isArray(object(set,'set').liveFormations) && (object(set,'set').liveFormations as unknown[]).some(f=>Object.hasOwn(object(f,'formation'),'assignmentConstraints')))) invalid('sets.liveFormations.assignmentConstraints','requires schema version 11 so older applications cannot discard assignment constraints.');
   if(Number(data.schemaVersion)<12 && Array.isArray(data.moves) && data.moves.some(m=>Object.hasOwn(object(m,'move'),'groupMotions'))) invalid('moves.groupMotions','requires schema version 12 so older applications cannot discard group movement.');
+  if (Number(data.schemaVersion) < 13) {
+    if (Array.isArray(data.sets) && data.sets.some(set => Object.hasOwn(object(set, 'set'), 'facings'))) invalid('sets.facings', 'requires schema version 13.');
+    if (Array.isArray(data.performers) && data.performers.some(performer => Object.hasOwn(object(performer, 'performer'), 'appearance'))) invalid('performers.appearance', 'requires schema version 13.');
+  }
   if (data.schemaVersion === 1) return migrateProjectV1(data);
-  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5 || data.schemaVersion === 6 || data.schemaVersion === 7 || data.schemaVersion === 8 || data.schemaVersion === 9 || data.schemaVersion === 10 || data.schemaVersion === 11 || data.schemaVersion === 12) {
+  if (data.schemaVersion === 2 || data.schemaVersion === 3 || data.schemaVersion === 4 || data.schemaVersion === 5 || data.schemaVersion === 6 || data.schemaVersion === 7 || data.schemaVersion === 8 || data.schemaVersion === 9 || data.schemaVersion === 10 || data.schemaVersion === 11 || data.schemaVersion === 12 || data.schemaVersion === 13) {
     const checked = validateProjectV2(data);
     if (Number(data.schemaVersion) < 6 && checked.moves.some(hasScheduledPaths)) invalid('moves.paths', 'timed intervals require schema version 6 so older applications cannot discard movement.');
     if (Number(data.schemaVersion) < 5 && checked.moves.some(hasCurvedPaths)) invalid('moves.paths', 'cubic paths require schema version 5 so older applications cannot discard geometry.');
@@ -233,7 +249,8 @@ export function serializeProjectV2(project: ProjectV2): string {
   const checked = validateProjectV2(project);
   const mapped = !!checked.tempoMap && !!(checked.tempoMap.regions.length || checked.tempoMap.holds.length);
   const { tempoMap, audioAnchors, ...plain } = checked;
-  const content = `${JSON.stringify(checked.moves.some(m=>m.groupMotions?.length) ? {...plain,...(tempoMap?{tempoMap}:{}),...(audioAnchors?.length?{audioAnchors}:{}),schemaVersion:12} : checked.sets.some(set=>set.liveFormations?.some(f=>f.assignmentConstraints)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:11 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.scatter)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:10 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.bezier)) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion:9 } : checked.sharedRoutes?.length ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 8 } : checked.sets.some(set => set.liveFormations?.length) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 7 } : checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
+  const performerPresentation = checked.sets.some(set => set.facings) || checked.performers.some(performer => performer.appearance);
+  const content = `${JSON.stringify(performerPresentation ? { ...checked, schemaVersion: 13 } : checked.moves.some(m=>m.groupMotions?.length) ? {...plain,...(tempoMap?{tempoMap}:{}),...(audioAnchors?.length?{audioAnchors}:{}),schemaVersion:12} : checked.sets.some(set=>set.liveFormations?.some(f=>f.assignmentConstraints)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:11 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.scatter)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:10 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.bezier)) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion:9 } : checked.sharedRoutes?.length ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 8 } : checked.sets.some(set => set.liveFormations?.length) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 7 } : checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
   assertSize(content);
   return content;
 }
@@ -243,6 +260,7 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
+  if (checked.sets.some(set => set.facings) || checked.performers.some(performer => performer.appearance)) throw Error('Facing and appearance cannot be downgraded to legacy data.');
   if (checked.sharedRoutes?.length) throw Error('Shared routes cannot be downgraded to legacy data.');
   if (checked.sets.some(set => set.liveFormations?.length)) throw Error('Live formations cannot be downgraded to legacy data.');
   if (checked.moves.some(hasScheduledPaths)) throw Error('Timed paths cannot be downgraded to legacy data.');

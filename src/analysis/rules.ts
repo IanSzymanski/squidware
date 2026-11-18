@@ -1,3 +1,5 @@
+import { effectiveMove } from '../groupMotion';
+import { directionFromFacing, facingAt } from '../performerFacing';
 import { PROJECT_LIMITS } from '../projectValidation';
 import type { AnalysisOverrides, AnalysisThresholds, DirectionRules, MarchingDirection, Performer, Project, ProjectAnalysisRules } from '../types';
 export const DEFAULT_ANALYSIS_RULES: Readonly<AnalysisThresholds> = { minimumSpacing: 1, maximumStride: 1.25 };
@@ -45,15 +47,31 @@ export function validateMarchingDirections(value: unknown, performerIds: Readonl
   return Object.fromEntries([...performerIds].filter(id => Object.hasOwn(data, id)).map(id => [id, data[id] as MarchingDirection]));
 }
 export interface ResolvedAnalysisRules extends AnalysisThresholds { direction: MarchingDirection | 'unknown'; context: string }
-/** Direction is an explicit move declaration, never an inference from the travel vector. */
+export function marchingDirection(project: Project, moveIndex: number, id: string): { direction: MarchingDirection | 'unknown'; source: 'declared' | 'authored facing' | 'unknown' } {
+  const declared = project.moves[moveIndex]?.marchingDirections?.[id];
+  if (typeof declared === 'string') return { direction: declared, source: 'declared' };
+  const from = project.sets[moveIndex], to = project.sets[moveIndex + 1];
+  const angle = facingAt(from?.facings, id);
+  if (angle !== undefined && angle === facingAt(to?.facings, id) && from && to && Object.hasOwn(from.positions, id) && Object.hasOwn(to.positions, id)) {
+    const direction = directionFromFacing(from.positions[id], to.positions[id], effectiveMove(project, moveIndex).paths[id], angle, angle);
+    if (direction) return { direction, source: 'authored facing' };
+  }
+  return { direction: 'unknown', source: 'unknown' };
+}
+
+export function directionSummary(project: Project, moveIndex: number) {
+  const counts = { declared: 0, 'authored facing': 0, unknown: 0 };
+  for (const performer of project.performers) counts[marchingDirection(project, moveIndex, performer.id).source]++;
+  return counts;
+}
 export function resolveAnalysisRules(project: Project, moveIndex: number, performer: Performer, base?: Partial<AnalysisThresholds>): ResolvedAnalysisRules {
   const rules = project.analysisRules, section = rules?.sections?.find(s => s.sectionId === performer.sectionId);
-  const direction = project.moves[moveIndex]?.marchingDirections?.[performer.id] ?? 'unknown';
+  const { direction, source } = marchingDirection(project, moveIndex, performer.id);
   const resolved = { ...DEFAULT_ANALYSIS_RULES, ...rules?.defaults, ...base, ...section,
     ...(direction === 'unknown' ? {} : { ...rules?.directions?.[direction], ...section?.directions?.[direction] }) };
   const sectionName = project.sections.find(s => s.id === performer.sectionId)?.name ?? performer.sectionId;
   return { minimumSpacing: resolved.minimumSpacing, maximumStride: resolved.maximumStride, direction,
-    context: `${sectionName} · ${direction === 'unknown' ? 'direction unknown' : `${direction} declared`}` };
+    context: `${sectionName} · ${direction === 'unknown' ? 'direction unknown' : `${direction} ${source === 'declared' ? 'declared' : 'from authored facing'}`}` };
 }
 export function strideRuleText(rule: ResolvedAnalysisRules): string {
   return ` Limit ${rule.maximumStride} yd/count (minimum ${Number((5 / rule.maximumStride).toFixed(2))} steps per 5 yd); ${rule.context}.`;

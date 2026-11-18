@@ -1,10 +1,11 @@
+import { facingAt } from '../performerFacing';
 import { HelpButton } from '../editor/ControlHelp';
 import { Tooltip } from './Tooltip';
 import { selectionMembership } from '../selection';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { Point, Project } from '../types';
+import type { PerformerAppearance, PerformerFacings, Point, Project } from '../types';
 import { createDemandFrames } from './demandFrames';
 import './stages.css';
 
@@ -12,6 +13,7 @@ export type Stage3DQuality = 'detailed' | 'lightweight';
 export interface Stage3DProps {
   project: Project;
   positions: Record<string, Point>;
+  facings?: PerformerFacings;
   selectedIds: string[];
   /** Omitted in the read-only 3D window: clicks orbit the camera but never change selection. */
   onSelect?: (ids: string[]) => void;
@@ -30,12 +32,14 @@ interface SceneState {
   scene: THREE.Scene;
   capacity: number;
   roster: string;
-  performers: { id: string; color: string }[];
+  performers: { id: string; color: string; appearance?: PerformerAppearance }[];
   bodies: THREE.InstancedMesh;
   heads: THREE.InstancedMesh;
   caps: THREE.InstancedMesh;
   legs: THREE.InstancedMesh;
   rings: THREE.InstancedMesh;
+  headings: THREE.InstancedMesh;
+  roleMarkers: THREE.InstancedMesh;
   setCamera: (preset: CameraPreset) => void;
   setQuality: (quality: Stage3DQuality) => void;
   setFieldPreset: (preset: Project['field']['preset']) => void;
@@ -43,7 +47,7 @@ interface SceneState {
   fail: (cause: unknown) => void;
 }
 
-const meshKeys = ['bodies', 'heads', 'caps', 'legs', 'rings'] as const;
+const meshKeys = ['bodies', 'heads', 'caps', 'legs', 'rings', 'headings', 'roleMarkers'] as const;
 const performerCapacity = (count: number) => Math.max(16, 2 ** Math.ceil(Math.log2(Math.max(count, 1))));
 
 function updateRoster(state: SceneState, roster: string) {
@@ -68,7 +72,7 @@ function updateRoster(state: SceneState, roster: string) {
   for (const key of meshKeys) state[key].count = performers.length * (key === 'legs' ? 2 : 1);
   performers.forEach((performer, index) => {
     const color = new THREE.Color(performer.color);
-    state.bodies.setColorAt(index, color);
+    state.bodies.setColorAt(index, performer.appearance?.costumeColor ? new THREE.Color(performer.appearance.costumeColor) : color);
     state.caps.setColorAt(index, color);
   });
   if (state.bodies.instanceColor) state.bodies.instanceColor.needsUpdate = true;
@@ -123,15 +127,20 @@ function makeFieldTexture(width: number, height: number, preset: Project['field'
   return texture;
 }
 
-function updatePerformers(state: SceneState, positions: Record<string, Point>, selectedIds: string[], width: number, height: number) {
+function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number) {
   const transform = new THREE.Object3D();
   const selected = new Set(selectedIds);
+  const showHeadings = !!facings;
+  const showRoles = state.performers.some(performer => performer.appearance?.role);
   state.performers.forEach((performer, index) => {
     const point = positions[performer.id];
     const x = point ? point.x - width / 2 : 0;
     const z = point ? point.y - height / 2 : 0;
     const visible = point ? 1 : 0;
-    transform.rotation.set(0, 0, 0);
+    const facing = facingAt(facings, performer.id);
+    const angle = THREE.MathUtils.degToRad(facing ?? 0);
+    const sin = Math.sin(angle), cos = Math.cos(angle);
+    transform.rotation.set(0, angle, 0);
     transform.scale.setScalar(visible);
     transform.position.set(x, 0.91, z);
     transform.updateMatrix();
@@ -143,35 +152,63 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, s
     transform.updateMatrix();
     state.caps.setMatrixAt(index, transform.matrix);
     for (let leg = 0; leg < 2; leg++) {
-      transform.position.set(x + (leg === 0 ? -0.105 : 0.105), 0.3, z);
+      const side = leg === 0 ? -0.105 : 0.105;
+      transform.position.set(x + side * cos, 0.3, z - side * sin);
       transform.updateMatrix();
       state.legs.setMatrixAt(index * 2 + leg, transform.matrix);
     }
     transform.position.set(x, 0.055, z);
-    transform.rotation.x = -Math.PI / 2;
+    transform.rotation.set(-Math.PI / 2, 0, 0);
     transform.scale.setScalar(point && selected.has(performer.id) ? 1 : 0);
     transform.updateMatrix();
     state.rings.setMatrixAt(index, transform.matrix);
+
+    if (showHeadings) {
+      transform.position.set(x + .48 * sin, .08, z + .48 * cos);
+      transform.rotation.set(Math.PI / 2, angle, 0, 'YXZ');
+      transform.scale.setScalar(point && facing !== undefined ? 1 : 0);
+      transform.updateMatrix();
+      state.headings.setMatrixAt(index, transform.matrix);
+    }
+
+    if (showRoles) {
+      const role = performer.appearance?.role;
+      transform.rotation.set(0, angle, 0);
+      if (role === 'guard') {
+        transform.position.set(x + .35 * cos, 1.48, z - .35 * sin);
+        transform.scale.set(.45 * visible, .24 * visible, .07 * visible);
+      } else {
+        transform.position.set(x + .33 * sin, 1.05, z + .33 * cos);
+        transform.scale.set(.33 * visible, .18 * visible, .34 * visible);
+      }
+      if (!role) transform.scale.setScalar(0);
+      transform.updateMatrix();
+      state.roleMarkers.setMatrixAt(index, transform.matrix);
+    }
   });
-  for (const mesh of [state.bodies, state.heads, state.caps, state.legs, state.rings]) {
+  state.headings.visible = showHeadings;
+  state.roleMarkers.visible = showRoles;
+  for (const key of meshKeys) {
+    const mesh = state[key];
+    if (!mesh.visible) continue;
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
   }
 }
 
-export function Stage3D({ project, positions, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets }: Stage3DProps) {
+export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets }: Stage3DProps) {
   const cameraProps=useRef({cameraRequest,onCameraPreset});cameraProps.current={cameraRequest,onCameraPreset};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
-  const currentRef = useRef({ positions, selectedIds, onSelect, quality, recovery });
-  currentRef.current = { positions, selectedIds, onSelect, quality, recovery };
+  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery });
+  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery };
   const [error, setError] = useState<string | null>(null);
   const width = project.field.width;
   const height = project.field.height;
   const fieldPreset = project.field.preset;
   const roster = useMemo(() => {
     const colors = new Map(project.sections.map(section => [section.id, section.color]));
-    return JSON.stringify(project.performers.map(performer => ({ id: performer.id, color: colors.get(performer.sectionId) ?? '#b9ed85' })));
+    return JSON.stringify(project.performers.map(performer => ({ id: performer.id, color: colors.get(performer.sectionId) ?? '#b9ed85', appearance: performer.appearance })));
   }, [project.performers, project.sections]);
 
   useEffect(() => {
@@ -310,7 +347,7 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         scene.add(podium);
       }
 
-      const performers = JSON.parse(roster) as { id: string; color: string }[];
+      const performers = JSON.parse(roster) as SceneState['performers'];
       const count = performerCapacity(performers.length);
       const bodyMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.8 });
       const bodies = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.26, 0.84, 8), bodyMaterial, count);
@@ -318,16 +355,18 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
       const caps = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.19, 0.2, 0.26, 8), bodyMaterial, count);
       const legs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.078, 0.088, 0.55, 5), new THREE.MeshStandardMaterial({ color: '#202a29', roughness: 1 }), count * 2);
       const rings = new THREE.InstancedMesh(new THREE.RingGeometry(0.57, 0.71, 28), new THREE.MeshBasicMaterial({ color: '#8dc8ff', side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthWrite: false }), count);
-      for (const mesh of [bodies, heads, caps, legs, rings]) {
+      const headings = new THREE.InstancedMesh(new THREE.ConeGeometry(.12, .34, 4), new THREE.MeshBasicMaterial({ color: '#f5f5e8' }), count);
+      const roleMarkers = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: '#dbcca9' }), count);
+      for (const mesh of [bodies, heads, caps, legs, rings, headings, roleMarkers]) {
         mesh.count = mesh === legs ? performers.length * 2 : performers.length;
         mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        mesh.castShadow = mesh !== rings;
+        mesh.castShadow = mesh !== rings && mesh !== headings;
         mesh.receiveShadow = mesh !== rings;
         scene.add(mesh);
       }
       performers.forEach((performer, index) => {
         const color = new THREE.Color(performer.color);
-        bodies.setColorAt(index, color);
+        bodies.setColorAt(index, performer.appearance?.costumeColor ? new THREE.Color(performer.appearance.costumeColor) : color);
         caps.setColorAt(index, color);
       });
       if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
@@ -351,9 +390,9 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
         texturePreset = preset;
         invalidate();
       };
-      const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, setCamera, setQuality, setFieldPreset, invalidate, fail };
+      const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers, setCamera, setQuality, setFieldPreset, invalidate, fail };
       sceneRef.current = state;
-      updatePerformers(state, currentRef.current.positions, currentRef.current.selectedIds, width, height);
+      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height);
 
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
@@ -424,10 +463,10 @@ export function Stage3D({ project, positions, selectedIds, onSelect, quality, on
     if (!state) return;
     try {
       updateRoster(state, roster);
-      updatePerformers(state, positions, selectedIds, width, height);
+      updatePerformers(state, positions, facings, selectedIds, width, height);
       state.invalidate();
     } catch (cause) { state.fail(cause); }
-  }, [positions, selectedIds, width, height, roster]);
+  }, [positions, facings, selectedIds, width, height, roster]);
 
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
   useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height]);

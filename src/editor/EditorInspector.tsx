@@ -1,3 +1,4 @@
+import { FacingControls } from './FacingControls';
 import { PathOperationsPanel } from './PathOperationsPanel';
 import { SharedRoutesPanel } from './SharedRoutesPanel';
 import { MovementSchedulePanel } from './MovementSchedulePanel';
@@ -100,6 +101,10 @@ export function EditorInspector({ controller }: { controller: EditorController }
             <NumberField onDraftChange={setPendingDraft} label="Y · yards from back" description="Set this performer’s distance in yards from the back sideline." disabledReason={unavailable} value={Number(activeSet.positions[single.id].y.toFixed(3))} min={0} max={project.field.height} step={gridInterval(project.snapping ?? DEFAULT_SNAPPING)} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'y', value })} />
           </div>
         </div>}
+        <details className="performer-facing">
+          <summary>Performer facing</summary>
+          <FacingControls key={JSON.stringify([projectEpoch, activeSet.id, selectedIds])} controller={controller} unavailable={unavailable} />
+        </details>
         <p className="section-description">Move {selectedIds.length === 1 ? 'performer' : 'group'} · request {nudgeLabel(controller.preferences.value, project)}</p>
         <div className="transform-buttons move-buttons">
           {([{ label: 'left', icon: ArrowLeft, key: 'ArrowLeft' },
