@@ -1,8 +1,10 @@
 # Detailed movement operations
 
-Issue [#77](https://github.com/IanSzymanski/squidware/issues/77) defines reviewed count resizing, selected-path reversal and interval copy/paste for [curves](movement-paths.md) and [independent schedules](movement-schedules.md). Pause on a picture and choose **Move operations…** in the Inspector or Command palette. The opening targets the first outgoing move; every later picture targets its incoming move, including the closing picture. A one-picture production has no move to operate on.
+Issue [#77](https://github.com/IanSzymanski/squidware/issues/77) defines reviewed count resizing, selected-path reversal and interval copy/paste for [curves](movement-paths.md) and [independent schedules](movement-schedules.md). Pause on a picture and choose **Move operations** in the field toolbar’s More tools menu or Command palette. The opening targets the first outgoing move; every later picture targets its incoming move, including the closing picture. A one-picture production has no move to operate on.
 
-The dialog compares saved dashed geometry/ghost dots with proposed solid geometry and sampled performer rings. Its progress slider compares the same fraction of the old and new move durations, displaying both local counts. Apply validates the complete production and creates one named undo transaction. Apply stays unavailable until the reviewed operation would change the production, for example while the count field still shows the current counts; choosing an operation alone is not a pending draft. Cancel/Escape preserves the production. One Escape closes open focus help and the dialog together. The reviewed move, picture, selection, revision, production session and paste clipboard identity must still match when applying; stale context requires reopening the dialog.
+The main field compares saved dashed geometry and ghost dots with proposed solid geometry and sampled performers at the current field zoom and orientation. The show timeline marks the saved and proposed count ranges, with interval boundaries for a single selected performer. For copy, the solid path and timeline row show the selected source window. The Inspector’s progress slider reviews these ranges without moving the show playhead.
+
+Apply and Cancel stay pinned while the Inspector scrolls. Apply validates the whole production and creates one named undo transaction. Cancel or Escape discards the preview, as does selecting a set, scrubbing the show timeline or starting playback. Apply requires the same reviewed move, picture, selection, revision, production session and paste clipboard. Reopen Move operations if that context changes.
 
 ## Resize counts
 
@@ -12,7 +14,7 @@ Timing remains relative to the move. Tempo maps, score/recording anchors and oth
 
 ## Reverse selected paths
 
-Explicitly select one or more performers before opening the dialog. Reverse swaps those performers' dots in **both endpoint pictures**, reverses interval order, maps each window `[start, end]` to `[counts − end, counts − start]`, swaps cubic controls and exchanges leading/trailing holds. Intermediate arrivals follow the reversed chain. Existing interval IDs remain attached to their intervals. An implicit straight path stays implicit.
+Explicitly select one or more performers before opening Move operations. Reverse swaps those performers' dots in **both endpoint pictures**, reverses interval order, maps each window `[start, end]` to `[counts − end, counts − start]`, swaps cubic controls and exchanges leading/trailing holds. Intermediate arrivals follow the reversed chain. Existing interval IDs remain attached to their intervals. An implicit straight path stays implicit.
 
 Set order, move counts, tempo/easing and declared travel techniques stay fixed. Other performers stay fixed. Adjacent moves inherit the changed picture dots and must be reviewed; if an adjacent hold-only schedule becomes incompatible, the complete reversal is rejected. Facing is not inferred. Applying reverse twice restores timing/geometry within floating-point tolerance (the regression checks 1e-8 yard agreement), with exact IDs and endpoint dots.
 
@@ -44,6 +46,6 @@ The canonical validator enforces positive finite ordered/nonoverlapping windows,
 
 No new wire version is required: detailed results use v6, full-move curves use v5 and ordinary implicit travel uses the least version required by remaining metadata. Legacy migration behavior remains unchanged; the clipboard is never serialized. Detailed transition splitting and timeline operations that change a surviving detailed move's predecessor remain guarded. These operations do not flatten a custom path to bypass those guards. Field handles remain #75.
 
-Design guidance sections 1–5 apply. Shared Modal, FieldDrawing, theme tokens, focus help, command registry and history are reused. See [software review evidence](evidence/path-operations/README.md).
+Design guidance sections 1–5 apply. The preview uses the main field and timeline with shared Inspector actions, theme tokens, focus help, the command registry and history. See [main-field software review evidence](evidence/main-field-move-operations/README.md).
 
 [Group route movement](group-movement.md) stores v12 programs. Count resizing scales their clocks/delays/connectors and inversely scales speed; whole-group reverse includes negative leader history and dormant paths. Every touched group must be selected completely. Group interval copy/paste and detailed splitting/rewiring reject explicitly; use the group editor to copy the full program or remove membership before editing individual intervals.

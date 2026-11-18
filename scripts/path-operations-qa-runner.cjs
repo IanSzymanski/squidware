@@ -39,8 +39,6 @@ async function click(selector) { await revealFieldTool(window,selector);
   await frames();
 }
 const button = name => `[aria-label=${JSON.stringify(name)}]`;
-// Small or enlarged windows tuck the Inspector (#178); open it over the field, as a user would, before using its launchers.
-async function showInspector() { if (await evaluate("!!document.querySelector('#workspace-pane-inspector')?.hidden")) { await click(button('Show Inspector')); await wait("!!document.querySelector('#workspace-pane-inspector.workspace-pane--overlay:not([hidden])')", 'Inspector overlay'); } }
 async function type(selector, text) {
   await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.focus();e.select();})()`);
   await window.webContents.debugger.sendCommand('Input.insertText', { text: String(text) }); await frames();
@@ -49,10 +47,15 @@ async function capture(name) {
   await evaluate(`${editor}.setValue('ui','toast',''); document.activeElement?.blur()`);
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
   await capturePage(window, output, name);
-  viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height,dialogHeight:document.querySelector('dialog[open]')?.getBoundingClientRect().height})`));
+  viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height,panelHeight:document.querySelector('.path-operations-panel')?.getBoundingClientRect().height})`));
 }
 const present=()=>evaluate(state+'.project.present');
 const apply=button('Apply move operation');
+const timelinePreview = () => evaluate("document.querySelector('.move-operation-track')?.getAttribute('aria-label')");
+const proposedPath = () => evaluate("document.querySelector('.field-stage__svg .move-operation-overlay path.path-proposed')?.getAttribute('d')");
+async function fieldPosition(id, expected) {
+  await wait(`document.querySelector('.field-stage__svg [data-performer-id="${id}"]')?.getAttribute('transform') === 'translate(${expected.x} ${expected.y})'`, 'preview position for '+id);
+}
 async function open(){await evaluate('document.activeElement?.blur()');await click(button('Move operations'));await wait(`${state}.ui.dialog==='path-operations'`,'move operations');}
 async function choose(value){await selectNativeOption(window,button('Move operation'),value);await frames();}
 async function applyPlan(){await click(apply);await wait(`${state}.ui.dialog===null`,'operation applied');}
@@ -60,22 +63,79 @@ app.whenReady().then(async()=>{try{
  await waitFor(()=>!!window,'window');await wait("!!document.querySelector('.set-card')",'renderer');window.setContentSize(1366,768);window.webContents.debugger.attach('1.3');await window.webContents.debugger.sendCommand('Page.enable');await window.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source:`(${instrument.toString()})()`});window.webContents.reload();await wait(`!!${editor}&&${state}.preferences.status==='saved'`,'store');await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});await wait("['Recovery ready','Recovery copies available','Recovery copy saved'].includes(document.querySelector('.recovery-indicator')?.textContent)",'recovery');
  const p=fixture();await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(p)}});${editor}.dispatch('workspace.show',{workspace:'design'})`);await frames();await capture('operations-before.png');assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);assert.ok(viewports.at(-1).fieldHeight>=470);
  BrowserWindow.prototype.show=showWindow;window.show();window.focus();await settleNativeViewport(window,'visible operations');if(manifest.smallDesktop){window.setContentSize(1024,647);await settleNativeViewport(window,'constrained operations');}await click('[data-performer-id="a"]');
- await open();assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(apply)})).borderStyle`),'dashed');assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/^Enter new move counts to rescale this 16-count move/);assert.equal(await evaluate(state+'.ui.pendingDraft'),false);
- await type(button('New move counts'),32);assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/16 to 32/);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),null);await capture('operations-resize.png');assert.deepEqual(await present(),p);await type(button('New move counts'),0);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');await capture('operations-invalid.png');await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'cancel invalid resize');assert.deepEqual(await present(),p);
+ await open();
+ assert.equal(await evaluate("!!document.querySelector('#panel-content-inspector .path-operations-panel') && !document.querySelector('.path-preview, .modal-backdrop, dialog[open]')"),true);
+ assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"),'Cancel move operation');
+ assert.equal(await evaluate(`${editor}.dispatch('history.undo') || ${editor}.dispatch('selection.clear') || ${editor}.dispatch('set.update',{index:1,update:{counts:24}})`),false);
+ assert.equal(await evaluate(`${editor}.dispatch('field.zoom-in')`),true);
+ assert.ok(await evaluate(state+'.ui.zoom > 1'));
+ await evaluate(`${editor}.dispatch('field.fit')`);
+ assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(apply)})).borderStyle`),'dashed');assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/^Enter new move counts to rescale this 16-count move/);assert.equal(await evaluate(state+'.ui.pendingDraft'),false);
+ await type(button('New move counts'),32);
+ assert.equal(await timelinePreview(),'Saved show counts 0 to 16, preview at 4. Preview show counts 0 to 32, preview at 8');
+ assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.move-operation-range'), range => range.style.width)"),['50%','100%']);
+ assert.ok(await evaluate("parseInt(document.querySelector('.timeline-scrubber').max,10) === 24"));
+ await fieldPosition('a',sampleProject(p,4).positions.a);
+ await capture('operations-resize.png');
+ await evaluate("document.querySelector('[aria-label=\"Move operation preview progress\"]').focus()");
+ await key(window,'End');
+ assert.equal(await timelinePreview(),'Saved show counts 0 to 16, preview at 16. Preview show counts 0 to 32, preview at 32');
+ await fieldPosition('a',p.sets[1].positions.a);
+ assert.equal(await evaluate(state+'.playback.count'),0);
+ await key(window,'Home');
+ assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/16 to 32/);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),null);assert.deepEqual(await present(),p);await type(button('New move counts'),0);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');await capture('operations-invalid.png');
+ await evaluate("document.querySelector('[aria-label=\"New move counts\"]').focus()");
+ await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'cancel invalid resize');
+ assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"),'More field tools');
+ assert.deepEqual(await present(),p);
  await open();await type(button('New move counts'),32);await applyPlan();const resized=await present();assert.equal(resized.moves[0].counts,32);assert.deepEqual(resized.moves[0].paths.a.segments.map(s=>[s.startCount,s.endCount]),[[4,12],[12,16],[16,24]]);assert.deepEqual(resized.sets,p.sets);assert.equal(await evaluate(state+'.project.past.length'),1);await evaluate(`${editor}.dispatch('history.undo')`);assert.deepEqual(await present(),p);
- await open();await choose('reverse');await capture('operations-reverse.png');await applyPlan();const reversed=await present();assert.deepEqual(reversed.sets[0].positions.a,p.sets[1].positions.a);assert.deepEqual(reversed.sets[1].positions.a,p.sets[0].positions.a);assert.deepEqual(reversed.sets[0].positions.b,p.sets[0].positions.b);await open();await choose('reverse');await applyPlan();assert.deepEqual(await present(),p);await evaluate(`${editor}.dispatch('history.undo');${editor}.dispatch('history.undo')`);assert.deepEqual(await present(),p);
+ await open();await choose('reverse');
+ assert.equal(await evaluate("document.querySelectorAll('.move-operation-track-row:last-child .move-operation-tick').length"),4);
+ await capture('operations-reverse.png');await applyPlan();const reversed=await present();assert.deepEqual(reversed.sets[0].positions.a,p.sets[1].positions.a);assert.deepEqual(reversed.sets[1].positions.a,p.sets[0].positions.a);assert.deepEqual(reversed.sets[0].positions.b,p.sets[0].positions.b);await open();await choose('reverse');await applyPlan();assert.deepEqual(await present(),p);await evaluate(`${editor}.dispatch('history.undo');${editor}.dispatch('history.undo')`);assert.deepEqual(await present(),p);
  pass('unchanged counts keep Apply visibly unavailable; opening-set count rescale, invalid preview/Cancel, one undo, selected-endpoint reversal and double reverse preserve detailed paths and unrelated performers');
  await evaluate(`${editor}.setValue('selection','selectedIds',[])`);await frames();await open();await choose('reverse');assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/Select existing performers/);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');assert.equal(await evaluate(state+'.ui.pendingDraft'),false);await click(button('Cancel move operation'));await wait(`${state}.ui.dialog===null`,'cancel empty reverse');assert.deepEqual(await present(),p);await evaluate(`${editor}.setValue('selection','selectedIds',['a'])`);await frames();
  pass('choosing an operation that cannot change the move leaves no pending draft');
- await open();await choose('copy');await click(button('Copy interval 2'));assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/contiguous/);await click(button('Copy interval 1'));assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/counts 8–12/);const revision=await evaluate(state+'.project.revision');await click(button('Copy movement interval range'));await wait(`${state}.ui.dialog===null`,'copied');assert.equal(await evaluate(state+'.project.revision'),revision);assert.equal(await evaluate(state+'.project.past.length'),0);assert.equal(await evaluate(state+'.ui.movementClipboard.intervals.length'),1);
- await evaluate(`${editor}.dispatch('set.select',{index:2})`);await frames();await click('[data-performer-id="b"]');await open();await choose('paste');assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/destination easing/);await click(button('Accept destination timing'));await capture('operations-paste.png');assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/53.13/);
- await type(button('Paste start count'),1);await type(button('Paste duration'),4);assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/cut an existing travel/);assert.deepEqual(await present(),p);await type(button('Paste start count'),0);await type(button('Paste duration'),8);await selectNativeOption(window,button('Paste coordinate frame'),'field');assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/endpoints/);await selectNativeOption(window,button('Paste coordinate frame'),'fit');await applyPlan();const pasted=await present();assert.deepEqual(pasted.sets,p.sets);assert.deepEqual(pasted.moves[0],p.moves[0]);assert.equal(pasted.moves[1].paths.b.segments[0].kind,'cubic');assert.equal(await evaluate(state+'.project.past.length'),1);
+ await open();await choose('copy');await click(button('Copy interval 2'));assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/contiguous/);await click(button('Copy interval 1'));assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/counts 8–12/);
+ assert.equal(await timelinePreview(),'Saved show counts 0 to 16, preview at 9. Copy show counts 8 to 12, preview at 9');
+ assert.match(await proposedPath(),/^M [\d.]+ [\d.]+ C (?:[\d.]+ ){5}[\d.]+$/);
+ await capture('operations-copy.png');
+ const revision=await evaluate(state+'.project.revision');await click(button('Copy movement interval range'));await wait(`${state}.ui.dialog===null`,'copied');assert.equal(await evaluate(state+'.project.revision'),revision);assert.equal(await evaluate(state+'.project.past.length'),0);assert.equal(await evaluate(state+'.ui.movementClipboard.intervals.length'),1);
+ await evaluate(`${editor}.dispatch('set.select',{index:2})`);await frames();await click('[data-performer-id="b"]');await open();await choose('paste');assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/destination easing/);await click(button('Accept destination timing'));
+ assert.match(await proposedPath(),/ C /);
+ assert.equal(await timelinePreview(),'Saved show counts 16 to 24, preview at 18. Preview show counts 16 to 24, preview at 18');
+ const pastePreview=await evaluate("document.querySelector('.field-stage__svg [data-performer-id=b]').getAttribute('transform')");
+ await capture('operations-paste.png');assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/53.13/);
+ await type(button('Paste start count'),1);await type(button('Paste duration'),4);assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/cut an existing travel/);assert.deepEqual(await present(),p);await type(button('Paste start count'),0);await type(button('Paste duration'),8);await selectNativeOption(window,button('Paste coordinate frame'),'field');assert.match(await evaluate("document.querySelector('.path-operations-panel [role=alert]').textContent"),/endpoints/);await selectNativeOption(window,button('Paste coordinate frame'),'fit');await applyPlan();const pasted=await present();assert.deepEqual(pasted.sets,p.sets);assert.deepEqual(pasted.moves[0],p.moves[0]);assert.equal(pasted.moves[1].paths.b.segments[0].kind,'cubic');
+ const pasteSample=sampleProject(pasted,18).positions.b;
+ assert.equal(pastePreview,`translate(${pasteSample.x} ${pasteSample.y})`);assert.equal(await evaluate(state+'.project.past.length'),1);
  await evaluate(`${editor}.dispatch('playback.scrub',{count:20})`);await frames();assert.equal(await evaluate("document.querySelector('.field-stage__svg [data-performer-id=b]').getAttribute('transform')"),'translate(35 36.25)');await capture('operations-applied.png');await evaluate(`${editor}.dispatch('history.undo')`);assert.deepEqual(await present(),p);await evaluate(`${editor}.dispatch('history.redo')`);assert.deepEqual(await present(),pasted);
  pass('contiguous segment copy is session-only; explicit A1→A2 paste reviews coordinate rotation/easing and rejects travel cuts/incompatible frames atomically');
  await evaluate(`${editor}.dispatch('file.save')`);await wait(`${state}.fileSession.savedRevision===${state}.project.revision`,'saved');assert.deepEqual(parseProject(await fs.readFile(savedFile,'utf8')),pasted);await evaluate(`${editor}.dispatch('file.open')`);await wait(`${state}.project.past.length===0&&${state}.project.present.moves[1].paths.b?.segments.length===1`,'reopened');assert.deepEqual(await present(),pasted);assert.equal(await evaluate(state+'.ui.movementClipboard'),null);
  exportDestination=path.join(output,'operations.csv');await evaluate(`${editor}.dispatch('file.export')`);await frames();await click('.export-secondary button');await wait(`${state}.ui.dialog===null`,'CSV');assert.match(await fs.readFile(exportDestination,'utf8'),/Curved path/);exportDestination=path.join(output,'operations.pdf');await evaluate(`${editor}.dispatch('file.export')`);await frames();await click('.export-options label:nth-child(2)');await click('.export-pdf');await wait(`${state}.ui.toast==='PDF saved'`,'PDF');exportDestination=null;
- await evaluate(`${editor}.dispatch('set.select',{index:2});${editor}.setValue('selection','selectedIds',['b'])`);await frames();for(const theme of ['dark','light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await open();await type(button('New move counts'),12);await capture(`operations-${theme}.png`);await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'theme cancel');}
- window.setContentSize(1024,720);window.webContents.setZoomFactor(1.5);await settleNativeViewport(window,'enlarged operations');await open();await type(button('New move counts'),12);await evaluate(`document.querySelector(${JSON.stringify(apply)}).focus()`);await capture('operations-enlarged.png');assert.equal(await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(apply)}).getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth})()`),true);await evaluate(`document.querySelector(${JSON.stringify(apply)}).focus()`);await key(window,'Return');await wait(`${state}.ui.dialog===null`,'keyboard apply');assert.equal((await present()).moves[1].counts,12);assert.deepEqual(await evaluate('window.__pathopsQA.errors'),[]);
+ await evaluate(`${editor}.dispatch('set.select',{index:2});${editor}.setValue('selection','selectedIds',['b'])`);await frames();
+ await open();await type(button('New move counts'),12);
+ assert.equal(await evaluate(`${editor}.dispatch('playback.scrub',{count:20})`),true);
+ await wait(`!${state}.ui.dialog && !${state}.ui.pendingDraft`,'scrub discards move operation');
+ assert.deepEqual(await present(),pasted);
+ await evaluate(`${editor}.dispatch('set.select',{index:2})`);await frames();
+ await open();await type(button('New move counts'),12);
+ await evaluate("document.querySelector('.field-stage__svg').focus()");
+ await key(window,'Escape');await wait(`!${state}.ui.dialog`,'field Escape cancels preview');
+ assert.equal(await evaluate("document.activeElement?.matches('.field-stage__svg')"),true);
+ assert.deepEqual(await present(),pasted);
+ pass('main field geometry and count-range comparison follow the local preview slider independently of transport; scrubbing or Escape discards the draft');
+ window.hide();window.setContentSize(1366,768);
+ await settleNativeViewport(window,'theme captures');
+ for(const theme of ['dark','light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await open();await type(button('New move counts'),12);await capture(`operations-${theme}.png`);
+ assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);
+ await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'theme cancel');}
+ window.setContentSize(1024,720);
+ await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1.5,fieldOrientation:'audience-top',workspaceLayout:{...${state}.preferences.value.workspaceLayout,inspectorCollapsed:true}})`);
+ await settleNativeViewport(window,'enlarged operations');await open();await type(button('New move counts'),12);
+ assert.equal(await evaluate("document.querySelector('.field-stage__svg [data-field-geometry]').dataset.fieldGeometry"),'audience-top');
+ assert.equal(await evaluate("document.querySelector('#workspace-pane-inspector').hidden"),false);
+ await evaluate(`document.querySelector(${JSON.stringify(apply)}).focus()`);await capture('operations-enlarged.png');assert.equal(await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(apply)}).getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth})()`),true);await evaluate(`document.querySelector(${JSON.stringify(apply)}).focus()`);await key(window,'Return');await wait(`${state}.ui.dialog===null`,'keyboard apply');assert.equal((await present()).moves[1].counts,12);
+ assert.equal(await evaluate(state+'.preferences.value.workspaceLayout.inspectorCollapsed'),true);assert.deepEqual(await evaluate('window.__pathopsQA.errors'),[]);
  pass('native persistence/export, project-isolated clipboard, three themes and enlarged keyboard Apply preserve operation results');
  await fs.writeFile(path.join(output,'results.json'),JSON.stringify({checks,viewports,source:manifest.source,scope:manifest.scope},null,2));app.exit(0);
 }catch(error){console.error(error);console.error(await evaluate(`({dialog:${state}.ui.dialog,draft:${state}.ui.pendingDraft,toast:${state}.ui.toast})`).catch(()=>null));await fs.writeFile(path.join(output,'failure.txt'),error.stack);if(window)await capturePage(window,output,'failure.png').catch(()=>{});app.exit(1);}});

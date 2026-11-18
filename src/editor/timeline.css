@@ -76,3 +76,15 @@
 .timeline .track-labels > span:last-child:not(.problem-track-label) { height: 31px; }
 .timeline .track-labels .problem-track-label { height: 24px; display: flex; align-items: center; }
 .problem-track-label button { display: flex; align-items: center; justify-content: center; gap: 2px; min-width: 24px; height: 24px; background: transparent; font-size: 11px; padding: 0 2px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+
+.move-operation-track, .move-operation-track-legend { height: 32px; }
+.move-operation-track { color: var(--accent); overflow: hidden; }
+.move-operation-track-legend { display: grid; grid-template-rows: 1fr 1fr; font-size: 11px; letter-spacing: 0; }
+.move-operation-track-row { position: relative; height: 16px; }
+.move-operation-track-row.is-saved { color: var(--muted); }
+.move-operation-range { position: absolute; top: 3px; height: 10px; border: 1px solid currentColor; border-radius: 3px; background: color-mix(in srgb, currentColor 20%, transparent); }
+.move-operation-track-row.is-saved .move-operation-range { border-style: dashed; background: none; }
+.move-operation-range[data-continues-left] { border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.move-operation-range[data-continues-right] { border-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.move-operation-tick { position: absolute; top: 5px; height: 6px; border-left: 1px solid currentColor; }
+.move-operation-sample { position: absolute; top: 2px; height: 12px; border-left: 3px solid currentColor; transform: translateX(-50%); }
