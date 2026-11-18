@@ -60,5 +60,6 @@ export function useFieldScene(controller: EditorController) {
   const sample = useMemo(() => sharedSample(project, count), [project, count]);
   const allPositions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? (atSet && !playing ? activeSet.positions : sample.positions);
   const positions = useMemo(() => scopePositions(allPositions, rehearsalId ? rehearsalProject : null), [rehearsalId, rehearsalProject, allPositions]);
-  return { rehearsalId, rehearsalProject, atSet, count, sample, positions };
+  const facings = atSet && !playing ? activeSet.facings : sample.facings;
+  return { rehearsalId, rehearsalProject, atSet, count, sample, positions, facings };
 }

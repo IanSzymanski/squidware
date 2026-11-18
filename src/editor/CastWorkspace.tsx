@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { FolderOpen, List, PanelRight, Plus, Search, Trash2, Users, X } from 'lucide-react';
 import { coordinateDescription, PROJECT_LIMITS } from '../domain';
 import type { Performer } from '../types';
-import { Button, CommitInput } from './EditorControls';
+import { Button, CommitColor, CommitInput } from './EditorControls';
 import { HelpButton } from './ControlHelp';
 import { nextCastRow, selectCastRow, selectVisible } from './castSelection';
 import './cast.css';
@@ -13,6 +13,30 @@ import type { EditorController } from './useEditorController';
 function PerformerFields({ person, controller }: { person: Performer; controller: EditorController }) {
   return <><label className="form-label">Name for {person.label}<CommitInput label={`Name for ${person.label}`} placeholder="Add a name" allowEmpty value={person.name} onDraftChange={controller.setPendingDraft} maxLength={PROJECT_LIMITS.text.performerName} onCommit={name => controller.dispatch('performer.update', { id: person.id, update: { name } })} /></label>
     <label className="form-label">Section for {person.label}<select aria-label={`Section for ${person.label}`} value={person.sectionId} onChange={e => controller.dispatch('performer.update', { id: person.id, update: { sectionId: e.target.value } })}>{controller.project.sections.map(section => <option value={section.id} key={section.id}>{section.name}</option>)}</select></label></>;
+}
+
+function PerformerAppearanceFields({ person, controller, locked }: { person: Performer; controller: EditorController; locked: boolean }) {
+  const { appearance, id } = person;
+  const sectionColor = controller.project.sections.find(section => section.id === person.sectionId)?.color ?? '#b9ed85';
+  return <details className="performer-appearance">
+    <summary>Appearance</summary>
+    <fieldset disabled={locked}>
+      <label className="form-label">Role marker
+        <select aria-label="Role marker" value={appearance?.role ?? ''} onChange={event => {
+          const role = event.target.value === 'instrument' ? 'instrument' : event.target.value === 'guard' ? 'guard' : null;
+          controller.dispatch('performer.appearance', { id, role });
+        }}>
+          <option value="">None</option><option value="instrument">Instrument</option><option value="guard">Guard</option>
+        </select>
+      </label>
+      <label className="form-label">Costume color
+        <CommitColor label="Costume color" value={(appearance?.costumeColor ?? sectionColor).toLowerCase()}
+          onDraftChange={controller.setPendingDraft} onCommit={costumeColor => controller.dispatch('performer.appearance', { id, costumeColor })} />
+      </label>
+      {appearance?.costumeColor && <HelpButton type="button" title="Use section color for costume" className="button subtle"
+        disabled={locked} onClick={() => controller.dispatch('performer.appearance', { id, costumeColor: null })}>Use section color</HelpButton>}
+    </fieldset>
+  </details>;
 }
 
 export function CastWorkspace({ controller, docked = false }: { controller: EditorController; docked?: boolean }) {
@@ -97,7 +121,8 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
     </div>
     {docked && <div className="cast-edit"><h3>{editing ? `Edit ${editing.label}` : 'Performer details'}</h3>{editing ? <>
       {selectedIds.length !== 1 || selectedIds[0] !== editing.id ? <p className="microcopy">Finish or cancel this name edit before editing another performer.</p> : null}
-      <fieldset disabled={locked}><PerformerFields key={`${projectEpoch}:${editing.id}`} person={editing} controller={controller} /></fieldset><p className="microcopy">Set {controller.index + 1}: {coordinateDescription(activeSet.positions[editing.id], project.field, controller.coordinateFormat)}</p><p className="microcopy">Enter applies · Escape cancels. Names and sections update across every set.</p>
+      <fieldset disabled={locked}><PerformerFields key={`${projectEpoch}:${editing.id}`} person={editing} controller={controller} /></fieldset><PerformerAppearanceFields key={`${projectEpoch}:${editing.id}`} person={editing} controller={controller}
+        locked={locked || !!controller.spacingPreview || !!controller.coordinatePreview} /><p className="microcopy">Set {controller.index + 1}: {coordinateDescription(activeSet.positions[editing.id], project.field, controller.coordinateFormat)}</p><p className="microcopy">Enter applies · Escape cancels. Names and sections update across every set.</p>
     </> : <p className="microcopy">Select one performer to edit their name and section.</p>}</div>}
     <div className="table-footer">{filteredCast.length} shown · {selectedIds.length} selected{!docked && <span>Names and sections update across every set.</span>}</div>
     {docked && <p className="cast-keyboard-help">Arrows/Home/End: focus · Space: toggle · Enter: select · Shift: add range · Ctrl/⌘-click: toggle</p>}

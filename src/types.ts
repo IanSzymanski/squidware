@@ -3,7 +3,9 @@ import type { SnapSettings } from './snapping';
 import type { TemplateLibraryBridge } from './templates/storage';
 export interface Point { x: number; y: number }
 export interface Section { id: string; name: string; color: string }
-export interface Performer { id: string; label: string; name: string; sectionId: string }
+export interface PerformerAppearance { role?: 'instrument' | 'guard'; costumeColor?: string }
+export interface Performer { id: string; label: string; name: string; sectionId: string; appearance?: PerformerAppearance }
+export type PerformerFacings = Readonly<Record<string, number>>;
 export interface SelectionGroup { id: string; name: string; performerIds: string[] }
 export type RehearsalAnchor = { kind: 'set'; setId: string } | { kind: 'move'; moveId: string; fromSetId: string; toSetId: string; count: number };
 export type RehearsalFocus = { kind: 'all' } | { kind: 'section'; sectionId: string } | { kind: 'performers'; performerIds: string[] };
@@ -31,7 +33,7 @@ export interface LegacyProject {
   sets: LegacyDrillSet[];
   audioOffsetSeconds: number;
 }
-export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'> & { liveFormations?: LiveFormation[] };
+export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'> & { liveFormations?: LiveFormation[]; facings?: PerformerFacings };
 export interface LiveFormation {
   id: string; name: string; kind: FormationKind; options: Required<FormationOptions>;
   bezier?: BezierFormation;
@@ -126,7 +128,7 @@ export interface TransitionIssue {
   certainty?: 'confirmed' | 'possible'; countRange?: [number, number];
   measurement?: { lower: number; upper: number; tolerance: number; unit: 'yd' | 'yd/count'; converged: boolean };
 }
-export interface TimelineSample { positions: Record<string, Point>; setIndex: number; progress: number; localCount: number }
+export interface TimelineSample { positions: Record<string, Point>; facings?: PerformerFacings; setIndex: number; progress: number; localCount: number }
 export interface RecoveryVersion {
   id: string; createdAt: number; revision: number; source: 'automatic' | 'legacy';
   projectId: string; title: string; performers: number; sets: number; bytes: number;

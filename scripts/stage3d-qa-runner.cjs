@@ -9,6 +9,10 @@ const { pathToFileURL, fileURLToPath } = require('node:url');
 const manifest = require(process.argv.find(arg => arg.startsWith('--stage3d-manifest=')).slice('--stage3d-manifest='.length));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const profile = manifest.profile;
+if (manifest.softwareWebgl) {
+  app.commandLine.appendSwitch('use-angle', 'swiftshader');
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+}
 app.setPath('userData', profile);
 app.on('window-all-closed', () => {});
 // This component harness uses the production desktop recovery backend. Full
@@ -112,6 +116,30 @@ async function run(fixture, blockLazy = false) {
   const idle = async () => { await pause(2000); const before = await snapshot(); await pause(2000); const after = await snapshot(); return { durationMs: 2000, raf: after.raf - before.raf, draws: after.draws - before.draws }; };
   const dispatch = async (id, args) => { assert.equal(await evaluate(`window.__stageQA.editor.dispatch(${JSON.stringify(id)}, ${JSON.stringify(args)})`), true); await pause(150); };
   const screenshot = async name => { await fs.writeFile(path.join(manifest.output, `${fixture.name}-${name}.png`), (await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true })).toPNG()); };
+  const setAppearanceQuality = quality => evaluate(`(() => {
+    const select = document.querySelector('[aria-label="3D quality"]');
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, ${JSON.stringify(quality)});
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  async function checkAppearance(ids) {
+    const [instrument, guard] = ids;
+    await dispatch('set.select', { index: 0 });
+    const before = await snapshot();
+    await dispatch('performer.facing', { index: 0, ids: [instrument, guard], angle: 270 });
+    await dispatch('performer.facing', { index: 0, ids: [guard], angle: 0 });
+    await dispatch('performer.appearance', { id: instrument, role: 'instrument', costumeColor: '#c14b65' });
+    await dispatch('performer.appearance', { id: guard, role: 'guard' });
+    await waitFor(`window.__stageQA.draws > ${before.draws}`, 'authored appearance render');
+    await screenshot('performer-appearance');
+    const detailed = await snapshot();
+    await setAppearanceQuality('lightweight');
+    await waitFor(`window.__stageQA.draws > ${detailed.draws}`, 'lightweight appearance render');
+    await screenshot('performer-appearance-lightweight');
+    const stable = await idle();
+    assert.equal((await snapshot()).contexts, before.contexts);
+    assert.equal(stable.draws, 0);
+    pass('authored headings, mixed roles and costume color render at both quality settings and return to idle');
+  }
   try {
     await command('Page.enable');
     await command('Network.enable');
@@ -138,6 +166,12 @@ async function run(fixture, blockLazy = false) {
     }
     await view('3D');
     await waitFor('!!document.querySelector(".stage-three canvas") && window.__stageQA.draws > 0', 'rendered 3D scene');
+    if (manifest.appearanceOnly && !blockLazy) {
+      const ids = await evaluate('window.__stageQA.editor.getState().project.present.performers.slice(0,2).map(person => person.id)');
+      await checkAppearance(ids);
+      assert.deepEqual((await snapshot()).errors, []);
+      return { fixture: fixture.name, checks };
+    }
     const initial = await snapshot();
     const initialIdle = await idle();
     if (manifest.baseline) {
@@ -212,6 +246,7 @@ async function run(fixture, blockLazy = false) {
     await dispatch('playback.toggle');
     const pausedIdle = await idle(); assert.equal(pausedIdle.draws, 0); assert.equal(pausedIdle.raf, 0);
     pass('quality choice survives view switching; playback renders and pause returns to idle');
+    if (fixture.name === 'demo') await checkAppearance(currentIds);
     for (let i = 0; i < 3; i++) { await view('2D'); await view('3D'); await waitFor('!!document.querySelector(".stage-three canvas")', 'repeated 3D mount'); await pause(150); }
     await evaluate("document.querySelector('.stage-three canvas').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext()");
     await waitFor('!!document.querySelector(".stage-three__fallback [role=alert]") || !!document.querySelector(".stage-three__fallback[role=alert]")', 'context loss fallback');
@@ -238,7 +273,7 @@ async function run(fixture, blockLazy = false) {
   try {
     const fixtures = [];
     for (const fixture of manifest.fixtures) fixtures.push(await run(fixture));
-    if (!manifest.baseline) fixtures.push(await run(manifest.fixtures[0], true));
+    if (!manifest.baseline && !manifest.appearanceOnly) fixtures.push(await run(manifest.fixtures[0], true));
     await fs.writeFile(path.join(manifest.output, 'report.json'), JSON.stringify({ hardware: manifest.hardware, buildSha256: manifest.buildSha256, electron: process.versions.electron, chrome: process.versions.chrome, gpu: await app.getGPUInfo('complete'), baseline: manifest.baseline, fixtures }, null, 2));
      app.exit(0);
   } catch (error) {  console.error(error); app.exit(1); }

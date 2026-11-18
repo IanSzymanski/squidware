@@ -1,5 +1,6 @@
+import { directionSummary } from '../analysis/rules';
 import { canReviewProblems } from './analysisCommands';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { reviewProblem, useShowAnalysis } from './ShowAnalysis';
 import { Check, CheckCheck, ChevronRight, LoaderCircle, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { Button } from './EditorControls';
@@ -18,8 +19,9 @@ export function TransitionCheck({ controller }: { controller: EditorController }
   const blocked = !canReviewProblems(controller.store.getState());
   const Icon = pending ? LoaderCircle : failed || issues.length ? TriangleAlert : ShieldCheck;
   const currentPage = Math.min(page, Math.max(0, Math.ceil(issues.length / 12) - 1));
+  const directions = useMemo(() => index > 0 ? directionSummary(project, index - 1) : null, [project, index]);
   return <div aria-busy={pending} data-analysis-status={analysis.status}>
-    {index > 0 && <p className="microcopy">{Object.keys(project.moves[index - 1].marchingDirections ?? {}).length} declared · {project.performers.length - Object.keys(project.moves[index - 1].marchingDirections ?? {}).length} unknown. Facing is not authored; travel vectors do not establish marching direction.</p>}
+    {directions && <p className="microcopy">{directions.declared} declared · {directions['authored facing']} from facing · {directions.unknown} unknown</p>}
     <div className="section-title">
       <span><Icon size={15} /> {issues.length ? 'Flags to review' : 'Current move'}</span>
       <span className={`check-count ${issues.length || failed ? 'has-issues' : ''}`}>{pending ? '…' : failed ? '!' : issues.length || <Check size={12} />}</span>

@@ -26,8 +26,9 @@ export function splitTransition(project: Project, request: SplitTransitionReques
   if (error) throw new Error(error);
   const index = project.moves.findIndex(move => move.id === moveId), move = project.moves[index];
   if (move.transition === 'ease' && request.allowEasingChange !== true) throw new Error('Review and accept the easing change before splitting this transition.');
+  const { positions, facings } = sampleProject(project, setStartCount(project, index) + count);
   const picture = { id: uid(), name: `Split · ${project.sets[index + 1].name}`.slice(0, PROJECT_LIMITS.text.setName), notes: '',
-    positions: sampleProject(project, setStartCount(project, index) + count).positions };
+    positions, ...(facings ? { facings } : {}) };
   function paths(first: boolean): Move['paths'] {
     return Object.fromEntries(Object.entries(move.paths).map(([id, path]) => [id, { segments: path.segments.map(segment => ({
       ...segment, id: first ? uid() : segment.id, startCount: 0, endCount: first ? count : move.counts - count,

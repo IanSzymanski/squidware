@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12,13].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8','bezier-v9','scatter-v10','assignment-v11','group-v12']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8','bezier-v9','scatter-v10','assignment-v11','group-v12','facing-v13']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -72,7 +72,7 @@ test('structural defects fail schema and parser; semantic defects require the ca
 test('unknown metadata is discarded, unsupported versions and geometry are never silently downgraded',()=>{
   const project=smallExample(); project.comment={anything:true}; project.sets[0].description='Informational';
   assert.ok(check(project));assert.equal(tools.parseProject(JSON.stringify(project)).comment,undefined);
-  project.schemaVersion=13;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
+  project.schemaVersion=14;assert.throws(()=>tools.parseProject(JSON.stringify(project)),/Update Squidware/);
 });
 
 test('optional score maps share schema/native validation, preserving pickup and meter anchors',()=>{
@@ -212,4 +212,19 @@ test('v12 group route programs share schema/native validation and retain compact
  for(const mutate of [g=>g.routeId='missing',g=>g.members=['a','missing'],g=>g.entryCounts=16,g=>g.cues=[{count:1,direction:1}],g=>g.cues=[{count:0,direction:1},{count:0,direction:-1}]]){const bad=structuredClone(p);mutate(bad.moves[0].groupMotions[0]);assert.ok(check(bad));assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/Group movement/);}
  for(const version of [2,8,11]){const bad={...p,schemaVersion:version};assert.equal(check(bad),false);assert.throws(()=>tools.parseProject(JSON.stringify(bad)),/requires schema version/);}
  const content=tools.serializeProject(canonical);assert.ok(!content.includes('linearCounts'));for(const count of [0,.25,1,8,15.99,16])assert.deepEqual(tools.sampleProject(tools.parseProject(content),count),tools.sampleProject(canonical,count));
+});
+
+
+test('v13 facing and appearance round-trip through schema validation and the canonical project codec', async () => {
+  const content = await readFile(new URL('../format/examples/facing-v13.squid', import.meta.url), 'utf8');
+  const wire = JSON.parse(content);
+  assert.equal(schemas.get(13)(wire), true);
+  const project = tools.parseProject(content);
+  assert.deepEqual(project.sets[0].facings, { a: 350, b: 180 });
+  assert.deepEqual(tools.sampleProject(project, 8).facings, { a: 0, b: 180 });
+  assert.equal(JSON.parse(tools.serializeProject(project)).schemaVersion, 13);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, schemaVersion: 12 })), /requires schema version 13/);
+  wire.sets[0].facings.a = 360;
+  assert.equal(schemas.get(13)(wire), false);
+  assert.throws(() => tools.parseProject(JSON.stringify(wire)), /up to 360/);
 });

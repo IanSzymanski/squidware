@@ -23,7 +23,7 @@ export function Mirrored3D({ controller, quality, onQualityChange, interactive, 
   const draft = useSyncExternalStore(drafts.subscribe, drafts.get, drafts.get);
   const editable = scene.atSet && !controller.playing;
   const positions = useMemo(() => overlayDraft(scene.positions, draft, controller.index, editable), [scene.positions, draft, controller.index, editable]);
-  return <Stage3DLoader project={scene.rehearsalProject} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={interactive ? controller.setSelectedIds : undefined}
+  return <Stage3DLoader project={scene.rehearsalProject} facings={scene.facings} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={interactive ? controller.setSelectedIds : undefined}
     cameraRequest={interactive?camera:undefined} hideCameraPresets={interactive&&!focus} onCameraPreset={interactive?preset=>{const current=controller.store.getState().ui.camera;if(current.preset!==preset)controller.store.setValue('ui','camera',{...current,preset});}:undefined}
     quality={quality} onQualityChange={onQualityChange} onReturnTo2D={() => controller.setView('2d')} recovery={recovery} />;
 }

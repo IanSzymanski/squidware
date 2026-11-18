@@ -7,6 +7,8 @@ import { hardware, fingerprint } from './performance-common.mjs';
 
 const require = createRequire(import.meta.url);
 const baseline = process.argv.includes('--baseline');
+const softwareWebgl = process.argv.includes('--software-webgl');
+const appearanceOnly = process.argv.includes('--appearance-only');
 const build = path.resolve(process.argv.find(arg => arg.startsWith('--build='))?.slice(8) || path.join(root, 'dist'));
 const qa = await createQa('stage3d', { timeoutMs: 250000, defaultOutput: path.join(root, '.qa', 'stage3d', baseline ? 'before' : 'after') });
 const { output } = qa;
@@ -21,4 +23,4 @@ await esbuild.build({ stdin: { contents: `
     return { name, content: serializeProject(project), count: project.performers.length, firstId: project.performers[0].id, section: project.sections[0].name };
   });
 `, resolveDir: root, loader: 'ts' }, outfile: bundle, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent' });
-await qa.run('stage3d-qa-runner.cjs', 'stage3d-manifest', { build, baseline, fixtures: require(bundle).fixtures, hardware: hardware(), buildSha256: await fingerprint(build) });
+await qa.run('stage3d-qa-runner.cjs', 'stage3d-manifest', { build, baseline, softwareWebgl, appearanceOnly, fixtures: require(bundle).fixtures.filter(f => !appearanceOnly || f.name === 'demo'), hardware: hardware(), buildSha256: await fingerprint(build) });

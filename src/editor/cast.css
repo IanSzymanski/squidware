@@ -33,3 +33,9 @@
 .cast-dock .empty-state { padding: 20px 12px; gap: 10px; text-align: center; }
 @media (max-width: 1250px) { .cast-workspace.cast-dock { flex-basis: 280px; width: 280px; } }
 .studio.studio--cast-panel { min-height: 0; }
+
+.cast-edit .performer-appearance { margin: 4px 0; }
+.performer-appearance summary, .performer-facing summary { font-size: 12px; cursor: pointer; padding: 6px 0; }
+.performer-appearance fieldset { margin-top: 4px; }
+.performer-appearance input[type=color] { min-height: 32px; }
+.performer-appearance .button { grid-column: 1 / -1; justify-self: start; }
