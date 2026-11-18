@@ -1,9 +1,9 @@
 'use strict';
 const {revealFieldTool}=require('./testing/renderer.cjs');
 const assert = require('node:assert/strict');
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, nativeImage } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
-const { capturePage, key: sendKey, waitFor, settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
+const { capturePage, key: sendKey, waitFor, waitViewport, settleNativeViewport, selectNativeOption } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--path-operations-manifest=')).slice('--path-operations-manifest='.length));
 const { root, output, profile, bundle } = manifest;
 const { fixture, parseProject, sampleProject } = require(bundle);
@@ -23,7 +23,7 @@ require(path.join(root, 'electron/main.cjs'));
 const evaluate = async source => { try { return await window.webContents.executeJavaScript(source); } catch(error) { console.error('Renderer probe failed: '+source.slice(0,300)); throw error; } };
 const editor = 'window.__pathopsQA.editor', state = editor + '.getState()';
 const wait = (expression, label) => waitFor(() => evaluate(expression), label, { timeoutMs: 20000, failure: () => failure });
-const frames = () => evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+const frames = () => wait('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))', 'renderer frames');
 const key = async (...args) => { await sendKey(...args); await frames(); };
 const pass = label => { checks.push(label); console.log('PASS ' + label); };
 function instrument() {
@@ -43,10 +43,23 @@ async function type(selector, text) {
   await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.focus();e.select();})()`);
   await window.webContents.debugger.sendCommand('Input.insertText', { text: String(text) }); await frames();
 }
-async function capture(name) {
+async function capture(name, viewport) {
   await evaluate(`${editor}.setValue('ui','toast',''); document.activeElement?.blur()`);
   await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
-  await capturePage(window, output, name);
+  if (viewport) {
+    const { width, height } = viewport;
+    await waitViewport(window, viewport, `fixed viewport for ${name}`);
+    const { data } = await window.webContents.debugger.sendCommand('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: true,
+      clip: { x: 0, y: 0, width, height, scale: 1 },
+    });
+    const png = Buffer.from(data, 'base64');
+    assert.deepEqual(nativeImage.createFromBuffer(png).getSize(), { width, height }, `screenshot dimensions for ${name}`);
+    await fs.writeFile(path.join(output, name), png);
+  } else {
+    await capturePage(window, output, name);
+  }
   viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height,panelHeight:document.querySelector('.path-operations-panel')?.getBoundingClientRect().height})`));
 }
 const present=()=>evaluate(state+'.project.present');
@@ -124,11 +137,27 @@ app.whenReady().then(async()=>{try{
  assert.equal(await evaluate("document.activeElement?.matches('.field-stage__svg')"),true);
  assert.deepEqual(await present(),pasted);
  pass('main field geometry and count-range comparison follow the local preview slider independently of transport; scrubbing or Escape discards the draft');
- window.hide();window.setContentSize(1366,768);
- await settleNativeViewport(window,'theme captures');
- for(const theme of ['dark','light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await open();await type(button('New move counts'),12);await capture(`operations-${theme}.png`);
- assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);
- await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'theme cancel');}
+ // A visible window keeps native input and animation frames active on macOS.
+ // Set the renderer viewport independently of the desktop's available height.
+ const viewport = { width: 1366, height: 768, dpr: 1 };
+ const debuggerSession = window.webContents.debugger;
+ await debuggerSession.sendCommand('Emulation.setDeviceMetricsOverride', {
+   width: viewport.width, height: viewport.height, deviceScaleFactor: viewport.dpr, mobile: false,
+ });
+ try {
+   await waitViewport(window, viewport, 'theme captures');
+   for (const theme of ['dark', 'light', 'high-contrast']) {
+     await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);
+     await open();
+     await type(button('New move counts'), 12);
+     await capture(`operations-${theme}.png`, viewport);
+     assert.deepEqual([viewports.at(-1).width, viewports.at(-1).height], [viewport.width, viewport.height]);
+     await key(window, 'Escape');
+     await wait(`${state}.ui.dialog===null`, 'theme cancel');
+   }
+ } finally {
+   await debuggerSession.sendCommand('Emulation.clearDeviceMetricsOverride');
+ }
  window.setContentSize(1024,720);
  await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1.5,fieldOrientation:'audience-top',workspaceLayout:{...${state}.preferences.value.workspaceLayout,inspectorCollapsed:true}})`);
  await settleNativeViewport(window,'enlarged operations');await open();await type(button('New move counts'),12);
