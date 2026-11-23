@@ -1,0 +1,52 @@
+.leg-motion-example {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(320px, 1fr) auto;
+}
+
+.leg-motion-example__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 10px 16px;
+  background: var(--surface);
+}
+
+.leg-motion-example__bar h1 {
+  font-size: 1.15rem;
+  margin-inline-end: auto;
+}
+
+.leg-motion-example__bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leg-motion-example__bar select {
+  padding: 5px 7px;
+}
+
+.leg-motion-example__stage .stage-three__quality {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.leg-motion-example__count {
+  flex: 1 1 240px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.leg-motion-example__count input {
+  flex: 1;
+  accent-color: var(--accent);
+  padding: 0;
+}
+
+.leg-motion-example__count output {
+  min-width: 4ch;
+  text-align: right;
+}
