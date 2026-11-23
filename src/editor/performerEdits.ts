@@ -24,17 +24,17 @@ export function setFacing(project: Project, index: number, ids: string[], angle:
   return { ...project, sets: project.sets.map((set, i) => i === index ? withFacings(set, facings) : set) };
 }
 
-export function setAppearance(project: Project, { id, role, costumeColor }: {
-  id: string;
-  role?: PerformerAppearance['role'] | null;
-  costumeColor?: string | null;
-}): Project {
+export type AppearanceUpdate = { id: string } & { [K in keyof PerformerAppearance]?: PerformerAppearance[K] | null };
+
+export function setAppearance(project: Project, { id, role, costumeColor, equipment, flagColor }: AppearanceUpdate): Project {
   return { ...project, performers: project.performers.map(performer => {
     if (performer.id !== id) return performer;
     const { appearance: previous, ...person } = performer;
     const next = validateAppearance({
       role: role === undefined ? previous?.role : role ?? undefined,
       costumeColor: costumeColor === undefined ? previous?.costumeColor : costumeColor ?? undefined,
+      equipment: equipment === undefined ? previous?.equipment : equipment ?? undefined,
+      flagColor: flagColor === undefined ? previous?.flagColor : flagColor ?? undefined,
     }, 'appearance');
     return next ? { ...person, appearance: next } : person;
   }) };

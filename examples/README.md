@@ -36,3 +36,7 @@ See the [recorded demo validation and design review](../docs/evidence/demo-show/
 Run `pnpm dev` and open `/examples/leg-motion/` on the local Vite server. The example opens paused with 64 performers. Choose a motion, scrub the count, or play it at different speeds. Use Front, Side, and Press box to inspect the poses, or switch to Whole ensemble and load the 500-performer cast. Turn off **Animate legs** to compare the standard static markers at the same count.
 
 The [design and validation notes](../docs/evidence/leg-motion/README.md) cover the rig contract, captured poses, and software-rendering costs.
+
+## Low-poly 3D asset preview
+
+Run `pnpm dev` and open `/examples/3d-assets/` on the local Vite server. Choose carried equipment or a front-ensemble station to review one model. The 64- and 500-performer scenes support playback, scrubbing, stage context and comparison with ordinary markers. See the [asset inventory, rendered review and measurements](../docs/evidence/3d-assets/README.md).

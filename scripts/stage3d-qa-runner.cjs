@@ -140,6 +140,28 @@ async function run(fixture, blockLazy = false) {
     assert.equal(stable.draws, 0);
     pass('authored headings, mixed roles and costume color render at both quality settings and return to idle');
   }
+  async function checkEquipment([instrument, guard]) {
+    await dispatch('performer.appearance', { id: instrument, equipment: 'mellophone' });
+    await dispatch('performer.appearance', { id: guard, equipment: 'flag', flagColor: '#d876a3' });
+    const lightweight = await snapshot();
+    await setAppearanceQuality('detailed');
+    await waitFor(`window.__stageQA.draws > ${lightweight.draws}`, 'modeled equipment render');
+    await click('.stage-three__stadium input');
+    assert.equal(await evaluate('document.querySelector(".stage-three__stadium input").checked'), true);
+    for (const preset of ['front', 'top', 'perspective']) {
+      const before = await snapshot();
+      await dispatch('view.camera', { preset });
+      await waitFor(`window.__stageQA.draws > ${before.draws}`, 'stadium ' + preset);
+      await screenshot('stadium-' + preset);
+    }
+    const active = await snapshot();
+    assert.ok(active.created.Buffer > lightweight.created.Buffer);
+    await view('2D');
+    await waitFor(`window.__stageQA.lost === ${active.contexts}`, 'equipment context released');
+    const closed = await snapshot();
+    assert.ok(closed.deleted.Buffer > (active.deleted.Buffer ?? 0));
+    pass('authored equipment and stadium render with all production camera presets, then release WebGL buffers on close');
+  }
   try {
     await command('Page.enable');
     await command('Network.enable');
@@ -169,6 +191,7 @@ async function run(fixture, blockLazy = false) {
     if (manifest.appearanceOnly && !blockLazy) {
       const ids = await evaluate('window.__stageQA.editor.getState().project.present.performers.slice(0,2).map(person => person.id)');
       await checkAppearance(ids);
+      await checkEquipment(ids);
       assert.deepEqual((await snapshot()).errors, []);
       return { fixture: fixture.name, checks };
     }

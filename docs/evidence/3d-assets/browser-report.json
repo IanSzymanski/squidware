@@ -1,0 +1,197 @@
+{
+  "backend": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "inventory": [
+    {
+      "key": "trumpet",
+      "name": "Trumpet",
+      "mode": "carried"
+    },
+    {
+      "key": "mellophone",
+      "name": "Mellophone",
+      "mode": "carried"
+    },
+    {
+      "key": "trombone",
+      "name": "Trombone",
+      "mode": "carried"
+    },
+    {
+      "key": "euphonium",
+      "name": "Baritone / euphonium",
+      "mode": "carried"
+    },
+    {
+      "key": "tuba",
+      "name": "Tuba / sousaphone",
+      "mode": "carried"
+    },
+    {
+      "key": "flute",
+      "name": "Flute",
+      "mode": "carried"
+    },
+    {
+      "key": "clarinet",
+      "name": "Clarinet",
+      "mode": "carried"
+    },
+    {
+      "key": "saxophone",
+      "name": "Saxophone",
+      "mode": "carried"
+    },
+    {
+      "key": "snare",
+      "name": "Snare",
+      "mode": "carried"
+    },
+    {
+      "key": "tenors",
+      "name": "Tenors",
+      "mode": "carried"
+    },
+    {
+      "key": "bass-drum",
+      "name": "Bass drum",
+      "mode": "carried"
+    },
+    {
+      "key": "flag",
+      "name": "Flag",
+      "mode": "carried"
+    },
+    {
+      "key": "guard-rifle",
+      "name": "Practice rifle",
+      "mode": "carried"
+    },
+    {
+      "key": "guard-saber",
+      "name": "Guard saber",
+      "mode": "carried"
+    },
+    {
+      "key": "marimba",
+      "name": "Marimba",
+      "mode": "pit"
+    },
+    {
+      "key": "vibraphone",
+      "name": "Vibraphone",
+      "mode": "pit"
+    },
+    {
+      "key": "xylophone",
+      "name": "Xylophone / glockenspiel",
+      "mode": "pit"
+    },
+    {
+      "key": "timpani",
+      "name": "Timpani",
+      "mode": "pit"
+    },
+    {
+      "key": "rack",
+      "name": "Percussion rack",
+      "mode": "pit"
+    },
+    {
+      "key": "synth",
+      "name": "Keyboard / synth",
+      "mode": "pit"
+    }
+  ],
+  "comparisons": [
+    {
+      "size": "mixed",
+      "mode": "markers",
+      "calls": 14,
+      "triangles": 20276,
+      "geometries": 16,
+      "frames": 36,
+      "medianMs": 100,
+      "p95Ms": 200
+    },
+    {
+      "size": "mixed",
+      "mode": "equipment",
+      "calls": 16,
+      "triangles": 32428,
+      "geometries": 16,
+      "frames": 33,
+      "medianMs": 116.7,
+      "p95Ms": 200
+    },
+    {
+      "size": "mixed",
+      "mode": "stadium",
+      "calls": 15,
+      "triangles": 20444,
+      "geometries": 16,
+      "frames": 31,
+      "medianMs": 100,
+      "p95Ms": 249.9
+    },
+    {
+      "size": "mixed",
+      "mode": "full",
+      "calls": 20,
+      "triangles": 35452,
+      "geometries": 16,
+      "frames": 31,
+      "medianMs": 116.6,
+      "p95Ms": 233.3
+    },
+    {
+      "size": "stress",
+      "mode": "markers",
+      "calls": 14,
+      "triangles": 158052,
+      "geometries": 16,
+      "frames": 20,
+      "medianMs": 200,
+      "p95Ms": 416.6
+    },
+    {
+      "size": "stress",
+      "mode": "equipment",
+      "calls": 16,
+      "triangles": 251656,
+      "geometries": 16,
+      "frames": 16,
+      "medianMs": 250,
+      "p95Ms": 533.3
+    },
+    {
+      "size": "stress",
+      "mode": "stadium",
+      "calls": 15,
+      "triangles": 158220,
+      "geometries": 16,
+      "frames": 16,
+      "medianMs": 216.6,
+      "p95Ms": 633.4
+    },
+    {
+      "size": "stress",
+      "mode": "full",
+      "calls": 20,
+      "triangles": 254680,
+      "geometries": 16,
+      "frames": 16,
+      "medianMs": 283.2,
+      "p95Ms": 350
+    }
+  ],
+  "interactions": [
+    "Every carried and pit model rendered from front, side and press-box views.",
+    "Seeking away and back reproduced the exact 500-performer scene with the same pit layout and stadium.",
+    "Two close/reopen cycles lost the old WebGL context and restored the same draw calls and triangles with a stable fresh geometry count.",
+    "The Stadium checkbox stayed keyboard-accessible in compact high-contrast layout.",
+    "Section default, performer override and flag color edited through the real controls and replayed through undo/redo."
+  ]
+}

@@ -1,3 +1,7 @@
+import { resolveEquipment, type CarriedEquipment } from '../equipment';
+import { AssetBatches, AssetResources } from './3d/assetBatches';
+import { carriedModels, type AssetPlacement } from './3d/assetModels';
+import { stadiumParts } from './3d/stadium';
 import { facingAt } from '../performerFacing';
 import { HelpButton } from '../editor/ControlHelp';
 import { Tooltip } from './Tooltip';
@@ -27,20 +31,27 @@ export interface Stage3DProps {
   hideCameraPresets?: boolean;
   /** A host without its own 2D field (the 3D window) supplies the interruption text and recovery actions. */
   recovery?: { contextLost: string; unavailable?: string; actions: ReactNode };
-  /** The separate leg-motion example opts into articulated markers and close camera views. */
-  legMotionPreview?: { frame?: LegMotionFrame; camera: PreviewCamera };
+  /** Tooling can supply a fixed review angle, cue samples, or stationary fixture equipment. */
+  previewCamera?: PreviewCamera;
+  legMotion?: LegMotionFrame;
+  assetReview?: { showEquipment: boolean; pit: readonly AssetPlacement[]; onFrame: (stats: RenderStats) => void };
 }
 
 export type CameraPreset = 'perspective' | 'front' | 'top';
-interface PreviewCamera {
+export interface PreviewCamera {
   position: readonly [number, number, number];
   target: readonly [number, number, number];
 }
+export interface RenderStats { calls: number; triangles: number; geometries: number }
 interface SceneState {
   scene: THREE.Scene;
   capacity: number;
   roster: string;
-  performers: { id: string; color: string; appearance?: PerformerAppearance }[];
+  performers: { id: string; color: string; appearance?: PerformerAppearance; role?: PerformerAppearance['role']; equipment?: CarriedEquipment }[];
+  carried: AssetBatches;
+  pit: AssetBatches;
+  stadium: AssetBatches;
+  stadiumParts: ReturnType<typeof stadiumParts>;
   bodies: THREE.InstancedMesh;
   heads: THREE.InstancedMesh;
   caps: THREE.InstancedMesh;
@@ -137,7 +148,7 @@ function makeFieldTexture(width: number, height: number, preset: Project['field'
   return texture;
 }
 
-function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number, legMotion?: LegMotionFrame) {
+function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number, equipmentEnabled: boolean, legMotion?: LegMotionFrame) {
   const transform = new THREE.Object3D();
   const selected = new Set(selectedIds);
   const rig = legMotion ? (state.legMotion ??= new LegMotionMeshes(state.scene, state.capacity)) : undefined;
@@ -145,7 +156,8 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   else state.legMotion?.hide();
   state.legs.visible = !rig;
   const showHeadings = !!facings;
-  const showRoles = state.performers.some(performer => performer.appearance?.role);
+  const showRoles = state.performers.some(person => person.role && !(equipmentEnabled && person.equipment));
+  const assets: AssetPlacement[] = [];
   state.performers.forEach((performer, index) => {
     const point = positions[performer.id];
     const x = point ? point.x - width / 2 : 0;
@@ -191,8 +203,11 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
       state.headings.setMatrixAt(index, transform.matrix);
     }
 
+    if (point && equipmentEnabled && performer.equipment) {
+      assets.push({ parts: carriedModels[performer.equipment], at: [x, 0, z], angle, flagColor: performer.appearance?.flagColor });
+    }
     if (showRoles) {
-      const role = performer.appearance?.role;
+      const role = equipmentEnabled && performer.equipment ? undefined : performer.role;
       transform.rotation.set(0, angle, 0);
       if (role === 'guard') {
         transform.position.set(x + .35 * cos, 1.48, z - .35 * sin);
@@ -207,6 +222,7 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     }
   });
   rig?.commit();
+  state.carried.update(assets);
   state.headings.visible = showHeadings;
   state.roleMarkers.visible = showRoles;
   for (const key of meshKeys) {
@@ -217,21 +233,27 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   }
 }
 
-export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, legMotionPreview }: Stage3DProps) {
+export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, previewCamera, legMotion, assetReview }: Stage3DProps) {
   const cameraProps=useRef({cameraRequest,onCameraPreset});cameraProps.current={cameraRequest,onCameraPreset};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
-  const legFrame = legMotionPreview?.frame;
-  const previewCamera = legMotionPreview?.camera;
-  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery, legFrame, previewCamera });
-  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery, legFrame, previewCamera };
+  const [stadiumVisible, setStadiumVisible] = useState(false);
+  const equipmentEnabled = assetReview?.showEquipment ?? quality === 'detailed';
+  const pit = assetReview?.pit;
+  const onAssetFrame = assetReview?.onFrame;
+  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery, legMotion, previewCamera, equipmentEnabled, onAssetFrame });
+  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery, legMotion, previewCamera, equipmentEnabled, onAssetFrame };
   const [error, setError] = useState<string | null>(null);
   const width = project.field.width;
   const height = project.field.height;
   const fieldPreset = project.field.preset;
   const roster = useMemo(() => {
-    const colors = new Map(project.sections.map(section => [section.id, section.color]));
-    return JSON.stringify(project.performers.map(performer => ({ id: performer.id, color: colors.get(performer.sectionId) ?? '#b9ed85', appearance: performer.appearance })));
+    const sections = new Map(project.sections.map(section => [section.id, section]));
+    return JSON.stringify(project.performers.map(performer => {
+      const section = sections.get(performer.sectionId);
+      const { key, role } = resolveEquipment(performer.appearance, section?.equipment);
+      return { id: performer.id, color: section?.color ?? '#b9ed85', appearance: performer.appearance, role, equipment: key };
+    }));
   }, [project.performers, project.sections]);
 
   useEffect(() => {
@@ -425,9 +447,12 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         texturePreset = preset;
         invalidate();
       };
-      const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers, setCamera, setPreviewCamera, setQuality, setFieldPreset, invalidate, fail };
+      const assets = new AssetResources();
+      const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers,
+        carried: new AssetBatches(scene, assets), pit: new AssetBatches(scene, assets), stadium: new AssetBatches(scene, assets), stadiumParts: stadiumParts(width, height),
+        setCamera, setPreviewCamera, setQuality, setFieldPreset, invalidate, fail };
       sceneRef.current = state;
-      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.legFrame);
+      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.equipmentEnabled, currentRef.current.legMotion);
 
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
@@ -483,6 +508,8 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         if (disposed || !renderer) return false;
         const changed = controls?.update() ?? false;
         renderer.render(scene, camera);
+        const { calls, triangles } = renderer.info.render;
+        currentRef.current.onAssetFrame?.({ calls, triangles, geometries: renderer.info.memory.geometries });
         return changed;
       }, fail, view);
       setQuality(currentRef.current.quality);
@@ -498,10 +525,20 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     if (!state) return;
     try {
       updateRoster(state, roster);
-      updatePerformers(state, positions, facings, selectedIds, width, height, legFrame);
+      updatePerformers(state, positions, facings, selectedIds, width, height, equipmentEnabled, legMotion);
       state.invalidate();
     } catch (cause) { state.fail(cause); }
-  }, [positions, facings, selectedIds, width, height, roster, legFrame]);
+  }, [positions, facings, selectedIds, width, height, roster, equipmentEnabled, legMotion]);
+
+  useEffect(() => {
+    const state = sceneRef.current;
+    if (!state) return;
+    try {
+      state.pit.update(pit ?? []);
+      state.stadium.update(stadiumVisible ? [{ parts: state.stadiumParts, at: [0, 0, 0] }] : []);
+      state.invalidate();
+    } catch (cause) { state.fail(cause); }
+  }, [pit, stadiumVisible, width, height]);
 
   useEffect(() => { if (previewCamera) sceneRef.current?.setPreviewCamera(previewCamera); }, [previewCamera]);
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
@@ -522,7 +559,13 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         <HelpButton title="Front camera" aria-pressed={cameraRequest?cameraRequest.preset==='front':undefined} description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
         <HelpButton title="Overhead camera" aria-pressed={cameraRequest?cameraRequest.preset==='top':undefined} description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
         </>}
-        <Tooltip name="3D quality" description="Choose detailed shadows or lightweight rendering for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
+        <label className="stage-three__stadium">
+          <Tooltip name="Stadium" description="Show or hide the stands and press box around the field.">
+            <input type="checkbox" checked={stadiumVisible} onChange={event => setStadiumVisible(event.target.checked)} />
+          </Tooltip>
+          Stadium
+        </label>
+        <Tooltip name="3D quality" description="Choose detailed equipment and shadows, or lightweight markers for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
       </div>
       <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan{onSelect ? ' · Click a performer to select' : ''}</span></div>
     </>}

@@ -1,3 +1,4 @@
+import { resolveEquipment } from '../equipment';
 import { describeFacing, facingAt } from '../performerFacing';
 import { TravelOverlay, type TravelPreview } from '../editor/TravelCanvas';
 import { FieldCanvas } from './FieldCanvas';
@@ -142,7 +143,7 @@ const NO_POSITIONS: Record<string, Point> = {};
 const NO_NEIGHBORS: NeighborOverlay[] = [];
 
 function PerformerMarks({ facings, performers, positions, scale, radius }: {
-  facings?: PerformerFacings; performers: Performer[]; positions: Record<string, Point>; scale: number; radius: number;
+  facings?: PerformerFacings; performers: { id: string; role?: NonNullable<Performer['appearance']>['role']; costumeColor?: string }[]; positions: Record<string, Point>; scale: number; radius: number;
 }) {
   const start = radius + 4;
   return <g className="performer-marks" pointerEvents="none" aria-hidden="true">
@@ -152,13 +153,13 @@ function PerformerMarks({ facings, performers, positions, scale, radius }: {
         transform={`translate(${point.x} ${point.y}) scale(${1 / scale}) rotate(${-angle})`}
         d={`M -3 ${start} L 0 ${start + 5} L 3 ${start} Z`} fill="#f5f5e8" stroke="#142920" strokeWidth="1" />;
     })}
-    {performers.map(({ id, appearance }) => {
+    {performers.map(({ id, role, costumeColor }) => {
       const point = positions[id];
-      return point && <g key={id} data-performer-appearance={id} data-performer-role={appearance?.role}
+      return point && <g key={id} data-performer-appearance={id} data-performer-role={role}
         transform={`translate(${point.x} ${point.y}) scale(${1 / scale})`}>
-        {appearance?.costumeColor && <circle r={Math.max(1.4, radius * .6)} fill={appearance.costumeColor} stroke="#142920" strokeWidth="1" />}
-        {appearance?.role && <path transform={`translate(${-start - 5} ${-start - 5})`}
-          d={appearance.role === 'guard' ? 'M -2 3 V -3 H 3 L 1 0 H -2 Z' : 'M -3 -2 H 3 V 2 H -3 Z'}
+        {costumeColor && <circle r={Math.max(1.4, radius * .6)} fill={costumeColor} stroke="#142920" strokeWidth="1" />}
+        {role && <path transform={`translate(${-start - 5} ${-start - 5})`}
+          d={role === 'guard' ? 'M -2 3 V -3 H 3 L 1 0 H -2 Z' : 'M -3 -2 H 3 V 2 H -3 Z'}
           fill="#f5f5e8" stroke="#142920" strokeWidth="1" />}
       </g>;
     })}
@@ -230,7 +231,14 @@ export function Field2D({ project, facings, positions, neighbors, selectedIds, o
   const viewport = `${view.x} ${view.y} ${viewWidth} ${viewHeight}`;
   const displayedPositions = useMemo(() => Object.keys(preview).length ? { ...positions, ...preview } : positions, [positions, preview]);
   const spatialPreview = moveOperationPreview ?? travelPreview;
-  const markedPerformers = useMemo(() => project.performers.filter(person => person.appearance), [project.performers]);
+  const markedPerformers = useMemo(() => {
+    const defaults = new Map(project.sections.map(section => [section.id, section.equipment]));
+    return project.performers.flatMap(({ id, sectionId, appearance }) => {
+      const { role } = resolveEquipment(appearance, defaults.get(sectionId));
+      const costumeColor = appearance?.costumeColor;
+      return role || costumeColor ? [{ id, role, costumeColor }] : [];
+    });
+  }, [project.performers, project.sections]);
   const wantsCanvas = readOnly || moving || !!selectionPreview || !!neighbors?.length;
   const canvasActive = wantsCanvas && canvasReady;
   const focusedId = rememberedFocus?.project === project.id && positions[rememberedFocus.id]

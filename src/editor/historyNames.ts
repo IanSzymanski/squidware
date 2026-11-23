@@ -74,7 +74,11 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'performer.appearance': name = 'Edit performer appearance'; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;
     case 'section.add': name = 'Add section'; break;
-    case 'section.update': name = `${Object.hasOwn(update, 'color') ? 'Recolor' : 'Rename'} ${project.sections.find(s => s.id === a.id)?.name ?? 'section'}`; break;
+    case 'section.update': {
+      const section = project.sections.find(s => s.id === a.id)?.name ?? 'section';
+      name = Object.hasOwn(update, 'equipment') ? `Set 3D equipment for ${section}` : `${Object.hasOwn(update, 'color') ? 'Recolor' : 'Rename'} ${section}`;
+      break;
+    }
     default: name = 'Edit production';
   }
   return name.slice(0, 240);
