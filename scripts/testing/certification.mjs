@@ -29,11 +29,10 @@ export function certificationPlan(layer, { platform = process.platform, configur
   steps.push(
     // macOS suites share one native desktop and audio output. Concurrent visible
     // Electron apps compete for activation and can stall playback clocks.
-    // The serial macOS matrix exceeded fifteen minutes first; the slower hosted
-    // Linux/Windows runners followed once the UI/UX audit suites grew (#174).
-    // Keep suite watchdogs and the outer job cap.
+    // Budget more time for the serial matrix after run #308 reached its
+    // aggregate deadline with 40 suites passed and no individual failure.
     { name: 'workflows', tool: 'node', args: ['scripts/run-desktop-regressions.mjs', platform === 'darwin' ? '--jobs=1' : '--jobs=2'], display: true,
-      timeoutMs: 20 * 60_000 },
+      timeoutMs: (platform === 'darwin' ? 30 : 20) * 60_000 },
     { name: 'pdf-inspection', tool: 'python', args: ['scripts/verify-print.py'], printOutput: true },
     { name: 'package', tool: 'pnpm', args: ['exec', 'electron-builder', '--dir', '--publish', 'never'] },
   );
