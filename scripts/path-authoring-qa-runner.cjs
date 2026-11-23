@@ -62,7 +62,7 @@ async function panToStroke(points) {
     const x = view.x + view.width / 4, y = view.y + view.height / 2;
     const project = (x, y) => {
       const p = new DOMPoint(x, y).matrixTransform(field.getScreenCTM());
-      return { x: p.x, y: p.y };
+      return { x: Math.round(p.x), y: Math.round(p.y) };
     };
     const start = project(x, y);
     const end = project(x + view.x + view.width / 2 - center.x, y + view.y + view.height / 2 - center.y);
@@ -70,20 +70,21 @@ async function panToStroke(points) {
     return { center, start, end, hit: hits(start) && hits(end) };
   })()`);
   assert.ok(hit, 'Both ends of the pan must hit the drawing field');
-  // CDP sends the same trusted Alt-drag on each platform with the held button
-  // explicit. A window-level pointer acknowledgement alone cannot prove pan.
-  const send = (type, point, button, buttons) => window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-    type, ...point, button, buttons, modifiers: 1, clickCount: type === 'mouseMoved' ? 0 : 1,
-  });
-  await send('mouseMoved', start, 'none', 0);
-  await send('mousePressed', start, 'left', 1);
-  await send('mouseMoved', end, 'none', 1);
-  await send('mouseReleased', end, 'left', 0);
-  await wait(`(() => {
+  // Use the native middle-button pan already exercised by the docked editor.
+  // Wait for the viewport to move while the button is still held.
+  const centered = `(() => {
     const view = document.querySelector('.field-stage__svg').viewBox.baseVal;
     return Math.abs(view.x + view.width / 2 - ${center.x}) < .5
       && Math.abs(view.y + view.height / 2 - ${center.y}) < .5;
-  })()`, '2× field panned to the stroke');
+  })()`;
+  await mouse('mousePressed', start, 'middle');
+  try {
+    await mouse('mouseMoved', end, 'middle');
+    await wait(centered, '2× field panned to the stroke');
+  } finally {
+    await mouse('mouseReleased', end, 'middle');
+  }
+  assert.ok(await evaluate(centered), 'The field must stay centered on the stroke after release');
 }
 async function visibleStrokePoints(points) {
   const projected = await evaluate(`(() => {
