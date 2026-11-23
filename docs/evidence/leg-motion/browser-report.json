@@ -1,0 +1,76 @@
+{
+  "interactions": [
+    "Keyboard Space switches to standard markers and restores articulation with a pixel change.",
+    "Neutral hold is pixel-identical across counts. Explicit mark time alternates with the performer root held in place.",
+    "Playback advances, pause freezes count and canvas, 2× loops at the boundary, non-looping playback stops at 8, and rescrubbing to count 4 reproduces the exact render.",
+    "Motion and count remain keyboard-accessible at 650px width and 18px root text in light and high-contrast themes."
+  ],
+  "benchmarks": [
+    {
+      "performers": 64,
+      "animated": false,
+      "animationFrameMs": {
+        "samples": 25,
+        "median": 166.7,
+        "p95": 349.9
+      },
+      "countUpdateMs": {
+        "samples": 24,
+        "median": 174.9,
+        "p95": 360.4
+      },
+      "mainThreadScriptMsPerSecond": 83.1
+    },
+    {
+      "performers": 64,
+      "animated": true,
+      "animationFrameMs": {
+        "samples": 27,
+        "median": 183.4,
+        "p95": 350.1
+      },
+      "countUpdateMs": {
+        "samples": 26,
+        "median": 189.9,
+        "p95": 377.3
+      },
+      "mainThreadScriptMsPerSecond": 88.1
+    },
+    {
+      "performers": 500,
+      "animated": false,
+      "animationFrameMs": {
+        "samples": 15,
+        "median": 250,
+        "p95": 650
+      },
+      "countUpdateMs": {
+        "samples": 15,
+        "median": 284.5,
+        "p95": 601.8
+      },
+      "mainThreadScriptMsPerSecond": 65.1
+    },
+    {
+      "performers": 500,
+      "animated": true,
+      "animationFrameMs": {
+        "samples": 14,
+        "median": 300.1,
+        "p95": 650.1
+      },
+      "countUpdateMs": {
+        "samples": 13,
+        "median": 299.8,
+        "p95": 651
+      },
+      "mainThreadScriptMsPerSecond": 54.9
+    }
+  ],
+  "fieldHeight": 663,
+  "backend": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)"
+  }
+}

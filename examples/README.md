@@ -30,3 +30,9 @@ node scripts/demo-show/package.cjs <recording.mp3> <out.squidpack>
 The suite generates test-only silence for the media clock. This verifies transport against the authored timing data, not audible synchronization to an unavailable music recording. Its `results.json` records startup readiness, median/p95 frame intervals, native media readings and source provenance; `tether-1366.png` captures the 1366 × 768 default layout with the shared design guidance's minimum 470 px field height. Performance values describe the test host against the [documented investigation targets](../docs/performance.md#fixtures-and-budgets).
 
 See the [recorded demo validation and design review](../docs/evidence/demo-show/README.md).
+
+## 3D leg motion prototype
+
+Run `pnpm dev` and open `/examples/leg-motion/` on the local Vite server. The example opens paused with 64 performers. Choose a motion, scrub the count, or play it at different speeds. Use Front, Side, and Press box to inspect the poses, or switch to Whole ensemble and load the 500-performer cast. Turn off **Animate legs** to compare the standard static markers at the same count.
+
+The [design and validation notes](../docs/evidence/leg-motion/README.md) cover the rig contract, captured poses, and software-rendering costs.

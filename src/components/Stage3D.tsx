@@ -7,6 +7,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { PerformerAppearance, PerformerFacings, Point, Project } from '../types';
 import { createDemandFrames } from './demandFrames';
+import { sampleLegPose, type LegMotionFrame } from './legMotion';
+import { LegMotionMeshes } from './legMotionMeshes';
 import './stages.css';
 
 export type Stage3DQuality = 'detailed' | 'lightweight';
@@ -24,10 +26,16 @@ export interface Stage3DProps {
   onCameraPreset?: (preset: CameraPreset | null) => void;
   hideCameraPresets?: boolean;
   /** A host without its own 2D field (the 3D window) supplies the interruption text and recovery actions. */
-  recovery?: { contextLost: string; actions: ReactNode };
+  recovery?: { contextLost: string; unavailable?: string; actions: ReactNode };
+  /** The separate leg-motion example opts into articulated markers and close camera views. */
+  legMotionPreview?: { frame?: LegMotionFrame; camera: PreviewCamera };
 }
 
 export type CameraPreset = 'perspective' | 'front' | 'top';
+interface PreviewCamera {
+  position: readonly [number, number, number];
+  target: readonly [number, number, number];
+}
 interface SceneState {
   scene: THREE.Scene;
   capacity: number;
@@ -37,10 +45,12 @@ interface SceneState {
   heads: THREE.InstancedMesh;
   caps: THREE.InstancedMesh;
   legs: THREE.InstancedMesh;
+  legMotion?: LegMotionMeshes;
   rings: THREE.InstancedMesh;
   headings: THREE.InstancedMesh;
   roleMarkers: THREE.InstancedMesh;
   setCamera: (preset: CameraPreset) => void;
+  setPreviewCamera: (camera: PreviewCamera) => void;
   setQuality: (quality: Stage3DQuality) => void;
   setFieldPreset: (preset: Project['field']['preset']) => void;
   invalidate: () => void;
@@ -127,9 +137,13 @@ function makeFieldTexture(width: number, height: number, preset: Project['field'
   return texture;
 }
 
-function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number) {
+function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number, legMotion?: LegMotionFrame) {
   const transform = new THREE.Object3D();
   const selected = new Set(selectedIds);
+  const rig = legMotion ? (state.legMotion ??= new LegMotionMeshes(state.scene, state.capacity)) : undefined;
+  if (rig) rig.begin(state.capacity, state.performers.length);
+  else state.legMotion?.hide();
+  state.legs.visible = !rig;
   const showHeadings = !!facings;
   const showRoles = state.performers.some(performer => performer.appearance?.role);
   state.performers.forEach((performer, index) => {
@@ -151,11 +165,17 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     transform.position.y = 1.75;
     transform.updateMatrix();
     state.caps.setMatrixAt(index, transform.matrix);
-    for (let leg = 0; leg < 2; leg++) {
-      const side = leg === 0 ? -0.105 : 0.105;
-      transform.position.set(x + side * cos, 0.3, z - side * sin);
-      transform.updateMatrix();
-      state.legs.setMatrixAt(index * 2 + leg, transform.matrix);
+    if (legMotion && rig) {
+      const pose = point ? sampleLegPose(legMotion.count, point, legMotion.nextPositions[performer.id], facing, legMotion.markTime?.has(performer.id) ?? false) : undefined;
+      rig.setLeg(index * 2, x, z, angle, pose?.[0]);
+      rig.setLeg(index * 2 + 1, x, z, angle, pose?.[1]);
+    } else {
+      for (let leg = 0; leg < 2; leg++) {
+        const side = leg === 0 ? -0.105 : 0.105;
+        transform.position.set(x + side * cos, 0.3, z - side * sin);
+        transform.updateMatrix();
+        state.legs.setMatrixAt(index * 2 + leg, transform.matrix);
+      }
     }
     transform.position.set(x, 0.055, z);
     transform.rotation.set(-Math.PI / 2, 0, 0);
@@ -186,6 +206,7 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
       state.roleMarkers.setMatrixAt(index, transform.matrix);
     }
   });
+  rig?.commit();
   state.headings.visible = showHeadings;
   state.roleMarkers.visible = showRoles;
   for (const key of meshKeys) {
@@ -196,12 +217,14 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   }
 }
 
-export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets }: Stage3DProps) {
+export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, legMotionPreview }: Stage3DProps) {
   const cameraProps=useRef({cameraRequest,onCameraPreset});cameraProps.current={cameraRequest,onCameraPreset};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
-  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery });
-  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery };
+  const legFrame = legMotionPreview?.frame;
+  const previewCamera = legMotionPreview?.camera;
+  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery, legFrame, previewCamera });
+  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery, legFrame, previewCamera };
   const [error, setError] = useState<string | null>(null);
   const width = project.field.width;
   const height = project.field.height;
@@ -260,7 +283,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
 
     function fail(cause: unknown) {
       cleanup();
-      setError(cause instanceof Error && cause.message.includes('texture') ? cause.message : 'This device could not render a WebGL preview. Your drill is still available in the 2D editor.');
+      setError(cause instanceof Error && cause.message.includes('texture') ? cause.message : currentRef.current.recovery?.unavailable ?? 'This device could not render a WebGL preview. Your drill is still available in the 2D editor.');
     }
 
     try {
@@ -273,7 +296,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       renderer.toneMappingExposure = 1.15;
       renderer.domElement.tabIndex = 0;
       renderer.domElement.setAttribute('role', 'img');
-      renderer.domElement.setAttribute('aria-label', `Three dimensional drill preview. Drag to orbit, right-drag to pan${currentRef.current.onSelect ? ', scroll to zoom, and click a performer to select' : ' and scroll to zoom'}. Use the camera buttons for front and overhead views.`);
+      renderer.domElement.setAttribute('aria-label', `Three dimensional drill preview. Drag to orbit, right-drag to pan${currentRef.current.onSelect ? ', scroll to zoom, and click a performer to select' : ' and scroll to zoom'}. ${currentRef.current.previewCamera ? 'Use Camera view to choose an inspection angle.' : 'Use the camera buttons for front and overhead views.'}`);
       host.appendChild(renderer.domElement);
       scene.background = new THREE.Color('#141e1b');
       scene.fog = new THREE.Fog('#141e1b', 130, 240);
@@ -281,7 +304,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.08;
-      controls.minDistance = 12;
+      controls.minDistance = currentRef.current.previewCamera ? 2 : 12;
       controls.maxDistance = 175;
       controls.maxPolarAngle = Math.PI / 2 - 0.025;
       controls.target.set(0, 0, 0);
@@ -302,7 +325,19 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         invalidate();
         cameraProps.current.onCameraPreset?.(preset);
       };
-      setCamera(cameraProps.current.cameraRequest?.preset??'perspective');
+      const setPreviewCamera = ({ position, target }: PreviewCamera) => {
+        if (!controls) return;
+        // A preset should land exactly even if the user clicks during damping.
+        controls.enableDamping = false;
+        controls.update();
+        controls.target.set(...target);
+        camera.position.set(...position);
+        controls.update();
+        controls.enableDamping = true;
+        invalidate();
+      };
+      if (currentRef.current.previewCamera) setPreviewCamera(currentRef.current.previewCamera);
+      else setCamera(cameraProps.current.cameraRequest?.preset ?? 'perspective');
 
       const ambient = new THREE.HemisphereLight('#eff4de', '#273229', 2.35);
       scene.add(ambient);
@@ -390,9 +425,9 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         texturePreset = preset;
         invalidate();
       };
-      const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers, setCamera, setQuality, setFieldPreset, invalidate, fail };
+      const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers, setCamera, setPreviewCamera, setQuality, setFieldPreset, invalidate, fail };
       sceneRef.current = state;
-      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height);
+      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.legFrame);
 
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
@@ -463,11 +498,12 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     if (!state) return;
     try {
       updateRoster(state, roster);
-      updatePerformers(state, positions, facings, selectedIds, width, height);
+      updatePerformers(state, positions, facings, selectedIds, width, height, legFrame);
       state.invalidate();
     } catch (cause) { state.fail(cause); }
-  }, [positions, facings, selectedIds, width, height, roster]);
+  }, [positions, facings, selectedIds, width, height, roster, legFrame]);
 
+  useEffect(() => { if (previewCamera) sceneRef.current?.setPreviewCamera(previewCamera); }, [previewCamera]);
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
   useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height]);
   useEffect(() => {
