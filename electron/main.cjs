@@ -5,6 +5,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
+const { types } = require('node:util');
 
 const { parseProjectV2 } = require('./project-codec.cjs');
 const { createRecoveryService } = require('./recovery-service.cjs');
@@ -37,6 +38,7 @@ async function boundedRead(filename, limit, noFollow = false) {
 }
 const MAX_PROJECT_BYTES = 10 * 1024 * 1024;
 const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 64 * 1024 * 1024;
 const smokeTest = process.argv.includes('--smoke-test');
 // Existing desktop suites retain their small generated fixture. The demo-show
 // suite explicitly exercises the same bundled production as ordinary startup.
@@ -342,6 +344,23 @@ function registerIpc() {
     });
     if (result.canceled || !result.filePath) return null;
     const filename = await selectedDestination(result.filePath, kind);
+    if (!filename) return null;
+    await atomicWrite(filename, content);
+    return filename;
+  });
+
+  handleFileRequest('squidware:export-video', async (content, suggestedName) => {
+    if (!types.isUint8Array(content) || content.byteLength < 4 || content.byteLength > MAX_VIDEO_BYTES
+        || Buffer.from(content.buffer, content.byteOffset, 4).readUInt32BE(0) !== 0x1a45dfa3) {
+      throw new Error('Rehearsal video must be a WebM file of up to 64 MiB.');
+    }
+    const result = await dialog.showSaveDialog(window, {
+      title: 'Save rehearsal video', defaultPath: safeFilename(suggestedName, 'webm'),
+      filters: [{ name: 'WebM video', extensions: ['webm'] }],
+      properties: ['showOverwriteConfirmation', 'createDirectory'],
+    });
+    if (result.canceled || !result.filePath) return null;
+    const filename = await selectedDestination(result.filePath, 'webm');
     if (!filename) return null;
     await atomicWrite(filename, content);
     return filename;

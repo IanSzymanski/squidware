@@ -58,5 +58,6 @@
   max-width: none;
 }
 .field-viewports[data-layout] .stage-three__controls--split select { min-width: 0; }
+.field-viewports[data-layout] .stage-three__controls--split { flex-wrap: wrap; }
 .field-viewports[data-layout] .stage-three__fallback { padding: 12px; gap: 8px; }
 .field-viewports[data-layout=stacked] .stage-three__fallback > svg { display: none; }

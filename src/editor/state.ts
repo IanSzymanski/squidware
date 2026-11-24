@@ -12,7 +12,7 @@ import type { CoordinateEntrySession } from '../drillEntry';
 import type { SelectionReview } from '../selectionTools';
 import type { SetCreationKind } from './projectEdits';
 
-export type Dialog = 'choreography' | 'cast-table' | 'group-motion' | 'formation-transition' | 'assignment' | 'routes' | 'path-draw' | 'path-operations' | 'movement-schedule' | 'path' | 'templates' | 'audio-alignment' | 'tempo' | 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'choreography' | 'cast-table' | 'group-motion' | 'formation-transition' | 'assignment' | 'routes' | 'path-draw' | 'path-operations' | 'movement-schedule' | 'path' | 'templates' | 'audio-alignment' | 'tempo' | 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'saved-cameras' | 'video-export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;
@@ -27,7 +27,7 @@ export interface EditorState {
     workspace: Workspace; workspaceVersion: number; focusMode: boolean; view: FieldView; tool: 'select' | 'pan' | 'lasso'; zoom: number; fitVersion: number; projectEpoch: number;
     /** The separate 3D window exists only with the desktop bridge; a focus request increments popout3dFocus. */
     popout3d: 'unavailable' | 'closed' | 'open'; popout3dFocus: number;
-    camera: { preset: CameraPreset | null; version: number };
+    camera: { preset: CameraPreset | null; version: number; savedId?: string };
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
     showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog; groupMotionId?: string;
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;

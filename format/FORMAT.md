@@ -1,6 +1,6 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–16**. Ordinary saves write **v2**; nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, and custom performance surfaces **v16**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–17**. Ordinary saves write **v2**; nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, custom performance surfaces **v16**, and named camera views **v17**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
 
 Independent movement is specified by [the v6 schema](squid-v6.schema.json) and [schedule example](examples/scheduled-v6.squid); full-move curves use [the v5 schema](squid-v5.schema.json). Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
@@ -241,3 +241,9 @@ The surface unit is `yd`, `ft` or `m`. Reference lines start at the origin on bo
 An optional `background` has `x`, `y`, `width`, `height` and an embedded `image` with the prefix `data:image/png;base64,`. The rectangle must fit within the surface. The long image axis is at most 768 pixels. Its encoded URL is limited to 3,200,000 characters and counts toward the project size limit. The application imports PNG or JPEG and prepares the embedded PNG locally.
 
 The writer selects v16 for custom or indoor geometry. Football projects use the least required earlier version unless a later feature requires it. See the [indoor floor example](examples/indoor-v16.squid).
+
+## v17 saved camera views
+
+[Schema v17](squid-v17.schema.json) adds optional `cameraViews`. Each entry has a unique `id`, a distinct case-insensitive `name` of up to 60 characters, `projection: "perspective"`, a vertical `fov` of 15–95 degrees, and three-coordinate `position` and `target` vectors. The 3D scene uses yard units around the center of the field. Positive Y is up and positive Z points toward the audience. Each coordinate is between −4096 and 4096, and a position must be at least one yard from its target. A project can store up to 32 views.
+
+The writer uses v17 while a project contains at least one saved view. Earlier versions with no saved views remain readable.

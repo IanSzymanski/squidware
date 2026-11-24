@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
+    "mediabunny": "1.66.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.180.0"

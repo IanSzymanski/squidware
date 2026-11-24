@@ -1,5 +1,6 @@
 import { editingFieldView, fieldViews, type FieldView } from '../workspaces';
 import type { CameraPreset } from '../components/Stage3D';
+import { validateCameraViews, type SavedCameraView } from '../cameraViews';
 import { FOOTBALL_SURFACE, isCustomSurface, validateSurface, type FootballSurface } from '../surfaces';
 import { saveChoreographyCue, removeChoreographyCue } from './choreographyEdits';
 import type { ChoreographyCue } from '../types';
@@ -115,6 +116,8 @@ export interface CommandArguments {
   'display.grid': undefined; 'display.snap': undefined; 'display.next-paths': undefined;
   'selection.move-controls': undefined;
   'view.camera': { preset: CameraPreset };
+  'view.camera-save': { view: SavedCameraView };
+  'view.camera-remove': { id: string };
   'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
   'view.select': { view: FieldView }; 'view.popout': undefined; 'view.popout-close': undefined; 'workspace.show': { workspace: Workspace };
   'playback.count-previous': undefined; 'playback.count-next': undefined;
@@ -387,6 +390,19 @@ export const commandRegistry = {
   'view.camera': define({ id: 'view.camera', name: 'Reset 3D camera', description: 'Perspective shows the field at an angle. Front faces the home sideline. Press box looks down from above that sideline. Overhead looks straight down. Drag to orbit and clear the preset.', arguments: { preset: 'perspective | front | press-box | top' },
     enabled: (s,a) => idle(s) && s.ui.workspace === 'design' && s.ui.view !== '2d' && !!a && ['perspective','front','press-box','top'].includes(a.preset),
     execute: (c,a) => c.patch('ui', { camera: { preset:a.preset, version:c.getState().ui.camera.version+1 } }) }),
+  'view.camera-save': define({ id: 'view.camera-save', name: 'Save 3D camera view', description: 'Save a named camera angle with this production.', arguments: { view: 'Saved camera view' },
+    enabled: (s, a) => s.ui.dialog === 'saved-cameras' && !s.playback.playing && !!a?.view,
+    execute: (c, { view }) => c.edit(project => {
+      const views = project.cameraViews ?? [];
+      const next = views.some(entry => entry.id === view.id) ? views.map(entry => entry.id === view.id ? view : entry) : [...views, view];
+      return { ...project, cameraViews: validateCameraViews(next) };
+    }) }),
+  'view.camera-remove': define({ id: 'view.camera-remove', name: 'Delete saved 3D camera view', description: 'Remove a named camera from this production as an undoable edit.', arguments: { id: 'Camera view ID' },
+    enabled: (s, a) => s.ui.dialog === 'saved-cameras' && !s.playback.playing && !!s.project.present.cameraViews?.some(view => view.id === a?.id),
+    execute: (c, { id }) => c.edit(({ cameraViews, ...project }) => {
+      const remaining = cameraViews!.filter(view => view.id !== id);
+      return remaining.length ? { ...project, cameraViews: remaining } : project;
+    }) }),
   'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Show the field in 2D, 3D or both.', arguments: { view: '2d | 3d | split' }, enabled: (s, a) => canNavigate(s) && !!a && fieldViews.includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
   // Opening moves an inline 3D view back to 2D so only one renderer runs; the window itself never edits.
   'view.popout': simple('view.popout', 'Open 3D window', 'Show the 3D preview in its own window that follows this editor’s set, count, playback and selection. If it is open, bring it to the front.', s => s.ui.popout3d !== 'unavailable',

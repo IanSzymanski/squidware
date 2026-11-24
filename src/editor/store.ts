@@ -127,7 +127,7 @@ export function createEditorStore(project: Project, recoveryError?: string): Edi
       // Loading geometry alone is not evidence of a saved project file, or of a clean new production.
       patch('fileSession', { savedRevision: null, cleanRevision: null, needsSaveAs: true, saveStatus: 'Save a project file' });
       patch('selection', { activeIndex: 0, selectedIds: [] }); patch('playback', { count: 0, playing: false, rehearsalId: null });
-      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, movementClipboard: null, dialog: null, confirmation: null, pendingDraft: false, paletteOpen: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
+      patch('ui', { projectEpoch: state.ui.projectEpoch + 1, camera: { preset: 'perspective', version: state.ui.camera.version + 1 }, movementClipboard: null, dialog: null, confirmation: null, pendingDraft: false, paletteOpen: false, castQuery: '', sectionFilter: 'all', selectionToolsOpen: false, selectionPreview: null });
     },
     history: direction => {
       const history = state.project;

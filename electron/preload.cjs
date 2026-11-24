@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('squidware', Object.freeze({
   exportPackage: (content, name, token, mode) => ipcRenderer.invoke('squidware:export-package', content, name, token, mode),
   saveProject: (content, suggestedName, saveAs = false) => ipcRenderer.invoke('squidware:save-project', content, suggestedName, saveAs),
   exportFile: (content, suggestedName, kind) => ipcRenderer.invoke('squidware:export-file', content, suggestedName, kind),
+  exportVideo: (content, suggestedName) => ipcRenderer.invoke('squidware:export-video', content, suggestedName),
   exportPdf: paper => paper === undefined ? ipcRenderer.invoke('squidware:export-pdf') : ipcRenderer.invoke('squidware:export-pdf', paper),
   setDirty: (dirty) => { if (typeof dirty === 'boolean') ipcRenderer.send('squidware:set-dirty', dirty); },
   setKeyboardContext: context => { if (['editor', 'text', 'modal'].includes(context)) ipcRenderer.send('squidware:keyboard-context', context); },
