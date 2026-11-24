@@ -384,7 +384,7 @@ export const commandRegistry = {
     c.patch('ui',{workspace:'design',view:editingFieldView(c.getState().ui.view),castPanelOpen:false});
   }),
   'view.toggle': simple('view.toggle', 'Toggle 2D / 3D', 'Switch between field editing and the 3D rehearsal preview.', canNavigate, c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: s.ui.view === '2d' ? '3d' : '2d' }); }),
-  'view.camera': define({ id: 'view.camera', name: 'Reset 3D camera', description: 'Choose a viewing angle for the 3D field. Drag to orbit and clear the preset.', arguments: { preset: 'perspective | front | press-box | top' },
+  'view.camera': define({ id: 'view.camera', name: 'Reset 3D camera', description: 'Perspective shows the field at an angle. Front faces the home sideline. Press box looks down from above that sideline. Overhead looks straight down. Drag to orbit and clear the preset.', arguments: { preset: 'perspective | front | press-box | top' },
     enabled: (s,a) => idle(s) && s.ui.workspace === 'design' && s.ui.view !== '2d' && !!a && ['perspective','front','press-box','top'].includes(a.preset),
     execute: (c,a) => c.patch('ui', { camera: { preset:a.preset, version:c.getState().ui.camera.version+1 } }) }),
   'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Show the field in 2D, 3D or both.', arguments: { view: '2d | 3d | split' }, enabled: (s, a) => canNavigate(s) && !!a && fieldViews.includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),

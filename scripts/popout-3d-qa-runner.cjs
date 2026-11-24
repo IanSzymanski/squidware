@@ -441,7 +441,8 @@ async function restorePhase() {
     browser.webContents.setBackgroundThrottling(false);
     await browser.loadURL(pathToFileURL(path.join(root, 'dist', 'index.html')).href);
     await waitUntil(() => browser.webContents.executeJavaScript("!!document.querySelector('.set-card')"), 'renderer without desktop bridge');
-    assert.deepEqual(await browser.webContents.executeJavaScript("[typeof window.squidware, !!document.querySelector('.popout-3d-button'), [...document.querySelectorAll('.view-switch button')].map(button => button.getAttribute('aria-label'))]"), ['undefined', false, ['2D field', '3D preview']]);
+    const viewControls = await browser.webContents.executeJavaScript("[typeof window.squidware, !!document.querySelector('.popout-3d-button'), [...document.querySelectorAll('.view-switch button')].map(button => button.getAttribute('aria-label'))]");
+    assert.deepEqual(viewControls, ['undefined', false, ['2D field', '3D preview', 'Split review']]);
     // The hidden command's Shift+T is inert there: the key is not consumed, and another command can take it.
     const shortcut = await browser.webContents.executeJavaScript(`(async () => {
       const key = (target, init) => target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }));
@@ -458,7 +459,7 @@ async function restorePhase() {
       return { free, hidden: !rows.includes('Open 3D window'), error, binding, view: document.querySelector('.view-switch button[aria-pressed="true"]')?.getAttribute('aria-label') };
     })()`);
     assert.deepEqual(shortcut, { free: true, hidden: true, error: null, binding: 'ShiftT', view: '3D preview' }, JSON.stringify(shortcut));
-    pass('without the desktop bridge (browser build) the 3D window button stays hidden, the inline 3D option remains and Shift+T stays free for other commands');
+    pass('without the desktop bridge, inline and split 3D are available, the 3D window button stays hidden, and Shift+T stays free for other commands');
   } finally { browser.destroy(); }
 }
 async function clampPhase() {
