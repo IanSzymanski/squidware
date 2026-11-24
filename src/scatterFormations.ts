@@ -115,6 +115,8 @@ export function generateScatter(input:ScatterSettings,count:number,pins:Record<n
   return {...settings,points:result,pinnedSlots};
 }
 export function scatterPreset(center:Point,field:Project['field']):ScatterSettings {
-  const x=Math.max(20,Math.min(field.width-20,center.x)),y=Math.max(15,Math.min(field.height-15,center.y));
-  return {version:1,seed:'scatter-1',minimumSpacing:1,distribution:'uniform',clusterStrength:.8,region:{kind:'rectangle',vertices:[{x:x-20,y:y-15},{x:x+20,y:y+15}]}};
+  const halfWidth = Math.min(20, field.width / 2), halfHeight = Math.min(15, field.height / 2);
+  const x = Math.max(halfWidth, Math.min(field.width - halfWidth, center.x));
+  const y = Math.max(halfHeight, Math.min(field.height - halfHeight, center.y));
+  return {version:1,seed:'scatter-1',minimumSpacing:1,distribution:'uniform',clusterStrength:.8,region:{kind:'rectangle',vertices:[{x:x-halfWidth,y:y-halfHeight},{x:x+halfWidth,y:y+halfHeight}]}};
 }

@@ -8,11 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export async function formatTools() {
   const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
   const output = path.join(root, '.qa/format/contract.cjs'); await fs.mkdir(path.dirname(output), { recursive: true });
-  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography';`, resolveDir: root },
+  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces';`, resolveDir: root },
     outfile: output, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent' });
   delete require.cache[output]; return require(output);
 }
-export function formatSchema(version, limits, choreographyLimits) {
+export function formatSchema(version, limits, choreographyLimits, surfaceLimits) {
   const ref = name => ({ $ref: `#/definitions/${name}` });
   const object = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required });
   const number = (minimum, maximum, integer = false) => ({ type: integer ? 'integer' : 'number', minimum, maximum });
@@ -23,7 +23,7 @@ export function formatSchema(version, limits, choreographyLimits) {
   const picture = { id: ref('id'), name: text(limits.text.setName), notes: text(limits.text.notes,true), positions: { type: 'object', maxProperties: limits.performers, propertyNames: ref('id'), additionalProperties: ref('point') } };
   const definitions = {
     id,
-    point: object({ x: number(0,100), y: number(0,160/3) }),
+    point: object({ x: number(0,version >= 16 ? surfaceLimits.maxSize : 100), y: number(0,version >= 16 ? surfaceLimits.maxSize : 160/3) }),
     section: object({ id:ref('id'),name:text(limits.text.sectionName),color:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'} }),
     performer: object({id:ref('id'),label:text(limits.text.performerLabel),name:text(limits.text.performerName,true),sectionId:ref('id')}),
   };
@@ -137,6 +137,18 @@ export function formatSchema(version, limits, choreographyLimits) {
     };
     properties.choreography = array(cue, 0, choreographyLimits.cues);
   }
+  if (version >= 16) {
+    const { minSize, maxSize, minReferenceYards, maxReferenceYards, imageCharacters } = surfaceLimits;
+    const dimensions = number(minSize, maxSize);
+    const background = object({
+      image: { type: 'string', maxLength: imageCharacters, pattern: '^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$' },
+      x: number(0, maxSize), y: number(0, maxSize), width: number(.01, maxSize), height: number(.01, maxSize),
+    });
+    properties.field = { oneOf: [properties.field, object({
+      preset: { enum: ['indoor', 'custom'] }, width: dimensions, height: dimensions,
+      unit: { enum: ['yd', 'ft', 'm'] }, referenceInterval: number(minReferenceYards * .9144, maxReferenceYards * 3), background,
+    }, ['preset', 'width', 'height', 'unit', 'referenceInterval'])] };
+  }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
     regions: array(object({ startCount: number(0,limits.counts.max*(limits.sets-1),true), endCount: number(1,limits.counts.max*(limits.sets-1),true), startTempo: number(limits.tempo.min,limits.tempo.max), endTempo: number(limits.tempo.min,limits.tempo.max) }),0,limits.tempoEvents),
     holds: array(object({ count: number(0,limits.counts.max*(limits.sets-1)-1,true), seconds: number(.001,limits.holdSeconds) }),0,limits.tempoEvents) });
@@ -227,11 +239,27 @@ export function choreographyExample() {
   ];
   return project;
 }
+export function surfaceExample() {
+  const project = smallExample();
+  project.schemaVersion = 16;
+  project.title = 'Indoor floor example';
+  project.field = { preset: 'indoor', width: 27, height: 16, unit: 'ft', referenceInterval: 6 };
+  for (const set of project.sets) {
+    for (const point of Object.values(set.positions)) {
+      point.x /= 3;
+      point.y /= 3;
+    }
+  }
+  return project;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
-  const files = new Map([['format/squid-v15.schema.json',JSON.stringify(formatSchema(15,tools.PROJECT_LIMITS,tools.CHOREOGRAPHY_LIMITS),null,2)+'\n'],['format/examples/choreography-v15.squid',JSON.stringify(choreographyExample(),null,2)+'\n'],['format/squid-v14.schema.json',JSON.stringify(formatSchema(14,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/equipment-v14.squid',JSON.stringify(equipmentExample(),null,2)+'\n'],['format/squid-v13.schema.json',JSON.stringify(formatSchema(13,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/facing-v13.squid',JSON.stringify(facingExample(),null,2)+'\n'],['format/squid-v12.schema.json',JSON.stringify(formatSchema(12,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/group-v12.squid',JSON.stringify(groupExample(),null,2)+'\n'],['format/squid-v11.schema.json',JSON.stringify(formatSchema(11,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/assignment-v11.squid',JSON.stringify(assignmentExample(),null,2)+'\n'],['format/squid-v10.schema.json',JSON.stringify(formatSchema(10,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scatter-v10.squid',JSON.stringify(scatterExample(),null,2)+'\n'],['format/examples/bezier-v9.squid',JSON.stringify(bezierExample(),null,2)+'\n'],['format/squid-v9.schema.json',JSON.stringify(formatSchema(9,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
+  const files = new Map([
+    ['format/squid-v16.schema.json', JSON.stringify(formatSchema(16, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS), null, 2) + '\n'],
+    ['format/examples/indoor-v16.squid', JSON.stringify(surfaceExample(), null, 2) + '\n'],
+    ['format/squid-v15.schema.json',JSON.stringify(formatSchema(15,tools.PROJECT_LIMITS,tools.CHOREOGRAPHY_LIMITS),null,2)+'\n'],['format/examples/choreography-v15.squid',JSON.stringify(choreographyExample(),null,2)+'\n'],['format/squid-v14.schema.json',JSON.stringify(formatSchema(14,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/equipment-v14.squid',JSON.stringify(equipmentExample(),null,2)+'\n'],['format/squid-v13.schema.json',JSON.stringify(formatSchema(13,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/facing-v13.squid',JSON.stringify(facingExample(),null,2)+'\n'],['format/squid-v12.schema.json',JSON.stringify(formatSchema(12,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/group-v12.squid',JSON.stringify(groupExample(),null,2)+'\n'],['format/squid-v11.schema.json',JSON.stringify(formatSchema(11,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/assignment-v11.squid',JSON.stringify(assignmentExample(),null,2)+'\n'],['format/squid-v10.schema.json',JSON.stringify(formatSchema(10,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scatter-v10.squid',JSON.stringify(scatterExample(),null,2)+'\n'],['format/examples/bezier-v9.squid',JSON.stringify(bezierExample(),null,2)+'\n'],['format/squid-v9.schema.json',JSON.stringify(formatSchema(9,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
     ['format/squid-v6.schema.json',JSON.stringify(formatSchema(6,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scheduled-v6.squid',JSON.stringify(scheduledExample(),null,2)+'\n'],['format/squid-v5.schema.json',JSON.stringify(formatSchema(5,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/curved-v5.squid',JSON.stringify({...small,schemaVersion:5,moves:small.moves.map((m,i)=>i?m:{...m,paths:{a:{segments:[{id:'curve-a',kind:'cubic',startCount:0,endCount:m.counts,control1:{x:10,y:30},control2:{x:30,y:30}}]}}})},null,2)+'\n'],['format/squid-v4.schema.json',JSON.stringify(formatSchema(4,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/aligned-v4.squid',JSON.stringify({...tempo,schemaVersion:4,audioAnchors:[{count:8,seconds:5},{count:24,seconds:15}]},null,2)+'\n'],['format/examples/tempo-v3.squid',JSON.stringify(tempo,null,2)+'\n'],['format/examples/score-v2.squid',JSON.stringify(scored,null,2)+'\n'],['format/examples/basic-v2.squid',JSON.stringify(small,null,2)+'\n'],['format/examples/basic-v1.squid',JSON.stringify(tools.projectV2AsLegacy(small),null,2)+'\n'],['format/examples/maximum-v2.squid',tools.serializeProject(tools.createPerformanceFixture('maximum'))]]);
   for (const [relative,content] of files) { const file=path.join(root,relative); if(check) {if(await fs.readFile(file,'utf8')!==content) throw new Error(`Format contract drift: regenerate ${relative}`);} else {await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,content);} }
   console.log(`${check?'Verified':'Generated'} ${files.size} schemas and compatibility examples.`);

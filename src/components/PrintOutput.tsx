@@ -1,3 +1,4 @@
+import { isCustomSurface, surfaceViewBox, SURFACE_AXES } from '../surfaces';
 import { compileTempo, spanSeconds } from '../tempo';
 import type { Project } from '../types';
 import type { CoordinateOptions } from '../coordinates';
@@ -6,20 +7,21 @@ import { resolvePassage } from '../rehearsal';
 import { FieldDrawing } from './Field2D';
 
 export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat }: { project: Project; mode: 'charts' | 'coordinates'; paper?: 'letter' | 'a4'; coordinateFormat?: CoordinateOptions }) {
+  const surface = isCustomSurface(project.field) ? project.field : undefined;
   const timing=project.tempoMap || project.audioAnchors?.length ? compileTempo(project) : null;
   const pages=timing?Array.from({length:Math.ceil(timing.spans.length/20)},(_,i)=>timing.spans.slice(i*20,(i+1)*20)):[];
   return <div id="print-output" data-paper={paper}>
     {mode === 'charts' ? project.sets.map((set, index) => <section className="print-page" key={set.id}>
       <header><div><span>SQUIDWARE / FIELD CHART</span><h1>{project.title}</h1><p>{project.ensemble}</p></div><div className="print-set">{String(index + 1).padStart(2, '0')}<small>{set.name}</small></div></header>
       <div className="print-meta"><span>{setTiming(project, index).counts} counts into set</span><span>Cumulative count {setStartCount(project, index)}</span><span>{setTiming(project, index).tempo} {timing?'base BPM · see tempo map':'BPM'}</span><span>{project.performers.length} performers</span></div>
-      <svg viewBox="-7 -8 114 69.333" xmlns="http://www.w3.org/2000/svg"><FieldDrawing project={project} positions={set.positions} showLabels showGrid coordinateFormat={coordinateFormat} /></svg>
+      <svg viewBox={surface ? surfaceViewBox(surface, 7, 8) : "-7 -8 114 69.333"} xmlns="http://www.w3.org/2000/svg"><FieldDrawing project={project} positions={set.positions} showLabels showGrid coordinateFormat={coordinateFormat} /></svg>
       <p className="print-notes">{set.notes || 'Rehearsal notes: _________________________________________________________________'}</p>
-      <footer>Coordinates in yards. Front sideline is the bottom of the chart. • Squidware</footer>
+      <footer>{surface ? `Coordinates in ${surface.unit}. ${SURFACE_AXES}` : 'Coordinates in yards. Front sideline is the bottom of the chart.'} • Squidware</footer>
     </section>) : project.performers.map(performer => <section className="print-page performer-page" key={performer.id}>
       <header><div><span>SQUIDWARE / PERFORMER COORDINATES</span><h1>{performer.label} · {performer.name || 'Performer'}</h1><p>{project.title} / {project.sections.find(s => s.id === performer.sectionId)?.name}</p></div></header>
-      <p className="print-coordinate-key">{coordinatePrecisionLabel(coordinateFormat)}. {COORDINATE_CONVENTIONS}</p>
+      <p className="print-coordinate-key">{surface ? `Coordinates in ${surface.unit}. ${SURFACE_AXES}` : `${coordinatePrecisionLabel(coordinateFormat)}. ${COORDINATE_CONVENTIONS}`}</p>
       <table><colgroup><col style={{ width: '18%' }} /><col style={{ width: '7%' }} /><col style={{ width: '35%' }} /><col style={{ width: '40%' }} /></colgroup>
-        <thead><tr><th>Set</th><th>Counts</th><th>Arrival coordinate (8-to-5 steps)</th><th>Move into set</th></tr></thead>
+        <thead><tr><th>Set</th><th>Counts</th><th>Arrival coordinate ({surface ? surface.unit : '8-to-5 steps'})</th><th>Move into set</th></tr></thead>
         <tbody>{project.sets.map((set, index) => {
           const move = performerMoveOutput(project, index, performer.id, coordinateFormat);
           return <tr key={set.id}><td>{index + 1}. {set.name}</td><td>{move.counts}</td><td>{move.arrival}</td><td>{move.description}</td></tr>;

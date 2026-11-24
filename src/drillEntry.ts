@@ -1,3 +1,4 @@
+import { isCustomSurface, unitInYards } from './surfaces';
 import type { Point, Project } from './types';
 import { coordinateDescription, coordinateReferences, type CoordinateFormat } from './coordinates';
 import { DEFAULT_SNAPPING } from './snapping';
@@ -50,6 +51,12 @@ function distance(amount: string, unit: string | undefined, context: DrillContex
 /** Strict grammar: no inferred side, hash, omitted axis, facing, or discarded trailing words. */
 export function parseDrillCoordinate(input: string, field: Project['field'], context: DrillContext): Point {
   const text = clean(input,context);
+  if (isCustomSurface(field)) {
+    const axes = new RegExp(`^x\\s+(${number})\\s*[,;]\\s*y\\s+(${number})(?:\\s+(yd|ft|m))?$`).exec(text);
+    if (!axes) throw new Error(`Enter both coordinates, for example X 6, Y 3 ${field.unit}.`);
+    const unit = (axes[3] ?? field.unit) as typeof field.unit;
+    return { x: unitInYards(Number(axes[1]), unit), y: unitInYards(Number(axes[2]), unit) };
+  }
   const clauses = text.split(/\s*[,;]\s*/);
   if (clauses.length !== 2 || clauses.some(part=>!part)) throw new Error('Give both axes: Side 1: 4 outside the 40; 6 behind front hash.');
   const prefix = /^(?:side ([12])\s*:\s*)?(.+)$/.exec(clauses[0])!;

@@ -1,3 +1,4 @@
+import { isCustomSurface, surfaceDimensionText, surfaceReferences, SURFACE_NAMES, type CustomSurface } from '../surfaces';
 import { resolveEquipment } from '../equipment';
 import { describeFacing, facingAt } from '../performerFacing';
 import { TravelOverlay, type TravelPreview } from '../editor/TravelCanvas';
@@ -48,10 +49,44 @@ interface DrawingProps {
   deferMotion?: boolean;
 }
 
-export const StaticFieldMarkings = memo(function StaticFieldMarkings({ width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING }: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping'] }) {
+function CustomFieldMarkings({ field, showGrid, flipped, snapping }: { field: CustomSurface; showGrid: boolean; flipped: boolean; snapping: NonNullable<Project['snapping']> }) {
+  const { width, height, background } = field;
+  const x = surfaceReferences(field, 'x');
+  const y = surfaceReferences(field, 'y');
+  const step = gridInterval(snapping);
+  const minorGrid = showGrid && snapping.target === 'grid';
+  const line = (coordinate: number, axis: 'x' | 'y') => axis === 'x'
+    ? <line key={coordinate} x1={coordinate} x2={coordinate} y2={height} />
+    : <line key={coordinate} y1={coordinate} y2={coordinate} x2={width} />;
+  const label = (text: string, px: number, py: number) => <text x={px} y={py} transform={flipped ? `rotate(180 ${px} ${py})` : undefined}>{text}</text>;
+  const mark = Math.min(width, height, 30) / 24;
+  return <g data-field-markings="true" aria-hidden="true">
+    <rect data-field-surface="true" width={width} height={height} fill={field.preset === 'indoor' ? '#343139' : '#292f3a'} />
+    {background && <image href={background.image} x={background.x} y={background.y} width={background.width} height={background.height} preserveAspectRatio="none" />}
+    {minorGrid && <g stroke="#dae0e8" strokeWidth=".035" opacity=".25">
+      {Array.from({ length: Math.floor(width / step) }, (_, i) => line((i + 1) * step, 'x'))}
+      {Array.from({ length: Math.floor(height / step) }, (_, i) => line((i + 1) * step, 'y'))}
+    </g>}
+    <g stroke="#e7edf5" strokeWidth=".09" opacity=".48" strokeDasharray=".35 .2">
+      {x.slice(1, -1).map(value => line(value, 'x'))}
+      {y.slice(1, -1).map(value => line(value, 'y'))}
+    </g>
+    <rect width={width} height={height} fill="none" stroke="#ced8e4" strokeWidth=".15" />
+    <path d={`M0,${mark}V0H${mark}`} fill="none" stroke="#fff" strokeWidth=".2" />
+    <g fill="#e0e7ef" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark} textAnchor="middle">
+      {label('0, 0', 0, -mark * 1.1)}
+      {label('AUDIENCE EDGE', width / 2, height + mark * 1.65)}
+    </g>
+  </g>;
+}
+
+export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping'] }) {
+  const { width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING } = props;
+  if (isCustomSurface(props)) return <CustomFieldMarkings field={props} showGrid={showGrid} flipped={flipped} snapping={snapping} />;
+
   const hashInset = preset === 'college' ? 20 : height / 3;
   const interval = snapping.target === 'grid' ? gridInterval(snapping) : 5;
-  const gridY = snapping.target === 'grid' ? Array.from({ length: Math.floor(height / interval) + 1 }, (_, i) => i * interval) : hashLines({ width, height, preset });
+  const gridY = snapping.target === 'grid' ? Array.from({ length: Math.floor(height / interval) + 1 }, (_, i) => i * interval) : hashLines(props);
   const yardLines = Array.from({ length: Math.floor(width / 5) + 1 }, (_, index) => index * 5);
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
   return <g data-field-markings="true" aria-hidden="true">
@@ -91,7 +126,6 @@ StaticFieldMarkings.displayName = 'StaticFieldMarkings';
 
 /** SVG children shared by the interactive field and exported field diagrams. */
 export function FieldDrawing({ project, facings, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, dynamicOnly = false, deferMotion = false, orientation = 'audience-bottom' }: DrawingProps) {
-  const { width, height, preset } = project.field;
   const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
   const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
@@ -104,7 +138,7 @@ export function FieldDrawing({ project, facings, positions, neighbors, selectedI
   const labelWidths = useMemo(() => measureFieldLabels(project, display.labelSizePx), [project.performers, display.labelSizePx]);
   const labels = screen ? fieldLabels(project, positions, selected, keyboardFocusId, { ...display, labelMode: showLabels ? display.labelMode : 'none' }, screen, orientation, labelWidths) : null;
   return <>
-    {!dynamicOnly && <StaticFieldMarkings width={width} height={height} preset={preset} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />}
+    {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />}
     {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
       const point = positions[performer.id];
@@ -556,7 +590,7 @@ export function Field2D({ project, facings, positions, neighbors, selectedIds, o
     <div id={keyboardHelpId} className="field-keyboard-help">{moveOperationPreview ? 'Review the saved and proposed paths. Enter: apply · Escape: cancel.' : travelPreview ? 'Edit handles with brackets and arrows, or draw using the panel. Enter: apply · Escape: cancel.' : coordinatePreview ? 'Enter: apply coordinates · Escape: cancel preview · Type the phrase in the Inspector.' : spacingPreview ? 'Enter: apply spacing · Escape: cancel preview · Use Inspector numbers or the interval handle to adjust.' : formationPreview ? 'Enter: apply formation · Escape: cancel preview · Use Inspector numbers or drag the field handles to adjust.' : <>Arrows: focus · Enter/Space: select · Shift+Enter/Space: add/remove · {nudgeHelp} · Page Up/Down: roster · Home/End: first/last</>}</div>
     {moving && Object.keys(preview).length > 0 && <div className="field-drag-status">Release to apply · Escape to cancel</div>}
     {!spatialPreview && <FieldReadout id={readoutId} svgRef={svgRef} geometryRef={geometryRef} orientation={orientation} project={project} facings={facings} positions={displayedPositions} selectedIds={selectedIds} coordinateFormat={coordinateFormat} viewport={viewport} readOnly={readOnly} keyboardFocusedId={keyboardFocus ? focusedId : null} presentation={display} />}
-    <div className="field-stage__corner"><span className="stage-status-light" /> {project.field.preset === 'college' ? 'NCAA' : 'HIGH SCHOOL'} FIELD <span className="field-stage__dimensions">{width} × {height.toFixed(1)} yd</span></div>
+    <div className="field-stage__corner"><span className="stage-status-light" /> {isCustomSurface(project.field) ? SURFACE_NAMES[project.field.preset] : project.field.preset === 'college' ? 'NCAA FIELD' : 'HIGH SCHOOL FIELD'} <span className="field-stage__dimensions">{isCustomSurface(project.field) ? surfaceDimensionText(project.field) : `${width} × ${height.toFixed(1)} yd`}</span></div>
     <div className="field-stage__hint">{moveOperationPreview ? 'MOVE OPERATION PREVIEW' : travelPreview?.routeMode ? 'SHARED ROUTE PREVIEW' : travelPreview ? 'MOVEMENT PATH PREVIEW' : coordinatePreview ? 'COORDINATE PREVIEW' : spacingPreview ? 'SPACING PREVIEW' : formationPreview ? 'FORMATION PREVIEW' : transformPreview ? 'TRANSFORM PREVIEW' : readOnly ? 'PLAYBACK PREVIEW' : selectionPreview ? 'SELECTION PREVIEW · APPLY OR CANCEL' : tool === 'lasso' ? 'Draw lasso · Shift to add · Review before Apply' : tool === 'pan' ? 'Drag to pan' : 'Drag to select · Shift to add'}<span>Scroll to zoom · Double-click to fit{moveOperationPreview && ' · Alt-drag to pan'}</span></div>
     <div className="field-stage__orientation" aria-label={orientation === 'audience-top' ? 'Flipped field: audience and front sideline at top' : 'Audience and front sideline at bottom'}><span>↑</span> {orientation === 'audience-top' ? 'FRONT · AUDIENCE TOP' : 'BACK · AUDIENCE BOTTOM'}</div>
   </div>;

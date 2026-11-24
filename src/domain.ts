@@ -1,3 +1,4 @@
+import { FOOTBALL_SURFACE, isCustomSurface, surfaceUnits, SURFACE_UNITS, yardsInUnit } from './surfaces';
 import { sampleFacings } from './performerFacing';
 import { effectiveMove } from './groupMotion';
 import { generateFormation } from './formationGeometry';
@@ -17,7 +18,6 @@ export { PROJECT_LIMITS, setCountLimits, validateSetUpdate } from './projectVali
 export { parseProjectV2 as parseProject, serializeProjectV2 as serializeProject } from './projectV2';
 
 const EPSILON = 1e-8;
-const defaultField: Project['field'] = { width: 100, height: 160 / 3, preset: 'college' };
 const defaultSections: Section[] = [
   { id: 'brass', name: 'Brass', color: '#f0bf62' },
   { id: 'woodwinds', name: 'Woodwinds', color: '#b9a1e5' },
@@ -114,7 +114,7 @@ export function transformPositions(
 export function createBlankProject(): Project {
   return {
     schemaVersion: 2, id: uid(), title: 'Untitled show', ensemble: 'My ensemble',
-    field: { ...defaultField }, sections: defaultSections.map(section => ({ ...section })), performers: [],
+    field: { ...FOOTBALL_SURFACE }, sections: defaultSections.map(section => ({ ...section })), performers: [],
     sets: [{ id: uid(), name: 'Opening set', notes: '', positions: {} }],
     moves: [], openingTiming: { tempo: 120, transition: 'linear' },
     audioOffsetSeconds: 0,
@@ -408,7 +408,13 @@ export function performerMoveOutput(project: Project, index: number, performerId
   if(path?.linearCounts){const group=move.groupMotions!.find(g=>g.members.includes(performerId))!;return {kind:'move',counts:move.counts,arrival,direction:group.mode,distanceYards,averageStepsPerFive:5*move.counts/distanceYards,peakStepsPerFive:null,description:`${group.name}: ${group.mode}. Ordered member ${group.members.indexOf(performerId)+1}/${group.members.length}; route ${project.sharedRoutes?.find(r=>r.id===group.routeId)?.name??'Route'}. ${group.speed} yd/count; ${group.entryCounts} entry counts, ${group.exitCounts} exit counts. Travel ${distanceYards.toFixed(3)} yd. ${group.cues.map(cue=>({at:group.entryCounts+cue.count+(group.mode==='conveyor'?0:group.members.indexOf(performerId)*group.delay),direction:cue.direction})).filter(cue=>cue.at>=group.entryCounts&&cue.at<move.counts-group.exitCounts).map(cue=>`Count ${Number(cue.at.toFixed(3))}: ${cue.direction===0?'stop/hold':cue.direction===1?'travel forward along route':'travel reverse along route'}`).join('; ')}. Problems reports spacing/stride bounds.`};}
   if (isScheduledPath(path, move.counts)) return { kind: 'move', counts: move.counts, arrival, direction: 'Timed path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `${movementSchedule(path!, move.counts)}. Travel ${distanceYards.toFixed(3)} yd. Counts are local to this move. Peak step size is not listed here. Problems reports conservative spacing and peak-stride bounds.` };
   if (path?.segments[0]?.kind === 'cubic') return { kind: 'move', counts: move.counts, arrival, direction: 'Curved path', distanceYards, averageStepsPerFive: 5 * move.counts / distanceYards, peakStepsPerFive: null, description: `Curved travel: ${distanceYards.toFixed(3)} yards in ${move.counts} counts. Bézier parameter timing; speed varies. Peak step size is not listed here. Problems reports conservative spacing and peak-stride bounds.` };
-  const direction = 'Toward ' + [Math.abs(dx) > distanceYards * 1e-9 ? dx > 0 ? 'Side 2' : 'Side 1' : '', Math.abs(dy) > distanceYards * 1e-9 ? dy > 0 ? 'front sideline' : 'back sideline' : ''].filter(Boolean).join(' and ');
+  const [left, right, back, front] = isCustomSurface(project.field)
+    ? ['the left edge', 'the right edge', 'the back edge', 'the audience edge']
+    : ['Side 1', 'Side 2', 'back sideline', 'front sideline'];
+  const direction = 'Toward ' + [
+    Math.abs(dx) > distanceYards * 1e-9 ? (dx > 0 ? right : left) : '',
+    Math.abs(dy) > distanceYards * 1e-9 ? (dy > 0 ? front : back) : '',
+  ].filter(Boolean).join(' and ');
   const averageStepsPerFive = 5 * move.counts / distanceYards;
   // Smoothstep has a peak derivative of 1.5, so its largest step is 1.5 × average.
   const peakStepsPerFive = averageStepsPerFive / (move.transition === 'ease' ? 1.5 : 1);
@@ -419,12 +425,15 @@ export function performerMoveOutput(project: Project, index: number, performerId
 
 export function exportCoordinatesCsv(project: Project, options: CoordinateOptions = {}): string {
   const checked = validateProject(project);
-  const rows: (string | number)[][] = [['Set', 'Arrival count', 'Move counts', 'Tempo', 'Label', 'Name', 'Section', 'X (yards)', 'Y (yards)', 'Coordinate', 'Notes', 'Coordinate precision', 'Travel (yards)', 'Average step size (steps/5 yd)', 'Peak step size (steps/5 yd)', 'Direction']];
+  const custom = isCustomSurface(checked.field);
+  const unit = surfaceUnits(checked.field);
+  const axisUnit = custom ? `${unit} from back-left` : 'yards';
+  const rows: (string | number)[][] = [['Set', 'Arrival count', 'Move counts', 'Tempo', 'Label', 'Name', 'Section', `X (${axisUnit})`, `Y (${axisUnit})`, 'Coordinate', 'Notes', 'Coordinate precision', 'Travel (yards)', 'Average step size (steps/5 yd)', 'Peak step size (steps/5 yd)', 'Direction']];
   const sectionNames = new Map(checked.sections.map(section => [section.id, section.name]));
   checked.sets.forEach((set, index) => checked.performers.forEach(performer => {
     const point = set.positions[performer.id];
     const move = performerMoveOutput(checked, index, performer.id, options);
-    rows.push([set.name, setStartCount(checked, index), move.counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(point.x.toFixed(3)), Number(point.y.toFixed(3)), move.arrival, set.notes, coordinatePrecisionLabel(options), Number(move.distanceYards.toFixed(3)), move.averageStepsPerFive === null ? '' : Number(move.averageStepsPerFive.toFixed(3)), move.peakStepsPerFive === null ? '' : Number(move.peakStepsPerFive.toFixed(3)), move.direction]);
+    rows.push([set.name, setStartCount(checked, index), move.counts, setTiming(checked, index).tempo, performer.label, performer.name, sectionNames.get(performer.sectionId) ?? '', Number(yardsInUnit(point.x, unit).toFixed(3)), Number(yardsInUnit(point.y, unit).toFixed(3)), move.arrival, set.notes, custom ? SURFACE_UNITS[unit] : coordinatePrecisionLabel(options), Number(move.distanceYards.toFixed(3)), move.averageStepsPerFive === null ? '' : Number(move.averageStepsPerFive.toFixed(3)), move.peakStepsPerFive === null ? '' : Number(move.peakStepsPerFive.toFixed(3)), move.direction]);
   }));
   if (checked.tempoMap || checked.audioAnchors?.length) {
     rows[0][3] = 'Base tempo'; rows[0].push('Timing map', 'Arrival seconds', 'Incoming seconds', 'Recording arrival seconds');

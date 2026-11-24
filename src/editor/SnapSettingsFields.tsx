@@ -1,6 +1,6 @@
 import type { SnapSettings } from '../snapping';
 
-export function SnapSettingsFields({ value, onChange }: { value: SnapSettings; onChange: (value: SnapSettings) => void }) {
+export function SnapSettingsFields({ value, onChange, customSurface = false }: { value: SnapSettings; onChange: (value: SnapSettings) => void; customSurface?: boolean }) {
   return <>
     <div className="form-row">
       <label className="form-label">Step grid<select value={value.steps} onChange={e => onChange({ ...value, steps: Number(e.target.value) as SnapSettings['steps'] })}>
@@ -11,7 +11,7 @@ export function SnapSettingsFields({ value, onChange }: { value: SnapSettings; o
       </select></label>
     </div>
     <label className="form-label">Snap targets<select value={value.target} onChange={e => onChange({ ...value, target: e.target.value as SnapSettings['target'] })}>
-      <option value="grid">Step grid</option><option value="markings">5-yard lines, hashes and sidelines</option>
+      <option value="grid">Step grid</option><option value="markings">{customSurface ? 'Surface reference lines and edges' : '5-yard lines, hashes and sidelines'}</option>
     </select></label>
     <label className="form-label">Group snapping<select value={value.group} onChange={e => onChange({ ...value, group: e.target.value as SnapSettings['group'] })}>
       <option value="anchor">Keep spacing · snap anchor</option><option value="individual">Snap each dot · spacing changes</option>

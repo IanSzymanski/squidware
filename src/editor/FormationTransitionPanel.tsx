@@ -1,3 +1,4 @@
+import { surfaceViewBox } from '../surfaces';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '../components/Modal';
 import { FormattedNumberInput, NumberField } from '../components/NumberField';
@@ -108,8 +109,8 @@ export function FormationTransitionPanel({controller:c}:{controller:EditorContro
         {comparison&&<div className="transition-metrics" aria-label="Transition movement comparison">{metric('Current movement',comparison.current)}{metric('Proposed movement',comparison.proposed)}</div>}
         <div className="transition-preview-controls"><NumberField label="Transition preview count" value={Number(formatTimelineCount(count))} min={0} max={move.counts} step={.25} onDraftChange={draft} onChange={setCount}/><label className="form-label">Scrub the move<input aria-label="Transition count slider" type="range" min={0} max={move.counts} step={.01} value={count} onChange={e=>setCount(Number(e.target.value))}/></label></div>
         <div className="transition-preview-toggles"><label className="transition-check"><input aria-label="Show transition paths" type="checkbox" checked={showPaths} onChange={e=>setShowPaths(e.target.checked)}/>Paths</label><label className="transition-check"><input aria-label="Compare original transition" type="checkbox" checked={showOriginal} onChange={e=>setShowOriginal(e.target.checked)}/>Original outlines</label><HelpButton title="Inspect transition midpoint" className="button subtle" disabled={inputPending} onClick={()=>setCount(move.counts/2)}>Midpoint</HelpButton></div>
-        <svg className="transition-field" viewBox="-2 -2 104 57.333" role="img" aria-label="Formation transition movement"><g transform={fieldViewTransform(project.field,c.preferences.value.fieldOrientation)}>
-          <StaticFieldMarkings width={project.field.width} height={project.field.height} preset={project.field.preset} showGrid={false}/>
+        <svg className="transition-field" viewBox={surfaceViewBox(project.field)} role="img" aria-label="Formation transition movement"><g transform={fieldViewTransform(project.field,c.preferences.value.fieldOrientation)}>
+          <StaticFieldMarkings {...project.field} showGrid={false}/>
           {showPaths&&plan&&review.ids.map(id=><path key={id} data-transition-path={id} d={movementSvg(project.sets[index].positions[id],project.sets[index+1].positions[id],plan.project.moves[index].paths[id])} fill="none" stroke="var(--field-accent)" strokeWidth={id===personId?'.3':'.13'} opacity=".65"/>)}
           {showOriginal&&review.ids.map(id=><circle key={id} data-transition-original={id} cx={currentPositions[id].x} cy={currentPositions[id].y} r=".65" fill="none" stroke="#fff" strokeWidth=".13"/>)}
           {project.performers.map(p=><circle key={p.id} data-transition-performer={p.id} cx={positions[p.id].x} cy={positions[p.id].y} r={p.id===personId?'.6':selected.has(p.id)?'.42':'.23'} fill={project.sections.find(s=>s.id===p.sectionId)?.color} opacity={selected.has(p.id)?1:.65} stroke={p.id===personId?'var(--field-accent)':'none'} strokeWidth=".25"><title>{p.label}</title></circle>)}

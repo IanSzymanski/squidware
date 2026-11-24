@@ -1,3 +1,4 @@
+import { isCustomSurface, surfaceReferences, type Surface } from '../surfaces';
 import { compileChoreography, neutralCuePose, sampleChoreography, type ChoreographySample } from '../choreography';
 import { resolveEquipment, type CarriedEquipment } from '../equipment';
 import { AssetBatches, AssetResources } from './3d/assetBatches';
@@ -65,7 +66,7 @@ interface SceneState {
   setCamera: (preset: CameraPreset) => void;
   setPreviewCamera: (camera: PreviewCamera) => void;
   setQuality: (quality: Stage3DQuality) => void;
-  setFieldPreset: (preset: Project['field']['preset']) => void;
+  setFieldSurface: (surface: Surface, background?: HTMLImageElement) => void;
   invalidate: () => void;
   fail: (cause: unknown) => void;
 }
@@ -102,48 +103,75 @@ function updateRoster(state: SceneState, roster: string) {
   if (state.caps.instanceColor) state.caps.instanceColor.needsUpdate = true;
 }
 
-function makeFieldTexture(width: number, height: number, preset: Project['field']['preset'], owner: Document) {
+function makeFieldTexture(surface: Surface, owner: Document, image?: HTMLImageElement) {
+  const { width, height, preset } = surface;
   const canvas = owner.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = Math.round(canvas.width * height / width);
+  const resolution = 2048 / Math.max(width, height);
+  canvas.width = Math.round(width * resolution);
+  canvas.height = Math.round(height * resolution);
   const context = canvas.getContext('2d');
   if (!context) throw new Error('The field texture could not be created.');
   context.scale(canvas.width / width, canvas.height / height);
-  context.fillStyle = '#294b36';
-  context.fillRect(0, 0, width, height);
-  for (let x = 0; x < width; x += 10) {
-    context.fillStyle = '#2e523b';
-    context.fillRect(x, 0, Math.min(5, width - x), height);
-  }
-  context.strokeStyle = '#d5dfbc';
-  context.lineWidth = 0.15;
-  context.globalAlpha = 0.65;
-  context.strokeRect(0.1, 0.1, width - 0.2, height - 0.2);
-  const hashInset = preset === 'college' ? 20 : height / 3;
-  for (let x = 1; x < width; x++) {
+  if (isCustomSurface(surface)) {
+    context.fillStyle = preset === 'indoor' ? '#343139' : '#292f3a';
+    context.fillRect(0, 0, width, height);
+    const background = surface.background;
+    if (background && image) context.drawImage(image, background.x, background.y, background.width, background.height);
+    context.strokeStyle = '#e7edf5';
+    context.globalAlpha = .48;
+    context.lineWidth = .09;
+    context.setLineDash([.35, .2]);
     context.beginPath();
-    if (x % 5 === 0) {
-      context.moveTo(x, 0);
-      context.lineTo(x, height);
-    } else {
-      for (const [from, to] of [[0, 0.75], [height - 0.75, height], [hashInset - 0.3, hashInset + 0.3], [height - hashInset - 0.3, height - hashInset + 0.3]]) {
-        context.moveTo(x, from);
-        context.lineTo(x, to);
-      }
-    }
+    for (const x of surfaceReferences(surface, 'x').slice(1, -1)) { context.moveTo(x, 0); context.lineTo(x, height); }
+    for (const y of surfaceReferences(surface, 'y').slice(1, -1)) { context.moveTo(0, y); context.lineTo(width, y); }
     context.stroke();
-  }
-  context.fillStyle = '#d5dfbc';
-  context.font = 'bold 2.6px Arial';
-  context.textAlign = 'center';
-  for (let x = 10; x < width; x += 10) {
-    const text = String(Math.min(x, width - x));
-    context.fillText(text, x, height - 4.2);
-    context.save();
-    context.translate(x, 6.3);
-    context.rotate(Math.PI);
-    context.fillText(text, 0, 0);
-    context.restore();
+    context.globalAlpha = 1;
+    context.setLineDash([]);
+    context.lineWidth = .15;
+    context.strokeRect(.075, .075, width - .15, height - .15);
+    const mark = Math.min(width, height, 30) / 24;
+    context.beginPath();
+    context.moveTo(0, mark);
+    context.lineTo(0, 0);
+    context.lineTo(mark, 0);
+    context.stroke();
+  } else {
+    context.fillStyle = '#294b36';
+    context.fillRect(0, 0, width, height);
+    for (let x = 0; x < width; x += 10) {
+      context.fillStyle = '#2e523b';
+      context.fillRect(x, 0, Math.min(5, width - x), height);
+    }
+    context.strokeStyle = '#d5dfbc';
+    context.lineWidth = 0.15;
+    context.globalAlpha = 0.65;
+    context.strokeRect(0.1, 0.1, width - 0.2, height - 0.2);
+    const hashInset = preset === 'college' ? 20 : height / 3;
+    for (let x = 1; x < width; x++) {
+      context.beginPath();
+      if (x % 5 === 0) {
+        context.moveTo(x, 0);
+        context.lineTo(x, height);
+      } else {
+        for (const [from, to] of [[0, 0.75], [height - 0.75, height], [hashInset - 0.3, hashInset + 0.3], [height - hashInset - 0.3, height - hashInset + 0.3]]) {
+          context.moveTo(x, from);
+          context.lineTo(x, to);
+        }
+      }
+      context.stroke();
+    }
+    context.fillStyle = '#d5dfbc';
+    context.font = 'bold 2.6px Arial';
+    context.textAlign = 'center';
+    for (let x = 10; x < width; x += 10) {
+      const text = String(Math.min(x, width - x));
+      context.fillText(text, x, height - 4.2);
+      context.save();
+      context.translate(x, 6.3);
+      context.rotate(Math.PI);
+      context.fillText(text, 0, 0);
+      context.restore();
+    }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -266,7 +294,8 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
   const [error, setError] = useState<string | null>(null);
   const width = project.field.width;
   const height = project.field.height;
-  const fieldPreset = project.field.preset;
+  const surface = project.field;
+  const customSurface = isCustomSurface(surface);
   const roster = useMemo(() => {
     const sections = new Map(project.sections.map(section => [section.id, section]));
     return JSON.stringify(project.performers.map(performer => {
@@ -406,7 +435,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       apron.position.y = -0.04;
       apron.receiveShadow = true;
       scene.add(apron);
-      const fieldTexture = makeFieldTexture(width, height, fieldPreset, owner);
+      const fieldTexture = makeFieldTexture(surface, owner);
       fieldTexture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
       const field = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshStandardMaterial({ map: fieldTexture, roughness: 1, metalness: 0 }));
       field.rotation.x = -Math.PI / 2;
@@ -415,13 +444,16 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       scene.add(field);
 
       // An understated home-side podium makes field orientation immediately visible.
+      const podiums = new THREE.Group();
+      podiums.visible = !customSurface;
+      scene.add(podiums);
       const podiumMaterial = new THREE.MeshStandardMaterial({ color: '#7c8975', roughness: 0.8 });
       for (let i = 0; i < 3; i++) {
         const podium = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4 + i * 0.42, 0.8), podiumMaterial);
         podium.position.set(0, (0.4 + i * 0.42) / 2, height / 2 + 2.5 - i * 0.75);
         podium.castShadow = true;
         podium.receiveShadow = true;
-        scene.add(podium);
+        podiums.add(podium);
       }
 
       const performers = JSON.parse(roster) as SceneState['performers'];
@@ -455,22 +487,26 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, value === 'detailed' ? 2 : 1));
         invalidate();
       };
-      let texturePreset = fieldPreset;
-      const setFieldPreset = (preset: Project['field']['preset']) => {
-        if (!renderer || texturePreset === preset) return;
-        const texture = makeFieldTexture(width, height, preset, owner);
+      let textureSurface = surface;
+      let textureImage: HTMLImageElement | undefined;
+      const setFieldSurface = (next: Surface, image?: HTMLImageElement) => {
+        if (!renderer || (textureSurface === next && textureImage === image)) return;
+        if (!isCustomSurface(next) && textureSurface.preset === next.preset) return;
+        podiums.visible = !isCustomSurface(next);
+        const texture = makeFieldTexture(next, owner, image);
         texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
         const previous = field.material.map;
         field.material.map = texture;
         field.material.needsUpdate = true;
         previous?.dispose();
-        texturePreset = preset;
+        textureSurface = next;
+        textureImage = image;
         invalidate();
       };
       const assets = new AssetResources();
       const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers,
         carried: new AssetBatches(scene, assets), pit: new AssetBatches(scene, assets), stadium: new AssetBatches(scene, assets), stadiumParts: stadiumParts(width, height),
-        setCamera, setPreviewCamera, setQuality, setFieldPreset, invalidate, fail };
+        setCamera, setPreviewCamera, setQuality, setFieldSurface, invalidate, fail };
       sceneRef.current = state;
       updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.equipmentEnabled, currentRef.current.legMotion, currentRef.current.cues);
 
@@ -555,19 +591,28 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     if (!state) return;
     try {
       state.pit.update(pit ?? []);
-      state.stadium.update(stadiumVisible ? [{ parts: state.stadiumParts, at: [0, 0, 0] }] : []);
+      state.stadium.update(stadiumVisible && !customSurface ? [{ parts: state.stadiumParts, at: [0, 0, 0] }] : []);
       state.invalidate();
     } catch (cause) { state.fail(cause); }
-  }, [pit, stadiumVisible, width, height]);
+  }, [pit, stadiumVisible, customSurface, width, height]);
 
   useEffect(() => { if (previewCamera) sceneRef.current?.setPreviewCamera(previewCamera); }, [previewCamera]);
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
   useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height]);
   useEffect(() => {
     const state = sceneRef.current;
-    try { state?.setFieldPreset(fieldPreset); }
-    catch (cause) { state?.fail(cause); }
-  }, [fieldPreset, width, height]);
+    if (!state) return;
+    const apply = (image?: HTMLImageElement) => {
+      try { state.setFieldSurface(surface, image); }
+      catch (cause) { state.fail(cause); }
+    };
+    apply();
+    if (!isCustomSurface(surface) || !surface.background) return;
+    const image = hostRef.current!.ownerDocument.createElement('img');
+    image.onload = () => apply(image);
+    image.src = surface.background.image;
+    return () => { image.onload = null; };
+  }, [surface]);
 
   return <div className="stage-three">
     <div ref={hostRef} className="stage-three__canvas" />
@@ -579,12 +624,12 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         <HelpButton title="Front camera" aria-pressed={cameraRequest?cameraRequest.preset==='front':undefined} description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
         <HelpButton title="Overhead camera" aria-pressed={cameraRequest?cameraRequest.preset==='top':undefined} description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
         </>}
-        <label className="stage-three__stadium">
+        {!customSurface && <label className="stage-three__stadium">
           <Tooltip name="Stadium" description="Show or hide the stands and press box around the field.">
             <input type="checkbox" checked={stadiumVisible} onChange={event => setStadiumVisible(event.target.checked)} />
           </Tooltip>
           Stadium
-        </label>
+        </label>}
         <Tooltip name="3D quality" description="Choose detailed equipment and shadows, or lightweight markers for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
       </div>
       <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan{onSelect ? ' · Click a performer to select' : ''}</span></div>

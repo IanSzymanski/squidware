@@ -1,6 +1,6 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–15**. Ordinary saves write **v2**; nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, and choreography cues **v15**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–16**. Ordinary saves write **v2**; nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, and custom performance surfaces **v16**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
 
 Independent movement is specified by [the v6 schema](squid-v6.schema.json) and [schedule example](examples/scheduled-v6.squid); full-move curves use [the v5 schema](squid-v5.schema.json). Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
@@ -231,3 +231,13 @@ Runtime work is bounded to 4,096 generated intervals/member, 100,000/move and 20
 Cues on the same performer, move and track cannot overlap. Lower-body and flag cues occupy independent tracks. The move ID and both endpoints must still agree. The project rejects structural edits that break these references or shorten a move past a cue's end. Moving a whole interval earlier or later in the show retains its local counts. Assigning different equipment leaves an authored flag cue in the file and suppresses its animation until the performer carries a flag again.
 
 The writer emits v15 for a nonempty cue list. Clearing the final cue restores the least required wire version. Older projects default to their original static markers and equipment. See the [choreography example](examples/choreography-v15.squid).
+
+## v16 performance surfaces
+
+[Schema v16](squid-v16.schema.json) adds the `indoor` and `custom` field presets. Width, height, performer positions, paths and background rectangles are stored in yards. Each custom axis must be 5–200 yards. The back-left corner is the origin. X increases toward the right edge and Y increases toward the audience edge. The optional audience flip changes display orientation only.
+
+The surface unit is `yd`, `ft` or `m`. Reference lines start at the origin on both axes and repeat at `referenceInterval` in those units. They share the same coordinates across the editor, chart exports, 3D and marking snap. The custom coordinate export uses the selected unit. Move distances and step-size analysis continue to use yards.
+
+An optional `background` has `x`, `y`, `width`, `height` and an embedded `image` with the prefix `data:image/png;base64,`. The rectangle must fit within the surface. The long image axis is at most 768 pixels. Its encoded URL is limited to 3,200,000 characters and counts toward the project size limit. The application imports PNG or JPEG and prepares the embedded PNG locally.
+
+The writer selects v16 for custom or indoor geometry. Football projects use the least required earlier version unless a later feature requires it. See the [indoor floor example](examples/indoor-v16.squid).

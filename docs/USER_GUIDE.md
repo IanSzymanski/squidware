@@ -221,7 +221,7 @@ The desktop app saves the chosen packet directly as a landscape Letter PDF. Brow
 
 | Format | Contents |
 | --- | --- |
-| Coordinates CSV | All performers at all sets, including raw yards, coordinate descriptions, timing, sections, and notes |
+| Coordinates CSV | All performers at all sets, including X and Y coordinates, arrival descriptions, timing, sections, and notes |
 | Current chart SVG | A scalable drawing of the active set, using the current label visibility setting |
 | `.squidpack` via Export | Editable production with bundled audio or a relative audio reference |
 | `.squid` via Save | The editable production, suitable for reopening in Squidware |
@@ -313,3 +313,12 @@ Open **Shared routes** in the field toolbar’s More menu or Commands while paus
 ## Follow, counter-march and conveyor groups
 
 Pause at an arrival set in 2D, select 2–500 performers and choose **Group route movement…** in Formation tools or Commands. Choose a shared route and ordered members; member 1 is the leader/reference. Follow the leader uses count delays, Counter-march requires explicit forward/reverse cues, and Conveyor uses fixed yard offsets along the route. Add direction/stop cues explicitly; mode selection preserves the program. Review entry/exit connectors, count ticks, travel and full-cast spacing/stride findings before **Apply group · one undo**. Saved individual paths remain dormant and return when a member leaves. Closed loops validate the last-to-first gap, wrap through multiple laps and can space members evenly. Save/reopen retains the v12 program. See [group movement controls, operations and limits](group-movement.md).
+
+
+## Indoor floors and custom stages
+
+In **Project menu → Production settings → Performance surface**, choose **Indoor floor** or **Custom stage**, then set the width, depth, coordinate units and reference line spacing. The preview shows the outline and reference lines before you apply. **Apply surface** records one undo action. If existing dots, paths, formations or routes sit outside the proposed surface, move them inside the new boundary before applying the resize.
+
+The back-left corner is X 0, Y 0. X increases to the right and Y increases toward the audience edge. In **Enter coordinates**, enter a pair such as `X 12, Y 6 ft` to place one performer. The audience orientation preference turns the 2D view without changing any dot coordinates.
+
+Import a PNG or JPEG to show a floor plan or stage markings. Set its X and Y from the same origin and enter its width and depth, or choose **Fit to surface**. The image is embedded in the saved project and appears in 2D, 3D and chart exports.

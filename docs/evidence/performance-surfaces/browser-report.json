@@ -1,0 +1,12 @@
+{
+  "browser": "154.0.8037.57",
+  "checks": [
+    "Keyboard-accessible surface inputs and bounded resize rejection without a history entry",
+    "Feet conversion, nonzero image placement and one undo/redo transaction",
+    "Reversed field hit testing and unchanged physical coordinates",
+    "3D overhead floor and playback",
+    "Portable v16 save and reopen, SVG and print bounds and embedded background, CSV origin and units",
+    "Default and enlarged high-contrast settings",
+    "New blank production configured as an indoor floor and populated with a performer"
+  ]
+}

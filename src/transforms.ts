@@ -1,3 +1,4 @@
+import { isCustomSurface } from './surfaces';
 import type { Point, Project } from './types';
 
 export type FieldPivot = 'center' | 'back-hash' | 'front-hash' | 'back-left' | 'back-right' | 'front-left' | 'front-right';
@@ -19,6 +20,9 @@ export function affinePoint(point: Point, pivot: Point, angle: number, scale: nu
 }
 
 export function fieldPivot(field: Project['field'], reference: FieldPivot): Point {
+  if (isCustomSurface(field) && (reference === 'back-hash' || reference === 'front-hash')) {
+    throw new Error('Choose the surface center or a corner for this pivot.');
+  }
   const hash = field.preset === 'college' ? 20 : field.height / 3;
   switch (reference) {
     case 'center': return { x: field.width / 2, y: field.height / 2 };

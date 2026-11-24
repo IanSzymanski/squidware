@@ -1,3 +1,4 @@
+import { SURFACE_NAMES } from '../surfaces';
 import { useMemo, useState } from 'react';
 import { FilePlus2, Waves } from 'lucide-react';
 import { Modal } from '../components/Modal';
@@ -12,7 +13,7 @@ import './templates.css';
 
 export function ShowTemplateSummary({ template }: { template: ShowTemplate }) {
   return <div className="template-show-summary">
-    <p>{template.sections.reduce((n, section) => n + section.count, 0)} performers · {template.field.preset === 'college' ? 'College' : 'High school'} markings · {template.openingTiming.tempo} BPM</p>
+    <p>{template.sections.reduce((n, section) => n + section.count, 0)} performers · {SURFACE_NAMES[template.field.preset]} · {template.openingTiming.tempo} BPM</p>
     <ul aria-label="Template sections">{template.sections.map((section, i) => <li key={i}><span className="template-swatch" style={{ background: section.color }} />{section.name} · {section.count}</li>)}</ul>
     <p className="microcopy">Fresh anonymous roster and one opening picture. No performer names, recordings or show notes.</p>
   </div>;

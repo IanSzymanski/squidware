@@ -1,3 +1,4 @@
+import type { FootballSurface, Surface } from './surfaces';
 import type { PreferencesBridge } from './preferences';
 import type { SnapSettings } from './snapping';
 import type { TemplateLibraryBridge } from './templates/storage';
@@ -27,7 +28,7 @@ export interface LegacyProject {
   id: string;
   title: string;
   ensemble: string;
-  field: { width: number; height: number; preset: 'college' | 'high-school' };
+  field: FootballSurface;
   sections: Section[];
   performers: Performer[];
   sets: LegacyDrillSet[];
@@ -114,7 +115,8 @@ export type ChoreographyCue = CueRange & (
   | { preset: 'plie'; turnout: number; depth: number }
   | { preset: 'flag-up' }
 );
-export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
+export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets' | 'field'> {
+  field: Surface;
   schemaVersion: 2;
   snapping?: SnapSettings;
   selectionGroups?: SelectionGroup[];
