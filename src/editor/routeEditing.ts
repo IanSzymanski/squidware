@@ -21,7 +21,7 @@ export function editSharedRoute(project: Project, request: RouteEdit): Project {
 
 export function newSharedRoute(routes: readonly SharedRoute[], field: Project['field']): SharedRoute {
   let n = 1; while (routes.some(r => r.name.toLowerCase() === `route ${n}`)) n++;
-  return { id: uid(), name: `Route ${n}`, closed: false, start: { x: 25, y: field.height / 2 }, segments: [{ id: uid(), kind: 'line', to: { x: 75, y: field.height / 2 } }] };
+  return { id: uid(), name: `Route ${n}`, closed: false, start: { x: field.width / 4, y: field.height / 2 }, segments: [{ id: uid(), kind: 'line', to: { x: field.width * .75, y: field.height / 2 } }] };
 }
 
 /** Shared strokes have free endpoints. Closing a captured stroke requires a

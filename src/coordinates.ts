@@ -1,3 +1,4 @@
+import { isCustomSurface, surfaceCoordinateText } from './surfaces';
 import type { Point, Project } from './types';
 
 export type CoordinatePrecision = 'whole' | 'half' | 'quarter' | 'decimal';
@@ -43,6 +44,7 @@ export const formatYards = (yards: number) => Number.isFinite(yards) ? String(Ma
 
 /** Entry can choose a basis explicitly; existing readout/export calls retain 8-to-5. */
 export function coordinateDescription(point: Point, field: Project['field'], options: CoordinateOptions = {}, stepsPerFive: 6 | 8 | 12 = 8): string {
+  if (isCustomSurface(field)) return surfaceCoordinateText(point, field);
   const side = point.x <= field.width / 2 ? 1 : 2;
   const fromGoal = side === 1 ? point.x : field.width - point.x;
   const half = field.width / 2;

@@ -1,3 +1,4 @@
+import { isCustomSurface, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import { FacingControls } from './FacingControls';
 import { PathOperationsPanel } from './PathOperationsPanel';
 import { SharedRoutesPanel } from './SharedRoutesPanel';
@@ -43,6 +44,9 @@ export function EditorInspector({ controller }: { controller: EditorController }
     setPendingDraft,
     updateSet, setPlaying, duplicateSet, setDialog, reorderSet, applyFormation, selectSet, setSelectedIds,
   } = controller;
+  const unit = surfaceUnits(project.field);
+  const custom = isCustomSurface(project.field);
+  const toUnit = (value: number) => yardsInUnit(value, unit);
   const displayPositions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? activeSet.positions;
   const points = useMemo(() => selectedPerformers.map(performer => displayPositions[performer.id]), [selectedPerformers, displayPositions]);
   const bounds = useMemo(() => points.length ? {
@@ -52,7 +56,7 @@ export function EditorInspector({ controller }: { controller: EditorController }
     centerX: points.reduce((sum, point) => sum + point.x / points.length, 0),
     centerY: points.reduce((sum, point) => sum + point.y / points.length, 0),
   } : null, [points]);
-  const format = (n: number) => Number(n.toFixed(2));
+  const format = (n: number) => Number(toUnit(n).toFixed(2));
   const unavailable = controller.selectionPreview ? 'Apply or cancel the selection preview in Selection tools before editing positions.' : controller.coordinatePreview ? 'Apply or cancel coordinate entry before other position edits.' : controller.spacingPreview ? 'Apply or cancel the spacing preview before other position edits.' : controller.formationPreview ? 'Apply or cancel the formation preview before other position edits.' : controller.transformPreview ? 'Apply or cancel the transform preview before other position edits.' : controller.pendingDraft ? 'Finish or cancel the pending input first.' : readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   const single = selectedPerformers.length === 1 ? selectedPerformers[0] : undefined;
   if (controller.pathOperations) return <PathOperationsPanel editor={controller.pathOperations} />;
@@ -66,8 +70,8 @@ export function EditorInspector({ controller }: { controller: EditorController }
           : <HelpButton command="selection.all" title="Select all for editing" disabled={!project.performers.length} disabledReason="Add performers to the cast first." onClick={() => setSelectedIds(project.performers.map(p => p.id))}><Users size={13} />Select all</HelpButton>}
       </div>
       <div className="selection-bounds">{bounds ? <>
-        <span>{controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview ? 'Preview' : 'Set ' + (index + 1)} · {single ? single.label : `Center ${format(bounds.centerX)}, ${format(bounds.centerY)} yd`}</span>
-        <span>{single ? `X ${format(bounds.x)} · Y ${format(bounds.y)} yd` : `Bounds ${format(bounds.width)} × ${format(bounds.height)} yd`}</span>
+        <span>{controller.transformPreview || controller.formationPreview || controller.spacingPreview || controller.coordinatePreview ? 'Preview' : 'Set ' + (index + 1)} · {single ? single.label : `Center ${format(bounds.centerX)}, ${format(bounds.centerY)} ${unit}`}</span>
+        <span>{single ? `X ${format(bounds.x)} · Y ${format(bounds.y)} ${unit}` : `Bounds ${format(bounds.width)} × ${format(bounds.height)} ${unit}`}</span>
       </> : <span>Select dots or a section to edit.</span>}</div>
       {controller.formationPreview && <div className="transform-commit-actions" role="group" aria-label="Commit formation preview">
         <HelpButton command="formation.apply" title="Apply formation" className="button primary apply-formation" disabled={controller.pendingDraft || !!controller.formationResult?.error || !controller.formationResult?.changed} disabledReason={controller.formationResult?.error || (controller.pendingDraft ? 'Finish or cancel incomplete inputs.' : 'The preview matches the original positions.')} onClick={applyFormation}>Apply formation</HelpButton>
@@ -97,8 +101,8 @@ export function EditorInspector({ controller }: { controller: EditorController }
           <p className="selection-coordinate">{coordinateDescription(activeSet.positions[single.id], project.field, controller.coordinateFormat)}</p>
           <p className="selection-move">{performerMoveOutput(project, index, single.id, controller.coordinateFormat).description}</p>
           <div className="form-row exact-position">
-            <NumberField onDraftChange={setPendingDraft} label="X · yards from left" description="Set this performer’s horizontal distance in yards from the left edge." disabledReason={unavailable} value={Number(activeSet.positions[single.id].x.toFixed(3))} min={0} max={project.field.width} step={gridInterval(project.snapping ?? DEFAULT_SNAPPING)} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'x', value })} />
-            <NumberField onDraftChange={setPendingDraft} label="Y · yards from back" description="Set this performer’s distance in yards from the back sideline." disabledReason={unavailable} value={Number(activeSet.positions[single.id].y.toFixed(3))} min={0} max={project.field.height} step={gridInterval(project.snapping ?? DEFAULT_SNAPPING)} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'y', value })} />
+            <NumberField onDraftChange={setPendingDraft} label={custom ? `X · ${unit} from left` : 'X · yards from left'} description="Set this performer’s horizontal distance from the left edge." disabledReason={unavailable} value={Number(toUnit(activeSet.positions[single.id].x).toFixed(3))} min={0} max={toUnit(project.field.width)} step={toUnit(gridInterval(project.snapping ?? DEFAULT_SNAPPING))} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'x', value: unitInYards(value, unit) })} />
+            <NumberField onDraftChange={setPendingDraft} label={custom ? `Y · ${unit} from back` : 'Y · yards from back'} description={custom ? 'Set this performer’s distance from the back edge.' : 'Set this performer’s distance in yards from the back sideline.'} disabledReason={unavailable} value={Number(toUnit(activeSet.positions[single.id].y).toFixed(3))} min={0} max={toUnit(project.field.height)} step={toUnit(gridInterval(project.snapping ?? DEFAULT_SNAPPING))} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'y', value: unitInYards(value, unit) })} />
           </div>
         </div>}
         <details className="performer-facing">

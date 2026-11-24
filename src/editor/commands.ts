@@ -1,3 +1,4 @@
+import { FOOTBALL_SURFACE, isCustomSurface, validateSurface, type FootballSurface } from '../surfaces';
 import { saveChoreographyCue, removeChoreographyCue } from './choreographyEdits';
 import type { ChoreographyCue } from '../types';
 import { validateEquipment } from '../equipment';
@@ -132,8 +133,9 @@ export interface CommandArguments {
   'layout.preset': { preset: WorkspacePreset };
   'layout.focus': undefined;
   'cast.show': { mode: 'panel' | 'table' | 'closed' };
-  'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds' | 'meter'>> & { preset?: Project['field']['preset'] };
+  'project.update': Partial<Pick<Project, 'title' | 'ensemble' | 'audioOffsetSeconds' | 'meter'>> & { preset?: FootballSurface['preset'] };
   'project.load': { project: Project };
+  'surface.update': { field: Project['field'] };
   'history.undo': undefined; 'history.redo': undefined; 'history.open': undefined;
   'set.update': { index: number; update: SetPropertyUpdate };
   'set.create': { index: number; kind: SetCreationKind } & SetCreationOptions;
@@ -599,7 +601,9 @@ export const commandRegistry = {
   'coordinates.apply': define({ id: 'coordinates.apply', name: 'Apply coordinates', description: 'Accept the exact coordinate or group delta as one named undo action.', arguments:{},enabled:s=>{const result=currentCoordinateResult(s);return !s.ui.pendingDraft && !!result?.changed && !result.error;},
     execute:c=>{const s=c.getState();const session=s.ui.coordinatePreview!;const result=currentCoordinateResult(s)!;c.edit(p=>({...p,sets:p.sets.map(set=>set.id===session.setId?{...set,positions:{...set.positions,...result.updates}}:set)}));c.patch('ui',{coordinatePreview:null});} }),
   'project.update': define({ id: 'project.update', name: 'Update production', description: 'Edit production metadata, field markings or audio synchronization.', arguments: { title: 'string?', ensemble: 'string?', audioOffsetSeconds: 'number?', preset: 'college | high-school?' }, enabled: always,
-    execute: (c, { preset, ...update }) => c.edit(p => ({ ...p, ...update, field: preset ? { ...p.field, preset } : p.field })) }),
+    execute: (c, { preset, ...update }) => c.edit(p => ({ ...p, ...update, field: preset ? { ...FOOTBALL_SURFACE, preset } : p.field })) }),
+  'surface.update': define({ id: 'surface.update', name: 'Change performance surface', description: 'Apply reviewed surface dimensions, units, reference lines and background as one undo action.', arguments: { field: 'Performance surface' }, enabled: s => !s.playback.playing,
+    execute: (c, { field }) => c.edit(p => ({ ...p, field: validateSurface(field) })) }),
   'project.load': define({ id: 'project.load', name: 'Load production', description: 'Replace the production and reset edit history.', arguments: { project: 'Project v2' }, enabled: always, execute: (c, a) => c.load(a.project) }),
   'history.undo': define({ id: 'history.undo', name: 'Undo', description: 'Restore the previous project edit.', arguments: {}, enabled: s => !s.project.transactionName && s.project.past.length > 0, execute: c => c.history('undo') }),
   'history.redo': define({ id: 'history.redo', name: 'Redo', description: 'Restore an undone project edit.', arguments: {}, enabled: s => !s.project.transactionName && s.project.future.length > 0, execute: c => c.history('redo') }),
@@ -620,7 +624,26 @@ export const commandRegistry = {
   'set.move-to': define({ id: 'set.move-to', name: 'Move set to position', description: 'Reorder a set directly in one undo action. Incoming timing follows its destination; the current set stays selected.', arguments: { id: 'stable set ID', target: 'final zero-based position', revision: 'reviewed revision', epoch: 'project session' },
     enabled: (s, a) => canNavigate(s) && !!a && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch && setExists(s, a.target) && s.project.present.sets.some((set, i) => set.id === a.id && i !== a.target),
     execute: (c, a) => reorderSet(c, a.id, a.target, true) }),
-  'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' }, enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers, execute: (c, a) => { c.edit(p => { const start = p.performers.length; return { ...p, performers: [...p.performers, ...a.performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...Object.fromEntries(a.performers.map((performer, i) => [performer.id, { x: 5 + ((start + i) % 40) * 2.3, y: Math.max(1, p.field.height - 3 - Math.floor((start + i) / 40) * 2.3) }])) } })) }; }); c.patch('selection', { selectedIds: a.performers.map(p => p.id) }); c.patch('ui', { dialog: null }); } }),
+  'performers.add': define({ id: 'performers.add', name: 'Add performers', description: 'Add roster members and starting positions to every set.', arguments: { performers: 'Performer[]' },
+    enabled: (s, a) => a.performers.length > 0 && s.project.present.performers.length + a.performers.length <= PROJECT_LIMITS.performers,
+    execute: (c, { performers }) => {
+      c.edit(p => {
+        const { field } = p;
+        const custom = isCustomSurface(field);
+        const startingPositions = Object.fromEntries(performers.map((performer, i) => {
+          const index = p.performers.length + i;
+          const row = Math.floor(index / 40);
+          const x = 5 + (index % 40) * 2.3;
+          return [performer.id, {
+            x: custom ? x * field.width / 100 : x,
+            y: custom ? field.height * (.95 - row * .07) : Math.max(1, field.height - 3 - row * 2.3),
+          }];
+        }));
+        return { ...p, performers: [...p.performers, ...performers], sets: p.sets.map(set => ({ ...set, positions: { ...set.positions, ...startingPositions } })) };
+      });
+      c.patch('selection', { selectedIds: performers.map(p => p.id) });
+      c.patch('ui', { dialog: null });
+    } }),
   'performers.remove': define({ id: 'performers.remove', name: 'Remove performers', description: 'Remove roster members and their positions in every set.', arguments: { ids: 'string[]' }, enabled: (s, a) => a.ids.some(id => s.project.present.performers.some(p => p.id === id)), execute: (c, a) => { if(c.getState().project.present.moves.some(m=>m.groupMotions?.some(g=>g.members.some(id=>a.ids.includes(id)))))throw Error('Remove these performers from group movement before deleting them from Cast.'); c.edit(p => ({ ...p, performers: p.performers.filter(person => !a.ids.includes(person.id)), ...(p.selectionGroups ? { selectionGroups: p.selectionGroups.map(g => ({ ...g, performerIds: g.performerIds.filter(id => !a.ids.includes(id)) })) } : {}), moves: p.moves.map(move => ({ ...move, ...(move.marchingDirections ? { marchingDirections: Object.fromEntries(Object.entries(move.marchingDirections).filter(([id]) => !a.ids.includes(id))) } : {}), paths: Object.fromEntries(Object.entries(move.paths).filter(([id]) => !a.ids.includes(id))) })), sets: p.sets.map(set => ({ ...pruneFacings(set, a.ids), positions: Object.fromEntries(Object.entries(set.positions).filter(([id]) => !a.ids.includes(id))) })) })); c.patch('selection', { selectedIds: [] }); c.patch('ui', { dialog: null }); } }),
   'performer.facing': define({ id: 'performer.facing', name: 'Set performer facing', description: 'Set or clear the heading of selected performers at this set.', arguments: { index: 'set index', ids: 'performer IDs', angle: 'degrees or null' },
     enabled: (s, a) => !!a && idle(s) && editable(s) && a.index === s.selection.activeIndex && !!a.ids.length,

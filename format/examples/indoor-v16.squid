@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 16,
+  "id": "example-show",
+  "title": "Indoor floor example",
+  "ensemble": "Example ensemble",
+  "field": {
+    "preset": "indoor",
+    "width": 27,
+    "height": 16,
+    "unit": "ft",
+    "referenceInterval": 6
+  },
+  "sections": [
+    {
+      "id": "brass",
+      "name": "Brass",
+      "color": "#c3e889"
+    }
+  ],
+  "performers": [
+    {
+      "id": "a",
+      "label": "A1",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "b",
+      "label": "A2",
+      "name": "Example performer",
+      "sectionId": "brass"
+    }
+  ],
+  "sets": [
+    {
+      "id": "opening",
+      "name": "Opening",
+      "notes": "Count zero — opening picture.",
+      "positions": {
+        "a": {
+          "x": 3.3333333333333335,
+          "y": 3.3333333333333335
+        },
+        "b": {
+          "x": 6.666666666666667,
+          "y": 3.3333333333333335
+        }
+      }
+    },
+    {
+      "id": "arrival",
+      "name": "Arrival",
+      "notes": "Arrive on count 16.\nHold the interval.",
+      "positions": {
+        "a": {
+          "x": 10,
+          "y": 6.666666666666667
+        },
+        "b": {
+          "x": 13.333333333333334,
+          "y": 6.666666666666667
+        }
+      }
+    },
+    {
+      "id": "finish",
+      "name": "Finish",
+      "notes": "",
+      "positions": {
+        "a": {
+          "x": 16.666666666666668,
+          "y": 10
+        },
+        "b": {
+          "x": 20,
+          "y": 10
+        }
+      }
+    }
+  ],
+  "moves": [
+    {
+      "id": "move-a",
+      "fromSetId": "opening",
+      "toSetId": "arrival",
+      "counts": 16,
+      "tempo": 120,
+      "transition": "linear",
+      "paths": {
+        "a": {
+          "segments": [
+            {
+              "id": "segment-a",
+              "kind": "line",
+              "startCount": 0,
+              "endCount": 16
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "move-b",
+      "fromSetId": "arrival",
+      "toSetId": "finish",
+      "counts": 8,
+      "tempo": 60,
+      "transition": "ease",
+      "paths": {}
+    }
+  ],
+  "selectionGroups": [
+    {
+      "id": "lead-pair",
+      "name": "Lead pair",
+      "performerIds": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "solo",
+      "name": "Solo",
+      "performerIds": [
+        "a"
+      ]
+    }
+  ],
+  "openingTiming": {
+    "tempo": 120,
+    "transition": "linear"
+  },
+  "audioOffsetSeconds": -1.25
+}

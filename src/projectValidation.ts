@@ -1,3 +1,4 @@
+import { validateFootballSurface, type Surface } from './surfaces';
 import type { LegacyDrillSet, LegacyProject, Performer, Point, Section } from './types';
 
 export const PROJECT_LIMITS = {
@@ -19,8 +20,6 @@ export const PROJECT_LIMITS = {
   audioOffsetSeconds: { min: -3600, max: 3600 },
   text: { id: 128, title: 160, ensemble: 160, sectionName: 80, groupName: 80, performerLabel: 32, performerName: 120, setName: 160, notes: 10_000 },
 } as const;
-const FIELD_HEIGHT_TOLERANCE = 0.001;
-const defaultField: LegacyProject['field'] = { width: 100, height: 160 / 3, preset: 'college' };
 /** Only immutable editor edits may reuse geometry from an already validated snapshot. */
 export interface GeometryValidation { validatedPositions?: ReadonlySet<Record<string, Point>> }
 
@@ -77,11 +76,11 @@ function uniqueIds<T extends { id: string }>(items: T[], path: string): T[] {
 export function validateLegacyProject(input: unknown, geometry: GeometryValidation = {}): LegacyProject {
   const data = object(input, 'root');
   if (data.schemaVersion !== 1) invalid('schemaVersion', 'must be 1. This file may require a newer version of Squidware.');
-  const fieldData = object(data.field, 'field');
-  if (fieldData.preset !== 'college' && fieldData.preset !== 'high-school') invalid('field.preset', 'must be college or high-school.');
-  const width = number(fieldData.width, 'field.width', 100, 100);
-  number(fieldData.height, 'field.height', defaultField.height - FIELD_HEIGHT_TOLERANCE, defaultField.height + FIELD_HEIGHT_TOLERANCE);
-  const field: LegacyProject['field'] = { width, height: defaultField.height, preset: fieldData.preset };
+  return validateProjectGeometry(data, geometry, validateFootballSurface(data.field));
+}
+
+/** Shared roster and position validation uses the already validated playing surface. */
+export function validateProjectGeometry<F extends Surface>(data: Record<string, unknown>, geometry: GeometryValidation, field: F): Omit<LegacyProject, 'field'> & { field: F } {
   const sections = uniqueIds(array(data.sections, 'sections', 1, PROJECT_LIMITS.sections).map((item, index): Section => {
     const path = `sections[${index}]`;
     const section = object(item, path);

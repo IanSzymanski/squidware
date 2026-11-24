@@ -1,3 +1,4 @@
+import { isCustomSurface, surfaceReferences } from './surfaces';
 import type { Point, Project } from './types';
 
 export interface SnapSettings {
@@ -18,9 +19,9 @@ export function validateSnapSettings(input: unknown): SnapSettings {
   return { steps: value.steps, subdivision: value.subdivision, target: value.target, group: value.group } as SnapSettings;
 }
 export const gridInterval = (settings: SnapSettings) => 5 / settings.steps / settings.subdivision;
-export function snapDescription(settings: SnapSettings, enabled = true): string {
+export function snapDescription(settings: SnapSettings, enabled = true, field?: Project['field']): string {
   if (!enabled) return 'Snap off · Unquantized moves';
-  const target = settings.target === 'markings' ? 'Yard lines / hashes' : `${settings.steps}-to-5 · ${settings.subdivision === 1 ? 'whole' : settings.subdivision === 2 ? 'half' : 'quarter'} steps`;
+  const target = settings.target === 'markings' ? field && isCustomSurface(field) ? 'Surface reference lines' : 'Yard lines / hashes' : `${settings.steps}-to-5 · ${settings.subdivision === 1 ? 'whole' : settings.subdivision === 2 ? 'half' : 'quarter'} steps`;
   return `${target} · ${settings.group === 'anchor' ? 'Keep group spacing' : 'Individual dots (spacing changes)'}`;
 }
 export const hashLines = (field: Project['field']) => {
@@ -57,7 +58,9 @@ export function moveSelection(positions: Record<string, Point>, ids: readonly st
   const spacing = settings.target === 'grid' ? gridInterval(settings) : 5;
   const snap = (value: number, min: number, max: number, axis: 'x' | 'y', from: number) => {
     if (!enabled || !axes[axis]) return clamp(value, min, max);
-    const targets = settings.target === 'markings' && axis === 'y' ? hashLines(field) : undefined;
+    const targets = settings.target !== 'markings' ? undefined
+      : isCustomSurface(field) ? surfaceReferences(field, axis)
+      : axis === 'y' ? hashLines(field) : undefined;
     let result = snapAxis(value, min, max, spacing, targets);
     // A short nudge advances to the next target instead of getting stuck on the current one.
     // Once a rigid group reaches an off-grid edge, another nudge must stay there,
@@ -79,8 +82,8 @@ export function moveSelection(positions: Record<string, Point>, ids: readonly st
   return Object.fromEntries(selected.map(id => [id, { x: clamp(positions[id].x + dx, 0, field.width), y: clamp(positions[id].y + dy, 0, field.height) }]));
 }
 /** Snap state for the single persistent status location, including previews that bypass snapping. */
-export function fieldSnapStatus(settings: SnapSettings, enabled: boolean, bypass?: 'coordinates' | 'spacing'): string {
+export function fieldSnapStatus(settings: SnapSettings, enabled: boolean, bypass?: 'coordinates' | 'spacing', field?: Project['field']): string {
   if (bypass === 'coordinates') return 'Exact coordinate entry · snapping bypassed';
   if (bypass === 'spacing') return 'Exact spacing · snapping bypassed';
-  return snapDescription(settings, enabled);
+  return snapDescription(settings, enabled, field);
 }

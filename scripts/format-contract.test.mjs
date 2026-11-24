@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -39,7 +39,7 @@ test('portable analysis rules and declared directions pass both validators with 
 });
 test('schemas and checked-in examples regenerate exactly from current limits and engine',()=>generateContract(true));
 test('all examples pass independent JSON Schema and canonical codec, including the maximum production',async()=>{
-  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8','bezier-v9','scatter-v10','assignment-v11','group-v12','facing-v13','equipment-v14','choreography-v15']) {
+  for(const name of ['basic-v1','basic-v2','maximum-v2','score-v2','tempo-v3','aligned-v4','curved-v5','scheduled-v6','live-v7','routes-v8','bezier-v9','scatter-v10','assignment-v11','group-v12','facing-v13','equipment-v14','choreography-v15','indoor-v16']) {
     const content = await readFile(new URL(`../format/examples/${name}.squid`,import.meta.url),'utf8'); const raw=JSON.parse(content);
     assert.ok(check(raw),JSON.stringify(schemas.get(raw.schemaVersion).errors));
     const project=tools.parseProject(content); assert.deepEqual(tools.parseProject(tools.serializeProject(project)),project);
@@ -251,4 +251,14 @@ test('v15 choreography survives the codec and validates move boundaries', async 
   assert.throws(() => tools.parseProject(JSON.stringify(wire)), /End count/);
   delete wire.choreography[0].turnout;
   assert.equal(schemas.get(15)(wire), false);
+});
+
+test('v16 keeps indoor geometry and refuses a downgrade to football-only schemas', async () => {
+  const wire = JSON.parse(await readFile(new URL('../format/examples/indoor-v16.squid', import.meta.url), 'utf8'));
+  const checked = tools.parseProject(JSON.stringify(wire));
+  assert.equal(schemas.get(16)(wire), true);
+  assert.equal(JSON.parse(tools.serializeProject(checked)).schemaVersion, 16);
+  assert.deepEqual(checked.field, wire.field);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, schemaVersion: 15 })), /require schema version 16/);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, field: { ...wire.field, width: 5 } })), /positions/);
 });

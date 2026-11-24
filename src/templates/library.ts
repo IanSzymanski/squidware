@@ -1,3 +1,4 @@
+import { FOOTBALL_SURFACE, validateSurface } from '../surfaces';
 import { PROJECT_LIMITS, validateLegacyProject } from '../projectValidation';
 import type { FormationKind, OpeningTiming, Point, Project } from '../types';
 
@@ -47,11 +48,11 @@ export function validateTemplate(input: unknown): Template {
     if (sections.reduce((sum, section) => sum + section.count, 0) > PROJECT_LIMITS.performers) invalid('sections', `must total at most ${PROJECT_LIMITS.performers} performers.`);
     // Reuse the production field and color contract rather than inventing a new one.
     const defaults = validateLegacyProject({ schemaVersion: 1, id: 'template', title: name, ensemble: '',
-      field: data.field, sections: sections.map((section, i) => ({ ...section, id: `section-${i}` })),
+      field: FOOTBALL_SURFACE, sections: sections.map((section, i) => ({ ...section, id: `section-${i}` })),
       performers: [], sets: [{ id: 'opening', name: 'Opening set', counts: 0, tempo: 120, transition: 'linear', notes: '', positions: {} }], audioOffsetSeconds: 0 });
     const timing = object(data.openingTiming, 'openingTiming');
     if (timing.transition !== 'linear' && timing.transition !== 'ease') invalid('openingTiming.transition', 'must be linear or ease.');
-    return { kind: 'show', name, field: defaults.field,
+    return { kind: 'show', name, field: validateSurface(data.field),
       sections: defaults.sections.map((section, i) => ({ name: section.name, color: section.color, count: sections[i].count })),
       openingTiming: { tempo: numeric(timing.tempo, 'openingTiming.tempo', PROJECT_LIMITS.tempo.min, PROJECT_LIMITS.tempo.max), transition: timing.transition } };
   }

@@ -1,3 +1,4 @@
+import { surfaceViewBox } from '../surfaces';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '../components/Modal';
 import { FormattedNumberInput, NumberField } from '../components/NumberField';
@@ -103,8 +104,8 @@ export function GroupMotionPanel({controller:c}:{controller:EditorController}) {
         {comparison&&<div className="transition-metrics">{metric('Current movement',comparison.current)}{metric('Proposed movement',comparison.proposed)}</div>}
         <div className="transition-preview-controls"><NumberField label="Group preview count" value={Number(formatTimelineCount(local))} min={0} max={move.counts} step={.25} onDraftChange={draft} onChange={setCount}/><label className="form-label">Scrub incoming move<input aria-label="Group count slider" type="range" min={0} max={move.counts} step={.01} value={local} onChange={e=>setCount(Number(e.target.value))}/></label></div>
         <div className="transition-preview-toggles"><label className="transition-check"><input aria-label="Show inspected group path" type="checkbox" checked={paths} onChange={e=>setPaths(e.target.checked)}/>Inspected path</label><label className="transition-check"><input aria-label="Show original group positions" type="checkbox" checked={originals} onChange={e=>setOriginals(e.target.checked)}/>Original outlines</label><HelpButton title="Inspect group midpoint" className="button subtle" disabled={inputPending} onClick={()=>setCount(move.counts/2)}>Midpoint</HelpButton></div>
-        <svg data-group-preview-count={local} className="transition-field" viewBox="-2 -2 104 57.333" role="img" aria-label="Group route movement field"><g transform={fieldViewTransform(project.field,c.preferences.value.fieldOrientation)}>
-          <StaticFieldMarkings width={project.field.width} height={project.field.height} preset={project.field.preset} showGrid={false}/>
+        <svg data-group-preview-count={local} className="transition-field" viewBox={surfaceViewBox(project.field)} role="img" aria-label="Group route movement field"><g transform={fieldViewTransform(project.field,c.preferences.value.fieldOrientation)}>
+          <StaticFieldMarkings {...project.field} showGrid={false}/>
           {route&&<path data-group-route={route.id} d={routeSvg(route)} fill="none" stroke="#f1d39a" strokeWidth=".2" strokeDasharray=".5 .3"/>}
           {paths&&personId&&<path data-group-path={personId} d={movementSvg(project.sets[index].positions[personId],project.sets[index+1].positions[personId],path)} fill="none" stroke="var(--field-accent)" strokeWidth=".2"/>}
           {originals&&[...selected].map(id=><circle key={id} cx={baseline[id].x} cy={baseline[id].y} r=".65" fill="none" stroke="#fff" strokeWidth=".12"/>)}
