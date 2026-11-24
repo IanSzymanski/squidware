@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { AlignHorizontalJustifyCenter, ArrowDownLeft, ArrowUpRight, Box, Camera, Check, Clock3, FlipHorizontal2, Grid2X2, Hand, Lasso, LayoutGrid, Magnet, MapPin, Maximize, Minus, MoreHorizontal, MousePointer2, Move, Pause, Play, Pencil, Plus, RotateCw, Route, Shapes, SlidersHorizontal, Sparkles, SquareDashed, Tags, Users, Waypoints, X } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, ArrowDownLeft, ArrowUpRight, Box, Camera, Check, Clock3, FlipHorizontal2, Grid2X2, Hand, Lasso, LayoutGrid, Magnet, MapPin, Maximize, Minus, MoreHorizontal, MousePointer2, Move, Pause, Play, Pencil, Plus, RotateCw, Route, Shapes, PanelLeft, SlidersHorizontal, Sparkles, SquareDashed, Tags, Users, Waypoints, X } from 'lucide-react';
 import { HelpButton, CommandKeycaps } from './ControlHelp';
 import { fieldAction, fieldToolbar, type FieldAction } from './fieldToolbarModel';
 import type { EditorController } from './useEditorController';
 import { useEditorSelector } from './react';
+import { fieldViews } from '../workspaces';
 import { Popout3DButton } from './Popout3D';
 import './fieldToolbar.css';
 
@@ -94,10 +95,11 @@ export function FieldToolbar({controller:c}:{controller:EditorController}) {
     onKeyDown={keyDown} onFocus={event=>{focusWasInside.current=true;activeControl.current=event.target as HTMLElement;const key=(event.target as HTMLElement).dataset.toolbarItem;if(key)setFocused(key);}}
     onBlur={event=>{if(event.relatedTarget&&!event.currentTarget.contains(event.relatedTarget as Node)){focusWasInside.current=false;if(!c.dialog)setOpen(false);}}}>
     <h1 className="canvas-set-title" title={c.visibleSet.name}><span className="canvas-set-number">SET {String(c.index+1).padStart(2,'0')}</span><span>{c.visibleSet.name}</span><span className="selection-count">{c.selectedIds.length} selected</span></h1>
-    <div className="view-switch">{(['2d','3d'] as const).map(view=>{
-      const a=fieldAction(state,'view.select',{view},'select',view==='2d'?'2D field':'3D preview');
+    <div className="view-switch">{fieldViews.map(view=>{
+      const a=fieldAction(state,'view.select',{view},'select',view==='2d'?'2D field':view==='3d'?'3D preview':'Split review');
       return <HelpButton key={view} command="view.select" title={a.title} active={c.view===view} disabled={!!a.disabledReason} disabledReason={a.disabledReason??undefined}
-        data-toolbar-item={`view-${view}`} tabIndex={focused===`view-${view}`?0:-1} onClick={()=>run(a)}>{view==='2d'?<Grid2X2 size={15}/>:<Box size={15}/>}<span>{view==='2d'?'2D':'3D'}</span></HelpButton>;
+        data-toolbar-item={`view-${view}`} tabIndex={focused===`view-${view}`?0:-1} onClick={()=>run(a)}>{view==='2d'?<Grid2X2 size={15}/>:view==='3d'?<Box size={15}/>:<PanelLeft size={15}/>}
+        {view!=='split'&&<span>{view==='2d'?'2D':'3D'}</span>}</HelpButton>;
     })}</div>
     <Popout3DButton controller={c} tabIndex={focused==='popout'?0:-1} toolbarItem="popout"/>
     <div className={`field-primary${model.context==='3d'?' stage-three__controls':''}`} ref={actions}>{primary.map(a=>render(a))}</div>

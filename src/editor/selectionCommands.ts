@@ -1,3 +1,4 @@
+import { editingFieldView } from '../workspaces';
 import { PROJECT_LIMITS, uid } from '../domain';
 import { invertSelection, previewSelection } from '../selectionTools';
 import type { CommandDefinition, CommandId } from './commands';
@@ -15,7 +16,7 @@ const combine = (current: string[], next: string[], additive = false) => additiv
 
 export function selectionReviewCurrent(s: EditorState): boolean {
   const r = s.ui.selectionPreview;
-  return !!r && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.dialog && !s.playback.playing && isAtActiveSet(s) && s.ui.view === '2d' && s.ui.workspace === 'design'
+  return !!r && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.dialog && !s.playback.playing && isAtActiveSet(s) && s.ui.view !== '3d' && s.ui.workspace === 'design'
     && r.revision === s.project.revision && r.setId === s.project.present.sets[s.selection.activeIndex]?.id
     && r.query === s.ui.castQuery && r.section === s.ui.sectionFilter
     && r.initialIds.length === s.selection.selectedIds.length && r.initialIds.every((id, i) => s.selection.selectedIds[i] === id);
@@ -29,7 +30,7 @@ export const selectionCommands = {
   'selection.preview': define({ id: 'selection.preview', name: 'Preview geometric selection', description: 'Preview rank, file or lasso candidates in the current Cast filters. Review near-boundary performers before Apply.', arguments: { spec: 'SelectionSpec', additive: 'boolean?' }, enabled: (s, a) => canPreview(s) && !!a,
     execute: (c, a) => { const s = c.getState(), set = s.project.present.sets[s.selection.activeIndex]; const scope = filterCast(s.project.present.performers, s.ui.castQuery, s.ui.sectionFilter).map(p => p.id);
       const spec = structuredClone(a.spec), result = previewSelection(set.positions, scope, spec);
-      c.patch('ui', { workspace: 'design', view: '2d', selectionToolsOpen: true, selectionPreview: { spec, ...result, additive: !!a.additive, initialIds: [...s.selection.selectedIds], revision: s.project.revision, setId: set.id, query: s.ui.castQuery, section: s.ui.sectionFilter } });
+      c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), selectionToolsOpen: true, selectionPreview: { spec, ...result, additive: !!a.additive, initialIds: [...s.selection.selectedIds], revision: s.project.revision, setId: set.id, query: s.ui.castQuery, section: s.ui.sectionFilter } });
     } }),
   'selection.review': define({ id: 'selection.review', name: 'Review selection candidates', description: 'Include or exclude preview candidates without changing the production or the current selection.', arguments: { ids: 'candidate IDs', additive: 'boolean' }, enabled: (s, a) => selectionReviewCurrent(s) && !!a && Array.isArray(a.ids) && typeof a.additive === 'boolean' && a.ids.every(id => s.ui.selectionPreview!.candidates.some(p => p.id === id)), execute: (c, a) => c.patch('ui', { selectionPreview: { ...c.getState().ui.selectionPreview!, ids: [...new Set(a.ids)], additive: a.additive } }) }),
   'selection.apply': define({ id: 'selection.apply', name: 'Apply selection', description: 'Accept the reviewed selection. This does not create a production edit or an undo entry.', arguments: {}, enabled: selectionReviewCurrent, execute: c => { const r = c.getState().ui.selectionPreview!; c.patch('ui', { selectionPreview: null, selectionToolsOpen: false }); c.patch('selection', { selectedIds: combine(r.initialIds, r.ids, r.additive) }); } }),

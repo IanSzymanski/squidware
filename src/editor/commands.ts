@@ -1,3 +1,5 @@
+import { editingFieldView, fieldViews, type FieldView } from '../workspaces';
+import type { CameraPreset } from '../components/Stage3D';
 import { FOOTBALL_SURFACE, isCustomSurface, validateSurface, type FootballSurface } from '../surfaces';
 import { saveChoreographyCue, removeChoreographyCue } from './choreographyEdits';
 import type { ChoreographyCue } from '../types';
@@ -112,9 +114,9 @@ export interface CommandArguments {
   'transform.mirror': undefined; 'view.toggle': undefined; 'display.paths': undefined; 'display.labels': undefined;
   'display.grid': undefined; 'display.snap': undefined; 'display.next-paths': undefined;
   'selection.move-controls': undefined;
-  'view.camera': { preset: 'perspective' | 'front' | 'top' };
+  'view.camera': { preset: CameraPreset };
   'field.zoom-in': undefined; 'field.zoom-out': undefined; 'field.fit': undefined;
-  'view.select': { view: '2d' | '3d' }; 'view.popout': undefined; 'view.popout-close': undefined; 'workspace.show': { workspace: Workspace };
+  'view.select': { view: FieldView }; 'view.popout': undefined; 'view.popout-close': undefined; 'workspace.show': { workspace: Workspace };
   'playback.count-previous': undefined; 'playback.count-next': undefined;
   'selection.tools': undefined; 'selection.close': undefined;
   'selection.section': { id: string; additive?: boolean }; 'selection.invert': undefined;
@@ -128,7 +130,7 @@ export interface CommandArguments {
   'workspace.delete': { id: string };
   'workspace.reset': { id: string };
   'workspace.update': { update: Partial<Omit<WorkspaceArrangement, 'layout'>> };
-  'workspace.field': undefined; 'workspace.design': undefined; 'workspace.production': undefined; 'workspace.rehearse': undefined;
+  'workspace.field': undefined; 'workspace.design': undefined; 'workspace.production': undefined; 'workspace.rehearse': undefined; 'workspace.review': undefined;
   'layout.update': { update: Partial<WorkspaceLayout> };
   'layout.preset': { preset: WorkspacePreset };
   'layout.focus': undefined;
@@ -213,20 +215,20 @@ function canSaveMovement(s: EditorState, a: Pick<ScheduleEdit, 'revision' | 'epo
     && canEditMovement({ ...s, ui: { ...s.ui, dialog: s.ui.dialog === dialog ? null : s.ui.dialog } })
     && s.project.present.moves[s.selection.activeIndex - 1]?.id === a.moveId && s.selection.selectedIds[0] === a.performerId;
 }
-const fieldView = (s: EditorState) => (idle(s) || isDockedSpatialEditor(s.ui.dialog)) && s.ui.workspace === 'design' && s.ui.view === '2d';
+const fieldView = (s: EditorState) => (idle(s) || isDockedSpatialEditor(s.ui.dialog)) && s.ui.workspace === 'design' && s.ui.view !== '3d';
 export const canChangeLayout = (s: EditorState) => !s.ui.selectionPreview && !s.ui.dialog && !s.ui.pendingDraft && !s.project.transactionName && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview;
 const showDialog = (context: CommandContext, dialog: Dialog) => {
   const state = context.getState();
   if (state.ui.dialog !== dialog && state.ui.pendingDraft) throw new Error('Finish or cancel the pending edit before changing dialogs.');
   if (dialog) context.patch('playback', { playing: false });
-  if (isDockedSpatialEditor(dialog)) context.patch('ui', { workspace: 'design', view: '2d', tool: 'select' });
+  if (isDockedSpatialEditor(dialog)) context.patch('ui', { workspace: 'design', view: editingFieldView(context.getState().ui.view), tool: 'select' });
   context.patch('ui', { dialog });
 };
 const editable = canEditPositions;
 const canIncrement = (s: EditorState) => editable(s) && !s.ui.dialog && !s.project.transactionName && !s.ui.pendingDraft && s.selection.selectedIds.length > 0;
 function beginTransform(c: CommandContext, args: CommandArguments['transform.preview']) {
   const s = c.getState();
-  c.patch('ui', { workspace: 'design', view: '2d', transformPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: { ...defaultTransform(), operation: args.operation ?? 'rotate-scale', angle: args.angle ?? 0, scale: args.scale ?? 1 } } });
+  c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), transformPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: { ...defaultTransform(), operation: args.operation ?? 'rotate-scale', angle: args.angle ?? 0, scale: args.scale ?? 1 } } });
 }
 const setExists = (state: EditorState, index: number) => Number.isInteger(index) && index >= 0 && index < state.project.present.sets.length;
 const selectSet = (context: CommandContext, index: number) => {
@@ -362,12 +364,12 @@ export const commandRegistry = {
     execute: (c, a) => { const s = c.getState(); const plan = drillPlan(s, a.text).plan!; const base = { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: plan.ids };
       c.patch('selection', { selectedIds: plan.ids });
       const command = plan.command;
-      c.patch('ui', { workspace: 'design', view: '2d', paletteOpen: false,
+      c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), paletteOpen: false,
         ...(command.kind === 'coordinates' ? { coordinatePreview: { ...base, options: command.options } } : command.kind === 'mirror' ? { transformPreview: { ...base, options: command.options } } : { spacingPreview: { ...base, options: command.options } }) });
     } }),
   'tool.box': simple('tool.box', 'Select performers', 'Choose box selection and move selected dots.', idle, c => { void executeCommand(c, 'tool.select', { tool: 'select' }); }),
   'tool.pan': simple('tool.pan', 'Pan field', 'Move the viewport without moving performers, including during a field preview.', idle, c => { void executeCommand(c, 'tool.select', { tool: 'pan' }); }),
-  'tool.lasso': simple('tool.lasso', 'Lasso selection', 'Draw a freehand boundary and review the selected performers.', s => canNavigate(s) && editable(s) && s.ui.view === '2d', c => { void executeCommand(c, 'tool.select', { tool: 'lasso' }); }),
+  'tool.lasso': simple('tool.lasso', 'Lasso selection', 'Draw a freehand boundary and review the selected performers.', s => canNavigate(s) && editable(s) && s.ui.view !== '3d', c => { void executeCommand(c, 'tool.select', { tool: 'lasso' }); }),
   'performers.add-dialog': simple('performers.add-dialog', 'Add performers', 'Choose a section, label prefix and number of new performers.', s => canNavigate(s) && s.project.present.performers.length < PROJECT_LIMITS.performers, c => { void executeCommand(c, 'dialog.open', { dialog: 'add-cast' }); }),
   'set.new': simple('set.new', 'New set', 'Review a new set after the current set: fresh staging grid, blank notes, default counts and constant speed.', canOpenSetCreation, c => openSetCreation(c, 'new')),
   'set.duplicate': simple('set.duplicate', 'Duplicate current set', 'Review a copy after this set: positions, notes and incoming timing. The new picture starts with a hold; incoming travel is not replayed.', canOpenSetCreation, c => openSetCreation(c, 'duplicate')),
@@ -379,30 +381,31 @@ export const commandRegistry = {
   'selection.move-controls': simple('selection.move-controls','Move selection','Show precise position and nudge controls in the Inspector.',canIncrement,c=>{
     const p=c.getState().preferences.value;
     c.patch('preferences',{value:{...p,inspectorSelectionOpen:true,workspaceLayout:{...p.workspaceLayout,inspectorCollapsed:false}}});
-    c.patch('ui',{workspace:'design',view:'2d',castPanelOpen:false});
+    c.patch('ui',{workspace:'design',view:editingFieldView(c.getState().ui.view),castPanelOpen:false});
   }),
   'view.toggle': simple('view.toggle', 'Toggle 2D / 3D', 'Switch between field editing and the 3D rehearsal preview.', canNavigate, c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: s.ui.view === '2d' ? '3d' : '2d' }); }),
-  'view.camera': define({ id: 'view.camera', name: 'Reset 3D camera', description: 'Perspective is an angled field view; Front faces the home sideline; Overhead looks straight down. Drag to orbit; this clears the active preset.', arguments: { preset: 'perspective | front | top' },
-    enabled: (s,a) => idle(s) && s.ui.workspace === 'design' && s.ui.view === '3d' && !!a && ['perspective','front','top'].includes(a.preset),
+  'view.camera': define({ id: 'view.camera', name: 'Reset 3D camera', description: 'Perspective shows the field at an angle. Front faces the home sideline. Press box looks down from above that sideline. Overhead looks straight down. Drag to orbit and clear the preset.', arguments: { preset: 'perspective | front | press-box | top' },
+    enabled: (s,a) => idle(s) && s.ui.workspace === 'design' && s.ui.view !== '2d' && !!a && ['perspective','front','press-box','top'].includes(a.preset),
     execute: (c,a) => c.patch('ui', { camera: { preset:a.preset, version:c.getState().ui.camera.version+1 } }) }),
-  'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Open the 2D field or 3D rehearsal view.', arguments: { view: '2d | 3d' }, enabled: (s, a) => canNavigate(s) && !!a && ['2d', '3d'].includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
+  'view.select': define({ id: 'view.select', name: 'Select field view', description: 'Show the field in 2D, 3D or both.', arguments: { view: '2d | 3d | split' }, enabled: (s, a) => canNavigate(s) && !!a && fieldViews.includes(a.view), execute: (c, a) => c.patch('ui', { workspace: 'design', view: a.view }) }),
   // Opening moves an inline 3D view back to 2D so only one renderer runs; the window itself never edits.
   'view.popout': simple('view.popout', 'Open 3D window', 'Show the 3D preview in its own window that follows this editor’s set, count, playback and selection. If it is open, bring it to the front.', s => s.ui.popout3d !== 'unavailable',
-    c => { const s = c.getState(); c.patch('ui', s.ui.popout3d === 'open' ? { popout3dFocus: s.ui.popout3dFocus + 1 } : { popout3d: 'open', ...(s.ui.view === '3d' ? { view: '2d' } : {}) }); }),
+    c => { const s = c.getState(); c.patch('ui', s.ui.popout3d === 'open' ? { popout3dFocus: s.ui.popout3dFocus + 1 } : { popout3d: 'open', ...(s.ui.view !== '2d' ? { view: '2d' } : {}) }); }),
   'view.popout-close': simple('view.popout-close', 'Close 3D window', 'Close the separate 3D window. The 3D preview option returns to the field area.', s => s.ui.popout3d === 'open', c => c.patch('ui', { popout3d: 'closed' })),
   'workspace.select': define({ id: 'workspace.select', name: 'Switch workspace', description: 'Rearrange tools on this device without changing the production, selection or playhead.', arguments: { id: 'workspace ID' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a && s.preferences.value.workspaces.entries.some(w => w.id === a.id), execute: (c,a) => switchWorkspace(c,a.id) }),
   'workspace.save': define({ id: 'workspace.save', name: 'Save workspace as', description: 'Save the current arrangement under a new name on this device.', arguments: { name: '1–40 characters' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a, execute: (c,a) => saveWorkspace(c,a.name) }),
   'workspace.rename': define({ id: 'workspace.rename', name: 'Rename workspace', description: 'Rename a saved workspace on this device.', arguments: { id: 'workspace ID', name: '1–40 characters' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a && s.preferences.value.workspaces.entries.some(w => w.id === a.id), execute: (c,a) => renameWorkspace(c,a.id,a.name) }),
   'workspace.delete': define({ id: 'workspace.delete', name: 'Delete custom workspace', description: 'Delete a custom arrangement and return to Design.', arguments: { id: 'custom workspace ID' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a && !isBuiltInWorkspace(a.id) && s.preferences.value.workspaces.entries.some(w => w.id === a.id), execute: (c,a) => { if(c.getState().preferences.value.workspaces.active === a.id) switchWorkspace(c,'design'); const p=c.getState().preferences.value; c.patch('preferences',{value:{...p,workspaces:{...p.workspaces,entries:p.workspaces.entries.filter(w=>w.id!==a.id)}}}); } }),
-  'workspace.reset': define({ id: 'workspace.reset', name: 'Reset built-in workspace', description: 'Restore the built-in arrangement and name on this device.', arguments: { id: 'field | design | production | rehearse' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a && isBuiltInWorkspace(a.id), execute: (c,a) => switchWorkspace(c,a.id,true) }),
+  'workspace.reset': define({ id: 'workspace.reset', name: 'Reset built-in workspace', description: 'Restore the built-in arrangement and name on this device.', arguments: { id: 'field | design | production | rehearse | review' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a && isBuiltInWorkspace(a.id), execute: (c,a) => switchWorkspace(c,a.id,true) }),
   'workspace.update': define({ id: 'workspace.update', name: 'Change workspace arrangement', description: 'Choose the right panel, toolbar, timeline, view and Production sheet.', arguments: { update: 'workspace arrangement fields' }, enabled: (s,a) => canSwitchWorkspace(s) && !!a, execute: (c,a) => updateWorkspace(c,a.update) }),
   'workspace.field': simple('workspace.field','Field workspace','Expand the field with a compact timeline.',canSwitchWorkspace,c=>switchWorkspace(c,'field')),
   'workspace.design': simple('workspace.design','Design workspace','Show the field, set list and Inspector.',canSwitchWorkspace,c=>switchWorkspace(c,'design')),
   'workspace.production': simple('workspace.production','Production workspace','Show the Production sheet and Cast for planning.',canSwitchWorkspace,c=>switchWorkspace(c,'production')),
   'workspace.rehearse': simple('workspace.rehearse','Rehearse workspace','Show the 3D field and transport with rehearsal tools.',canSwitchWorkspace,c=>switchWorkspace(c,'rehearse')),
+  'workspace.review': simple('workspace.review','Review workspace','Open the editable field beside the live 3D preview.',canSwitchWorkspace,c=>switchWorkspace(c,'review')),
   'workspace.show': define({ id: 'workspace.show', name: 'Show workspace', description: 'Open Design, Cast or the Production sheet.', arguments: { workspace: 'design | cast | production' }, enabled: (s, a) => canNavigate(s) && !!a && ['design', 'cast', 'production'].includes(a.workspace), execute: (c, a) => { if (a.workspace === 'cast') { updateWorkspace(c, { rightPanel: 'cast' }); } else switchWorkspace(c, a.workspace); } }),
-  'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', s=>idle(s)&&s.ui.view==='2d'&&canEditPositions(s)&&s.selection.activeIndex>0, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
-  'display.next-paths': simple('display.next-paths', 'Show paths to next set', 'Show outgoing paths to the next set without changing geometry.', s => idle(s) && s.ui.view === '2d' && canEditPositions(s) && s.selection.activeIndex < s.project.present.sets.length-1, c => c.patch('ui', { showNextPaths: !c.getState().ui.showNextPaths })),
+  'display.paths': simple('display.paths', 'Show previous paths', 'Toggle incoming travel paths without changing geometry.', s=>idle(s)&&s.ui.view!=='3d'&&canEditPositions(s)&&s.selection.activeIndex>0, c => c.patch('ui', { showPaths: !c.getState().ui.showPaths })),
+  'display.next-paths': simple('display.next-paths', 'Show paths to next set', 'Show outgoing paths to the next set without changing geometry.', s => idle(s) && s.ui.view !== '3d' && canEditPositions(s) && s.selection.activeIndex < s.project.present.sets.length-1, c => c.patch('ui', { showNextPaths: !c.getState().ui.showNextPaths })),
   'display.grid': simple('display.grid', 'Show field grid', 'Toggle the placement grid without changing performer positions.', idle, c => c.patch('ui', { showGrid: !c.getState().ui.showGrid })),
   'display.snap': simple('display.snap', 'Snap to grid', 'Toggle snapping for direct position edits. Precise numeric coordinates remain exact.', idle, c => c.patch('ui', { snap: !c.getState().ui.snap })),
   'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle all labels, selected/focused labels and hidden labels.', idle, c => { const u = c.getState().ui; c.patch('ui', !u.showLabels ? { showLabels: true, selectionLabelsOnly: false } : !u.selectionLabelsOnly ? { selectionLabelsOnly: true } : { showLabels: false }); }),
@@ -455,7 +458,7 @@ export const commandRegistry = {
     execute:(c,a)=>{ const s=c.getState(), set=s.project.present.sets[s.selection.activeIndex], f=set.liveFormations!.find(f=>f.id===a.id)!;
       const order=f.members.map(m=>m.performerId), ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
       c.patch('selection',{selectedIds:ids});
-      c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,assignmentConstraints:f.assignmentConstraints?structuredClone(f.assignmentConstraints):undefined,scatter:f.scatter?structuredClone(f.scatter):undefined,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
+      c.patch('ui',{workspace:'design',view:editingFieldView(s.ui.view),formationPreview:{revision:s.project.revision,setId:set.id,ids,order,kind:f.kind,assignmentConstraints:f.assignmentConstraints?structuredClone(f.assignmentConstraints):undefined,scatter:f.scatter?structuredClone(f.scatter):undefined,bezier:f.bezier ? structuredClone(f.bezier) : undefined,options:structuredClone(f.options),assignmentRotation:f.options.rotation,live:{id:f.id,name:f.name,slotCount:f.slotCount,slots:f.members.map(m=>m.slot)}}});
     } }),
   'live.members': define({ id:'live.members',name:'Change formation members',description:'Preview explicit membership and redistribution.',arguments:{ids:'performerId[]'},
     enabled:s=>formationSessionCurrent(s) && !!s.ui.formationPreview?.live && !s.ui.pendingDraft,
@@ -477,7 +480,7 @@ export const commandRegistry = {
     enabled:(s,a)=>canNavigate(s) && editable(s) && !!s.project.present.sets[s.selection.activeIndex].liveFormations?.some(f=>f.id===a?.id) && s.project.present.sets.some((set,i)=>set.id===a?.targetSetId && i!==s.selection.activeIndex),
     execute:(c,a)=>{const s=c.getState(), source=s.project.present.sets[s.selection.activeIndex].liveFormations!.find(f=>f.id===a.id)!, index=s.project.present.sets.findIndex(set=>set.id===a.targetSetId), target=s.project.present.sets[index];
       selectSet(c,index); const order=source.members.map(m=>m.performerId),ids=s.project.present.performers.filter(p=>order.includes(p.id)).map(p=>p.id);
-      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:'2d',formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,assignmentConstraints:source.assignmentConstraints?structuredClone(source.assignmentConstraints):undefined,scatter:source.scatter?structuredClone(source.scatter):undefined,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
+      c.patch('selection',{selectedIds:ids});c.patch('ui',{workspace:'design',view:editingFieldView(s.ui.view),formationPreview:{revision:s.project.revision,setId:target.id,ids,order,kind:source.kind,assignmentConstraints:source.assignmentConstraints?structuredClone(source.assignmentConstraints):undefined,scatter:source.scatter?structuredClone(source.scatter):undefined,bezier:source.bezier ? structuredClone(source.bezier) : undefined,options:structuredClone(source.options),assignmentRotation:source.options.rotation,live:{id:uid(),name:uniqueLiveName(target.liveFormations??[],source.name),slotCount:source.slotCount,slots:source.members.map(m=>m.slot)}}});
     } }),
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?', assignmentMode: 'shortest | position | roster?', scaffold: 'boolean? (Scatter/Bézier: preference size at the centroid, positional or roster order)' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
@@ -499,7 +502,7 @@ export const commandRegistry = {
       const kept = inherit && !!previous?.order && (inherited === mode || !!previous.live);
       const order = kept ? previous!.order! : sessionAssignmentOrder(positions, ids, kind, options, mode);
       const assignmentSolvedFor = mode !== 'shortest' ? undefined : kept ? previous!.assignmentSolvedFor : shortestGeometryKey(kind, options);
-      c.patch('ui', { workspace: 'design', view: '2d', formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
+      c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
     } }),
   'formation.scatter': define({id:'formation.scatter',name:'Preview scatter formation',description:'Generate a seeded arrangement for explicitly selected performers, then review and Apply or Cancel.',arguments:{},
     enabled:s=>(editable(s)||formationSessionCurrent(s))&&!s.ui.pendingDraft&&!s.ui.dialog&&!s.project.transactionName&&s.selection.selectedIds.length>0,
@@ -584,7 +587,7 @@ export const commandRegistry = {
       c.patch('ui', { transformPreview: null });
     } }),
   'spacing.preview': define({ id: 'spacing.preview', name: 'Align and space selection', description: 'Preview alignment, even distribution or exact intervals for at least two selected performers on this set.', arguments: {}, enabled: s => canIncrement(s) && s.selection.selectedIds.length >= 2,
-    execute: c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: '2d', spacingPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: defaultSpacing() } }); } }),
+    execute: c => { const s = c.getState(); c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), spacingPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids: [...s.selection.selectedIds], options: defaultSpacing() } }); } }),
   'spacing.update': define({ id: 'spacing.update', name: 'Adjust spacing preview', description: 'Update exact intervals and alignment guides without editing the project.', arguments: { options: 'SpacingOptions' }, enabled: spacingSessionCurrent,
     execute: (c, a) => c.patch('ui', { spacingPreview: { ...c.getState().ui.spacingPreview!, options: a.options } }) }),
   'spacing.cancel': define({ id: 'spacing.cancel', name: 'Cancel spacing', description: 'Discard spacing guides and keep original positions.', arguments: {}, enabled: s => !!s.ui.spacingPreview, execute: c => c.patch('ui', { spacingPreview: null }) }),
@@ -594,7 +597,7 @@ export const commandRegistry = {
       c.patch('ui', { spacingPreview: null });
     } }),
   'coordinates.preview': define({ id: 'coordinates.preview', name: 'Enter coordinates', description: 'Preview a drill-language coordinate for one performer or an exact relative move for the explicit selection.', arguments: { mode: 'absolute | relative?', text: 'drill phrase?', side: '1 | 2 | null?', defaultUnit: 'steps | yards | null?' }, enabled: canIncrement,
-    execute: (c,a) => {const s=c.getState();const ids=[...new Set(s.selection.selectedIds)];const options=validateCoordinateEntryOptions({mode:a?.mode??(ids.length===1?'absolute':'relative'),text:a?.text??'',side:a?.side??null,defaultUnit:a?.defaultUnit===undefined?'steps':a.defaultUnit});c.patch('ui',{workspace:'design',view:'2d',coordinatePreview:{revision:s.project.revision,setId:s.project.present.sets[s.selection.activeIndex].id,ids,options}});} }),
+    execute: (c,a) => {const s=c.getState();const ids=[...new Set(s.selection.selectedIds)];const options=validateCoordinateEntryOptions({mode:a?.mode??(ids.length===1?'absolute':'relative'),text:a?.text??'',side:a?.side??null,defaultUnit:a?.defaultUnit===undefined?'steps':a.defaultUnit});c.patch('ui',{workspace:'design',view:editingFieldView(s.ui.view),coordinatePreview:{revision:s.project.revision,setId:s.project.present.sets[s.selection.activeIndex].id,ids,options}});} }),
   'coordinates.update': define({ id: 'coordinates.update', name: 'Adjust coordinate entry', description: 'Parse the phrase and update the preview without changing geometry or history.', arguments: { options: 'CoordinateEntryOptions' }, enabled: coordinateSessionCurrent,
     execute: (c,a)=>{const options=validateCoordinateEntryOptions(a?.options);c.patch('ui',{coordinatePreview:{...c.getState().ui.coordinatePreview!,options}});} }),
   'coordinates.cancel': define({ id: 'coordinates.cancel', name: 'Cancel coordinate entry', description: 'Discard the coordinate preview and preserve the original selection and positions.', arguments:{},enabled:s=>!!s.ui.coordinatePreview,execute:c=>c.patch('ui',{coordinatePreview:null}) }),

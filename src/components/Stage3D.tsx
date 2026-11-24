@@ -31,6 +31,7 @@ export interface Stage3DProps {
   cameraRequest?: { preset: CameraPreset | null; version: number };
   onCameraPreset?: (preset: CameraPreset | null) => void;
   hideCameraPresets?: boolean;
+  splitReview?: boolean;
   /** A host without its own 2D field (the 3D window) supplies the interruption text and recovery actions. */
   recovery?: { contextLost: string; unavailable?: string; actions: ReactNode };
   /** Tooling can supply a fixed review angle, cue samples, or stationary fixture equipment. */
@@ -40,7 +41,7 @@ export interface Stage3DProps {
   assetReview?: { showEquipment: boolean; pit: readonly AssetPlacement[]; onFrame: (stats: RenderStats) => void };
 }
 
-export type CameraPreset = 'perspective' | 'front' | 'top';
+export type CameraPreset = 'perspective' | 'front' | 'press-box' | 'top';
 export interface PreviewCamera {
   position: readonly [number, number, number];
   target: readonly [number, number, number];
@@ -278,8 +279,8 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   }
 }
 
-export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, previewCamera, legMotion, cueTiming, assetReview }: Stage3DProps) {
-  const cameraProps=useRef({cameraRequest,onCameraPreset});cameraProps.current={cameraRequest,onCameraPreset};
+export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, splitReview, previewCamera, legMotion, cueTiming, assetReview }: Stage3DProps) {
+  const cameraProps=useRef({cameraRequest,onCameraPreset,splitReview});cameraProps.current={cameraRequest,onCameraPreset,splitReview};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const [stadiumVisible, setStadiumVisible] = useState(false);
@@ -367,7 +368,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       renderer.toneMappingExposure = 1.15;
       renderer.domElement.tabIndex = 0;
       renderer.domElement.setAttribute('role', 'img');
-      renderer.domElement.setAttribute('aria-label', `Three dimensional drill preview. Drag to orbit, right-drag to pan${currentRef.current.onSelect ? ', scroll to zoom, and click a performer to select' : ' and scroll to zoom'}. ${currentRef.current.previewCamera ? 'Use Camera view to choose an inspection angle.' : 'Use the camera buttons for front and overhead views.'}`);
+      renderer.domElement.setAttribute('aria-label', `Three dimensional drill preview. Drag to orbit, right-drag to pan${currentRef.current.onSelect ? ', scroll to zoom, and click a performer to select' : ' and scroll to zoom'}. ${currentRef.current.previewCamera ? 'Use Camera view to choose an inspection angle.' : 'Use the camera controls to change the viewing angle.'}`);
       host.appendChild(renderer.domElement);
       scene.background = new THREE.Color('#141e1b');
       scene.fog = new THREE.Fog('#141e1b', 130, 240);
@@ -390,8 +391,31 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         const distance = Math.max(width, height * 1.7);
         if (preset === 'top') camera.position.set(0, distance * 1.17, 0.01);
         else if (preset === 'front') camera.position.set(0, distance * 0.28, distance * 0.92);
+        else if (preset === 'press-box') camera.position.set(0, distance * .53, distance * .97);
         else camera.position.set(distance * 0.13, distance * 0.69, distance * 0.77);
         camera.lookAt(controls.target);
+        if (cameraProps.current.splitReview) {
+          // Fit all four corners with room for the apron and the camera controls.
+          camera.updateMatrixWorld();
+          const vertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * .88;
+          const horizontal = vertical * camera.aspect;
+          let extra = 0;
+          for (const x of [-width / 2 - 3.5, width / 2 + 3.5]) {
+            for (const z of [-height / 2 - 3.5, height / 2 + 3.5]) {
+              const corner = new THREE.Vector3(x, 0, z).applyMatrix4(camera.matrixWorldInverse);
+              extra = Math.max(extra, corner.z + Math.abs(corner.x) / horizontal, corner.z + Math.abs(corner.y) / vertical);
+            }
+          }
+          camera.position.addScaledVector(camera.position.clone().normalize(), extra);
+        }
+        const radius = camera.position.length();
+        controls.maxDistance = cameraProps.current.splitReview ? Math.max(175, radius * 1.8) : 175;
+        camera.far = cameraProps.current.splitReview ? Math.max(500, radius * 3) : 500;
+        camera.updateProjectionMatrix();
+        if (scene.fog instanceof THREE.Fog) {
+          scene.fog.near = cameraProps.current.splitReview ? Math.max(130, radius * 1.35) : 130;
+          scene.fog.far = cameraProps.current.splitReview ? Math.max(240, radius * 2.4) : 240;
+        }
         controls.update();
         invalidate();
         cameraProps.current.onCameraPreset?.(preset);
@@ -552,8 +576,11 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         const rect = host.getBoundingClientRect();
         const w = Math.max(rect.width, 1);
         const h = Math.max(rect.height, 1);
+        const aspectChanged = Math.abs(camera.aspect - w / h) > .001;
         camera.aspect = w / h;
-        camera.updateProjectionMatrix();
+        const { cameraRequest, splitReview } = cameraProps.current;
+        if (splitReview && aspectChanged && cameraRequest?.preset) setCamera(cameraRequest.preset);
+        else camera.updateProjectionMatrix();
         renderer.setSize(w, h, false);
         invalidate();
       }
@@ -598,7 +625,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
 
   useEffect(() => { if (previewCamera) sceneRef.current?.setPreviewCamera(previewCamera); }, [previewCamera]);
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
-  useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height]);
+  useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height,splitReview]);
   useEffect(() => {
     const state = sceneRef.current;
     if (!state) return;
@@ -614,14 +641,28 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     return () => { image.onload = null; };
   }, [surface]);
 
-  return <div className="stage-three">
+  return <div className={splitReview ? "stage-three stage-three--split" : "stage-three"}>
     <div ref={hostRef} className="stage-three__canvas" />
     {!error && <>
       <div className="field-stage__corner"><span className="stage-status-light" /> LIVE 3D PREVIEW</div>
-      <div className={hideCameraPresets?'stage-three__quality':'stage-three__controls'} role="group" aria-label={hideCameraPresets?'Rendering quality':'Camera presets'}>
-        {!hideCameraPresets&&<>
+      <div className={hideCameraPresets ? 'stage-three__quality' : `stage-three__controls${splitReview ? ' stage-three__controls--split' : ''}`}
+        role="group" aria-label={hideCameraPresets ? 'Rendering quality' : 'Camera presets'}>
+        {splitReview && <Tooltip name="Review camera" description="Choose a viewing angle while editing or rehearsing.">
+          <select aria-label="Review camera" value={cameraRequest?.preset ?? ''} onChange={event => {
+            const preset = event.currentTarget.value as CameraPreset;
+            if (preset) sceneRef.current?.setCamera(preset);
+          }}>
+            <option value="" disabled>Custom angle</option>
+            <option value="perspective">Perspective</option>
+            <option value="press-box">Press box</option>
+            <option value="front">Front</option>
+            <option value="top">Overhead</option>
+          </select>
+        </Tooltip>}
+        {!hideCameraPresets&&!splitReview&&<>
         <HelpButton title="Perspective camera" aria-pressed={cameraRequest?cameraRequest.preset==='perspective':undefined} description="Reset the camera to an angled view of the entire field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('perspective')}>Perspective</HelpButton>
         <HelpButton title="Front camera" aria-pressed={cameraRequest?cameraRequest.preset==='front':undefined} description="Reset the camera to the home sideline view. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('front')}>Front</HelpButton>
+        <HelpButton title="Press box camera" aria-pressed={cameraRequest ? cameraRequest.preset === 'press-box' : undefined} description="Look down on the field from above the home sideline." type="button" onClick={() => sceneRef.current?.setCamera('press-box')}>Press box</HelpButton>
         <HelpButton title="Overhead camera" aria-pressed={cameraRequest?cameraRequest.preset==='top':undefined} description="Reset the camera to look straight down at the field. Drag to orbit, right-drag to pan and scroll to zoom." type="button" onClick={() => sceneRef.current?.setCamera('top')}>Overhead</HelpButton>
         </>}
         {!customSurface && <label className="stage-three__stadium">

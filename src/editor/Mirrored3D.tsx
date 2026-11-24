@@ -11,19 +11,24 @@ export interface Mirrored3DProps {
   onQualityChange: (quality: Stage3DQuality) => void;
   /** The inline view selects on click; the separate 3D window is read-only. */
   interactive: boolean;
+  splitReview?: boolean;
+  onReturnTo2D?: () => void;
   recovery?: Stage3DProps['recovery'];
 }
 
 /** The editor's current scene in 3D: set, playhead, playback, selection, previews and live 2D drags.
- * One component serves the inline 3D view and the separate 3D window (#181), and later a split view (#41). */
-export function Mirrored3D({ controller, quality, onQualityChange, interactive, recovery }: Mirrored3DProps) {
+ * One component serves the inline 3D view and the separate 3D window (#181), and the split review. */
+export function Mirrored3D({ controller, quality, onQualityChange, interactive, splitReview, onReturnTo2D, recovery }: Mirrored3DProps) {
   const camera=useEditorSelector(s=>s.ui.camera),focus=useEditorSelector(s=>s.ui.focusMode);
   const scene = useFieldScene(controller);
   const drafts = useMemo(() => moveDrafts(controller.store), [controller.store]);
   const draft = useSyncExternalStore(drafts.subscribe, drafts.get, drafts.get);
   const editable = scene.atSet && !controller.playing;
+  const spatialPreview = controller.pathOperations || controller.movementEditor || controller.routeEditor || controller.selectionPreview
+    || controller.formationPreview || controller.spacingPreview || controller.transformPreview || controller.coordinatePreview;
+  const canSelect = interactive && (!splitReview || !spatialPreview);
   const positions = useMemo(() => overlayDraft(scene.positions, draft, controller.index, editable), [scene.positions, draft, controller.index, editable]);
-  return <Stage3DLoader project={scene.rehearsalProject} facings={scene.facings} cueTiming={scene.sample} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={interactive ? controller.setSelectedIds : undefined}
-    cameraRequest={interactive?camera:undefined} hideCameraPresets={interactive&&!focus} onCameraPreset={interactive?preset=>{const current=controller.store.getState().ui.camera;if(current.preset!==preset)controller.store.setValue('ui','camera',{...current,preset});}:undefined}
-    quality={quality} onQualityChange={onQualityChange} onReturnTo2D={() => controller.setView('2d')} recovery={recovery} />;
+  return <Stage3DLoader project={scene.rehearsalProject} facings={scene.facings} cueTiming={scene.sample} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={canSelect ? controller.setSelectedIds : undefined}
+    cameraRequest={interactive?camera:undefined} splitReview={splitReview} hideCameraPresets={interactive&&!focus&&!splitReview} onCameraPreset={interactive?preset=>{const current=controller.store.getState().ui.camera;if(current.preset!==preset)controller.store.setValue('ui','camera',{...current,preset});}:undefined}
+    quality={quality} onQualityChange={onQualityChange} onReturnTo2D={onReturnTo2D ?? (() => controller.setView('2d'))} recovery={recovery} />;
 }

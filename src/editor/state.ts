@@ -1,3 +1,5 @@
+import type { FieldView } from '../workspaces';
+import type { CameraPreset } from '../components/Stage3D';
 import type { MovementClipboard } from '../movementPathOperations';
 import type { FormationKind, FormationOptions, Project } from '../types';
 import type { FormationAssignmentMode, FormationSession } from '../formationPreview';
@@ -22,10 +24,10 @@ export interface EditorState {
   selection: { activeIndex: number; selectedIds: string[] };
   playback: { count: number; playing: boolean; loop: boolean; speed: number; metronome: boolean; countInBars: number; muted: boolean; clockStatus: string; seekVersion: number; rehearsalId: string | null };
   ui: {
-    workspace: Workspace; workspaceVersion: number; focusMode: boolean; view: '2d' | '3d'; tool: 'select' | 'pan' | 'lasso'; zoom: number; fitVersion: number; projectEpoch: number;
+    workspace: Workspace; workspaceVersion: number; focusMode: boolean; view: FieldView; tool: 'select' | 'pan' | 'lasso'; zoom: number; fitVersion: number; projectEpoch: number;
     /** The separate 3D window exists only with the desktop bridge; a focus request increments popout3dFocus. */
     popout3d: 'unavailable' | 'closed' | 'open'; popout3dFocus: number;
-    camera: { preset: 'perspective' | 'front' | 'top' | null; version: number };
+    camera: { preset: CameraPreset | null; version: number };
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
     showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog; groupMotionId?: string;
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
