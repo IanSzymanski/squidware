@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
-import { Stage3D, type Stage3DProps, type Stage3DQuality } from '../components/Stage3D';
+import { Stage3D, type PreviewCamera, type Stage3DQuality } from '../components/Stage3D';
 import { Tooltip } from '../components/Tooltip';
 import { countToSeconds, sampleProject, secondsToCount, totalCounts } from '../domain';
 import { createLegMotionFixture, legMotionFrame, motionScenarios, type MotionScenario, type PreviewCastSize } from './legMotionFixture';
 import './legMotionPreview.css';
 
-type PreviewCamera = NonNullable<Stage3DProps['legMotionPreview']>['camera'];
 const cameras = {
   front: { label: 'Front', position: [0, 1.83, 5.2], target: [0, 0.88, 0] },
   side: { label: 'Side', position: [5.2, 1.83, 0], target: [0, 0.88, 0] },
@@ -79,7 +78,7 @@ export function LegMotionPreview() {
     </header>
     <div className="leg-motion-example__stage">
       <Stage3D key={retry} project={project} positions={positions} facings={facings} selectedIds={noSelection}
-        legMotionPreview={{ camera: cameras[view], frame }}
+        previewCamera={cameras[view]} legMotion={frame}
         quality={quality} onQualityChange={setQuality} hideCameraPresets onReturnTo2D={resetPreview}
         recovery={{ contextLost: 'The graphics context was interrupted.', unavailable: 'WebGL is required to display the 3D markers.',
           actions: <button className="button subtle" type="button" onClick={resetPreview}>Retry with static markers</button> }} />

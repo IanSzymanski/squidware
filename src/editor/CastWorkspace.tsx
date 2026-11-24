@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { FolderOpen, List, PanelRight, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { DEFAULT_FLAG_COLOR, resolveEquipment } from '../equipment';
+import { EquipmentSelect } from './EquipmentSelect';
 import { coordinateDescription, PROJECT_LIMITS } from '../domain';
 import type { Performer } from '../types';
 import { Button, CommitColor, CommitInput } from './EditorControls';
@@ -17,7 +19,9 @@ function PerformerFields({ person, controller }: { person: Performer; controller
 
 function PerformerAppearanceFields({ person, controller, locked }: { person: Performer; controller: EditorController; locked: boolean }) {
   const { appearance, id } = person;
-  const sectionColor = controller.project.sections.find(section => section.id === person.sectionId)?.color ?? '#b9ed85';
+  const section = controller.project.sections.find(section => section.id === person.sectionId);
+  const sectionColor = section?.color ?? '#b9ed85';
+  const equipment = resolveEquipment(appearance, section?.equipment);
   return <details className="performer-appearance">
     <summary>Appearance</summary>
     <fieldset disabled={locked}>
@@ -29,6 +33,14 @@ function PerformerAppearanceFields({ person, controller, locked }: { person: Per
           <option value="">None</option><option value="instrument">Instrument</option><option value="guard">Guard</option>
         </select>
       </label>
+      <label className="form-label">3D equipment
+        <EquipmentSelect label="3D equipment" inherited value={appearance?.equipment}
+          onChange={value => controller.dispatch('performer.appearance', { id, equipment: value })} />
+      </label>
+      {equipment.key === 'flag' && <label className="form-label">Flag color
+        <CommitColor label="Flag color" value={(appearance?.flagColor ?? DEFAULT_FLAG_COLOR).toLowerCase()}
+          onDraftChange={controller.setPendingDraft} onCommit={flagColor => controller.dispatch('performer.appearance', { id, flagColor })} />
+      </label>}
       <label className="form-label">Costume color
         <CommitColor label="Costume color" value={(appearance?.costumeColor ?? sectionColor).toLowerCase()}
           onDraftChange={controller.setPendingDraft} onCommit={costumeColor => controller.dispatch('performer.appearance', { id, costumeColor })} />

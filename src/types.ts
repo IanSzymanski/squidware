@@ -2,8 +2,8 @@ import type { PreferencesBridge } from './preferences';
 import type { SnapSettings } from './snapping';
 import type { TemplateLibraryBridge } from './templates/storage';
 export interface Point { x: number; y: number }
-export interface Section { id: string; name: string; color: string }
-export interface PerformerAppearance { role?: 'instrument' | 'guard'; costumeColor?: string }
+export interface Section { id: string; name: string; color: string; equipment?: string }
+export interface PerformerAppearance { role?: 'instrument' | 'guard'; costumeColor?: string; equipment?: string; flagColor?: string }
 export interface Performer { id: string; label: string; name: string; sectionId: string; appearance?: PerformerAppearance }
 export type PerformerFacings = Readonly<Record<string, number>>;
 export interface SelectionGroup { id: string; name: string; performerIds: string[] }

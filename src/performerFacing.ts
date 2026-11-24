@@ -1,4 +1,5 @@
 import type { MarchingDirection, PerformerAppearance, PerformerFacings, PerformerPath, Point, Project } from './types';
+import { validateEquipment } from './equipment';
 import { movementTravels } from './movementPaths';
 
 const invalid = (path: string, reason: string): never => { throw new Error(`Invalid project: ${path} ${reason}`); };
@@ -19,12 +20,21 @@ export function validateFacings(value: unknown, ids: ReadonlySet<string>, path: 
 export function validateAppearance(value: unknown, path: string): PerformerAppearance | undefined {
   if (value === undefined) return;
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid(path, 'must be an appearance object.');
-  const { role, costumeColor } = value as Record<string, unknown>;
+  const { role, costumeColor, equipment, flagColor } = value as Record<string, unknown>;
   if (role !== undefined && role !== 'instrument' && role !== 'guard') invalid(`${path}.role`, 'must be instrument or guard.');
-  if (costumeColor !== undefined && (typeof costumeColor !== 'string' || !/^#[0-9a-f]{6}$/i.test(costumeColor))) invalid(`${path}.costumeColor`, 'must be a six-digit hex color.');
-  if (role === undefined && costumeColor === undefined) return;
+  const color = (value: unknown, key: string) => {
+    if (value === undefined) return;
+    if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) return invalid(`${path}.${key}`, 'must be a six-digit hex color.');
+    return value;
+  };
+  const costume = color(costumeColor, 'costumeColor');
+  const flag = color(flagColor, 'flagColor');
+  const model = validateEquipment(equipment, `${path}.equipment`);
+  if (role === undefined && costume === undefined && model === undefined && flag === undefined) return;
   return { ...(role === undefined ? {} : { role: role as PerformerAppearance['role'] }),
-    ...(costumeColor === undefined ? {} : { costumeColor: costumeColor as string }) };
+    ...(costume === undefined ? {} : { costumeColor: costume }),
+    ...(model === undefined ? {} : { equipment: model }),
+    ...(flag === undefined ? {} : { flagColor: flag }) };
 }
 
 export function facingAt(facings: PerformerFacings | undefined, id: string): number | undefined {

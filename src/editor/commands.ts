@@ -1,4 +1,5 @@
-import { setFacing, setAppearance, pruneFacings } from './performerEdits';
+import { validateEquipment } from '../equipment';
+import { setFacing, setAppearance, pruneFacings, type AppearanceUpdate } from './performerEdits';
 import { duringSpatialEditor, isDockedSpatialEditor } from './movementEditor';
 import { canSwitchWorkspace, switchWorkspace, saveWorkspace, renameWorkspace, updateWorkspace } from './workspaceCommands';
 import { isBuiltInWorkspace, type WorkspaceArrangement } from '../workspaces';
@@ -135,9 +136,9 @@ export interface CommandArguments {
   'set.move-to': { id: string; target: number; revision: number; epoch: number };
   'performers.add': { performers: Performer[] }; 'performers.remove': { ids: string[] };
   'performer.facing': { index: number; ids: string[]; angle: number | null };
-  'performer.appearance': { id: string; role?: 'instrument' | 'guard' | null; costumeColor?: string | null };
+  'performer.appearance': AppearanceUpdate;
   'performer.update': { id: string; update: Partial<Pick<Performer, 'name' | 'sectionId'>> };
-  'section.add': undefined; 'section.update': { id: string; update: Partial<Pick<Section, 'name' | 'color'>> };
+  'section.add': undefined; 'section.update': { id: string; update: Partial<Pick<Section, 'name' | 'color'>> & { equipment?: string | null } };
   'positions.move': { index: number; updates: Record<string, Point> };
   'positions.place': { index: number; id: string; axis: 'x' | 'y'; value: number };
   'snapping.update': { settings: SnapSettings };
@@ -608,13 +609,21 @@ export const commandRegistry = {
   'performer.facing': define({ id: 'performer.facing', name: 'Set performer facing', description: 'Set or clear the heading of selected performers at this set.', arguments: { index: 'set index', ids: 'performer IDs', angle: 'degrees or null' },
     enabled: (s, a) => !!a && idle(s) && editable(s) && a.index === s.selection.activeIndex && !!a.ids.length,
     execute: (c, a) => c.edit(project => setFacing(project, a.index, a.ids, a.angle)) }),
-  'performer.appearance': define({ id: 'performer.appearance', name: 'Edit performer appearance', description: 'Set an optional role marker or costume color for one performer across the show.', arguments: { id: 'performer ID', role: 'instrument | guard | null', costumeColor: 'hex color or null' },
+  'performer.appearance': define({ id: 'performer.appearance', name: 'Edit performer appearance', description: 'Set a role marker, costume color, or 3D equipment for one performer across the show.', arguments: { id: 'performer ID', role: 'instrument | guard | null', costumeColor: 'hex color or null', equipment: 'equipment ID or null', flagColor: 'hex color or null' },
     enabled: (s, a) => !!a && !s.ui.pendingDraft && !s.ui.selectionPreview && !s.ui.transformPreview && !s.ui.formationPreview && !s.ui.spacingPreview && !s.ui.coordinatePreview
       && s.project.present.performers.some(p => p.id === a.id),
     execute: (c, a) => c.edit(project => setAppearance(project, a)) }),
   'performer.update': define({ id: 'performer.update', name: 'Edit performer', description: 'Update a performer name or section across the show.', arguments: { id: 'string', update: 'name? | sectionId?' }, enabled: (s, a) => s.project.present.performers.some(p => p.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, performers: p.performers.map(person => person.id === a.id ? { ...person, ...a.update } : person) })) }),
   'section.add': define({ id: 'section.add', name: 'Add section', description: 'Add an ensemble section.', arguments: {}, enabled: s => s.project.present.sections.length < PROJECT_LIMITS.sections, execute: c => c.edit(p => ({ ...p, sections: [...p.sections, { id: uid(), name: `Section ${p.sections.length + 1}`, color: '#a6cce2' }] })) }),
-  'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name or color.', arguments: { id: 'string', update: 'name? | color?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id), execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => section.id === a.id ? { ...section, ...a.update } : section) })) }),
+  'section.update': define({ id: 'section.update', name: 'Edit section', description: 'Update section name, color, or default 3D equipment.',
+    arguments: { id: 'string', update: 'name? | color? | equipment?' }, enabled: (s, a) => s.project.present.sections.some(section => section.id === a.id),
+    execute: (c, a) => c.edit(p => ({ ...p, sections: p.sections.map(section => {
+      if (section.id !== a.id) return section;
+      const { equipment, ...update } = a.update;
+      const { equipment: previous, ...values } = section;
+      const model = equipment === undefined ? previous : validateEquipment(equipment ?? undefined, 'section.equipment');
+      return { ...values, ...update, ...(model === undefined ? {} : { equipment: model }) };
+    }) })) }),
   'positions.move': define({ id: 'positions.move', name: 'Move performers', description: 'Set performer coordinates on the active editable set.', arguments: { index: 'integer', updates: 'Record<performerId, Point>' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: { ...set.positions, ...a.updates } } : set) })) }),
   'selection.transform': define({ id: 'selection.transform', name: 'Transform selection', description: 'Move, rotate or scale selected performers within the field.', arguments: { index: 'integer', ids: 'string[]', options: 'dx? | dy? | rotation? | scale?' }, enabled: (s, a) => editable(s) && a.index === s.selection.activeIndex && a.ids.length > 0, execute: (c, a) => c.edit(p => ({ ...p, sets: p.sets.map((set, i) => i === a.index ? { ...set, positions: a.options.rotation !== undefined || a.options.scale !== undefined ? transformPositions(set.positions, a.ids, a.options, p.field) : { ...set.positions, ...moveSelection(set.positions, a.ids, { x: a.options.dx ?? 0, y: a.options.dy ?? 0 }, p.field, p.snapping ?? DEFAULT_SNAPPING, c.getState().ui.snap, undefined, { x: !!a.options.dx, y: !!a.options.dy, advance: true }) } } : set) })) }),
   'selection.all': define({ id: 'selection.all', name: 'Select all performers', description: 'Select the full ensemble.', arguments: {}, enabled: s => !s.ui.dialog, execute: c => c.patch('selection', { selectedIds: c.getState().project.present.performers.map(p => p.id) }) }),

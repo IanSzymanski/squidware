@@ -65,3 +65,8 @@
 .field-stage__corner, .field-stage__hint, .field-stage__orientation { font-size: 11px; color: #d7e4d0; }
 .field-stage__dimensions, .field-stage__hint > span { color: #d7e4d0; }
 @media (max-width: 850px) { .field-stage__dimensions { display: none; } .field-stage__corner { left: 15px; top: 15px; } .field-stage__hint { left: 15px; gap: 10px; font-size: 9px; } .field-stage__hint > span { display: none; } }
+.stage-three__quality { display: flex; align-items: center; gap: 6px; }
+.stage-three__stadium {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border-radius: 5px;
+  color: #edf5e5; background: #17231e; font-size: 12px;
+}
