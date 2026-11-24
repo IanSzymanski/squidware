@@ -1,0 +1,53 @@
+{
+  "backend": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "benchmarks": [
+    {
+      "cast": 64,
+      "animated": false,
+      "calls": 12,
+      "triangles": 21264,
+      "geometries": 13,
+      "samples": 22,
+      "medianMs": 199.9,
+      "p95Ms": 383.4
+    },
+    {
+      "cast": 64,
+      "animated": true,
+      "calls": 13,
+      "triangles": 26384,
+      "geometries": 13,
+      "samples": 17,
+      "medianMs": 200,
+      "p95Ms": 533.2
+    },
+    {
+      "cast": 500,
+      "animated": false,
+      "calls": 12,
+      "triangles": 166016,
+      "geometries": 13,
+      "samples": 12,
+      "medianMs": 333.4,
+      "p95Ms": 783.3
+    },
+    {
+      "cast": 500,
+      "animated": true,
+      "calls": 13,
+      "triangles": 206016,
+      "geometries": 13,
+      "samples": 12,
+      "medianMs": 383.3,
+      "p95Ms": 583.2
+    }
+  ],
+  "interactions": [
+    "Front, side and press-box captures cover the five named counts in the phrase.",
+    "Pause froze the count and canvas. Playback at 2× wrapped, and reversing to the same fractional count reproduced the same render.",
+    "Real editor controls rejected mixed flag assignments, added and edited both tracks, removed and restored a cue, reviewed its peak, and saved and reopened v15."
+  ]
+}

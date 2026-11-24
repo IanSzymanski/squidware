@@ -40,3 +40,7 @@ The [design and validation notes](../docs/evidence/leg-motion/README.md) cover t
 ## Low-poly 3D asset preview
 
 Run `pnpm dev` and open `/examples/3d-assets/` on the local Vite server. Choose carried equipment or a front-ensemble station to review one model. The 64- and 500-performer scenes support playback, scrubbing, stage context and comparison with ordinary markers. See the [asset inventory, rendered review and measurements](../docs/evidence/3d-assets/README.md).
+
+## Count-timed choreography review
+
+Run `pnpm dev`, open `/examples/leg-motion/`, and choose **Plié and flag cues**. Scrub from 0 to 8 or play the phrase in a loop. Use the front, side, and press-box cameras to inspect foot turnout, knee flexion, and the flag grip. For editable cues in the editor, open [the v15 example](../format/examples/choreography-v15.squid). The [choreography design review](../docs/evidence/choreography/README.md) includes the pose sequence and verification results.

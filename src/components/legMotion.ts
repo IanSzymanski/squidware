@@ -1,3 +1,4 @@
+import type { LowerBodyCuePose } from '../choreography';
 import { facingVector } from '../performerFacing';
 import type { Point } from '../types';
 
@@ -12,6 +13,7 @@ export interface LegPose {
   hip: Joint;
   knee: Joint;
   ankle: Joint;
+  toeYaw?: number;
 }
 
 const hipHeight = 0.59;
@@ -44,6 +46,24 @@ export function sampleLegPose(count: number, position: Point, next: Point | unde
       hip: [hipX, hipHeight, 0],
       knee: [(hipX + ankleX) / 2, (hipHeight + ankleY) / 2, ankleZ / 2 + 0.027 + lift * 0.52],
       ankle: [ankleX, ankleY, ankleZ],
+    };
+  };
+  return [leg(-1), leg(1)];
+}
+
+/** The stance opens before flexion, so the foot pivots and ankles stay put during the bend. */
+export function sampleCueLegPose({ spread, turnout, drop }: LowerBodyCuePose): readonly [LegPose, LegPose] {
+  const leg = (side: number): LegPose => {
+    const hipX = side * halfStance;
+    const ankleX = side * (halfStance + .16 * spread);
+    const hipY = hipHeight - drop;
+    const yaw = side * turnout * Math.PI / 180;
+    const kneeBend = .027 + drop * .63;
+    return {
+      hip: [hipX, hipY, 0],
+      knee: [(hipX + ankleX) / 2 + Math.sin(yaw) * kneeBend, (hipY + ankleHeight) / 2, Math.cos(yaw) * kneeBend],
+      ankle: [ankleX, ankleHeight, 0],
+      toeYaw: yaw,
     };
   };
   return [leg(-1), leg(1)];

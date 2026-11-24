@@ -1,3 +1,4 @@
+import { ChoreographyPanel } from './ChoreographyPanel';
 import { EquipmentSelect } from './EquipmentSelect';
 import { CastWorkspace } from './CastWorkspace';
 import { GroupMotionPanel } from './GroupMotionPanel';
@@ -39,6 +40,7 @@ import { NewProductionPanel } from './NewProductionPanel';
 export function EditorDialogs({ controller }: { controller: EditorController }) {
   const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, removeSet, exportText, exportPdf, addCast, removeCast } = controller;
   return (<>
+    {dialog === 'choreography' && <ChoreographyPanel controller={controller} />}
     {dialog === 'cast-table' && <Modal title="Full Cast table" wide onClose={() => setDialog(null)}><CastWorkspace controller={controller} /></Modal>}
     {dialog === 'group-motion' && <GroupMotionPanel controller={controller} />}
     {dialog === 'formation-transition' && <FormationTransitionPanel controller={controller} />}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
-import { Stage3D, type PreviewCamera, type Stage3DQuality } from '../components/Stage3D';
+import { Stage3D, type PreviewCamera, type RenderStats, type Stage3DQuality } from '../components/Stage3D';
 import { Tooltip } from '../components/Tooltip';
 import { countToSeconds, sampleProject, secondsToCount, totalCounts } from '../domain';
 import { createLegMotionFixture, legMotionFrame, motionScenarios, type MotionScenario, type PreviewCastSize } from './legMotionFixture';
@@ -13,6 +13,7 @@ const cameras = {
   ensemble: { label: 'Whole ensemble', position: [8, 35, 31], target: [-15, 0, -14] },
 } satisfies Record<string, PreviewCamera & { label: string }>;
 const noSelection: string[] = [];
+const noPit: never[] = [];
 
 export function LegMotionPreview() {
   const [scenario, setScenario] = useState<MotionScenario>('forward');
@@ -25,13 +26,18 @@ export function LegMotionPreview() {
   const [loop, setLoop] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [retry, setRetry] = useState(0);
+  const stageRef = useRef<HTMLDivElement>(null);
   const currentCount = useRef(count);
   currentCount.current = count;
   const project = useMemo(() => createLegMotionFixture(size, scenario), [size, scenario]);
   const duration = countToSeconds(project, totalCounts(project));
   const markTime = useMemo(() => scenario === 'mark' ? new Set(project.performers.map(({ id }) => id)) : undefined, [scenario, project]);
-  const { positions, facings } = useMemo(() => sampleProject(project, count), [project, count]);
-  const frame = useMemo(() => animated ? legMotionFrame(project, count, markTime) : undefined, [animated, project, count, markTime]);
+  const sample = useMemo(() => sampleProject(project, count), [project, count]);
+  const authored = scenario === 'choreography';
+  const frame = useMemo(() => animated && !authored ? legMotionFrame(project, count, markTime) : undefined, [animated, authored, project, count, markTime]);
+  function reportFrame(report: RenderStats) {
+    if (stageRef.current) stageRef.current.dataset.stageStats = JSON.stringify(report);
+  }
 
   useEffect(() => {
     if (!playing) return;
@@ -70,15 +76,16 @@ export function LegMotionPreview() {
         {Object.entries(cameras).map(([id, camera]) => <option key={id} value={id}>{camera.label}</option>)}
       </select></label>
       <label>
-        <Tooltip name="Animate legs" description="Turn off articulation to return to the standard static 3D markers.">
+        <Tooltip name={authored ? 'Animate cues' : 'Animate legs'} description="Turn off articulation to return to the standard static 3D markers.">
           <input type="checkbox" checked={animated} onChange={event => setAnimated(event.target.checked)} />
         </Tooltip>
-        Animate legs
+        {authored ? 'Animate cues' : 'Animate legs'}
       </label>
     </header>
-    <div className="leg-motion-example__stage">
-      <Stage3D key={retry} project={project} positions={positions} facings={facings} selectedIds={noSelection}
-        previewCamera={cameras[view]} legMotion={frame}
+    <div className="leg-motion-example__stage" ref={stageRef}>
+      <Stage3D key={retry} project={project} positions={sample.positions} facings={sample.facings} selectedIds={noSelection}
+        previewCamera={cameras[view]} legMotion={frame} cueTiming={authored && animated ? sample : undefined}
+        assetReview={authored ? { showEquipment: true, pit: noPit, onFrame: reportFrame } : undefined}
         quality={quality} onQualityChange={setQuality} hideCameraPresets onReturnTo2D={resetPreview}
         recovery={{ contextLost: 'The graphics context was interrupted.', unavailable: 'WebGL is required to display the 3D markers.',
           actions: <button className="button subtle" type="button" onClick={resetPreview}>Retry with static markers</button> }} />

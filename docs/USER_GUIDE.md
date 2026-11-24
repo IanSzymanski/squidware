@@ -175,6 +175,12 @@ Click a performer to select them; Shift-click modifies the selection. Selection 
 
 The 3D performers are section-colored rehearsal markers by default. Select performers and use **Performer facing** in the Inspector to author a heading at a set. Select one performer in Cast and expand **Appearance** to add an instrument or guard marker or a costume color. These are simple visual cues. If 3D cannot initialize, switch to 2D to keep editing. [Performer facing and appearance](performer-facing.md)
 
+### Choreography cues
+
+Select performers on the field or in Cast. Open **Choreography cues** in **Set properties** or from the Command palette. Choose the move, then choose **Add cue**, a preset, a start count, an end count, and the duration of each transition. Counts are measured from the start of the selected move. The time between the transitions holds the pose. **Flag up** requires flag equipment for everyone in the cue.
+
+Lower-body cues share one track. Flag cues share a second track and can overlap a lower-body cue. Use **Review** on a cue to see its peak in 3D. Choose **Detailed** 3D quality to see the poses and flag animation. Add, edit, and remove are undoable project edits. A cue keeps its explicit performers even when the selection changes. Remove or adjust cues before editing a move's count below a cue's end or changing its endpoints.
+
 ### 3D window
 
 In the desktop app, choose **Open 3D window** (the arrow-out-of-a-box button beside **3D preview**), its command palette entry, or `Shift+T` to show the 3D preview in a separate window, for example on a second display. It follows the editor's set, count, playback, selection highlighting, previews and any 2D drag in progress, and its top bar shows the set, count and mode. The window is read-only: its camera buttons, quality choice and orbit/pan/zoom work, but clicking a performer does not change the selection. Edit positions in the main window.

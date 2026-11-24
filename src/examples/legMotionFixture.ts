@@ -7,6 +7,7 @@ export const motionScenarios = {
   forward: { label: 'Forward march', x: 0, y: 3.5 },
   mark: { label: 'Mark time', x: 0, y: 0 },
   backward: { label: 'Backward march', x: 0, y: -3.5 },
+  choreography: { label: 'Plié and flag cues', x: 0, y: 0 },
   lateral: { label: 'Lateral march', x: 3.5, y: 0 },
 };
 
@@ -26,12 +27,15 @@ export function createLegMotionFixture(size: PreviewCastSize, scenario: MotionSc
     y: project.field.height / 2 - Math.floor(index / columns) * rowSpacing + endpoint * motion.y,
   });
   // Keep the closest performer at midfield at count 4 in every camera view.
-  const performers = Array.from({ length: size }, (_, index) => ({
+  const basePerformers = Array.from({ length: size }, (_, index) => ({
     id: fixtureId(100 + index),
     name: `Performer ${index + 1}`,
     label: `P${index + 1}`,
     sectionId: project.sections[Math.floor(index / columns) % project.sections.length].id,
   }));
+  const performers = scenario === 'choreography'
+    ? basePerformers.map((person, index) => index % 4 === 0 ? { ...person, appearance: { equipment: 'flag', flagColor: '#dd8cae' } } : person)
+    : basePerformers;
   const facings = Object.fromEntries(performers.map(({ id }) => [id, 0]));
   const sets = [-0.5, 0.5].map((endpoint, index) => ({
     id: fixtureId(index + 1),
@@ -40,13 +44,21 @@ export function createLegMotionFixture(size: PreviewCastSize, scenario: MotionSc
     facings,
     positions: Object.fromEntries(performers.map(({ id }, performer) => [id, position(performer, endpoint)])),
   }));
+  const move = { id: fixtureId(3), fromSetId: sets[0].id, toSetId: sets[1].id, counts: 8, tempo: 120, transition: 'linear' as const, paths: {} };
+  const anchor = { moveId: move.id, fromSetId: move.fromSetId, toSetId: move.toSetId };
   return {
     ...project,
     id: fixtureId(4),
     title: motion.label,
     performers,
     sets,
-    moves: [{ id: fixtureId(3), fromSetId: sets[0].id, toSetId: sets[1].id, counts: 8, tempo: 120, transition: 'linear', paths: {} }],
+    moves: [move],
+    ...(scenario === 'choreography' ? { choreography: [
+      { ...anchor, id: fixtureId(5), preset: 'plie' as const, performerIds: performers.map(({ id }) => id),
+        start: 0, end: 8, transition: 2, turnout: 35, depth: .13 },
+      { ...anchor, id: fixtureId(6), preset: 'flag-up' as const, performerIds: performers.filter((_, i) => i % 4 === 0).map(({ id }) => id),
+        start: 2, end: 7, transition: 1 },
+    ] } : {}),
   };
 }
 
