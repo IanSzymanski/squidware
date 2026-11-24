@@ -63,7 +63,7 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
         <p className="microcopy">Short keyboard and mouse tips in the set list, field, status bar, Inspector, command palette and 3D preview. Tooltips and Help keep the same guidance when hints are off.</p>
       </>)}
       {section(1, <>
-        <label className="form-label">Start view<select value={p.view} onChange={e => update({ view: e.target.value as typeof p.view })}><option value="2d">2D field</option><option value="3d">3D preview</option></select></label>
+        <label className="form-label">Start view<select value={p.view} onChange={e => update({ view: e.target.value as typeof p.view })}><option value="2d">2D field</option><option value="3d">3D preview</option><option value="split">2D and 3D</option></select></label>
         <div className="preferences-toggles">{(['showPaths', 'showNextPaths', 'showGrid'] as const).map((key, i) => <label key={key}><input type="checkbox" checked={p[key]} onChange={e => update({ [key]: e.target.checked })} />{['Previous paths', 'Next paths', 'Field grid'][i]}</label>)}</div>
         <NumberField label="Field zoom" value={p.zoom} min={.6} max={3} step={.1} onChange={zoom => update({ zoom })} />
         <FieldDisplayPreferences preferences={preferences} />

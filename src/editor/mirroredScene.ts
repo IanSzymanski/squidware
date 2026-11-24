@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { sampleFacings } from '../performerFacing';
 import { sampleProject } from '../domain';
 import { activePassage, resolvePassage } from '../rehearsal';
 import type { Point, Project, TimelineSample } from '../types';
@@ -58,8 +59,13 @@ export function useFieldScene(controller: EditorController) {
   const count = useEditorSelector(s => s.playback.count);
   const rehearsalProject = useMemo(() => rehearsalScope(project, rehearsalId), [project, rehearsalId]);
   const sample = useMemo(() => sharedSample(project, count), [project, count]);
-  const allPositions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? (atSet && !playing ? activeSet.positions : sample.positions);
+  const operation = controller.pathOperations;
+  const candidate = operation?.preview;
+  const allPositions = candidate?.after ?? controller.movementEditor?.preview ?? controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? (atSet && !playing ? activeSet.positions : sample.positions);
   const positions = useMemo(() => scopePositions(allPositions, rehearsalId ? rehearsalProject : null), [rehearsalId, rehearsalProject, allPositions]);
-  const facings = atSet && !playing ? activeSet.facings : sample.facings;
+  const facings = candidate && operation ? sampleFacings(candidate.candidate, operation.initial.index + 1,
+    candidate.proposedCount / candidate.candidate.moves[operation.initial.index].counts)
+    : controller.movementEditor ? controller.movementEditor.previewFacings
+    : atSet && !playing ? activeSet.facings : sample.facings;
   return { rehearsalId, rehearsalProject, atSet, count, sample, positions, facings };
 }

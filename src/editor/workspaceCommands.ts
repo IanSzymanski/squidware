@@ -1,5 +1,5 @@
 import { uid } from '../domain';
-import { activeWorkspace, builtInWorkspace, isBuiltInWorkspace, workspaceName, validateArrangement, type WorkspaceArrangement } from '../workspaces';
+import { activeWorkspace, builtInWorkspace, isBuiltInWorkspace, MAX_WORKSPACES, workspaceName, validateArrangement, type WorkspaceArrangement } from '../workspaces';
 import type { CommandContext } from './commands';
 import type { EditorState } from './state';
 
@@ -18,15 +18,15 @@ export function switchWorkspace(c: CommandContext, id: string, reset = false) {
 }
 export function saveWorkspace(c: CommandContext, raw: string) {
   const s = c.getState(), p = s.preferences.value, w = p.workspaces, name = workspaceName(raw);
-  if (w.entries.length >= 20) throw new Error('Keep at most 16 custom workspaces. Delete one before saving another.');
+  if (w.entries.length >= MAX_WORKSPACES) throw new Error('Keep at most 16 custom workspaces. Delete one before saving another.');
   if (w.entries.some(e => e.name.toLowerCase() === name.toLowerCase())) throw new Error('A workspace already uses this name.');
-  if (['field','design','production','rehearse'].includes(name.toLowerCase())) throw new Error('Choose a name other than a built-in workspace name.');
+  if (isBuiltInWorkspace(name.toLowerCase())) throw new Error('Choose a name other than a built-in workspace name.');
   const entry = { id: `custom-${uid()}`, name, arrangement: captureWorkspace(s) };
   c.patch('preferences', { value: { ...p, workspaces: { ...w, active: entry.id, entries: w.entries.map(e => e.id === w.active ? { ...e, arrangement: captureWorkspace(s) } : e).concat(entry) } } });
 }
 export function renameWorkspace(c: CommandContext, id: string, raw: string) {
   const p = c.getState().preferences.value, name = workspaceName(raw);
-  if (['field','design','production','rehearse'].includes(name.toLowerCase()) && name.toLowerCase() !== id) throw new Error('That name belongs to another built-in workspace.');
+  if (isBuiltInWorkspace(name.toLowerCase()) && name.toLowerCase() !== id) throw new Error('That name belongs to another built-in workspace.');
   if (p.workspaces.entries.some(e => e.id !== id && e.name.toLowerCase() === name.toLowerCase())) throw new Error('A workspace already uses this name.');
   c.patch('preferences', { value: { ...p, workspaces: { ...p.workspaces, entries: p.workspaces.entries.map(e => e.id === id ? { ...e, name } : e) } } });
 }

@@ -24,7 +24,7 @@ describe('contextual field command model',()=>{
     expect(fieldToolbar(store.getState()).context).toBe('playback');
     expect(fieldToolbar(store.getState()).primary[0].invocation.id).toBe('playback.toggle');
     store.dispatch('playback.toggle');store.dispatch('view.select',{view:'3d'});
-    expect(all(fieldToolbar(store.getState())).map(a=>a.invocation.id)).toEqual(['view.camera','view.camera','view.camera']);
+    expect(all(fieldToolbar(store.getState())).map(a=>a.invocation.id)).toEqual(['view.camera','view.camera','view.camera','view.camera']);
     expect(store.getState().project.present).toBe(project);expect(store.getState().project.past).toEqual([]);
   });
   it('gives every removed Inspector launcher a home and takes availability from the registry',()=>{
@@ -51,7 +51,7 @@ describe('contextual field command model',()=>{
     expect(all(fieldToolbar(store.getState())).filter(a=>a.active).map(a=>a.label)).toEqual(['Front']);
     store.dispatch('view.camera',{preset:'front'});expect(store.getState().ui.camera.version).toBe(version+1);
     expect(paletteEntries(store.getState()).some(e=>e.invocation.id==='display.grid')).toBe(true);
-    expect(paletteEntries(store.getState()).filter(e=>e.invocation.id==='view.camera')).toHaveLength(3);
+    expect(paletteEntries(store.getState()).filter(e=>e.invocation.id==='view.camera')).toHaveLength(4);
     expect(store.getState().project).toBe(original);
   });
 });

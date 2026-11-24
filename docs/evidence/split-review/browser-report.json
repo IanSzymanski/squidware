@@ -1,0 +1,13 @@
+{
+  "browser": "154.0.8037.57",
+  "checks": [
+    "Review workspace and synchronized selection without a project edit",
+    "Real 2D drag and coordinate draft mirrored before commit, with the same 3D arrival after commit",
+    "Fractional count scrub and shared playback",
+    "Front, overhead and press-box presets",
+    "Pointer and keyboard resizing, high-contrast stacked layout at 150%, and keyboard collapse",
+    "Same WebGL canvas across layout changes and teardown on 2D-only view",
+    "500 performers and 128 sets with editing and playback",
+    "2D selection and recovery with WebGL disabled"
+  ]
+}

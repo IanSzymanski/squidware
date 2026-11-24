@@ -51,7 +51,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'performers.add-dialog') return 'The production has reached its performer limit.';
   if (id === 'playback.toggle') return 'Add a second set with move counts before rehearsing.';
   if (id.startsWith('playback.count-')) return 'The playhead is already at this end of the show.';
-  if (id.startsWith('field.')) return state.ui.view !== '2d' || state.ui.workspace !== 'design' ? 'Open the 2D field to use field zoom.' : 'The field is already at this zoom limit.';
+  if (id.startsWith('field.')) return state.ui.view === '3d' || state.ui.workspace !== 'design' ? 'Open the 2D field to use field zoom.' : 'The field is already at this zoom limit.';
   if (id === 'tool.lasso') return 'Pause at a set in the 2D field before drawing a lasso.';
   if (id === 'selection.invert') return 'Add performers before inverting the selection.';
   if (id === 'selection.section') return 'This section has no performers to select.';
@@ -85,7 +85,8 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   add('transform.preview', {});
   add('view.select', { view: '2d' }, 'Open 2D field', 'view-2d');
   add('view.select', { view: '3d' }, 'Open 3D preview', 'view-3d');
-  for (const [preset,name] of [['perspective','Perspective camera'],['front','Front camera'],['top','Overhead camera']] as const) add('view.camera',{preset},name,`camera-${preset}`);
+  add('view.select', { view: 'split' }, 'Open split review', 'view-split');
+  for (const [preset,name] of [['perspective','Perspective camera'],['front','Front camera'],['press-box','Press box camera'],['top','Overhead camera']] as const) add('view.camera',{preset},name,`camera-${preset}`);
   for (const w of state.preferences.value.workspaces.entries.filter(w => w.id.startsWith('custom-'))) add('workspace.select', { id: w.id }, `${w.name} workspace`, `workspace-${w.id}`);
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
   for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);

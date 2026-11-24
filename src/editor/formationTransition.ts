@@ -17,7 +17,7 @@ export const savedTransitionPath=(project:Project,index:number,id:string)=>Objec
 
 export function canReviewFormationTransition(state:EditorState):boolean {
   return !state.ui.dialog&&!state.ui.pendingDraft&&!state.project.transactionName&&!state.fileSession.fileOperation
-    &&state.ui.workspace==='design'&&state.ui.view==='2d'&&canEditPositions(state)&&state.selection.activeIndex>0
+    &&state.ui.workspace==='design'&&state.ui.view!=='3d'&&canEditPositions(state)&&state.selection.activeIndex>0
     &&!state.project.present.moves[state.selection.activeIndex-1]?.groupMotions?.some(g=>g.members.some(id=>state.selection.selectedIds.includes(id)))
     &&state.selection.selectedIds.length>=2&&state.selection.selectedIds.length<=500
     &&new Set(state.selection.selectedIds).size===state.selection.selectedIds.length

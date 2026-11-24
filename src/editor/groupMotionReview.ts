@@ -11,7 +11,7 @@ export interface GroupMotionReview {
 }
 export function canOpenGroupMotion(state:EditorState,id?:string):boolean {
   return !state.ui.dialog&&!state.ui.pendingDraft&&!state.project.transactionName&&!state.fileSession.fileOperation
-    &&state.ui.workspace==='design'&&state.ui.view==='2d'&&canEditPositions(state)&&state.selection.activeIndex>0
+    &&state.ui.workspace==='design'&&state.ui.view!=='3d'&&canEditPositions(state)&&state.selection.activeIndex>0
     &&new Set(state.selection.selectedIds).size===state.selection.selectedIds.length
     &&state.selection.selectedIds.every(id=>state.project.present.performers.some(p=>p.id===id))
     &&(id?!!state.project.present.moves[state.selection.activeIndex-1].groupMotions?.some(g=>g.id===id):state.selection.selectedIds.length>=2);
@@ -21,7 +21,7 @@ export function groupReviewCurrent(state:EditorState,r:GroupMotionReview):boolea
     &&state.project.present.sets[state.selection.activeIndex]?.id===r.activeSetId
     &&state.project.present.moves[state.selection.activeIndex-1]?.id===r.moveId
     &&r.selectedIds.length===state.selection.selectedIds.length&&r.selectedIds.every(id=>state.selection.selectedIds.includes(id))
-    &&!state.ui.pendingDraft&&!state.project.transactionName&&!state.fileSession.fileOperation&&state.ui.workspace==='design'&&state.ui.view==='2d'&&canEditPositions(state);
+    &&!state.ui.pendingDraft&&!state.project.transactionName&&!state.fileSession.fileOperation&&state.ui.workspace==='design'&&state.ui.view!=='3d'&&canEditPositions(state);
 }
 export function beginGroupMotion(state:EditorState,id?:string):GroupMotionReview {
   const project=state.project.present,index=state.selection.activeIndex-1,move=project.moves[index];

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
-import { activeWorkspace, isBuiltInWorkspace } from '../workspaces';
+import { MAX_WORKSPACES, type FieldView, activeWorkspace, isBuiltInWorkspace } from '../workspaces';
 import { paneLimits, paneNames } from '../workspaceLayout';
 import { uiScale } from '../uiScale';
 import { canSwitchWorkspace } from './workspaceCommands';
@@ -41,7 +41,7 @@ export function WorkspaceSwitcher({ controller: c, layout: l }: { controller: Ed
         <label>Right panel<select aria-label="Workspace right panel" value={c.castPanelOpen ? 'cast' : 'inspector'} disabled={locked} onChange={e => c.dispatch('workspace.update', { update: { rightPanel: e.target.value as 'cast' | 'inspector' } })}><option value="inspector">Inspector</option><option value="cast">Cast</option></select></label>
         <label>Toolbar<select aria-label="Workspace toolbar" value={a.toolbar} disabled={locked} onChange={e => c.dispatch('workspace.update', { update: { toolbar: e.target.value as 'contextual' | 'rehearsal' } })}><option value="contextual">Contextual editing</option><option value="rehearsal">Rehearsal</option></select></label>
         <label>Timeline<select aria-label="Workspace timeline" value={a.timeline} disabled={locked} onChange={e => c.dispatch('workspace.update', { update: { timeline: e.target.value as 'compact' | 'full' } })}><option value="compact">Compact</option><option value="full">Full</option></select></label>
-        <label>Default view<select aria-label="Workspace default view" value={c.view} disabled={locked} onChange={e => c.dispatch('workspace.update', { update: { view: e.target.value as '2d' | '3d' } })}><option value="2d">2D field</option><option value="3d">3D rehearsal</option></select></label>
+        <label>Default view<select aria-label="Workspace default view" value={c.view} disabled={locked} onChange={e => c.dispatch('workspace.update', { update: { view: e.target.value as FieldView } })}><option value="2d">2D field</option><option value="3d">3D rehearsal</option><option value="split">2D and 3D</option></select></label>
         <label><input type="checkbox" aria-label="Workspace Production sheet" checked={c.workspace === 'production'} disabled={locked} onChange={e => c.dispatch('workspace.update', { update: { sheet: e.target.checked } })} />Production sheet</label>
       </div>
       {(['sets', 'inspector', 'cast'] as const).map(pane => <div className="layout-pane-option" key={pane}>
@@ -49,7 +49,7 @@ export function WorkspaceSwitcher({ controller: c, layout: l }: { controller: Ed
         <label>Width <input aria-label={`${paneNames[pane]} width`} type="range" min={paneLimits[pane][0]} max={paneLimits[pane][1]} value={l.layout[`${pane}Width`]} disabled={locked} onChange={e => l.update({ [`${pane}Width`]: Number(e.target.value) })} /><output>{l.layout[`${pane}Width`]} px</output></label>
       </div>)}
       {editing ? <form onSubmit={e => { e.preventDefault(); submit(); }} className="workspace-name-form"><label>{editing === 'save' ? 'New workspace name' : 'Workspace name'}<input autoFocus aria-label="Workspace name" maxLength={40} value={name} onChange={e => setName(e.target.value)} /></label><button className="button primary" disabled={!name.trim()}>Save</button><button className="button subtle" type="button" onClick={() => setEditing(null)}>Cancel</button></form> : <div className="workspace-manage">
-        <button className="button subtle" disabled={locked || w.entries.length >= 20} onClick={() => { setEditing('save'); setName(''); }}>Save as…</button>
+        <button className="button subtle" disabled={locked || w.entries.length >= MAX_WORKSPACES} onClick={() => { setEditing('save'); setName(''); }}>Save as…</button>
         <button className="button subtle" disabled={locked} onClick={() => { setEditing('rename'); setName(active.name); }}>Rename…</button>
         {isBuiltInWorkspace(w.active) ? <button className="button subtle" disabled={locked} onClick={() => c.dispatch('workspace.reset', { id: w.active })}>Reset to defaults</button> : <button className="button subtle" disabled={locked} onClick={() => { if (c.dispatch('workspace.delete', { id: w.active })) close(); }}>Delete custom workspace</button>}
       </div>}

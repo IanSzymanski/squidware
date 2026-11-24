@@ -47,6 +47,31 @@ describe('personal workspaces', () => {
     fresh.dispatch('workspace.select',{id}); fresh.dispatch('workspace.delete',{id}); expect(fresh.getState().preferences.value.workspaces.active).toBe('design');
     expect(fresh.getState().project.past).toHaveLength(0); prefs.stop();
   });
+  it('opens Review and restores saved split layouts without changing a production', () => {
+    const s = editor(), project = s.getState().project;
+    expect(s.dispatch('workspace.review')).toBe(true);
+    expect(s.getState().ui.view).toBe('split');
+    const id = project.present.performers[0].id;
+    s.setValue('selection', 'selectedIds', [id]);
+    expect(s.dispatch('transform.preview', {})).toBe(true);
+    expect(s.getState().ui.view).toBe('split');
+    expect(s.dispatch('transform.cancel')).toBe(true);
+    expect(s.dispatch('view.camera', { preset: 'press-box' })).toBe(true);
+    expect(s.dispatch('workspace.save', { name: 'My split review' })).toBe(true);
+    const preferences = validatePreferences(preferencesSnapshot(s.getState()));
+    expect(activeWorkspace(preferences.workspaces).arrangement.view).toBe('split');
+    expect(s.getState().project).toBe(project);
+  });
+  it('keeps a custom workspace previously named Review', () => {
+    const old = defaultWorkspaces();
+    old.entries = old.entries.filter(entry => entry.id !== 'review');
+    old.entries.push({ ...builtInWorkspace('design'), id: 'custom-review', name: 'Review' });
+    old.active = 'custom-review';
+    const migrated = validateWorkspaces(old);
+    expect(activeWorkspace(migrated).name).toBe('Review');
+    expect(migrated.entries.find(entry => entry.id === 'review')?.arrangement.view).toBe('split');
+    expect(validateWorkspaces(migrated)).toEqual(migrated);
+  });
   it('keeps previews intact by declining a switch until Apply or Cancel', () => {
     const s=editor(); s.setValue('selection','selectedIds',[s.getState().project.present.performers[0].id]); s.dispatch('transform.preview',{});
     const session=s.getState().ui.transformPreview; expect(session).toBeTruthy(); expect(s.dispatch('workspace.field')).toBe(false); expect(s.getState().ui.transformPreview).toBe(session);

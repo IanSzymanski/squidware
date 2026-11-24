@@ -1,3 +1,4 @@
+import { editingFieldView } from '../workspaces';
 import { setStartCount } from '../domain';
 import { DEFAULT_ANALYSIS_RULES, MARCHING_DIRECTIONS, validateAnalysisRules } from '../analysis/rules';
 import type { CommandDefinition, CommandId } from './commands';
@@ -31,7 +32,7 @@ export const analysisCommands = {
     execute: (c,a) => { const s=c.getState(), index=s.project.present.moves.findIndex(m=>m.id===a.moveId)+1;
       c.patch('playback',{playing:false,count:a.atCount,seekVersion:s.playback.seekVersion+1,rehearsalId:null});
       c.patch('selection',{activeIndex:index,selectedIds:a.ids});
-      c.patch('ui',{dialog:null,workspace:'design',view:'2d',showPaths:true,castPanelOpen:false});
+      c.patch('ui',{dialog:null,workspace:'design',view:editingFieldView(c.getState().ui.view),showPaths:true,castPanelOpen:false});
     } }),
   // Show-wide problems hands over to the rules editor; otherwise no dialog may be open.
   'analysis.rules-open': define({ id: 'analysis.rules-open', name: 'Analysis rules', description: 'Edit saved production, section and marching-direction spacing/stride rules.', arguments: {}, enabled: canReviewProblems,

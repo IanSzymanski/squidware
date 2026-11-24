@@ -14,7 +14,7 @@ export function formationSessionCurrent(state: EditorState): boolean {
   const selected = new Set(state.selection.selectedIds);
   return session.revision === state.project.revision && session.setId === state.project.present.sets[state.selection.activeIndex]?.id
     && !state.playback.playing && !state.project.transactionName && isAtActiveSet(state)
-    && state.ui.workspace === 'design' && state.ui.view === '2d' && !state.ui.dialog && !state.ui.transformPreview
+    && state.ui.workspace === 'design' && state.ui.view !== '3d' && !state.ui.dialog && !state.ui.transformPreview
     && session.ids.length === selected.size && session.ids.every(id => selected.has(id));
 }
 /** Assignment review owns a frozen draft. Retain it behind that modal while
