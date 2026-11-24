@@ -4,6 +4,7 @@ import { Matrix4, Scene, Vector3, type InstancedMesh } from 'three';
 import { compileChoreography, neutralCuePose, sampleChoreography, validateChoreography } from './choreography';
 import { AssetBatches, AssetResources } from './components/3d/assetBatches';
 import { sampleCueLegPose } from './components/legMotion';
+import { LegMotionMeshes } from './components/legMotionMeshes';
 import { countToSeconds, parseProject, sampleProject, sampleTimeline, secondsToCount, serializeProject } from './domain';
 import { createEditorStore } from './editor/store';
 import { createLegMotionFixture } from './examples/legMotionFixture';
@@ -25,13 +26,49 @@ describe('count-timed choreography', () => {
     expect(poseAt(4)).toEqual({ spread: 1, turnout: 35, drop: .13 });
     expect(poseAt(7)).toEqual(poseAt(1));
     expect(poseAt(8)).toEqual(neutralCuePose);
-    const straight = sampleCueLegPose(poseAt(1)), bent = sampleCueLegPose(poseAt(4));
+    const straight = sampleCueLegPose(poseAt(1)).legs, bent = sampleCueLegPose(poseAt(4)).legs;
     expect(bent.map(leg => leg.ankle)).toEqual(straight.map(leg => leg.ankle));
     expect(bent.map(leg => leg.toeYaw)).toEqual(straight.map(leg => leg.toeYaw));
     expect(bent[0].hip[1]).toBeLessThan(straight[0].hip[1]);
     expect(bent[0].knee[0]).toBeLessThan(straight[0].knee[0]);
     expect(bent[1].knee[0]).toBeGreaterThan(straight[1].knee[0]);
     expect([0, 2.5, 4, 6.5, 7].map(count => sample(project, count).flags.get(id) ?? 0)).toEqual([0, .5, 1, .5, 0]);
+  });
+
+  it('keeps the right shoe pivot on the drill dot while the left foot steps out and returns', () => {
+    const samples = [
+      { spread: 0, turnout: 0, drop: 0 },
+      { spread: .5, turnout: 15, drop: 0 },
+      { spread: 1, turnout: 30, drop: 0 },
+      { spread: 1, turnout: 30, drop: .11 },
+      { spread: .5, turnout: 15, drop: 0 },
+      { spread: 0, turnout: 0, drop: 0 },
+    ].map(sampleCueLegPose);
+    const scene = new Scene(), mesh = new LegMotionMeshes(scene, 16);
+    mesh.begin(16, 1);
+    const shoes = scene.children[1] as InstancedMesh;
+    const matrix = new Matrix4();
+    for (const { legs: [left, right], bodyX } of samples) {
+      expect(right.ankle).toEqual([0, .14, 0]);
+      expect(bodyX).toBe(left.ankle[0] / 2);
+      for (const yaw of [0, Math.PI / 2, Math.PI * 1.25]) {
+        mesh.setLeg(1, 12, 18, yaw, right);
+        shoes.getMatrixAt(1, matrix);
+        const pivot = new Vector3(0, .045, -.051).applyMatrix4(matrix);
+        expect(pivot.x).toBeCloseTo(12, 5);
+        expect(pivot.y).toBeCloseTo(.14, 5);
+        expect(pivot.z).toBeCloseTo(18, 5);
+      }
+    }
+    const neutral = samples[0].legs[0].ankle;
+    const stepping = samples[1].legs[0].ankle;
+    const planted = samples[2].legs[0].ankle;
+    expect(stepping[0]).toBeLessThan(neutral[0]);
+    expect(stepping[1]).toBeGreaterThan(neutral[1]);
+    expect(planted[0]).toBeCloseTo(neutral[0] - .32);
+    expect(planted[1]).toBe(neutral[1]);
+    expect(samples[3].legs[0].ankle).toEqual(planted);
+    expect(samples[5].legs[0].ankle).toEqual(neutral);
   });
 
   it('samples the same absolute phase after playback, reverse scrub, looping and tempo conversion', () => {

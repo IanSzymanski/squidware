@@ -2,11 +2,11 @@
 
 The [editor workflow](../../USER_GUIDE.md#choreography-cues) adds second position, plié in second position, and flag-up cues. The cue editor uses the current selection for additions. Editing retains a cue's explicit members unless the designer chooses **Use current selection**. A cue can be reviewed at its peak from the same dialog. Add, edit, and remove each use a named undo step.
 
-![Neutral, second position, plié, second position and neutral, with concurrent flag motion](phrase.webp)
+![Neutral, left-foot step, second position, plié, second position and neutral, with concurrent flag motion](phrase.webp)
 
 ## Pose and timing
 
-Second position widens the stance by 0.16 yards per foot and turns each foot out from 10° to 45°. Plié opens into second position during the first half of its entry transition. The second half bends the knees in the direction of the toes and lowers the hips and torso by 0.04 to 0.14 yards. The shoe pivots keep their local positions and turnout through the bend, hold, and rise. The final half of the exit closes the feet to neutral. Articulation is illustrative and follows the authored performer root during travel.
+The right foot stays on the authored dot and turns out in place. The left foot lifts slightly and steps 0.32 yards outward from neutral. Each foot turns out from 10° to 45°, and the torso shifts over the midpoint of the stance. Plié opens into second position during the first half of its entry transition. The second half bends the knees in the direction of the toes and lowers the hips and torso by 0.04 to 0.14 yards. Both feet stay planted through the bend, hold, and rise. The final half of the exit returns the left foot to neutral. The stance follows the sampled drill dot during travel.
 
 For performers with authored flag cues, the carry pose pitches the pole 50° forward. Flag-up raises it to vertical, then returns it to carry. The pole and fabric rotate around the existing grip in the performer's facing frame. The sleeve, hand, and grip stay together through the body drop. Performers with no flag cues retain their static equipment pose. If a performer changes equipment after the cue was authored, the editor marks that member inactive and retains the cue for reassignment or later reuse.
 
@@ -28,9 +28,9 @@ Reproduce with `pnpm dev`, then run `node scripts/choreography-browser-qa.cjs` f
 
 | Cast | Poses | Draw calls | Triangles | Samples | Median frame interval | p95 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| 64 | Static | 12 | 21,264 | 22 | 199.9 ms | 383.4 ms |
-| 64 | Articulated | 13 | 26,384 | 17 | 200.0 ms | 533.2 ms |
-| 500 | Static | 12 | 166,016 | 12 | 333.4 ms | 783.3 ms |
-| 500 | Articulated | 13 | 206,016 | 12 | 383.3 ms | 583.2 ms |
+| 64 | Static | 12 | 21,264 | 22 | 183.3 ms | 366.7 ms |
+| 64 | Articulated | 13 | 26,384 | 21 | 183.2 ms | 216.7 ms |
+| 500 | Static | 12 | 166,016 | 14 | 283.3 ms | 550.0 ms |
+| 500 | Articulated | 13 | 206,016 | 14 | 333.4 ms | 600.0 ms |
 
 The [raw browser report](browser-report.json) records the backend and interaction results.

@@ -11,8 +11,8 @@
       "triangles": 21264,
       "geometries": 13,
       "samples": 22,
-      "medianMs": 199.9,
-      "p95Ms": 383.4
+      "medianMs": 183.3,
+      "p95Ms": 366.7
     },
     {
       "cast": 64,
@@ -20,9 +20,9 @@
       "calls": 13,
       "triangles": 26384,
       "geometries": 13,
-      "samples": 17,
-      "medianMs": 200,
-      "p95Ms": 533.2
+      "samples": 21,
+      "medianMs": 183.2,
+      "p95Ms": 216.7
     },
     {
       "cast": 500,
@@ -30,9 +30,9 @@
       "calls": 12,
       "triangles": 166016,
       "geometries": 13,
-      "samples": 12,
-      "medianMs": 333.4,
-      "p95Ms": 783.3
+      "samples": 14,
+      "medianMs": 283.3,
+      "p95Ms": 550
     },
     {
       "cast": 500,
@@ -40,13 +40,13 @@
       "calls": 13,
       "triangles": 206016,
       "geometries": 13,
-      "samples": 12,
-      "medianMs": 383.3,
-      "p95Ms": 583.2
+      "samples": 14,
+      "medianMs": 333.4,
+      "p95Ms": 600
     }
   ],
   "interactions": [
-    "Front, side and press-box captures cover the five named counts in the phrase.",
+    "Front, side and press-box captures cover the left-foot step, planted stance, plié and return to neutral.",
     "Pause froze the count and canvas. Playback at 2× wrapped, and reversing to the same fractional count reproduced the same render.",
     "Real editor controls rejected mixed flag assignments, added and edited both tracks, removed and restored a cue, reviewed its peak, and saved and reopened v15."
   ]

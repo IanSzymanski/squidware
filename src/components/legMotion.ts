@@ -51,20 +51,24 @@ export function sampleLegPose(count: number, position: Point, next: Point | unde
   return [leg(-1), leg(1)];
 }
 
-/** The stance opens before flexion, so the foot pivots and ankles stay put during the bend. */
-export function sampleCueLegPose({ spread, turnout, drop }: LowerBodyCuePose): readonly [LegPose, LegPose] {
+/** The right ankle is the drill dot. The left foot steps out before the bend. */
+export function sampleCueLegPose({ spread, turnout, drop }: LowerBodyCuePose) {
+  const leftAnkleX = -2 * halfStance - .32 * spread;
+  const bodyX = leftAnkleX / 2;
   const leg = (side: number): LegPose => {
-    const hipX = side * halfStance;
-    const ankleX = side * (halfStance + .16 * spread);
+    const hipX = bodyX + side * halfStance;
+    const ankleX = side < 0 ? leftAnkleX : 0;
+    const lift = side < 0 && spread > 0 && spread < 1 ? .07 * Math.sin(Math.PI * spread) : 0;
+    const ankleY = ankleHeight + lift;
     const hipY = hipHeight - drop;
     const yaw = side * turnout * Math.PI / 180;
     const kneeBend = .027 + drop * .63;
     return {
       hip: [hipX, hipY, 0],
-      knee: [(hipX + ankleX) / 2 + Math.sin(yaw) * kneeBend, (hipY + ankleHeight) / 2, Math.cos(yaw) * kneeBend],
-      ankle: [ankleX, ankleHeight, 0],
+      knee: [(hipX + ankleX) / 2 + Math.sin(yaw) * kneeBend, (hipY + ankleY) / 2, Math.cos(yaw) * kneeBend],
+      ankle: [ankleX, ankleY, 0],
       toeYaw: yaw,
     };
   };
-  return [leg(-1), leg(1)];
+  return { legs: [leg(-1), leg(1)] as const, bodyX };
 }

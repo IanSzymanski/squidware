@@ -181,6 +181,8 @@ Select performers on the field or in Cast. Open **Choreography cues** in **Set p
 
 Lower-body cues share one track. Flag cues share a second track and can overlap a lower-body cue. Use **Review** on a cue to see its peak in 3D. Choose **Detailed** 3D quality to see the poses and flag animation. Add, edit, and remove are undoable project edits. A cue keeps its explicit performers even when the selection changes. Remove or adjust cues before editing a move's count below a cue's end or changing its endpoints.
 
+In second position and plié, the right foot stays on the drill dot and the left foot steps out. Both feet stay planted during the bend and rise.
+
 ### 3D window
 
 In the desktop app, choose **Open 3D window** (the arrow-out-of-a-box button beside **3D preview**), its command palette entry, or `Shift+T` to show the 3D preview in a separate window, for example on a second display. It follows the editor's set, count, playback, selection highlighting, previews and any 2D drag in progress, and its top bar shows the set, count and mode. The window is read-only: its camera buttons, quality choice and orbit/pan/zoom work, but clicking a performer does not change the selection. Edit positions in the main window.

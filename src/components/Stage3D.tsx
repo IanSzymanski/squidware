@@ -168,13 +168,16 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     const z = point ? point.y - height / 2 : 0;
     const visible = point ? 1 : 0;
     const stance = hasStance(performer.id) ? cues?.lowerBody.get(performer.id) ?? neutralCuePose : undefined;
+    const cuePose = point && stance ? sampleCueLegPose(stance) : undefined;
     const bodyHeight = -(stance?.drop ?? 0);
     const facing = facingAt(facings, performer.id);
     const angle = THREE.MathUtils.degToRad(facing ?? 0);
     const sin = Math.sin(angle), cos = Math.cos(angle);
+    const bodyX = x + (cuePose?.bodyX ?? 0) * cos;
+    const bodyZ = z - (cuePose?.bodyX ?? 0) * sin;
     transform.rotation.set(0, angle, 0);
     transform.scale.setScalar(visible);
-    transform.position.set(x, 0.91 + bodyHeight, z);
+    transform.position.set(bodyX, 0.91 + bodyHeight, bodyZ);
     transform.updateMatrix();
     state.bodies.setMatrixAt(index, transform.matrix);
     transform.position.y = 1.53 + bodyHeight;
@@ -184,9 +187,9 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     transform.updateMatrix();
     state.caps.setMatrixAt(index, transform.matrix);
     if (rig) {
-      const pose = !point ? undefined : stance ? sampleCueLegPose(stance) : legMotion
+      const pose = cuePose?.legs ?? (point && legMotion
         ? sampleLegPose(legMotion.count, point, legMotion.nextPositions[performer.id], facing, legMotion.markTime?.has(performer.id) ?? false)
-        : undefined;
+        : undefined);
       rig.setLeg(index * 2, x, z, angle, pose?.[0]);
       rig.setLeg(index * 2 + 1, x, z, angle, pose?.[1]);
     }
@@ -214,7 +217,7 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     }
 
     if (point && equipmentEnabled && performer.equipment) {
-      const placement = { at: [x, bodyHeight, z] as const, angle, flagColor: performer.appearance?.flagColor };
+      const placement = { at: [bodyX, bodyHeight, bodyZ] as const, angle, flagColor: performer.appearance?.flagColor };
       if (performer.equipment === 'flag' && cues?.flagIds.has(performer.id)) {
         const pitch = (1 - (cues.flags.get(performer.id) ?? 0)) * (50 * Math.PI / 180);
         assets.push({ ...placement, parts: flagHolderParts }, { ...placement, parts: flagPoleParts, tilt: { pivot: flagGrip, pitch } });
@@ -224,10 +227,10 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
       const role = equipmentEnabled && performer.equipment ? undefined : performer.role;
       transform.rotation.set(0, angle, 0);
       if (role === 'guard') {
-        transform.position.set(x + .35 * cos, 1.48 + bodyHeight, z - .35 * sin);
+        transform.position.set(bodyX + .35 * cos, 1.48 + bodyHeight, bodyZ - .35 * sin);
         transform.scale.set(.45 * visible, .24 * visible, .07 * visible);
       } else {
-        transform.position.set(x + .33 * sin, 1.05 + bodyHeight, z + .33 * cos);
+        transform.position.set(bodyX + .33 * sin, 1.05 + bodyHeight, bodyZ + .33 * cos);
         transform.scale.set(.33 * visible, .18 * visible, .34 * visible);
       }
       if (!role) transform.scale.setScalar(0);

@@ -137,7 +137,7 @@ async function reviewPoses(browser) {
   const seek = async count => { await slider.fill(String(count)); await settle(page); };
   for (const angle of ['front', 'side', 'press']) {
     await combo('Camera view').selectOption(angle);
-    for (const count of [0, 1, 4, 7, 8]) {
+    for (const count of [0, .5, 1, 4, 7, 8]) {
       await seek(count);
       await canvas.screenshot({ path: path.join(output, `${angle}-${count}.png`) });
     }
@@ -202,7 +202,7 @@ async function reviewPoses(browser) {
   });
   await page.close();
   return { backend, benchmarks, interactions: [
-    'Front, side and press-box captures cover the five named counts in the phrase.',
+    'Front, side and press-box captures cover the left-foot step, planted stance, plié and return to neutral.',
     'Pause froze the count and canvas. Playback at 2× wrapped, and reversing to the same fractional count reproduced the same render.',
   ] };
 }
