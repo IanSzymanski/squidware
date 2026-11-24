@@ -1,0 +1,10 @@
+.cue-form { display: grid; gap: 8px; }
+.cue-reassign { justify-self: start; }
+.cue-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.cue-list { list-style: none; padding: 0; margin: 8px 0; }
+.cue-list li {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.cue-list p:not(.field-error) { margin-top: 4px; color: var(--muted); }
+.cue-actions { display: flex; flex-wrap: wrap; gap: 6px; }

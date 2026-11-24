@@ -104,6 +104,16 @@ export interface Move extends OpeningTiming {
   marchingDirections?: Record<string, MarchingDirection>;
   groupMotions?: GroupMotion[];
 }
+export type ChoreographyPreset = 'second' | 'plie' | 'flag-up';
+interface CueRange {
+  id: string; moveId: string; fromSetId: string; toSetId: string;
+  performerIds: string[]; start: number; end: number; transition: number;
+}
+export type ChoreographyCue = CueRange & (
+  { preset: 'second'; turnout: number }
+  | { preset: 'plie'; turnout: number; depth: number }
+  | { preset: 'flag-up' }
+);
 export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   schemaVersion: 2;
   snapping?: SnapSettings;
@@ -115,6 +125,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets'> {
   tempoMap?: TempoMap;
   audioAnchors?: AudioAnchor[];
   sharedRoutes?: SharedRoute[];
+  choreography?: ChoreographyCue[];
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;

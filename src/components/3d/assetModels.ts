@@ -14,6 +14,7 @@ export interface AssetPlacement {
   at: XYZ;
   angle?: number;
   flagColor?: string;
+  tilt?: { pivot: XYZ; pitch: number };
 }
 
 export const DEFAULT_FABRIC = 'flag-color';
@@ -70,6 +71,13 @@ const drum = (at: XYZ, diameter: number, depth: number, direction: XYZ = [0, 1, 
   ];
 };
 
+export const flagGrip: XYZ = [.34, 1.04, .22];
+export const flagPoleParts = [
+  shaft([.34, .39, .22], [.34, 2.39, .22], .042, silver),
+  box([.69, 2.03, .22], [.72, .63, .014], DEFAULT_FABRIC),
+  box([.69, 2.31, .22], [.72, .04, .018], white),
+];
+
 /** Parts use yards around the root on the turf. +Z faces forward, +X is the performer's right. */
 const carriedParts: Record<CarriedEquipment, readonly AssetPart[]> = {
   trumpet: horn(.067, .72, .18),
@@ -121,9 +129,7 @@ const carriedParts: Record<CarriedEquipment, readonly AssetPart[]> = {
     box([0, 1.36, .51], [.28, .04, .16], bright),
   ],
   flag: [
-    shaft([.34, .39, .22], [.34, 2.39, .22], .042, silver),
-    box([.69, 2.03, .22], [.72, .63, .014], DEFAULT_FABRIC),
-    box([.69, 2.31, .22], [.72, .04, .018], white),
+    ...flagPoleParts,
     box([.33, 1.04, .22], [.09, .11, .09], dark),
   ],
   'guard-rifle': [
@@ -141,7 +147,6 @@ const carriedParts: Record<CarriedEquipment, readonly AssetPart[]> = {
   ],
 };
 
-export const flagGrip: XYZ = [.34, 1.04, .22];
 const handGrips: Partial<Record<CarriedEquipment, XYZ>> = {
   trumpet: [.06, 1.17, .43], mellophone: [.10, 1.17, .43], trombone: [.13, 1.17, .44],
   euphonium: [.08, 1.13, .39], tuba: [.14, 1.12, .32], flute: [.22, 1.44, .27],
@@ -158,6 +163,8 @@ export const carriedModels = Object.fromEntries(Object.entries(carriedParts).map
     box(grip, [.09, .08, .084], '#d4b69b')]];
 })) as Record<CarriedEquipment, readonly AssetPart[]>;
 
+
+export const flagHolderParts = carriedModels.flag.slice(flagPoleParts.length);
 
 function frame(width: number, depth: number, height = .87) {
   return [

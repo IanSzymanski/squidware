@@ -198,7 +198,7 @@ test('native open accepts v1 and v2, and rejects dangling or future files withou
   const bad = path.join(h.directory, 'bad.squid');
   const dangling = JSON.parse(project);
   dangling.moves[0].toSetId = 'missing';
-  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 15 }), /Update Squidware/]]) {
+  for (const [content, error] of [[JSON.stringify(dangling), /adjacent sets/], [JSON.stringify({ schemaVersion: 99 }), /Update Squidware/]]) {
     await fs.writeFile(bad, content);
     h.dialog({ canceled: false, filePaths: [bad] });
     await assert.rejects(h.invoke('open-project'), error);
@@ -826,6 +826,19 @@ test('native v14 equipment survives replacement and invalid flag color preserves
   const invalid = JSON.parse(content);
   invalid.performers[1].appearance.flagColor = 'blue';
   await assert.rejects(h.invoke('save-project', JSON.stringify(invalid), 'Equipment'), /flagColor/);
+  assert.equal(await fs.readFile(filename, 'utf8'), content);
+});
+
+test('native v15 retains both cue tracks and preserves a saved file after invalid cue edits', async t => {
+  const h = await harness(t), filename = path.join(h.directory, 'choreography.squid');
+  const content = await fs.readFile(path.join(root, 'format/examples/choreography-v15.squid'), 'utf8');
+  h.dialog({ canceled: false, filePath: filename });
+  assert.equal(await h.invoke('save-project', content, 'Choreography'), filename);
+  h.dialog({ canceled: false, filePaths: [filename] });
+  assert.equal((await h.invoke('open-project')).content, content);
+  const invalid = JSON.parse(content);
+  invalid.choreography[0].end = invalid.moves[0].counts + 1;
+  await assert.rejects(h.invoke('save-project', JSON.stringify(invalid), 'Choreography'), /End count/);
   assert.equal(await fs.readFile(filename, 'utf8'), content);
 });
 

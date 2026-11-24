@@ -79,8 +79,9 @@ export class LegMotionMeshes {
     segment(2 * index);
 
     const [right, up, forward] = pose.ankle;
-    world(transform.position, [right, up - 0.045, forward + 0.051]);
-    transform.rotation.set(0, angle, 0);
+    const toeYaw = pose.toeYaw ?? 0;
+    world(transform.position, [right + Math.sin(toeYaw) * 0.051, up - 0.045, forward + Math.cos(toeYaw) * 0.051]);
+    transform.rotation.set(0, angle + toeYaw, 0);
     transform.scale.setScalar(1);
     transform.updateMatrix();
     this.shoes.setMatrixAt(index, transform.matrix);

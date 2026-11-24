@@ -1,6 +1,7 @@
+import { compileChoreography, neutralCuePose, sampleChoreography, type ChoreographySample } from '../choreography';
 import { resolveEquipment, type CarriedEquipment } from '../equipment';
 import { AssetBatches, AssetResources } from './3d/assetBatches';
-import { carriedModels, type AssetPlacement } from './3d/assetModels';
+import { carriedModels, flagGrip, flagHolderParts, flagPoleParts, type AssetPlacement } from './3d/assetModels';
 import { stadiumParts } from './3d/stadium';
 import { facingAt } from '../performerFacing';
 import { HelpButton } from '../editor/ControlHelp';
@@ -9,9 +10,9 @@ import { selectionMembership } from '../selection';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { PerformerAppearance, PerformerFacings, Point, Project } from '../types';
+import type { PerformerAppearance, PerformerFacings, Point, Project, TimelineSample } from '../types';
 import { createDemandFrames } from './demandFrames';
-import { sampleLegPose, type LegMotionFrame } from './legMotion';
+import { sampleCueLegPose, sampleLegPose, type LegMotionFrame } from './legMotion';
 import { LegMotionMeshes } from './legMotionMeshes';
 import './stages.css';
 
@@ -34,6 +35,7 @@ export interface Stage3DProps {
   /** Tooling can supply a fixed review angle, cue samples, or stationary fixture equipment. */
   previewCamera?: PreviewCamera;
   legMotion?: LegMotionFrame;
+  cueTiming?: Pick<TimelineSample, 'setIndex' | 'localCount'>;
   assetReview?: { showEquipment: boolean; pit: readonly AssetPlacement[]; onFrame: (stats: RenderStats) => void };
 }
 
@@ -148,13 +150,15 @@ function makeFieldTexture(width: number, height: number, preset: Project['field'
   return texture;
 }
 
-function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number, equipmentEnabled: boolean, legMotion?: LegMotionFrame) {
+function updatePerformers(state: SceneState, positions: Record<string, Point>, facings: PerformerFacings | undefined, selectedIds: string[], width: number, height: number, equipmentEnabled: boolean, legMotion?: LegMotionFrame, cues?: ChoreographySample) {
   const transform = new THREE.Object3D();
   const selected = new Set(selectedIds);
-  const rig = legMotion ? (state.legMotion ??= new LegMotionMeshes(state.scene, state.capacity)) : undefined;
+  const hasStance = (id: string) => cues?.lowerBodyIds.has(id) ?? false;
+  const rig = legMotion || state.performers.some(person => hasStance(person.id))
+    ? (state.legMotion ??= new LegMotionMeshes(state.scene, state.capacity)) : undefined;
   if (rig) rig.begin(state.capacity, state.performers.length);
   else state.legMotion?.hide();
-  state.legs.visible = !rig;
+  state.legs.visible = !legMotion && state.performers.some(person => !hasStance(person.id));
   const showHeadings = !!facings;
   const showRoles = state.performers.some(person => person.role && !(equipmentEnabled && person.equipment));
   const assets: AssetPlacement[] = [];
@@ -163,25 +167,34 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     const x = point ? point.x - width / 2 : 0;
     const z = point ? point.y - height / 2 : 0;
     const visible = point ? 1 : 0;
+    const stance = hasStance(performer.id) ? cues?.lowerBody.get(performer.id) ?? neutralCuePose : undefined;
+    const cuePose = point && stance ? sampleCueLegPose(stance) : undefined;
+    const bodyHeight = -(stance?.drop ?? 0);
     const facing = facingAt(facings, performer.id);
     const angle = THREE.MathUtils.degToRad(facing ?? 0);
     const sin = Math.sin(angle), cos = Math.cos(angle);
+    const bodyX = x + (cuePose?.bodyX ?? 0) * cos;
+    const bodyZ = z - (cuePose?.bodyX ?? 0) * sin;
     transform.rotation.set(0, angle, 0);
     transform.scale.setScalar(visible);
-    transform.position.set(x, 0.91, z);
+    transform.position.set(bodyX, 0.91 + bodyHeight, bodyZ);
     transform.updateMatrix();
     state.bodies.setMatrixAt(index, transform.matrix);
-    transform.position.y = 1.53;
+    transform.position.y = 1.53 + bodyHeight;
     transform.updateMatrix();
     state.heads.setMatrixAt(index, transform.matrix);
-    transform.position.y = 1.75;
+    transform.position.y = 1.75 + bodyHeight;
     transform.updateMatrix();
     state.caps.setMatrixAt(index, transform.matrix);
-    if (legMotion && rig) {
-      const pose = point ? sampleLegPose(legMotion.count, point, legMotion.nextPositions[performer.id], facing, legMotion.markTime?.has(performer.id) ?? false) : undefined;
+    if (rig) {
+      const pose = cuePose?.legs ?? (point && legMotion
+        ? sampleLegPose(legMotion.count, point, legMotion.nextPositions[performer.id], facing, legMotion.markTime?.has(performer.id) ?? false)
+        : undefined);
       rig.setLeg(index * 2, x, z, angle, pose?.[0]);
       rig.setLeg(index * 2 + 1, x, z, angle, pose?.[1]);
-    } else {
+    }
+    if (state.legs.visible) {
+      transform.scale.setScalar(stance ? 0 : visible);
       for (let leg = 0; leg < 2; leg++) {
         const side = leg === 0 ? -0.105 : 0.105;
         transform.position.set(x + side * cos, 0.3, z - side * sin);
@@ -204,16 +217,20 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
     }
 
     if (point && equipmentEnabled && performer.equipment) {
-      assets.push({ parts: carriedModels[performer.equipment], at: [x, 0, z], angle, flagColor: performer.appearance?.flagColor });
+      const placement = { at: [bodyX, bodyHeight, bodyZ] as const, angle, flagColor: performer.appearance?.flagColor };
+      if (performer.equipment === 'flag' && cues?.flagIds.has(performer.id)) {
+        const pitch = (1 - (cues.flags.get(performer.id) ?? 0)) * (50 * Math.PI / 180);
+        assets.push({ ...placement, parts: flagHolderParts }, { ...placement, parts: flagPoleParts, tilt: { pivot: flagGrip, pitch } });
+      } else assets.push({ ...placement, parts: carriedModels[performer.equipment] });
     }
     if (showRoles) {
       const role = equipmentEnabled && performer.equipment ? undefined : performer.role;
       transform.rotation.set(0, angle, 0);
       if (role === 'guard') {
-        transform.position.set(x + .35 * cos, 1.48, z - .35 * sin);
+        transform.position.set(bodyX + .35 * cos, 1.48 + bodyHeight, bodyZ - .35 * sin);
         transform.scale.set(.45 * visible, .24 * visible, .07 * visible);
       } else {
-        transform.position.set(x + .33 * sin, 1.05, z + .33 * cos);
+        transform.position.set(bodyX + .33 * sin, 1.05 + bodyHeight, bodyZ + .33 * cos);
         transform.scale.set(.33 * visible, .18 * visible, .34 * visible);
       }
       if (!role) transform.scale.setScalar(0);
@@ -233,16 +250,19 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   }
 }
 
-export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, previewCamera, legMotion, assetReview }: Stage3DProps) {
+export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, previewCamera, legMotion, cueTiming, assetReview }: Stage3DProps) {
   const cameraProps=useRef({cameraRequest,onCameraPreset});cameraProps.current={cameraRequest,onCameraPreset};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const [stadiumVisible, setStadiumVisible] = useState(false);
   const equipmentEnabled = assetReview?.showEquipment ?? quality === 'detailed';
+  const program = useMemo(() => compileChoreography(project), [project.choreography, project.moves]);
+  const cues = useMemo(() => equipmentEnabled && cueTiming ? sampleChoreography(program, cueTiming) : undefined,
+    [equipmentEnabled, program, cueTiming]);
   const pit = assetReview?.pit;
   const onAssetFrame = assetReview?.onFrame;
-  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery, legMotion, previewCamera, equipmentEnabled, onAssetFrame });
-  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery, legMotion, previewCamera, equipmentEnabled, onAssetFrame };
+  const currentRef = useRef({ positions, facings, selectedIds, onSelect, quality, recovery, legMotion, previewCamera, equipmentEnabled, cues, onAssetFrame });
+  currentRef.current = { positions, facings, selectedIds, onSelect, quality, recovery, legMotion, previewCamera, equipmentEnabled, cues, onAssetFrame };
   const [error, setError] = useState<string | null>(null);
   const width = project.field.width;
   const height = project.field.height;
@@ -452,7 +472,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         carried: new AssetBatches(scene, assets), pit: new AssetBatches(scene, assets), stadium: new AssetBatches(scene, assets), stadiumParts: stadiumParts(width, height),
         setCamera, setPreviewCamera, setQuality, setFieldPreset, invalidate, fail };
       sceneRef.current = state;
-      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.equipmentEnabled, currentRef.current.legMotion);
+      updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.equipmentEnabled, currentRef.current.legMotion, currentRef.current.cues);
 
       const raycaster = new THREE.Raycaster();
       const pointer = new THREE.Vector2();
@@ -525,10 +545,10 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     if (!state) return;
     try {
       updateRoster(state, roster);
-      updatePerformers(state, positions, facings, selectedIds, width, height, equipmentEnabled, legMotion);
+      updatePerformers(state, positions, facings, selectedIds, width, height, equipmentEnabled, legMotion, cues);
       state.invalidate();
     } catch (cause) { state.fail(cause); }
-  }, [positions, facings, selectedIds, width, height, roster, equipmentEnabled, legMotion]);
+  }, [positions, facings, selectedIds, width, height, roster, equipmentEnabled, legMotion, cues]);
 
   useEffect(() => {
     const state = sceneRef.current;

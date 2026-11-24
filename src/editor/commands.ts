@@ -1,3 +1,5 @@
+import { saveChoreographyCue, removeChoreographyCue } from './choreographyEdits';
+import type { ChoreographyCue } from '../types';
 import { validateEquipment } from '../equipment';
 import { setFacing, setAppearance, pruneFacings, type AppearanceUpdate } from './performerEdits';
 import { duringSpatialEditor, isDockedSpatialEditor } from './movementEditor';
@@ -76,6 +78,9 @@ export interface CommandArguments {
   'path.operations-open': undefined;
   'path.operation-apply': PathOperationRequest;
   'path.copy-intervals': PathCopyRequest;
+  'choreography.open': undefined;
+  'choreography.save': { cue: ChoreographyCue; revision: number; epoch: number };
+  'choreography.remove': { id: string; revision: number; epoch: number };
   'path.draw-open': undefined;
   'schedule.open': undefined;
   'schedule.save': ScheduleEdit;
@@ -291,6 +296,17 @@ export const commandRegistry = {
   'path.copy-intervals': define({ id: 'path.copy-intervals', name: 'Copy movement intervals', description: 'Copy a contiguous selected range to this production’s session clipboard without changing history.', arguments: { moveId:'reviewed move',activeSetId:'reviewed picture',ids:'explicit selection',revision:'reviewed revision',epoch:'project session',performerId:'source performer',segmentIds:'contiguous intervals',wholeMove:'include outer holds' },
     enabled: (s,a) => pathReviewCurrent(s,a) && a.ids.length === 1 && a.ids[0] === a.performerId,
     execute: (c,a) => { const p=c.getState().project.present,index=p.moves.findIndex(m=>m.id===a.moveId),clipboard=copyIntervals(p,index,a.performerId,a.segmentIds,a.wholeMove,uid(),a.epoch);c.patch('ui',{movementClipboard:clipboard,dialog:null,toast:`Copied ${clipboard.intervals.length} intervals from ${clipboard.sourceLabel}`}); } }),
+  'choreography.open': simple('choreography.open', 'Choreography cues', 'Author count-timed lower-body poses and flag cues for the selected performers.',
+    s => canNavigate(s) && s.project.present.moves.length > 0, c => showDialog(c, 'choreography')),
+  'choreography.save': define({ id: 'choreography.save', name: 'Save choreography cue', description: 'Save the reviewed choreography cue as one undoable edit.',
+    arguments: { cue: 'reviewed cue', revision: 'project revision', epoch: 'project session' },
+    enabled: (s, a) => !!a?.cue && s.ui.dialog === 'choreography' && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch,
+    execute: (c, a) => c.edit(project => saveChoreographyCue(project, a.cue)) }),
+  'choreography.remove': define({ id: 'choreography.remove', name: 'Remove choreography cue', description: 'Remove one choreography cue as an undoable edit.',
+    arguments: { id: 'cue ID', revision: 'project revision', epoch: 'project session' },
+    enabled: (s, a) => !!a && s.ui.dialog === 'choreography' && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch
+      && !!s.project.present.choreography?.some(cue => cue.id === a.id),
+    execute: (c, a) => c.edit(project => removeChoreographyCue(project, a.id)) }),
   'path.draw-open': simple('path.draw-open', 'Draw performer path', 'Draw or place anchors for one selected travel interval, then review handles and count ticks before Apply.', canEditMovement, c => showDialog(c, 'path-draw')),
   'schedule.open': simple('schedule.open', 'Edit movement timing', 'Preview independent holds, departures, arrivals and intermediate destinations for one selected performer.', canEditMovement, c => showDialog(c, 'movement-schedule')),
   'schedule.save': define({ id: 'schedule.save', name: 'Edit movement timing', description: 'Validate and apply a performer schedule as one undo action.', arguments: { moveId: 'reviewed move', performerId: 'selected performer', path: 'ordered travel/hold intervals, or null', revision: 'reviewed revision', epoch: 'project session' },

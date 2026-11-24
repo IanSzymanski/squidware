@@ -70,6 +70,8 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'group.remove': name = `Delete selection group · ${project.selectionGroups?.find(g => g.id === a.id)?.name ?? 'group'}`; break;
     case 'performers.add': name = `Add ${Array.isArray(a.performers) ? a.performers.length : 0} performers`; break;
     case 'performers.remove': name = `Remove ${selection}`; break;
+    case 'choreography.save': name = project.choreography?.some(cue => cue.id === (a.cue as { id?: string } | undefined)?.id) ? 'Edit choreography cue' : 'Add choreography cue'; break;
+    case 'choreography.remove': name = 'Remove choreography cue'; break;
     case 'performer.facing': name = a.angle === null ? 'Clear performer facing' : 'Set performer facing'; break;
     case 'performer.appearance': name = 'Edit performer appearance'; break;
     case 'performer.update': name = `${Object.hasOwn(update, 'name') ? 'Rename' : 'Change section for'} ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'}`; break;

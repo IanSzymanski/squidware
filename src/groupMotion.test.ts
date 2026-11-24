@@ -174,7 +174,7 @@ describe('shared group movement',()=>{
     const {project,group,endpoints}=setup('follow',2);group.cues=[{count:0,direction:0}];endpoints();project.sets[1].positions.p0.x+=5e-9;expect(()=>validateProject(project)).toThrow(/hold-only.*identical/);group.exitCounts=1;const p=validateProject(project);expect(sampleProject(p,16).positions.p0).toEqual(p.sets[1].positions.p0);
   });
   it('requires v12 on disk, rejects runtime derived paths and continues rejecting unsupported future versions',()=>{
-    const {project}=setup(),raw=JSON.parse(serializeProject(project));raw.schemaVersion=11;expect(()=>parseProject(JSON.stringify(raw))).toThrow(/requires schema version 12/);raw.schemaVersion=15;expect(()=>parseProject(JSON.stringify(raw))).toThrow(/Update Squidware/);
+    const {project}=setup(),raw=JSON.parse(serializeProject(project));raw.schemaVersion=11;expect(()=>parseProject(JSON.stringify(raw))).toThrow(/requires schema version 12/);raw.schemaVersion=99;expect(()=>parseProject(JSON.stringify(raw))).toThrow(/Update Squidware/);
     const p=structuredClone(project);p.moves[0].paths.p0=groupMemberPath(project,0,project.moves[0].groupMotions![0],0);expect(()=>validateProject(p)).toThrow(/derived group paths/);
   });
   it('keeps negative-clock integration reproducible over cue boundaries',()=>{

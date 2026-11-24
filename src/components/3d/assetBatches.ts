@@ -12,6 +12,9 @@ export class AssetBatches {
   private readonly root = new THREE.Object3D();
   private readonly part = new THREE.Object3D();
   private readonly world = new THREE.Matrix4();
+  private readonly tilt = new THREE.Matrix4();
+  private readonly pivot = new THREE.Vector3();
+  private readonly correction = new THREE.Vector3();
   private readonly up = new THREE.Vector3(0, 1, 0);
   private readonly direction = new THREE.Vector3();
   private readonly color = new THREE.Color();
@@ -45,10 +48,17 @@ export class AssetBatches {
       }
     }
 
-    for (const { parts, at, angle, flagColor } of instances) {
+    for (const { parts, at, angle, flagColor, tilt } of instances) {
       this.root.position.set(...at);
       this.root.rotation.y = angle ?? 0;
       this.root.updateMatrix();
+      if (tilt) {
+        this.tilt.makeRotationX(tilt.pitch);
+        this.pivot.set(...tilt.pivot);
+        this.correction.copy(this.pivot).applyMatrix4(this.tilt);
+        this.tilt.setPosition(this.correction.subVectors(this.pivot, this.correction));
+        this.root.matrix.multiply(this.tilt);
+      }
       for (const part of parts) {
         const batch = this.batches.get(part.shape)!;
         const index = batch.count++;
