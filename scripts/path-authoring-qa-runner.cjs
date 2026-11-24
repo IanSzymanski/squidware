@@ -47,44 +47,25 @@ async function mouse(type, p, button = 'left') {
   await frames();
 }
 async function field(p) { return evaluate(`(()=>{const s=document.querySelector('.travel-field');s.scrollIntoView({block:'center'});const p=new DOMPoint(${p.x},${p.y}).matrixTransform(s.getScreenCTM());return {x:p.x,y:p.y};})()`); }
-async function panToStroke(points) {
-  // Compute the drag from the current viewBox. Start far enough left that
-  // the whole drag stays in the field, even when moving over half its width.
-  const { center, start, end, hit } = await evaluate(`(() => {
-    const field = document.querySelector('.field-stage__svg');
-    const view = field.viewBox.baseVal;
-    const points = ${JSON.stringify(points)};
-    const mid = axis => {
-      const values = points.map(point => point[axis]);
-      return (Math.min(...values) + Math.max(...values)) / 2;
-    };
-    const center = { x: mid('x'), y: mid('y') };
-    const x = view.x + view.width / 4, y = view.y + view.height / 2;
-    const project = (x, y) => {
-      const p = new DOMPoint(x, y).matrixTransform(field.getScreenCTM());
-      return { x: Math.round(p.x), y: Math.round(p.y) };
-    };
-    const start = project(x, y);
-    const end = project(x + view.x + view.width / 2 - center.x, y + view.y + view.height / 2 - center.y);
-    const hits = point => Boolean(document.elementFromPoint(point.x, point.y)?.closest('.travel-field.is-drawing'));
-    return { center, start, end, hit: hits(start) && hits(end) };
-  })()`);
-  assert.ok(hit, 'Both ends of the pan must hit the drawing field');
-  // Use the native middle-button pan already exercised by the docked editor.
-  // Wait for the viewport to move while the button is still held.
-  const centered = `(() => {
-    const view = document.querySelector('.field-stage__svg').viewBox.baseVal;
-    return Math.abs(view.x + view.width / 2 - ${center.x}) < .5
-      && Math.abs(view.y + view.height / 2 - ${center.y}) < .5;
-  })()`;
-  await mouse('mousePressed', start, 'middle');
-  try {
-    await mouse('mouseMoved', end, 'middle');
-    await wait(centered, '2× field panned to the stroke');
-  } finally {
-    await mouse('mouseReleased', end, 'middle');
-  }
-  assert.ok(await evaluate(centered), 'The field must stay centered on the stroke after release');
+async function zoomAroundStroke(points) {
+  const midpoint = axis => {
+    const values = points.map(point => point[axis]);
+    return (Math.min(...values) + Math.max(...values)) / 2;
+  };
+  const center = { x: midpoint('x'), y: midpoint('y') };
+  const [anchor] = await visibleStrokePoints([center]);
+  // Wheel zoom keeps the stroke's center under the cursor. The separate
+  // docked-editor check covers native panning and pointer capture.
+  await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+    type: 'mouseWheel', x: anchor.x, y: anchor.y, deltaX: 0, deltaY: -462,
+  });
+  await wait(`(() => {
+    const zoom = ${state}.ui.zoom;
+    const drawing = document.querySelector('.travel-field.is-drawing');
+    if (!drawing || Math.abs(zoom - 2) >= .005) return false;
+    const projected = new DOMPoint(${center.x}, ${center.y}).matrixTransform(drawing.getScreenCTM());
+    return Math.hypot(projected.x - ${anchor.x}, projected.y - ${anchor.y}) <= 2;
+  })()`, '2× wheel zoom anchored on the stroke');
 }
 async function visibleStrokePoints(points) {
   const projected = await evaluate(`(() => {
@@ -243,14 +224,18 @@ app.whenReady().then(async () => { try {
   const forward=[...points].reverse();
   for(const zoom of [1,2]) {
     await load(p);
-    await evaluate(`${editor}.dispatch('field.fit');${editor}.dispatch('path.draw-open');${editor}.setValue('ui','zoom',${zoom})`);
+    await evaluate(`${editor}.dispatch('field.fit');${editor}.dispatch('path.draw-open')`);
     await frames();
-    assert.equal(await evaluate(`${state}.ui.zoom`), zoom);
-    if (zoom === 2) await panToStroke(forward);
+    assert.equal(await evaluate(`${state}.ui.zoom`), 1);
+    if (zoom === 2) await zoomAroundStroke(forward);
     const screen = await visibleStrokePoints(forward);
+    const captured = "document.querySelector('.travel-stroke')?.points.numberOfItems";
     await mouse('mousePressed', screen[0]);
-    await wait("!!document.querySelector('.travel-stroke')", `stroke capture started at ${zoom}×`);
-    for (const point of screen.slice(1)) await mouse('mouseMoved', point);
+    await wait(`${captured} === 1`, `stroke capture started at ${zoom}×`);
+    for (const [index, point] of screen.slice(1).entries()) {
+      await mouse('mouseMoved', point);
+      await wait(`${captured} === ${index + 2}`, `stroke point ${index + 2} captured at ${zoom}×`);
+    }
     await mouse('mouseReleased', screen.at(-1));
     await click(button('Fit drawn path'));
     await wait("!document.querySelector('[aria-label=\"Fit drawn path\"]')", `fitted captured stroke at ${zoom}x`);
