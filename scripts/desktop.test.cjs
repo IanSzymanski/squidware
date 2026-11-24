@@ -641,6 +641,21 @@ test('package import validates drill before changing destinations; untrusted IPC
   }
 });
 
+test('video export accepts bounded WebM bytes from the editor and writes only the chosen destination', async t => {
+  const h = await harness(t);
+  const bytes = Uint8Array.of(0x1a, 0x45, 0xdf, 0xa3, 0x80);
+  await assert.rejects(h.invokeAs('export-video', { ...h.sender, senderFrame: {} }, bytes, 'Clip.webm'), /untrusted/);
+  await assert.rejects(h.invoke('export-video', Uint8Array.of(1, 2, 3, 4), 'Clip.webm'), /WebM/);
+  assert.equal(h.saveDialogCount(), 0);
+  assert.equal(await h.invoke('export-video', bytes, 'Clip.webm'), null);
+  assert.deepEqual(await fs.readdir(h.directory), []);
+  const filePath = path.join(h.directory, 'rehearsal.webm');
+  h.dialog({ canceled: false, filePath });
+  assert.equal(await h.invoke('export-video', bytes, 'Clip.webm'), filePath);
+  assert.deepEqual(await fs.readFile(filePath), Buffer.from(bytes));
+  assert.deepEqual(await fs.readdir(h.directory), ['rehearsal.webm']);
+});
+
 test('canceled/failed package export leaves prior file and explicit project save state untouched', async t => {
   for (const failRename of [false, true]) {
     const h = await harness(t, { failRename }), filename = path.join(h.directory, 'show.squidpack'); await fs.writeFile(filename, 'prior valid file');

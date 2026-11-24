@@ -173,6 +173,8 @@ Switch from **2D field** to **3D preview** to see the same positions and playbac
 
 Click a performer to select them; Shift-click modifies the selection. Selection appears as a ground ring. Use the 2D field or Inspector to edit positions.
 
+In **3D preview** or **Split review**, position the camera and choose **Saved views → Save current angle**. Give the view a name to keep it with the production. To restore a view, choose it in **Saved views** and select **Use view**. The same dialog lets you rename or delete views. Saving, renaming, and deleting a view can be undone.
+
 The 3D performers are section-colored rehearsal markers by default. Select performers and use **Performer facing** in the Inspector to author a heading at a set. Select one performer in Cast and expand **Appearance** to add an instrument or guard marker or a costume color. These are simple visual cues. If 3D cannot initialize, switch to 2D to keep editing. [Performer facing and appearance](performer-facing.md)
 
 ### Choreography cues
@@ -223,10 +225,15 @@ The desktop app saves the chosen packet directly as a landscape Letter PDF. Brow
 | --- | --- |
 | Coordinates CSV | All performers at all sets, including X and Y coordinates, arrival descriptions, timing, sections, and notes |
 | Current chart SVG | A scalable drawing of the active set, using the current label visibility setting |
+| Rehearsal video | A WebM preview of a set range, with the production title, revision, and current count displayed in the frame |
 | `.squidpack` via Export | Editable production with bundled audio or a relative audio reference |
 | `.squid` via Save | The editable production, suitable for reopening in Squidware |
 
 CSV and SVG are snapshots, not replacements for the editable project. The coordinate CSV has a different structure from the roster import CSV and cannot be imported as a drill.
+
+For a video, choose **Export → Rehearsal video**. Select the start and end sets, the fitted perspective or a saved view, a resolution, frame rate, and 3D quality. Each video can cover up to two minutes of drill. Use a shorter set range if a production is longer. **Detailed** shows equipment, choreography, and shadows. **Lightweight** uses simple markers. The clip follows the production’s tempo map, holds, and recording anchors at normal speed.
+
+Videos are silent by default. Check **Include attached recording** to embed the part of the recording aligned to the clip. **Render video** shows progress and lets you cancel. After rendering, choose **Save WebM**. If encoding is unavailable, try a smaller resolution or frame rate. If the recording cannot be encoded, you can export a silent video. The Export menu also offers PDF drill books for devices without 3D support.
 
 ## Keyboard reference
 

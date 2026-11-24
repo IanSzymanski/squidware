@@ -76,6 +76,9 @@ export async function generateNotices() {
     if (!license) throw new Error(`No license metadata found for ${key}; review its distribution terms.`);
     blocks.push(`${'='.repeat(72)}\n${key}\nDeclared license: ${license}`);
     for (const file of files) blocks.push(`--- ${file} ---\n${normalized(await readFile(join(directory, file), 'utf8'))}`);
+    if (pkg.name === 'mediabunny') {
+      blocks.push(`Unmodified Mediabunny source is included in the upstream package tarball under src/:\nhttps://registry.npmjs.org/mediabunny/-/mediabunny-${pkg.version}.tgz`);
+    }
     if (pkg.name === 'lucide-react') {
       // Lucide's ISC notice identifies inherited Feather icons as MIT licensed.
       blocks.push('--- Feather portions (MIT) ---\n'

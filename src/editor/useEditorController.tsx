@@ -32,7 +32,7 @@ import { previewCoordinateEntry } from '../drillEntry';
 import { assertCanReplace, assertUnchangedSince, fileStatusText, hasUnsavedWork, markFileOpened, markProductionClean, saveProjectRevision } from './fileSession';
 import { createConfirmation } from './confirmation';
 const cleanFilename = (title: string) => (title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/[. ]+$/, '').trim().slice(0, 100) || 'Squidware project').replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i, '$1-project');
-function download(content: string, filename: string, mime: string) {
+function download(content: BlobPart, filename: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
   const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -114,6 +114,7 @@ export function useEditorController() {
   const [audioLoading, setAudioLoading] = useEditorValue('fileSession', 'audioLoading');
   const [muted, setMuted] = useEditorValue('playback', 'muted');
   const audioRef = useRef<HTMLAudioElement>(null);
+  const recording = useRef<Blob | null>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const projectInput = useRef<HTMLInputElement>(null);
   const rosterInput = useRef<HTMLInputElement>(null);
@@ -167,6 +168,7 @@ export function useEditorController() {
   function applyFormation() { if (dispatch('formation.apply')) notify('Formation applied to the selection.'); }
   function loadProject(next: Project) {
     draftTracker.current.clear();
+    recording.current = null;
     patchAudio({ audioDuration: 0, audioToken: '', audioSize: 0, audioReferenceAvailable: false, audioWarning: '' });
     dispatch('project.load', { project: next }); setPendingDraft(false); setActiveIndex(0); setCount(0); setPlaying(false); setSelectedIds([]); setDialog(null); setAudioUrl(''); setAudioName(''); setWaveform([]); audioDecodeGeneration.current += 1; setAudioLoading(false); setCastSection(next.sections[0]?.id || ''); setFitVersion(v => v + 1);
   }
@@ -255,6 +257,17 @@ export function useEditorController() {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try { if (window.squidware) { if (await window.squidware.exportPdf(preferences.value.paperSize)) notify('PDF saved'); } else window.print(); } catch (error) { notify(`PDF export failed: ${(error as Error).message}`); } finally { setPrinting(false); }
   }
+  async function saveVideo(content: ArrayBuffer, title: string) {
+    const filename = `${cleanFilename(title)}-rehearsal.webm`;
+    if (window.squidware) {
+      if (!await window.squidware.exportVideo(new Uint8Array(content), filename)) return false;
+      notify('Rehearsal video saved');
+    } else {
+      download(content, filename, 'video/webm');
+      notify('Rehearsal video download requested');
+    }
+    return true;
+  }
   async function attachAudio(attachment: AudioAttachment | File) {
     const generation = ++audioDecodeGeneration.current;
     setPlaying(false); setAudioLoading(true);
@@ -271,6 +284,7 @@ export function useEditorController() {
       if (native) await window.squidware?.useAudio(native.token);
       if (generation !== audioDecodeGeneration.current) return;
       const blob = new Blob([new Uint8Array(bytes)], { type: native?.type || (attachment as File).type });
+      recording.current = blob;
       setAudioUrl(URL.createObjectURL(blob)); setAudioName(attachment.name); setWaveform(peaks);
       patchAudio({ audioDuration: buffer.duration, audioToken: native?.token || '', audioSize: bytes.length, audioReferenceAvailable: native?.referenceAvailable || false, audioWarning: '' });
       notify('Audio attached. Export a portable package to transfer it with this production.');
@@ -343,7 +357,7 @@ export function useEditorController() {
 
   const filteredCast = useMemo(() => filterCast(project.performers, castQuery, sectionFilter), [project.performers, sectionFilter, castQuery]);
   const visibleSet = activeSet;
-  const controller = { templates, portableAudio, chooseAudio, exportPackage, selectionPreview, coordinatePreview, coordinateResult, spacingPreview, spacingResult, castPanelOpen, showCast, formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, confirmation, confirm: confirmer.confirm, settleConfirmation: confirmer.settle, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
+  const controller = { templates, portableAudio, chooseAudio, exportPackage, selectionPreview, coordinatePreview, coordinateResult, spacingPreview, spacingResult, castPanelOpen, showCast, formationPreview, formationResult, transformPreview, transformResult, openTransform, coordinateFormat, selectedSet, sectionMembers, thumbnailDots, preferences, fileStatus, fileOperation, replaceProduction, confirmation, confirm: confirmer.confirm, settleConfirmation: confirmer.settle, project, history, recoveryError, recovery, dispatch, canUndo, canRedo, store, activeIndex, setActiveIndex, workspace, setWorkspace, view, setView, selectedIds, setSelectedIds, setCount, playing, setPlaying, loop, setLoop, speed, setSpeed, metronome, setMetronome, tool, setTool, zoom, setZoom, fitVersion, setFitVersion, showLabels, setShowLabels, selectionLabelsOnly, setSelectionLabelsOnly, showPaths, setShowPaths, showNextPaths, setShowNextPaths, showGrid, setShowGrid, snap, setSnap, dialog, setDialog, pendingDraft, setPendingDraft, menu, setMenu, toast, setToast, savedRevision, setSavedRevision, needsSaveAs, setNeedsSaveAs, saveStatus, setSaveStatus, formation, setFormation, formationWidth, setFormationWidth, formationHeight, setFormationHeight, formationRotation, setFormationRotation, formationColumns, setFormationColumns, castQuery, setCastQuery, sectionFilter, setSectionFilter, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, printing, setPrinting, audioName, setAudioName, audioUrl, setAudioUrl, waveform, setWaveform, audioLoading, setAudioLoading, muted, setMuted, audioRef, audioInput, projectInput, rosterInput, audioDecodeGeneration, index, activeSet, duration, readOnly, dirty, allSelected, selectedPerformers, selectionCenter, notify, selectSet, undoDrill, redoDrill, updateSet, movePerformers, transform, addSet, duplicateSet, removeSet, reorderSet, applyFormation, loadProject, saveProject, openProject, onProjectFile, exportText, exportPdf, saveVideo, recording, onAudioFile, togglePlay, scrub, addCast, onRosterFile, removeCast, projectEpoch, filteredCast, visibleSet };
   const movementEditor = useMovementSchedule(controller);
   const routeEditor = useSharedRoutes(controller);
   const pathOperations = usePathOperations(controller);

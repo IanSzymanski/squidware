@@ -23,7 +23,7 @@ Redistribute Squidware source or substantial portions with LICENSE. Keep THIRD_P
 | File within `resources/legal/` (or `Contents/Resources/legal/` on macOS) | Contents |
 | --- | --- |
 | `LICENSE.txt` | Squidware's complete MIT license and copyright notice. |
-| `THIRD_PARTY_NOTICES.txt` | Full installed runtime package licenses: React, React DOM, Scheduler, Three.js, Lucide/Feather, and Electron. |
+| `THIRD_PARTY_NOTICES.txt` | Full installed runtime package licenses: React, React DOM, Scheduler, Three.js, Lucide/Feather, Mediabunny, and Electron. |
 | `LICENSES.chromium.html` | The full notice file supplied with the installed Electron runtime, including Chromium and its bundled components. |
 
 The Windows portable executable and Linux AppImage contain these files in the embedded application; the macOS DMG contains them inside Squidware.app. Windows portable mode extracts the resources into its temporary application directory at launch. Preserve the complete embedded package when redistributing. Electron-builder normally removes Electron's top-level notices when creating a macOS app; the explicit `extraResources` configuration preserves Chromium's notice file across targets.
@@ -43,7 +43,7 @@ pnpm licenses:check
 
 The generator follows installed production dependencies and their transitive dependencies, adds Electron's license because its binary ships despite being a development dependency, and preserves each package's root license/notice files verbatim except line-ending normalization. Lucide's notice references inherited Feather icons; [Feather's upstream MIT text](https://github.com/feathericons/feather/blob/v4.29.2/LICENSE) is also preserved in `licenses/Feather-LICENSE.txt` and the generated inventory.
 
-Review and commit the resulting THIRD_PARTY_NOTICES.txt when changing locked dependencies. Generation does not decide whether a new license is appropriate. Review new license terms and any nested asset notices before bundling a new component. If imported assets or package files add a separate license requirement, extend the notice collection for that material. Missing root notice files cause generation to fail rather than silently omitting attribution.
+Review and commit the resulting THIRD_PARTY_NOTICES.txt when changing locked dependencies. Generation does not decide whether a new license is appropriate. Review new license terms and any nested asset notices before bundling a new component. If imported assets or package files add a separate license requirement, extend the notice collection for that material. The inventory links the exact upstream package containing the unmodified MPL-2.0 Mediabunny source. Missing root notice files cause generation to fail rather than silently omitting attribution.
 
 The regular build checks that the committed inventory matches the installed runtime packages. Electron-builder checks the inventory again before packaging and compares all three packaged legal files byte-for-byte with their sources after packaging, so a missing or altered resource fails the build. Chromium's large HTML notice file is copied from the installed runtime at packaging time; the source repository does not vendor the Electron binary or Chromium code.
 

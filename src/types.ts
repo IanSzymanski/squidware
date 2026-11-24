@@ -1,3 +1,4 @@
+import type { SavedCameraView } from './cameraViews';
 import type { FootballSurface, Surface } from './surfaces';
 import type { PreferencesBridge } from './preferences';
 import type { SnapSettings } from './snapping';
@@ -128,6 +129,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets' | 
   audioAnchors?: AudioAnchor[];
   sharedRoutes?: SharedRoute[];
   choreography?: ChoreographyCue[];
+  cameraViews?: SavedCameraView[];
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;
@@ -167,6 +169,7 @@ export interface DesktopBridge extends RecoveryBridge, PreferencesBridge, Templa
   exportPackage: (content: string, name: string, token: string, mode: 'bundle' | 'reference') => Promise<string | null>;
   saveProject: (content: string, suggestedName: string, saveAs?: boolean) => Promise<string | null>;
   exportFile: (content: string, suggestedName: string, kind: 'csv' | 'svg' | 'html') => Promise<string | null>;
+  exportVideo: (content: Uint8Array, suggestedName: string) => Promise<string | null>;
   exportPdf: (paper?: 'letter' | 'a4') => Promise<string | null>;
   setDirty: (dirty: boolean) => void;
   setKeyboardContext: (context: 'editor' | 'text' | 'modal') => void;

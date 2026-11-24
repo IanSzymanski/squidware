@@ -29,6 +29,19 @@ export function Mirrored3D({ controller, quality, onQualityChange, interactive, 
   const canSelect = interactive && (!splitReview || !spatialPreview);
   const positions = useMemo(() => overlayDraft(scene.positions, draft, controller.index, editable), [scene.positions, draft, controller.index, editable]);
   return <Stage3DLoader project={scene.rehearsalProject} facings={scene.facings} cueTiming={scene.sample} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={canSelect ? controller.setSelectedIds : undefined}
-    cameraRequest={interactive?camera:undefined} splitReview={splitReview} hideCameraPresets={interactive&&!focus&&!splitReview} onCameraPreset={interactive?preset=>{const current=controller.store.getState().ui.camera;if(current.preset!==preset)controller.store.setValue('ui','camera',{...current,preset});}:undefined}
+    cameraLibrary={interactive && !spatialPreview ? {
+      views: controller.project.cameraViews ?? [],
+      open: controller.dialog === 'saved-cameras',
+      show: () => { void controller.dispatch('dialog.open', { dialog: 'saved-cameras' }); },
+      close: () => controller.setDialog(null),
+      activate: view => controller.store.setValue('ui', 'camera', current => ({ preset: null, savedId: view.id, version: current.version })),
+      save: view => controller.dispatch('view.camera-save', { view }) === true,
+      remove: id => controller.dispatch('view.camera-remove', { id }) === true,
+    } : undefined}
+    activeCamera={interactive ? controller.project.cameraViews?.find(view => view.id === camera.savedId) : undefined}
+    cameraRequest={interactive?camera:undefined} splitReview={splitReview} hideCameraPresets={interactive&&!focus&&!splitReview} onCameraPreset={interactive ? preset => {
+      const current = controller.store.getState().ui.camera;
+      if (current.preset !== preset || current.savedId) controller.store.setValue('ui', 'camera', { preset, version: current.version });
+    } : undefined}
     quality={quality} onQualityChange={onQualityChange} onReturnTo2D={onReturnTo2D ?? (() => controller.setView('2d'))} recovery={recovery} />;
 }

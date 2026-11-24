@@ -160,6 +160,9 @@
 .export-pdf { margin: 12px 0 0; }
 .export-secondary { display: grid; gap: 8px; margin-bottom: 16px; }
 .export-secondary > button { justify-content: space-between; width: 100%; }
+.video-export-options { border: 0; padding: 0; margin: 0; min-width: 0; }
+.video-export-audio { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+.video-export-progress progress { width: 100%; accent-color: var(--accent); }
 /* UI-scale-aware breakpoints (#178). .studio carries data-header, data-transport and data-height from
    src/editor/breakpoints.ts, computed from the effective viewport (window px ÷ UI scale), so raw-pixel media
    queries never decide them. The header and transport keep one row; folded controls live in Menu or More. */

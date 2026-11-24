@@ -24,16 +24,16 @@ export const PROJECT_LIMITS = {
 export interface GeometryValidation { validatedPositions?: ReadonlySet<Record<string, Point>> }
 
 function invalid(path: string, reason: string): never { throw new Error(`Invalid project: ${path} ${reason}`); }
-function object(value: unknown, path: string): Record<string, unknown> {
+export function object(value: unknown, path: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) invalid(path, 'must be an object.');
   return value as Record<string, unknown>;
 }
-function string(value: unknown, path: string, max: number, allowEmpty = false): string {
+export function string(value: unknown, path: string, max: number, allowEmpty = false): string {
   if (typeof value !== 'string' || value.length > max || (!allowEmpty && !value.trim())) invalid(path, `must be ${allowEmpty ? 'a' : 'a nonempty'} string of at most ${max} characters.`);
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) invalid(path, 'contains unsupported control characters.');
   return value;
 }
-function number(value: unknown, path: string, min: number, max: number, integer = false): number {
+export function number(value: unknown, path: string, min: number, max: number, integer = false): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max || (integer && !Number.isInteger(value))) {
     invalid(path, `must be ${integer ? 'an integer' : 'a finite number'} from ${min} to ${max}.`);
   }
@@ -43,7 +43,7 @@ function array(value: unknown, path: string, min: number, max: number): unknown[
   if (!Array.isArray(value) || value.length < min || value.length > max) invalid(path, `must contain ${min} to ${max} items.`);
   return value;
 }
-function id(value: unknown, path: string): string {
+export function id(value: unknown, path: string): string {
   const result = string(value, path, PROJECT_LIMITS.text.id);
   if (!/^[A-Za-z0-9_-]+$/.test(result) || ['__proto__', 'constructor', 'prototype'].includes(result)) invalid(path, 'must use letters, numbers, underscores, or hyphens and cannot be a reserved key.');
   return result;

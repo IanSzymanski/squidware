@@ -15,6 +15,8 @@ import type { PerformerAppearance, PerformerFacings, Point, Project, TimelineSam
 import { createDemandFrames } from './demandFrames';
 import { sampleCueLegPose, sampleLegPose, type LegMotionFrame } from './legMotion';
 import { LegMotionMeshes } from './legMotionMeshes';
+import type { CameraView, SavedCameraView } from '../cameraViews';
+import { CameraViewsPanel, type CameraLibrary } from './CameraViewsPanel';
 import './stages.css';
 
 export type Stage3DQuality = 'detailed' | 'lightweight';
@@ -32,6 +34,9 @@ export interface Stage3DProps {
   onCameraPreset?: (preset: CameraPreset | null) => void;
   hideCameraPresets?: boolean;
   splitReview?: boolean;
+  cameraLibrary?: CameraLibrary;
+  activeCamera?: SavedCameraView;
+  capture?: StageCapture;
   /** A host without its own 2D field (the 3D window) supplies the interruption text and recovery actions. */
   recovery?: { contextLost: string; unavailable?: string; actions: ReactNode };
   /** Tooling can supply a fixed review angle, cue samples, or stationary fixture equipment. */
@@ -39,6 +44,14 @@ export interface Stage3DProps {
   legMotion?: LegMotionFrame;
   cueTiming?: Pick<TimelineSample, 'setIndex' | 'localCount'>;
   assetReview?: { showEquipment: boolean; pit: readonly AssetPlacement[]; onFrame: (stats: RenderStats) => void };
+}
+
+export interface StageCapture {
+  width: number;
+  height: number;
+  camera?: CameraView;
+  ready: (draw: (sample: TimelineSample, destination: CanvasRenderingContext2D) => void) => void;
+  failed: (error: Error) => void;
 }
 
 export type CameraPreset = 'perspective' | 'front' | 'press-box' | 'top';
@@ -66,6 +79,9 @@ interface SceneState {
   roleMarkers: THREE.InstancedMesh;
   setCamera: (preset: CameraPreset) => void;
   setPreviewCamera: (camera: PreviewCamera) => void;
+  readCamera: () => CameraView;
+  restoreCamera: (camera: CameraView) => void;
+  drawFrame: Parameters<StageCapture['ready']>[0];
   setQuality: (quality: Stage3DQuality) => void;
   setFieldSurface: (surface: Surface, background?: HTMLImageElement) => void;
   invalidate: () => void;
@@ -279,11 +295,12 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   }
 }
 
-export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, splitReview, previewCamera, legMotion, cueTiming, assetReview }: Stage3DProps) {
-  const cameraProps=useRef({cameraRequest,onCameraPreset,splitReview});cameraProps.current={cameraRequest,onCameraPreset,splitReview};
+export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, splitReview, previewCamera, legMotion, cueTiming, assetReview, cameraLibrary, activeCamera, capture }: Stage3DProps) {
+  const cameraProps=useRef({cameraRequest,onCameraPreset,splitReview,activeCamera});cameraProps.current={cameraRequest,onCameraPreset,splitReview,activeCamera};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const [stadiumVisible, setStadiumVisible] = useState(false);
+  const [cameraSnapshot, setCameraSnapshot] = useState<CameraView | null>(null);
   const equipmentEnabled = assetReview?.showEquipment ?? quality === 'detailed';
   const program = useMemo(() => compileChoreography(project), [project.choreography, project.moves]);
   const cues = useMemo(() => equipmentEnabled && cueTiming ? sampleChoreography(program, cueTiming) : undefined,
@@ -355,12 +372,16 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
 
     function fail(cause: unknown) {
       cleanup();
+      if (capture) {
+        capture.failed(new Error('The 3D scene could not render. Check your device’s WebGL support and try again.', { cause }));
+        return;
+      }
       setError(cause instanceof Error && cause.message.includes('texture') ? cause.message : currentRef.current.recovery?.unavailable ?? 'This device could not render a WebGL preview. Your drill is still available in the 2D editor.');
     }
 
     try {
       renderer = new THREE.WebGLRenderer({ canvas: owner.createElement('canvas'), antialias: true, alpha: false, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(capture ? 1 : Math.min(view.devicePixelRatio || 1, 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -384,17 +405,30 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       cleanups.push(() => controls?.removeEventListener('change', invalidate));
       const orbit=()=>cameraProps.current.onCameraPreset?.(null);
       controls.addEventListener('start',orbit);cleanups.push(()=>controls?.removeEventListener('start',orbit));
+      const readCamera = (): CameraView => ({ position: camera.position.toArray(), target: controls!.target.toArray(), projection: 'perspective', fov: camera.fov });
+      const fitDepth = (radius: number, extended: boolean) => {
+        camera.far = extended ? Math.max(500, radius * 3) : 500;
+        camera.updateProjectionMatrix();
+        if (scene.fog instanceof THREE.Fog) {
+          scene.fog.near = extended ? Math.max(130, radius * 1.35) : 130;
+          scene.fog.far = extended ? Math.max(240, radius * 2.4) : 240;
+        }
+      };
       const setCamera = (preset: CameraPreset) => {
         if (!controls) return;
         controls.target.set(0, 0, 0);
+        controls.minDistance = currentRef.current.previewCamera ? 2 : 12;
+        controls.maxPolarAngle = Math.PI / 2 - 0.025;
         camera.up.set(0, 1, 0);
+        camera.fov = 43;
         const distance = Math.max(width, height * 1.7);
         if (preset === 'top') camera.position.set(0, distance * 1.17, 0.01);
         else if (preset === 'front') camera.position.set(0, distance * 0.28, distance * 0.92);
         else if (preset === 'press-box') camera.position.set(0, distance * .53, distance * .97);
         else camera.position.set(distance * 0.13, distance * 0.69, distance * 0.77);
         camera.lookAt(controls.target);
-        if (cameraProps.current.splitReview) {
+        const fitField = !!capture || !!cameraProps.current.splitReview;
+        if (fitField) {
           // Fit all four corners with room for the apron and the camera controls.
           camera.updateMatrixWorld();
           const vertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * .88;
@@ -409,13 +443,8 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
           camera.position.addScaledVector(camera.position.clone().normalize(), extra);
         }
         const radius = camera.position.length();
-        controls.maxDistance = cameraProps.current.splitReview ? Math.max(175, radius * 1.8) : 175;
-        camera.far = cameraProps.current.splitReview ? Math.max(500, radius * 3) : 500;
-        camera.updateProjectionMatrix();
-        if (scene.fog instanceof THREE.Fog) {
-          scene.fog.near = cameraProps.current.splitReview ? Math.max(130, radius * 1.35) : 130;
-          scene.fog.far = cameraProps.current.splitReview ? Math.max(240, radius * 2.4) : 240;
-        }
+        controls.maxDistance = fitField ? Math.max(175, radius * 1.8) : 175;
+        fitDepth(radius, fitField);
         controls.update();
         invalidate();
         cameraProps.current.onCameraPreset?.(preset);
@@ -431,7 +460,23 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         controls.enableDamping = true;
         invalidate();
       };
-      if (currentRef.current.previewCamera) setPreviewCamera(currentRef.current.previewCamera);
+      const restoreCamera = (saved: CameraView) => {
+        if (!controls) return;
+        const offset = new THREE.Vector3(...saved.position).sub(new THREE.Vector3(...saved.target));
+        const distance = offset.length();
+        controls.minDistance = Math.min(12, distance);
+        controls.maxDistance = Math.max(175, distance * 1.8);
+        controls.maxPolarAngle = Math.max(Math.PI / 2 - .025, Math.acos(THREE.MathUtils.clamp(offset.y / distance, -1, 1)));
+        camera.fov = saved.fov;
+        fitDepth(Math.hypot(...saved.position), true);
+        setPreviewCamera(saved);
+      };
+      if (capture) {
+        camera.aspect = capture.width / capture.height;
+        if (capture.camera) restoreCamera(capture.camera);
+        else setCamera('perspective');
+      } else if (currentRef.current.previewCamera) setPreviewCamera(currentRef.current.previewCamera);
+      else if (cameraProps.current.activeCamera) restoreCamera(cameraProps.current.activeCamera);
       else setCamera(cameraProps.current.cameraRequest?.preset ?? 'perspective');
 
       const ambient = new THREE.HemisphereLight('#eff4de', '#273229', 2.35);
@@ -508,7 +553,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         if (!renderer) return;
         renderer.shadowMap.enabled = value === 'detailed';
         renderer.shadowMap.needsUpdate = true;
-        renderer.setPixelRatio(Math.min(view.devicePixelRatio || 1, value === 'detailed' ? 2 : 1));
+        renderer.setPixelRatio(capture ? 1 : Math.min(view.devicePixelRatio || 1, value === 'detailed' ? 2 : 1));
         invalidate();
       };
       let textureSurface = surface;
@@ -528,9 +573,16 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         invalidate();
       };
       const assets = new AssetResources();
+      const drawFrame: SceneState['drawFrame'] = (sample, destination) => {
+        if (!renderer || disposed || renderer.getContext().isContextLost()) throw new Error('The 3D graphics context was interrupted. Try exporting with Lightweight quality.');
+        const details = currentRef.current.equipmentEnabled;
+        updatePerformers(state, sample.positions, sample.facings, [], width, height, details, undefined, details ? sampleChoreography(program, sample) : undefined);
+        renderer.render(scene, camera);
+        destination.drawImage(renderer.domElement, 0, 0);
+      };
       const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers,
         carried: new AssetBatches(scene, assets), pit: new AssetBatches(scene, assets), stadium: new AssetBatches(scene, assets), stadiumParts: stadiumParts(width, height),
-        setCamera, setPreviewCamera, setQuality, setFieldSurface, invalidate, fail };
+        setCamera, setPreviewCamera, readCamera, restoreCamera, drawFrame, setQuality, setFieldSurface, invalidate, fail };
       sceneRef.current = state;
       updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.equipmentEnabled, currentRef.current.legMotion, currentRef.current.cues);
 
@@ -558,6 +610,10 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       };
       const onContextLost = (event: Event) => {
         event.preventDefault();
+        if (capture) {
+          fail(new Error('The 3D graphics context was interrupted.'));
+          return;
+        }
         if (!disposed) {
           cleanup();
           setError(currentRef.current.recovery?.contextLost ?? 'The graphics context was interrupted. Return to 2D and open 3D again to reload the preview.');
@@ -571,6 +627,11 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         renderer?.domElement.removeEventListener('pointerup', onPointerUp);
         renderer?.domElement.removeEventListener('webglcontextlost', onContextLost);
       });
+      if (capture) {
+        setQuality(currentRef.current.quality);
+        renderer.setSize(capture.width, capture.height, false);
+        return cleanup;
+      }
       function resize() {
         if (!renderer || !host) return;
         const rect = host.getBoundingClientRect();
@@ -601,7 +662,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
       fail(cause);
     }
     return cleanup;
-  }, [width, height]);
+  }, [width, height, capture]);
 
   useEffect(() => {
     const state = sceneRef.current;
@@ -624,23 +685,29 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
   }, [pit, stadiumVisible, customSurface, width, height]);
 
   useEffect(() => { if (previewCamera) sceneRef.current?.setPreviewCamera(previewCamera); }, [previewCamera]);
+  useEffect(() => { if (activeCamera) sceneRef.current?.restoreCamera(activeCamera); }, [activeCamera]);
   useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality, width, height]);
   useEffect(()=>{if(cameraRequest?.preset)sceneRef.current?.setCamera(cameraRequest.preset);},[cameraRequest?.version,width,height,splitReview]);
   useEffect(() => {
     const state = sceneRef.current;
     if (!state) return;
     const apply = (image?: HTMLImageElement) => {
-      try { state.setFieldSurface(surface, image); }
+      try {
+        state.setFieldSurface(surface, image);
+        capture?.ready(state.drawFrame);
+      }
       catch (cause) { state.fail(cause); }
     };
-    apply();
-    if (!isCustomSurface(surface) || !surface.background) return;
+    if (!isCustomSurface(surface) || !surface.background) { apply(); return; }
+    if (!capture) apply();
     const image = hostRef.current!.ownerDocument.createElement('img');
     image.onload = () => apply(image);
+    image.onerror = () => capture?.failed(new Error('The field background could not be loaded for export.'));
     image.src = surface.background.image;
-    return () => { image.onload = null; };
-  }, [surface]);
+    return () => { image.onload = null; image.onerror = null; };
+  }, [surface, capture]);
 
+  if (capture) return <div ref={hostRef} hidden />;
   return <div className={splitReview ? "stage-three stage-three--split" : "stage-three"}>
     <div ref={hostRef} className="stage-three__canvas" />
     {!error && <>
@@ -652,7 +719,7 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
             const preset = event.currentTarget.value as CameraPreset;
             if (preset) sceneRef.current?.setCamera(preset);
           }}>
-            <option value="" disabled>Custom angle</option>
+            <option value="" disabled>{activeCamera?.name ?? 'Custom angle'}</option>
             <option value="perspective">Perspective</option>
             <option value="press-box">Press box</option>
             <option value="front">Front</option>
@@ -672,9 +739,17 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
           Stadium
         </label>}
         <Tooltip name="3D quality" description="Choose detailed equipment and shadows, or lightweight markers for this device." state={quality}><select aria-label="3D quality" value={quality} onChange={event => onQualityChange(event.target.value as Stage3DQuality)}><option value="detailed">Detailed · shadows</option><option value="lightweight">Lightweight · no shadows</option></select></Tooltip>
+        {cameraLibrary && <HelpButton type="button" className="stage-three__saved-cameras" title="Saved camera views" description="Save the current angle or restore a named view from this production." onClick={() => {
+          const current = sceneRef.current?.readCamera();
+          if (current) {
+            setCameraSnapshot(current);
+            cameraLibrary.show();
+          }
+        }}>Saved views</HelpButton>}
       </div>
       <div className="field-stage__hint">Drag to orbit · Scroll to zoom<span>Right-drag to pan{onSelect ? ' · Click a performer to select' : ''}</span></div>
     </>}
+    {cameraSnapshot && cameraLibrary?.open && <CameraViewsPanel library={cameraLibrary} current={cameraSnapshot} onApply={cameraLibrary.activate} onClose={cameraLibrary.close} />}
     {error && <div className="stage-three__fallback" role="alert">
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z" /><path d="m3 8 9 5 9-5M12 13v8" /></svg>
       <strong>3D preview unavailable</strong>

@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -261,4 +261,21 @@ test('v16 keeps indoor geometry and refuses a downgrade to football-only schemas
   assert.deepEqual(checked.field, wire.field);
   assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, schemaVersion: 15 })), /require schema version 16/);
   assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, field: { ...wire.field, width: 5 } })), /positions/);
+});
+
+test('v17 keeps camera vectors and projection and refuses to discard them in older formats', () => {
+  const view = { id: 'camera-1', name: 'Front ensemble', projection: 'perspective', position: [5, 38, 84], target: [4, 1, 15], fov: 43 };
+  const input = { ...smallExample(), schemaVersion: 17, cameraViews: [view] };
+  assert.equal(check(input), true);
+  const checked = tools.parseProject(JSON.stringify(input));
+  const saved = tools.serializeProject(checked);
+  assert.equal(JSON.parse(saved).schemaVersion, 17);
+  assert.deepEqual(tools.parseProject(saved).cameraViews, [view]);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...input, schemaVersion: 16 })), /requires schema version 17/);
+  const malformed = { ...input, cameraViews: [{ ...view, position: [5, 38] }] };
+  assert.equal(check(malformed), false);
+  assert.throws(() => tools.parseProject(JSON.stringify(malformed)), /three coordinates/);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...input, cameraViews: [{ ...view, position: view.target }] })), /at least one yard/);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...input, cameraViews: [view, { ...view, id: 'camera-2', name: view.name.toUpperCase() }] })), /unique name and ID/);
+  assert.equal(JSON.parse(tools.serializeProject({ ...checked, cameraViews: [] })).schemaVersion, 2);
 });

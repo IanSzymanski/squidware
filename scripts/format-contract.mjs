@@ -8,11 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export async function formatTools() {
   const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
   const output = path.join(root, '.qa/format/contract.cjs'); await fs.mkdir(path.dirname(output), { recursive: true });
-  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces';`, resolveDir: root },
+  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews';`, resolveDir: root },
     outfile: output, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent' });
   delete require.cache[output]; return require(output);
 }
-export function formatSchema(version, limits, choreographyLimits, surfaceLimits) {
+export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits) {
   const ref = name => ({ $ref: `#/definitions/${name}` });
   const object = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required });
   const number = (minimum, maximum, integer = false) => ({ type: integer ? 'integer' : 'number', minimum, maximum });
@@ -149,13 +149,18 @@ export function formatSchema(version, limits, choreographyLimits, surfaceLimits)
       unit: { enum: ['yd', 'ft', 'm'] }, referenceInterval: number(minReferenceYards * .9144, maxReferenceYards * 3), background,
     }, ['preset', 'width', 'height', 'unit', 'referenceInterval'])] };
   }
+  if (version >= 17) {
+    const vector = array(number(-cameraLimits.coordinate, cameraLimits.coordinate), 3, 3);
+    properties.cameraViews = array(object({ id: ref('id'), name: text(cameraLimits.name), projection: { const: 'perspective' },
+      fov: number(cameraLimits.minFov, cameraLimits.maxFov), position: vector, target: vector }), 0, cameraLimits.count);
+  }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
     regions: array(object({ startCount: number(0,limits.counts.max*(limits.sets-1),true), endCount: number(1,limits.counts.max*(limits.sets-1),true), startTempo: number(limits.tempo.min,limits.tempo.max), endTempo: number(limits.tempo.min,limits.tempo.max) }),0,limits.tempoEvents),
     holds: array(object({ count: number(0,limits.counts.max*(limits.sets-1)-1,true), seconds: number(.001,limits.holdSeconds) }),0,limits.tempoEvents) });
   if (version >= 4) properties.audioAnchors = array(object({ count: number(1,limits.counts.max*(limits.sets-1),true), seconds: { type:'number',exclusiveMinimum:0,maximum:86400 } }),1,limits.tempoEvents);
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'sharedRoutes' && key !== 'choreography' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'sharedRoutes' && key !== 'cameraViews' && key !== 'choreography' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});
@@ -257,6 +262,7 @@ export async function generateContract(check=false) {
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
   const files = new Map([
+    ['format/squid-v17.schema.json', JSON.stringify(formatSchema(17, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS), null, 2) + '\n'],
     ['format/squid-v16.schema.json', JSON.stringify(formatSchema(16, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS), null, 2) + '\n'],
     ['format/examples/indoor-v16.squid', JSON.stringify(surfaceExample(), null, 2) + '\n'],
     ['format/squid-v15.schema.json',JSON.stringify(formatSchema(15,tools.PROJECT_LIMITS,tools.CHOREOGRAPHY_LIMITS),null,2)+'\n'],['format/examples/choreography-v15.squid',JSON.stringify(choreographyExample(),null,2)+'\n'],['format/squid-v14.schema.json',JSON.stringify(formatSchema(14,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/equipment-v14.squid',JSON.stringify(equipmentExample(),null,2)+'\n'],['format/squid-v13.schema.json',JSON.stringify(formatSchema(13,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/facing-v13.squid',JSON.stringify(facingExample(),null,2)+'\n'],['format/squid-v12.schema.json',JSON.stringify(formatSchema(12,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/group-v12.squid',JSON.stringify(groupExample(),null,2)+'\n'],['format/squid-v11.schema.json',JSON.stringify(formatSchema(11,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/assignment-v11.squid',JSON.stringify(assignmentExample(),null,2)+'\n'],['format/squid-v10.schema.json',JSON.stringify(formatSchema(10,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/scatter-v10.squid',JSON.stringify(scatterExample(),null,2)+'\n'],['format/examples/bezier-v9.squid',JSON.stringify(bezierExample(),null,2)+'\n'],['format/squid-v9.schema.json',JSON.stringify(formatSchema(9,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v8.schema.json',JSON.stringify(formatSchema(8,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/routes-v8.squid',JSON.stringify(routeExample(),null,2)+'\n'],['format/squid-v7.schema.json',JSON.stringify(formatSchema(7,tools.PROJECT_LIMITS),null,2)+'\n'],['format/examples/live-v7.squid',JSON.stringify(liveExample(),null,2)+'\n'],['format/squid-v1.schema.json',JSON.stringify(formatSchema(1,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v2.schema.json',JSON.stringify(formatSchema(2,tools.PROJECT_LIMITS),null,2)+'\n'],['format/squid-v3.schema.json',JSON.stringify(formatSchema(3,tools.PROJECT_LIMITS),null,2)+'\n'],
