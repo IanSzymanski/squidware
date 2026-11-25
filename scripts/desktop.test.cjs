@@ -138,7 +138,7 @@ test('native save/open retains production analysis rules and directions and reje
   await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Rules'), /maximumStride/); assert.equal(await fs.readFile(filename, 'utf8'), before);
 });
 
-for (const [version, fixture] of [[18, 'staging-v18'], [19, 'front-ensemble-v19']]) {
+for (const [version, fixture] of [[18, 'staging-v18'], [19, 'front-ensemble-v19'], [20, 'clearance-v20']]) {
   test(`native save/open round-trips v${version} staging and rejects an incomplete pose map before replacing the file`, async t => {
     const h = await harness(t);
     const data = JSON.parse(await fs.readFile(path.join(root, `format/examples/${fixture}.squid`), 'utf8'));
@@ -150,6 +150,7 @@ for (const [version, fixture] of [[18, 'staging-v18'], [19, 'front-ensemble-v19'
     assert.equal(reopened.schemaVersion, version);
     assert.deepEqual(reopened.stagingObjects, data.stagingObjects);
     assert.deepEqual(reopened.sets.map(set => set.staging), data.sets.map(set => set.staging));
+    assert.deepEqual(reopened.clearanceRules, data.clearanceRules);
     const before = await fs.readFile(filename, 'utf8');
     delete data.sets[1].staging[data.stagingObjects[0].id];
     await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Staging'), /one pose for each staging object/);

@@ -3,6 +3,7 @@ import { transitionInput } from './input';
 import type { AnalysisInput, AnalysisResult } from './input';
 import type { Point, Project, TransitionIssue } from '../types';
 import type { EditorStore } from '../editor/store';
+import { OPENING_CLEARANCE_ID } from './clearanceRules';
 
 export interface MoveCheck {
   index: number; moveId: string; signature: unknown[];
@@ -69,14 +70,23 @@ export class ShowAnalysis {
   private update() {
     const s = this.store.getState(), project = s.project.present, epoch = s.ui.projectEpoch;
     const old = this.value, reusable = epoch === old.epoch && project.id === old.project.id;
+    const previousMoves = reusable ? new Map(old.moves.map(move => [move.moveId, move])) : new Map<string, MoveCheck>();
+    function check(moveId: string, index: number, signature: unknown[]): MoveCheck {
+      const previous = previousMoves.get(moveId);
+      return previous && same(previous.signature, signature) ? (previous.index === index ? previous : { ...previous, index })
+        : { index, moveId, signature, status: 'pending', issues: empty };
+    }
+    const clearance = project.clearanceRules;
+    const stageModels = clearance && project.stagingObjects;
     let count = 0;
     const moves = project.moves.map((move, i): MoveCheck => {
-      const signature = [epoch, project.id, project.field, project.performers, project.sections, project.analysisRules, move, project.sets[i].positions, project.sets[i + 1].positions, project.sets[i].facings, project.sets[i + 1].facings, count];
+      const signature = [epoch, project.id, project.field, project.performers, project.sections, project.analysisRules, move, project.sets[i].positions, project.sets[i + 1].positions, project.sets[i].facings, project.sets[i + 1].facings, count,
+        move.groupMotions?.length ? project.sharedRoutes : undefined, clearance, stageModels, clearance && project.sets[i].staging, clearance && project.sets[i + 1].staging];
       count += move.counts;
-      const previous = reusable ? old.moves.find(m => m.moveId === move.id) : undefined;
-      return previous && same(previous.signature, signature) ? (previous.index === i + 1 ? previous : { ...previous, index: i + 1 })
-        : { index: i + 1, moveId: move.id, signature, status: 'pending', issues: empty };
+      return check(move.id, i + 1, signature);
     });
+    if (!moves.length && stageModels?.length) moves.push(check(OPENING_CLEARANCE_ID, 0, [epoch, project.id, project.field, project.performers,
+      project.sets[0].positions, project.sets[0].facings, project.sets[0].staging, clearance, stageModels]));
     const changed = !reusable || moves.length !== old.moves.length || moves.some((m, i) => m !== old.moves[i]);
     if (changed) {
       this.active = null; this.committed.request(null);
@@ -111,7 +121,7 @@ export class ShowAnalysis {
    * Every pointer move invalidates the prior preview immediately. */
   draft(index: number, updates: Record<string, Point> | null) {
     if (!updates) { this.clearDraft(); return; }
-    if (!this.value.project.moves.length) return;
+    if (!this.value.moves.length) return;
     this.draftActive = null; this.draftInputs = []; this.draftResults = [];
     this.draftUpdates = { index, updates };
     this.preview.request(null);
@@ -150,7 +160,7 @@ export function findings(checks: ShowChecks, filter: ProblemFilter): Finding[] {
     if (move.status !== 'ready' || filter.moveId !== 'all' && move.moveId !== filter.moveId) continue;
     for (const issue of move.issues) {
       if (filter.severity !== 'all' && issue.severity !== filter.severity || filter.type !== 'all' && issue.type !== filter.type) continue;
-      if (query && !`${issue.message} ${issue.performerIds.join(' ')} ${checks.project.sets[move.index].name}`.toLowerCase().includes(query)) continue;
+      if (query && !`${issue.message} ${issue.performerIds.join(' ')} ${issue.propIds?.join(' ') ?? ''} ${checks.project.sets[move.index].name}`.toLowerCase().includes(query)) continue;
       rows.push({ index: move.index, moveId: move.moveId, issue });
     }
   }

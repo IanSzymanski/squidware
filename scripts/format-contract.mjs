@@ -8,11 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export async function formatTools() {
   const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
   const output = path.join(root, '.qa/format/contract.cjs'); await fs.mkdir(path.dirname(output), { recursive: true });
-  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews'; export {STAGING_LIMITS} from './src/staging'; export {frontEnsembleCatalog} from './src/frontEnsemble';`, resolveDir: root },
+  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews'; export {STAGING_LIMITS} from './src/staging'; export {frontEnsembleCatalog} from './src/frontEnsemble'; export {CLEARANCE_LIMITS} from './src/analysis/clearanceRules';`, resolveDir: root },
     outfile: output, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent' });
   delete require.cache[output]; return require(output);
 }
-export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits, stagingLimits, frontEnsembleModels) {
+export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits, stagingLimits, frontEnsembleModels, clearanceLimits) {
   const ref = name => ({ $ref: `#/definitions/${name}` });
   const object = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required });
   const number = (minimum, maximum, integer = false) => ({ type: integer ? 'integer' : 'number', minimum, maximum });
@@ -165,6 +165,14 @@ export function formatSchema(version, limits, choreographyLimits, surfaceLimits,
     properties.stagingObjects = array(object({ id: ref('id'), name: { ...text(stagingLimits.name),
       pattern: '^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$' } }), 0, stagingLimits.count);
     if (version >= 19) properties.stagingObjects.items.properties.model = { enum: frontEnsembleModels };
+    if (version >= 20) properties.stagingObjects.items.properties.footprint = { const: 'circle' };
+  }
+  if (version >= 20) {
+    const size = number(clearanceLimits.minSize, clearanceLimits.maxSize);
+    properties.clearanceRules = object({ minimumGap: number(0, clearanceLimits.maxGap), performer: { oneOf: [
+      object({ shape: { const: 'circle' }, diameter: size }),
+      object({ shape: { const: 'rectangle' }, width: size, depth: size }),
+    ] } });
   }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
     regions: array(object({ startCount: number(0,limits.counts.max*(limits.sets-1),true), endCount: number(1,limits.counts.max*(limits.sets-1),true), startTempo: number(limits.tempo.min,limits.tempo.max), endTempo: number(limits.tempo.min,limits.tempo.max) }),0,limits.tempoEvents),
@@ -172,7 +180,7 @@ export function formatSchema(version, limits, choreographyLimits, surfaceLimits,
   if (version >= 4) properties.audioAnchors = array(object({ count: number(1,limits.counts.max*(limits.sets-1),true), seconds: { type:'number',exclusiveMinimum:0,maximum:86400 } }),1,limits.tempoEvents);
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'sharedRoutes' && key !== 'cameraViews' && key !== 'stagingObjects' && key !== 'choreography' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'clearanceRules' && key !== 'sharedRoutes' && key !== 'cameraViews' && key !== 'stagingObjects' && key !== 'choreography' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});
@@ -312,11 +320,36 @@ export function frontEnsembleExample(catalog) {
   ].map(view => ({ ...view, projection: 'perspective' }));
   return project;
 }
+export function clearanceExample() {
+  const project = smallExample();
+  project.schemaVersion = 20;
+  project.id = 'clearance-example';
+  project.title = 'Footprint clearance example';
+  project.audioOffsetSeconds = 0;
+  project.clearanceRules = { minimumGap: .25, performer: { shape: 'circle', diameter: 1 } };
+  project.stagingObjects = [{ id: 'arc-prop', name: 'Platform' }, { id: 'deck', name: 'Scenic panel' }, { id: 'stand', name: 'Speaker', footprint: 'circle' }];
+  const shape = { width: 2, depth: 2, height: 1, angle: 0, visible: true };
+  project.sets = project.sets.slice(0, 2).map((set, index) => ({ ...set,
+    notes: index ? 'The platform sits inside the arc. The panel passes close to the speaker as it rotates.' : '',
+    positions: { a: { x: index ? 45 : 15, y: 25 }, b: { x: index ? 45 : 15, y: 15 } },
+    staging: {
+      'arc-prop': { ...shape, x: 30, y: 32.5 },
+      deck: { ...shape, x: 57, y: 35, width: .5, depth: 8, angle: index ? 90 : 0 },
+      stand: { ...shape, x: 60.1, y: 38.1, width: .6, depth: .6 },
+    },
+  }));
+  project.moves = project.moves.slice(0, 1);
+  project.moves[0].paths.a.segments = [{ id: 'arc', kind: 'cubic', startCount: 0, endCount: 16,
+    control1: { x: 25, y: 35 }, control2: { x: 35, y: 35 } }];
+  return project;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
   const files = new Map([
+    ['format/squid-v20.schema.json', JSON.stringify(formatSchema(20, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS, tools.STAGING_LIMITS, Object.keys(tools.frontEnsembleCatalog), tools.CLEARANCE_LIMITS), null, 2) + '\n'],
+    ['format/examples/clearance-v20.squid', JSON.stringify(clearanceExample(), null, 2) + '\n'],
     ['format/squid-v19.schema.json', JSON.stringify(formatSchema(19, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS, tools.STAGING_LIMITS, Object.keys(tools.frontEnsembleCatalog)), null, 2) + '\n'],
     ['format/examples/front-ensemble-v19.squid', JSON.stringify(frontEnsembleExample(tools.frontEnsembleCatalog), null, 2) + '\n'],
     ['format/squid-v18.schema.json', JSON.stringify(formatSchema(18, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS, tools.STAGING_LIMITS), null, 2) + '\n'],

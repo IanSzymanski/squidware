@@ -1,4 +1,5 @@
 import { formatYards } from '../coordinates';
+import { formatTimelineCount } from './timelineNavigation';
 import type { Finding, MoveCheck } from '../analysis/show';
 import type { Project, TransitionIssue } from '../types';
 
@@ -13,14 +14,15 @@ export const BADGE_CAP = 100000;
 export const CAPPED_TARGET = 32;
 interface Part { move: MoveCheck; issues: TransitionIssue[]; from: number; to: number }
 /** A marker covers `left`…`left + width` track pixels and every finding drawn inside that span.
- * `people` holds up to three performer IDs in order of appearance; `others` marks more. */
-export interface ProblemCluster { key: string; left: number; width: number; size: number; danger: number; spacing: number; first: number; last: number; people: string[]; others: boolean; parts: Part[] }
-export type PerformerLabels = ReadonlyMap<string, string>;
-/** Findings within one track pixel of a move: counts, severity/type totals and up to four distinct performers. */
-interface Bucket { from: number; to: number; x0: number; x1: number; danger: number; spacing: number; ids: string[] }
+ * `people` holds up to three performer or prop IDs in order of appearance; `others` marks more. */
+export interface ProblemCluster { key: string; left: number; width: number; size: number; danger: number; spacing: number; clearance: number; first: number; last: number; people: string[]; others: boolean; parts: Part[] }
+export type ProblemLabels = ReadonlyMap<string, string>;
+/** Findings within one track pixel of a move: counts, severity/type totals and up to four distinct participants. */
+interface Bucket { from: number; to: number; x0: number; x1: number; danger: number; spacing: number; clearance: number; ids: string[] }
 type Placed = Bucket & { move: MoveCheck; issues: TransitionIssue[] };
 
 const at = (issue: TransitionIssue) => issue.atCount ?? 0;
+const participants = (issue: TransitionIssue) => issue.propIds ? [...issue.performerIds, ...issue.propIds] : issue.performerIds;
 const cache = new WeakMap<TransitionIssue[], { issues: TransitionIssue[]; min: number; max: number; view?: { start: number; span: number; width: number; buckets: Bucket[] } }>();
 /** One sorted copy per immutable worker result and one bucketed viewport: a worker reply rebuckets only its own move,
  * so a dense show is not rescanned for every reply. */
@@ -40,9 +42,10 @@ function moveBuckets(issues: TransitionIssue[], start: number, span: number, wid
   const buckets: Bucket[] = [];
   for (let bucket: Bucket | undefined; i < sorted.length && at(sorted[i]) <= end; i++) {
     const issue = sorted[i], x = (at(issue) - start) / span * width;
-    if (!bucket || Math.floor(x) !== Math.floor(bucket.x0)) buckets.push(bucket = { from: i, to: i, x0: x, x1: x, danger: 0, spacing: 0, ids: [] });
+    if (!bucket || Math.floor(x) !== Math.floor(bucket.x0)) buckets.push(bucket = { from: i, to: i, x0: x, x1: x, danger: 0, spacing: 0, clearance: 0, ids: [] });
     bucket.to = i + 1; bucket.x1 = x; bucket.danger += Number(issue.severity === 'danger'); bucket.spacing += Number(issue.type === 'collision');
-    for (const id of issue.performerIds) if (bucket.ids.length < 4 && !bucket.ids.includes(id)) bucket.ids.push(id);
+    bucket.clearance += Number(issue.type === 'clearance');
+    for (const id of participants(issue)) if (bucket.ids.length < 4 && !bucket.ids.includes(id)) bucket.ids.push(id);
   }
   cached.view = { start, span, width, buckets };
   return { sorted, buckets };
@@ -79,8 +82,9 @@ function tileChains(all: Placed[], width: number, target: number) {
       const group = all.slice(from, k), head = group[0], firstIssue = head.issues[head.from], tail = group[group.length - 1], ids: string[] = [];
       let others = false;
       for (const b of group) { for (const id of b.ids) if (!ids.includes(id)) ids.push(id); if (ids.length > 3) { others = true; break; } }
-      clusters.push({ key: `${head.move.moveId}:${at(firstIssue)}:${firstIssue.type}:${firstIssue.performerIds.join(',')}`, left: left + t * tile, width: tile,
+      clusters.push({ key: `${head.move.moveId}:${at(firstIssue)}:${firstIssue.type}:${participants(firstIssue).join(',')}`, left: left + t * tile, width: tile,
         size: group.reduce((n, b) => n + b.to - b.from, 0), danger: group.reduce((n, b) => n + b.danger, 0), spacing: group.reduce((n, b) => n + b.spacing, 0),
+        clearance: group.reduce((n, b) => n + b.clearance, 0),
         first: at(firstIssue), last: at(tail.issues[tail.to - 1]), people: ids.slice(0, 3), others, parts: group.map(b => ({ move: b.move, issues: b.issues, from: b.from, to: b.to })) });
     }
     i = j;
@@ -94,31 +98,38 @@ export function clusterFindings(cluster: ProblemCluster, limit = Infinity): Find
   return rows;
 }
 
-export const performerLabels = (project: Project): PerformerLabels => new Map(project.performers.map(p => [p.id, p.label]));
+export const problemLabels = (project: Project): ProblemLabels => new Map([
+  ...project.performers.map(p => [p.id, p.label] as const), ...(project.stagingObjects ?? []).map(p => [p.id, p.name] as const),
+]);
+export const findingLocation = (project: Project, index: number) => index === 0 ? `Opening set · ${project.sets[0].name}`
+  : `Move ${index} · Set ${index} → ${index + 1} · ${project.sets[index].name}`;
 /** Whole counts for names and help; navigation keeps the exact count. */
 export const wholeCount = (count: number) => String(Math.round(count) || 0);
-const typeName = (issue: TransitionIssue) => issue.type === 'collision' ? 'Spacing' : 'Stride';
+export const findingType = (issue: TransitionIssue) => issue.type === 'collision' ? 'Spacing' : issue.type === 'stride' ? 'Stride' : 'Clearance';
 const twoPlaces = (value: number) => formatYards(Math.round(value * 100) / 100);
 /** The measured quantity: detailed bounds when present, else the value the straight-line engine states in its message. */
 export function findingQuantity(issue: TransitionIssue): string | undefined {
+  if (issue.type === 'clearance') return;
   const m = issue.measurement;
   if (m) { const low = twoPlaces(m.lower), high = twoPlaces(m.upper); return `${low === high ? low : `${low}–${high}`} ${m.unit}`; }
   const value = issue.type === 'collision' ? /(\d+(?:\.\d+)?) yards apart/.exec(issue.message) : /(\d+(?:\.\d+)?) steps per 5 yards/.exec(issue.message);
   return value ? issue.type === 'collision' ? `${formatYards(Number(value[1]))} yd` : `${value[1]} steps per 5 yd` : undefined;
 }
-const label = (id: string, labels: PerformerLabels) => labels.get(id) ?? id;
+const label = (id: string, labels: ProblemLabels) => labels.get(id) ?? id;
 /** “Spacing 1.13 yd · B4, B5 · count 6”: type and measurement, performers, whole show count. */
-export function findingName(issue: TransitionIssue, labels: PerformerLabels): string {
+export function findingName(issue: TransitionIssue, labels: ProblemLabels): string {
   const quantity = findingQuantity(issue);
-  return `${typeName(issue)}${quantity ? ` ${quantity}` : ''} · ${issue.performerIds.map(id => label(id, labels)).join(', ')} · count ${wholeCount(at(issue))}`;
+  const count = issue.type === 'clearance' ? formatTimelineCount(at(issue)) : wholeCount(at(issue));
+  return `${findingType(issue)}${quantity ? ` ${quantity}` : ''} · ${participants(issue).map(id => label(id, labels)).join(', ')} · count ${count}`;
 }
 const countRange = (first: number, last: number) => wholeCount(first) === wholeCount(last) ? `count ${wholeCount(first)}` : `counts ${wholeCount(first)}–${wholeCount(last)}`;
 /** “12 problems (9 spacing, 3 stride) · B4, B5, W2 and others · counts 30–34”; a single finding uses its own name.
  * An abbreviated badge leads the name (“12k · 12345 spacing problems · …”), so the visible label is in the name (WCAG 2.5.3). */
-export function clusterName(cluster: ProblemCluster, labels: PerformerLabels): string {
+export function clusterName(cluster: ProblemCluster, labels: ProblemLabels): string {
   if (cluster.size === 1) return findingName(cluster.parts[0].issues[cluster.parts[0].from], labels);
-  const stride = cluster.size - cluster.spacing, badge = clusterBadge(cluster.size);
-  const kinds = !stride ? `${cluster.size} spacing problems` : !cluster.spacing ? `${cluster.size} stride problems` : `${cluster.size} problems (${cluster.spacing} spacing, ${stride} stride)`;
+  const stride = cluster.size - cluster.spacing - cluster.clearance, badge = clusterBadge(cluster.size);
+  const types = [cluster.spacing && `${cluster.spacing} spacing`, stride && `${stride} stride`, cluster.clearance && `${cluster.clearance} clearance`].filter(Boolean);
+  const kinds = types.length === 1 ? `${types[0]} problems` : `${cluster.size} problems (${types.join(', ')})`;
   return `${badge === String(cluster.size) ? '' : `${badge} · `}${kinds} · ${cluster.people.map(id => label(id, labels)).join(', ')}${cluster.others ? ' and others' : ''} · ${countRange(cluster.first, cluster.last)}`;
 }
 /** Severity text, the non-color counterpart of the marker glyph or badge. */

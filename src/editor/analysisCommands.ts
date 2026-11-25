@@ -1,6 +1,7 @@
 import { editingFieldView } from '../workspaces';
 import { setStartCount } from '../domain';
 import { DEFAULT_ANALYSIS_RULES, MARCHING_DIRECTIONS, validateAnalysisRules } from '../analysis/rules';
+import { OPENING_CLEARANCE_ID, validateClearanceRules } from '../analysis/clearanceRules';
 import type { CommandDefinition, CommandId } from './commands';
 import type { AnalysisOverrides, DirectionRules, Project, MarchingDirection, ProjectAnalysisRules } from '../types';
 import type { EditorState } from './state';
@@ -21,25 +22,40 @@ export function sameAnalysisRules(a: ProjectAnalysisRules | undefined, b: Projec
   return key(a) === key(b);
 }
 export const analysisCommands = {
-  'analysis.problems-open': define({ id: 'analysis.problems-open', name: 'Show-wide problems', description: 'Review all spacing and stride findings, filter by move or performer, and go to the exact count.', arguments: {}, enabled: s => available(s) && !s.ui.dialog,
+  'analysis.problems-open': define({ id: 'analysis.problems-open', name: 'Show-wide problems', description: 'Review spacing, stride and footprint clearance findings, and go to their show counts.', arguments: {}, enabled: s => available(s) && !s.ui.dialog,
     execute: c => { c.patch('playback', { playing: false }); c.patch('ui', { dialog: 'problems' }); } }),
-  'analysis.problem-review': define({ id: 'analysis.problem-review', name: 'Go to problem', description: 'Pause at the problem count and highlight its performers and paths.', arguments: { epoch: 'project session', moveId: 'move ID', atCount: 'show count', ids: 'affected performer IDs' },
+  'analysis.problem-review': define({ id: 'analysis.problem-review', name: 'Go to problem', description: 'Pause at the problem count and highlight the affected performers or props.', arguments: { epoch: 'project session', moveId: 'move ID', atCount: 'show count', ids: 'affected performer IDs', propIds: 'optional affected prop IDs' },
     enabled: (s,a) => {
       if (!a || s.ui.projectEpoch !== a.epoch || !canReviewProblems(s)) return false;
       const p = s.project.present, i = p.moves.findIndex(m => m.id === a.moveId);
-      return i >= 0 && Number.isFinite(a.atCount) && a.atCount >= setStartCount(p,i) && a.atCount <= setStartCount(p,i+1) && a.ids.length > 0 && a.ids.every(id => p.performers.some(person => person.id === id));
+      const propIds = a.propIds ?? [];
+      if (!a.ids.length && !propIds.length || !a.ids.every(id => p.performers.some(person => person.id === id))
+        || !propIds.every(id => p.stagingObjects?.some(prop => prop.id === id))) return false;
+      if (a.moveId === OPENING_CLEARANCE_ID) return !p.moves.length && !!p.clearanceRules && propIds.length > 0 && a.atCount === 0;
+      return i >= 0 && Number.isFinite(a.atCount) && a.atCount >= setStartCount(p,i) && a.atCount <= setStartCount(p,i+1);
     },
     execute: (c,a) => { const s=c.getState(), index=s.project.present.moves.findIndex(m=>m.id===a.moveId)+1;
       c.patch('playback',{playing:false,count:a.atCount,seekVersion:s.playback.seekVersion+1,rehearsalId:null});
       c.patch('selection',{activeIndex:index,selectedIds:a.ids});
-      c.patch('ui',{dialog:null,workspace:'design',view:editingFieldView(c.getState().ui.view),showPaths:true,castPanelOpen:false});
+      c.patch('ui',{dialog:null,workspace:'design',view:editingFieldView(c.getState().ui.view),showPaths:a.ids.length > 0,castPanelOpen:false});
     } }),
   // Show-wide problems hands over to the rules editor; otherwise no dialog may be open.
-  'analysis.rules-open': define({ id: 'analysis.rules-open', name: 'Analysis rules', description: 'Edit saved production, section and marching-direction spacing/stride rules.', arguments: {}, enabled: canReviewProblems,
+  'analysis.rules-open': define({ id: 'analysis.rules-open', name: 'Analysis rules', description: 'Edit saved spacing, stride and footprint clearance rules.', arguments: {}, enabled: canReviewProblems,
     execute: c => { c.patch('playback', { playing: false }); c.patch('ui', { dialog: 'analysis-rules' }); } }),
-  'analysis.rules-save': define({ id: 'analysis.rules-save', name: 'Save analysis rules', description: 'Apply portable analysis rules as one undoable metadata edit.', arguments: { rules: 'ProjectAnalysisRules', declaration: 'optional current-move performer directions' }, enabled: (s,a) => available(s) && !!a?.rules,
+  'analysis.rules-save': define({ id: 'analysis.rules-save', name: 'Save analysis rules', description: 'Apply portable analysis rules as one undoable metadata edit.', arguments: { rules: 'ProjectAnalysisRules', clearance: 'optional footprint clearance rules or null', declaration: 'optional current-move performer directions' }, enabled: (s,a) => available(s) && !!a?.rules,
     // Unchanged rules keep the stored form (an absent default stays absent), so only a real edit creates history.
-    execute: (c,a) => { const rules = validateAnalysisRules(a.rules, new Set(c.getState().project.present.sections.map(s => s.id))); c.edit(p => { const next = sameAnalysisRules(rules, p.analysisRules) ? p : { ...p, analysisRules: rules }; return a.declaration ? declare(next, a.declaration) : next; }); } }),
+    execute: (c,a) => {
+      const rules = validateAnalysisRules(a.rules, new Set(c.getState().project.present.sections.map(s => s.id)));
+      const clearance = validateClearanceRules(a.clearance ?? undefined);
+      c.edit(p => {
+        let next = sameAnalysisRules(rules, p.analysisRules) ? p : { ...p, analysisRules: rules };
+        if (a.clearance !== undefined && JSON.stringify(clearance) !== JSON.stringify(next.clearanceRules)) {
+          const { clearanceRules: _previous, ...unconfigured } = next;
+          next = clearance ? { ...unconfigured, clearanceRules: clearance } : unconfigured;
+        }
+        return a.declaration ? declare(next, a.declaration) : next;
+      });
+    } }),
   'analysis.direction-set': define({ id: 'analysis.direction-set', name: 'Declare marching direction', description: 'Declare forward, backward or sideways travel for explicit performers in this move, or clear to unknown. This does not edit facing or geometry.', arguments: { index: 'destination set index', ids: 'performer IDs', direction: 'forward | backward | sideways | null' },
     enabled: (s,a) => available(s) && !!a && Number.isInteger(a.index) && a.index > 0 && a.index < s.project.present.sets.length && Array.isArray(a.ids) && a.ids.length > 0 && new Set(a.ids).size === a.ids.length && a.ids.every(id => s.project.present.performers.some(p => p.id === id)) && (a.direction === null || MARCHING_DIRECTIONS.includes(a.direction)),
     execute: (c,a) => c.edit(p => declare(p, a)) }),

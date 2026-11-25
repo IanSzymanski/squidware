@@ -4,7 +4,7 @@ import { sampleStaging } from './staging';
 import { effectiveMove } from './groupMotion';
 import { generateFormation } from './formationGeometry';
 export { generateFormation } from './formationGeometry';
-import { referenceDetailedTransition } from './analysis/reference';
+import { referenceClearance, referenceDetailedTransition } from './analysis/reference';
 import { sampleMovement, movementLength, hasDetailedPaths, isScheduledPath, movementSchedule } from './movementPaths';
 import { compileTempo, secondsAt, countAt, moveTempoText } from './tempo';
 import { resolveAnalysisRules, spacingRuleText, strideRuleText } from './analysis/rules';
@@ -253,7 +253,8 @@ export function secondsToCount(project: Project, seconds: number): number {
 
 export function analyzeTransition(project: Project, setIndex: number, base?: Partial<import('./types').AnalysisThresholds>): TransitionIssue[] {
   if (!Object.values(base ?? {}).every(value => Number.isFinite(value) && value >= PROJECT_LIMITS.analysisThreshold.min && value <= PROJECT_LIMITS.analysisThreshold.max)) throw new Error('Check thresholds must be between 0.1 and 5.');
-  if (!Number.isInteger(setIndex) || setIndex < 1 || setIndex >= project.sets.length) return [];
+  if (!Number.isInteger(setIndex) || setIndex < 0 || setIndex >= project.sets.length) return [];
+  if (setIndex === 0) return referenceClearance(project, setIndex);
   const destination = project.sets[setIndex];
   const move = project.moves[setIndex - 1];
   if (hasDetailedPaths(move)) return referenceDetailedTransition(project, setIndex, base);
@@ -297,6 +298,7 @@ export function analyzeTransition(project: Project, setIndex: number, base?: Par
       }
     }
   }
+  for (const issue of referenceClearance(project, setIndex)) issues.push(issue);
   return issues.sort((a, b) => (a.severity === b.severity ? (a.atCount ?? 0) - (b.atCount ?? 0) : a.severity === 'danger' ? -1 : 1));
 }
 

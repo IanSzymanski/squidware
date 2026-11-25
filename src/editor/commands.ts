@@ -3,6 +3,7 @@ import type { CameraPreset } from '../components/Stage3D';
 import { validateCameraViews, type SavedCameraView } from '../cameraViews';
 import { FOOTBALL_SURFACE, isCustomSurface, validateSurface, type FootballSurface } from '../surfaces';
 import { saveChoreographyCue, removeChoreographyCue } from './choreographyEdits';
+import type { ClearanceRules } from '../analysis/clearanceRules';
 import { removeStagingObject, saveStagingObject, type StagingEdit } from './stagingEdits';
 import type { ChoreographyCue } from '../types';
 import { validateEquipment } from '../equipment';
@@ -108,8 +109,8 @@ export interface CommandArguments {
   'sheet.apply': SheetEdit;
   'sheet.append': undefined;
   'analysis.problems-open': undefined;
-  'analysis.problem-review': { epoch: number; moveId: string; atCount: number; ids: string[] };
-  'analysis.rules-open': undefined; 'analysis.rules-save': { rules: ProjectAnalysisRules; declaration?: { index: number; ids: string[]; direction: MarchingDirection | null } };
+  'analysis.problem-review': { epoch: number; moveId: string; atCount: number; ids: string[]; propIds?: string[] };
+  'analysis.rules-open': undefined; 'analysis.rules-save': { rules: ProjectAnalysisRules; clearance?: ClearanceRules | null; declaration?: { index: number; ids: string[]; direction: MarchingDirection | null } };
   'analysis.direction-set': { index: number; ids: string[]; direction: MarchingDirection | null };
   'rehearsal.open': undefined; 'rehearsal.save': { passage: RehearsalPassage };
   'rehearsal.remove': { id: string }; 'rehearsal.activate': { id: string }; 'rehearsal.clear': undefined;

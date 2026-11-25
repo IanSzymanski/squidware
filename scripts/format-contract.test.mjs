@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, stagingExample, frontEnsembleExample, generateContract } from './format-contract.mjs';
+import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, stagingExample, frontEnsembleExample, clearanceExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all(Array.from({ length: 19 }, (_, index) => index + 1).map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all(Array.from({ length: 20 }, (_, index) => index + 1).map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -312,4 +312,34 @@ test('v19 retains front ensemble models and writes v18 for unmodeled props', () 
   const invalid = { ...wire, stagingObjects: [{ ...wire.stagingObjects[0], model: 'constructor' }, ...wire.stagingObjects.slice(1)] };
   assert.equal(check(invalid), false);
   assert.throws(() => tools.parseProject(JSON.stringify(invalid)), /supported front ensemble model/);
+});
+
+test('v20 retains bounded clearance rules in either shape and preserves older saves', () => {
+  const wire = clearanceExample();
+  const rectangle = { shape: 'rectangle', width: .1, depth: 10 };
+  for (const clearanceRules of [wire.clearanceRules, { minimumGap: 0, performer: rectangle }]) {
+    const input = { ...wire, clearanceRules };
+    assert.ok(check(input));
+    const project = tools.parseProject(JSON.stringify(input));
+    const saved = tools.serializeProject(project);
+    assert.equal(JSON.parse(saved).schemaVersion, 20);
+    assert.deepEqual(tools.parseProject(saved), project);
+    assert.throws(() => tools.projectV2AsLegacy(project), /cannot be downgraded/);
+  }
+  for (const clearanceRules of [null, {}, { ...wire.clearanceRules, minimumGap: 5.01 },
+    { ...wire.clearanceRules, minimumGap: -.01 }, { ...wire.clearanceRules, performer: { ...rectangle, width: 0 } },
+    { ...wire.clearanceRules, performer: { shape: 'circle', diameter: 10.01 } }]) {
+    const invalid = { ...wire, clearanceRules };
+    assert.equal(check(invalid), false);
+    assert.throws(() => tools.parseProject(JSON.stringify(invalid)), /clearanceRules/);
+  }
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, schemaVersion: 19 })), /requires schema version 20/);
+  const { clearanceRules, ...older } = wire;
+  assert.equal(JSON.parse(tools.serializeProject(tools.parseProject(JSON.stringify(older)))).schemaVersion, 20);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...older, schemaVersion: 19 })), /footprint requires schema version 20/);
+  const invalid = { ...wire, stagingObjects: [{ ...wire.stagingObjects[0], footprint: 'oval' }, ...wire.stagingObjects.slice(1)] };
+  assert.equal(check(invalid), false);
+  assert.throws(() => tools.parseProject(JSON.stringify(invalid)), /stagingObjects\[0\]\.footprint/);
+  const rectangular = { ...older, stagingObjects: older.stagingObjects.map(({ footprint, ...object }) => object) };
+  assert.equal(JSON.parse(tools.serializeProject(tools.parseProject(JSON.stringify(rectangular)))).schemaVersion, 18);
 });

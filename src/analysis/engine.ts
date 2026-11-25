@@ -3,12 +3,13 @@ import { compileTrack, detailedCollision, detailedStride } from './detailed';
 import type { CompiledTrack } from './detailed';
 import { PROJECT_LIMITS } from '../projectValidation';
 import { spacingRuleText, strideRuleText } from './rules';
+import { clearanceFindings } from './clearance';
 import type { TransitionIssue } from '../types';
 import type { AnalysisInput, AnalysisResult, Track } from './input';
 
 const EPSILON = 1e-8;
 interface Bounds { minX: number; maxX: number; minY: number; maxY: number }
-interface CachedMove { input: AnalysisInput; collisions: Map<number, TransitionIssue>; strides: Map<number, TransitionIssue>; shapes?: CompiledTrack[]; detailed: boolean }
+interface CachedMove { input: AnalysisInput; collisions: Map<number, TransitionIssue>; strides: Map<number, TransitionIssue>; shapes?: CompiledTrack[]; detailed: boolean; clearance: TransitionIssue[] }
 const bounds = (p: Track): Bounds => ({ minX: Math.min(p.from.x, p.to.x), maxX: Math.max(p.from.x, p.to.x), minY: Math.min(p.from.y, p.to.y), maxY: Math.max(p.from.y, p.to.y) });
 const overlaps = (a: Bounds, b: Bounds, spacing: number) => a.minX <= b.maxX + spacing && b.minX <= a.maxX + spacing && a.minY <= b.maxY + spacing && b.minY <= a.maxY + spacing;
 const sameTrack = (a: Track, b: Track) => a.from.x === b.from.x && a.from.y === b.from.y && a.to.x === b.to.x && a.to.y === b.to.y && JSON.stringify(a.path) === JSON.stringify(b.path);
@@ -64,7 +65,7 @@ export class TransitionAnalyzer {
     if (dirty.size) for (const key of collisions.keys()) if (dirty.has(Math.floor(key / n)) || dirty.has(key % n)) collisions.delete(key);
     let exactPairs = 0, visits = 0;
     let shapes: CompiledTrack[] | undefined;
-    if (detailed) {
+    if (input.counts && detailed) {
       await yieldTask(); if (canceled()) return null;
       const work = function* () {
         shapes = [];
@@ -97,7 +98,7 @@ export class TransitionAnalyzer {
           await yieldTask(); if (canceled()) return null; lastYield = performance.now();
         }
       }
-    } else {
+    } else if (input.counts) {
     for (const i of dirty) { strides.delete(i); const issue = stride(input, input.tracks[i]); if (issue) strides.set(i, issue); }
     const boxes = input.tracks.map(bounds);
     const check = (a: number, b: number) => {
@@ -119,12 +120,24 @@ export class TransitionAnalyzer {
       }
     }
     }
+    let clearance = mode === 'cached' ? old!.clearance : [];
+    if (input.clearance && mode !== 'cached') {
+      const work = clearanceFindings(input, shapes);
+      let next = work.next(), lastYield = performance.now(), steps = 0;
+      while (!next.done) {
+        if (++steps % 2048 === 0 || performance.now() - lastYield >= 8) {
+          await yieldTask(); if (canceled()) return null; lastYield = performance.now();
+        }
+        next = work.next();
+      }
+      clearance = next.value;
+    }
     if (canceled()) return null;
     // Preserve the reference's stable order for equal severity and count.
     const issues = [...[...strides].sort(([a], [b]) => a - b).map(([, issue]) => issue),
-      ...[...collisions].sort(([a], [b]) => a - b).map(([, issue]) => issue)];
+      ...[...collisions].sort(([a], [b]) => a - b).map(([, issue]) => issue), ...clearance];
     issues.sort((a, b) => a.severity === b.severity ? (a.atCount ?? 0) - (b.atCount ?? 0) : a.severity === 'danger' ? -1 : 1);
-    this.cache.delete(input.moveId); this.cache.set(input.moveId, { input: detailed ? structuredClone(input) : input, collisions, strides, shapes, detailed });
+    this.cache.delete(input.moveId); this.cache.set(input.moveId, { input: detailed ? structuredClone(input) : input, collisions, strides, shapes, detailed, clearance });
     if (this.cache.size > 4) this.cache.delete(this.cache.keys().next().value!);
     return { issues, stats: { mode, changedPerformers: dirty.size, possiblePairs: n * (n - 1) / 2, exactPairs, elapsedMs: performance.now() - started } };
   }

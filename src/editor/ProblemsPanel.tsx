@@ -7,7 +7,7 @@ import { defaultProblemFilter, findings, type ProblemFilter } from '../analysis/
 import { HelpButton } from './ControlHelp';
 import { reviewProblem, useShowAnalysis, useShowChecks } from './ShowAnalysis';
 import { commandRegistry } from './commands';
-import { findingName, performerLabels } from './problemTrack';
+import { findingLocation, findingName, problemLabels } from './problemTrack';
 import { useEditorSelector } from './react';
 import type { EditorController } from './useEditorController';
 import { formatTimelineCount as fmt } from './timelineNavigation';
@@ -22,34 +22,38 @@ export function ProblemsPanel({ controller }: { controller: EditorController }) 
   const pending = checks.moves.filter(m => m.status === 'pending').length, failed = checks.moves.filter(m => m.status === 'error');
   const defaults = project.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES;
   const total = checks.moves.reduce((sum, m) => sum + m.issues.length, 0);
-  const labels = useMemo(() => performerLabels(project), [project]), rules = useEditorSelector(s => commandRegistry['analysis.rules-open'].enabled(s, undefined));
+  const openingOnly = checks.moves[0]?.index === 0;
+  const labels = useMemo(() => problemLabels(project), [project]), rules = useEditorSelector(s => commandRegistry['analysis.rules-open'].enabled(s, undefined));
   function change(update: Partial<ProblemFilter>) { setFilter({ ...filter, ...update }); setPage(0); }
   return <Modal title="Show-wide problems" wide onClose={() => controller.setDialog(null)}>
     <div className="problems-panel" data-show-analysis-status={pending ? 'pending' : failed.length ? 'error' : 'ready'}>
-      <p className="section-description" role="status">{checks.moves.length - pending - failed.length} / {checks.moves.length} moves checked · {total} findings{pending ? ` · ${pending} pending / stale moves hidden` : ''}{failed.length ? ` · ${failed.length} unavailable` : ''}. Geometric spacing and stride checks.</p>
+      <p className="section-description" role="status">{checks.moves.length - pending - failed.length} / {checks.moves.length} {openingOnly ? 'sets' : 'moves'} checked · {total} findings{pending ? ` · ${pending} pending / stale results hidden` : ''}{failed.length ? ` · ${failed.length} unavailable` : ''}. Geometric spacing, stride and configured footprint checks.</p>
       <div className="problem-rules"><p className="microcopy">Project defaults: minimum {defaults.minimumSpacing} yd · maximum {defaults.maximumStride} yd/count. {project.analysisRules?.sections?.length ?? 0} section overrides. Each finding explains the applied section/direction rule; unknown directions use base rules.</p>
         <HelpButton command="analysis.rules-open" title="Analysis rules" className="button subtle" disabled={!rules} disabledReason="Finish or cancel the current input or preview before editing analysis rules." onClick={() => controller.dispatch('analysis.rules-open')}><SlidersHorizontal size={14} />Analysis rules…</HelpButton></div>
       <p className="microcopy">Detailed paths use conservative curve bounds with a target gap of 0.001 yd for spacing and 0.001 yd/count for peak stride. Displayed quantity bounds round outwards. Confirmed findings have a violating sampled witness; possible findings need review. Count ranges identify a known offending window or an unresolved candidate interval, not every encounter in a move.</p>
       <div className="problem-filters">
         <label>Severity<select aria-label="Problem severity" value={filter.severity} onChange={e => change({ severity: e.target.value })}><option value="all">All severities</option><option value="danger">Danger</option><option value="warning">Warning</option></select></label>
-        <label>Type<select aria-label="Problem type" value={filter.type} onChange={e => change({ type: e.target.value })}><option value="all">All types</option><option value="collision">Spacing</option><option value="stride">Stride</option></select></label>
-        <label>Move<select aria-label="Problem move" value={filter.moveId} onChange={e => change({ moveId: e.target.value })}><option value="all">Whole show</option>{project.moves.map((m,i) => <option key={m.id} value={m.id}>Move {i+1} · {project.sets[i+1].name}</option>)}</select></label>
+        <label>Type<select aria-label="Problem type" value={filter.type} onChange={e => change({ type: e.target.value })}><option value="all">All types</option><option value="collision">Spacing</option><option value="stride">Stride</option><option value="clearance">Clearance</option></select></label>
+        <label>Move<select aria-label="Problem move" value={filter.moveId} onChange={e => change({ moveId: e.target.value })}><option value="all">Whole show</option>{checks.moves.map(m => <option key={m.moveId} value={m.moveId}>{m.index ? `Move ${m.index} · ${project.sets[m.index].name}` : 'Opening set'}</option>)}</select></label>
         <label>Sort<select aria-label="Problem sort" value={filter.sort} onChange={e => change({ sort: e.target.value as ProblemFilter['sort'] })}><option value="count">Show count</option><option value="severity">Severity, then count</option><option value="move">Move, then count</option></select></label>
-        <label className="problem-search">Find performer or text<input aria-label="Find a problem" value={filter.query} onChange={e => change({ query: e.target.value })} placeholder="Label, performer ID, set or rule" /></label>
+        <label className="problem-search">Find performer, prop or text<input aria-label="Find a problem" value={filter.query} onChange={e => change({ query: e.target.value })} placeholder="Name, ID, set or rule" /></label>
       </div>
-      {failed.length > 0 && <div role="alert"><p>{failed.map(m => `Move ${m.index}: ${m.error}`).join(' ')}</p><HelpButton title="Retry show checks" onClick={service.retry}>Retry unavailable moves</HelpButton></div>}
+      {failed.length > 0 && <div role="alert"><p>{failed.map(m => `${findingLocation(project, m.index)}. ${m.error}`).join(' ')}</p><HelpButton title="Retry show checks" onClick={service.retry}>Retry unavailable moves</HelpButton></div>}
       <div className="problem-pagination"><span role="status">{rows.length ? `${currentPage * PAGE_SIZE + 1}–${Math.min(rows.length, (currentPage + 1) * PAGE_SIZE)}` : '0'} of {rows.length} matching findings</span><HelpButton title="Previous problems page" disabled={!currentPage} disabledReason="This is the first page." onClick={() => setPage(currentPage - 1)}><ChevronLeft size={14} /></HelpButton><span>{currentPage+1} / {pages}</span><HelpButton title="Next problems page" disabled={currentPage+1 >= pages} disabledReason="This is the final page." onClick={() => setPage(currentPage + 1)}><ChevronRight size={14} /></HelpButton></div>
-      {!rows.length && <p className="section-description">{pending ? 'Waiting for the remaining move checks. Current findings will appear here.' : total ? 'No findings match these filters.' : failed.length ? 'Resolve unavailable checks before relying on this result.' : 'No spacing or stride flags in this show.'}</p>}
+      {!rows.length && <p className="section-description">{pending ? 'Waiting for the remaining checks. Current findings will appear here.' : total ? 'No findings match these filters.' : failed.length ? 'Resolve unavailable checks before relying on this result.' : project.clearanceRules ? 'No flags in the configured spacing, stride and footprint checks.' : 'No spacing or stride flags in this show.'}</p>}
       <ol className="problem-results" start={currentPage*PAGE_SIZE+1} aria-label="Matching problems">{rows.slice(currentPage*PAGE_SIZE,(currentPage+1)*PAGE_SIZE).map((row,i) => {
         const count=row.issue.atCount ?? 0, time=countToSeconds(project,count), name=findingName(row.issue,labels), danger=row.issue.severity==='danger';
-        return <li key={`${row.moveId}:${currentPage}:${i}`}><HelpButton title={`Go to problem ${currentPage*PAGE_SIZE+i+1}: ${name}`} description={`Move ${row.index}, ${row.issue.severity} ${row.issue.type}, show count ${fmt(count)}, ${time.toFixed(3)} seconds. ${row.issue.message}${row.issue.countRange ? ` Review show counts ${row.issue.countRange[0]}–${row.issue.countRange[1]}.` : ''}${row.issue.measurement ? ` ${row.issue.certainty === 'possible' ? 'Possible violation.' : 'Confirmed violation.'} ${row.issue.measurement.converged ? 'Numerical bound gap meets its target.' : 'The bound is wider than the precision target; review this interval.'}` : ''} Performer IDs ${row.issue.performerIds.join(', ')}. Pause here, select performers and highlight their paths.`} className="problem-result" onClick={() => reviewProblem(service,controller.store,row)}>
+        const location = findingLocation(project, row.index);
+        const identities = [row.issue.performerIds.length && `Performer IDs: ${row.issue.performerIds.join(', ')}`,
+          row.issue.propIds?.length && `Prop IDs: ${row.issue.propIds.join(', ')}`].filter(Boolean).join(' · ');
+        return <li key={`${row.moveId}:${currentPage}:${i}`}><HelpButton title={`Go to problem ${currentPage*PAGE_SIZE+i+1}: ${name}`} description={`${location} · ${row.issue.severity} ${row.issue.type} · show count ${fmt(count)} · ${time.toFixed(3)} seconds. ${row.issue.message}${row.issue.countRange ? ` Review show counts ${row.issue.countRange[0]}–${row.issue.countRange[1]}.` : ''} ${identities}. Pause here and highlight the affected participants.`} className="problem-result" onClick={() => reviewProblem(service,controller.store,row)}>
           <span className={`problem-severity ${row.issue.severity}`}>{danger ? <OctagonAlert size={14} /> : <TriangleAlert size={14} />}{danger ? 'Danger' : 'Warning'} · <span className="problem-name">{name}</span></span>
-          <strong>Move {row.index} · Set {row.index} → {row.index+1} · {project.sets[row.index].name}</strong>
-          <span>Show {fmt(count)} · Move {fmt(count-setStartCount(project,row.index-1))} · {time.toFixed(3)} s</span>
-          <span>{row.issue.message}</span>{row.issue.measurement && <span className="problem-bound" data-problem-certainty={row.issue.certainty}>
-            {row.issue.certainty === 'confirmed' ? 'Confirmed violation' : 'Possible violation · conservative bound'} · {row.issue.measurement.converged ? `bound gap ≤ ${row.issue.measurement.tolerance} ${row.issue.measurement.unit}` : 'Bounds remain unresolved · review this interval'}
+          <strong>{location}</strong>
+          <span>Show {fmt(count)}{row.index > 0 && ` · Move ${fmt(count-setStartCount(project,row.index-1))}`} · {time.toFixed(3)} s</span>
+          <span>{row.issue.message}</span>{row.issue.certainty && <span className="problem-bound" data-problem-certainty={row.issue.certainty}>
+            {row.issue.certainty === 'confirmed' ? 'Confirmed violation' : 'Possible violation · conservative bound'}{row.issue.measurement && ` · ${row.issue.measurement.converged ? `bound gap ≤ ${row.issue.measurement.tolerance} ${row.issue.measurement.unit}` : 'Bounds remain unresolved · review this interval'}`}
             {row.issue.countRange && <span data-problem-range> · Show counts {row.issue.countRange[1] - row.issue.countRange[0] < .001 ? String(row.issue.countRange[0]) : fmt(row.issue.countRange[0])}–{row.issue.countRange[1] - row.issue.countRange[0] < .001 ? String(row.issue.countRange[1]) : fmt(row.issue.countRange[1])}</span>}
-          </span>}<small>Performer IDs: {row.issue.performerIds.join(', ')}</small>
+          </span>}<small>{identities}</small>
         </HelpButton></li>;
       })}</ol>
     </div>

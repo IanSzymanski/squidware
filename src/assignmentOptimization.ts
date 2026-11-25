@@ -41,7 +41,7 @@ export function assignmentProblem(project:Project,session:FormationSession,epoch
   if(performers.length!==session.ids.length||new Set(order).size!==order.length)throw Error('The selection or assignment changed. Reopen the review.');
   return {performers,slots,slotCount:session.live?.slotCount??slots.length,sectionIds:project.sections.map(s=>s.id),original:Object.fromEntries(session.ids.map(id=>[id,{...project.sets[index].positions[id]}])),
     forcedPins:slots.filter(s=>session.scatter?.pinnedSlots.includes(s.slot)).map(s=>({performerId:s.ownerId,slot:s.slot})),
-    checks:[{side:'incoming' as const,input:transitionInput(proposed,index,epoch)},{side:'outgoing' as const,input:transitionInput(proposed,index+1,epoch)}].filter((c):c is AssignmentProblem['checks'][number]=>!!c.input)};
+    checks:[{side:'incoming' as const,input:transitionInput(proposed,index,epoch,undefined,false)},{side:'outgoing' as const,input:transitionInput(proposed,index+1,epoch,undefined,false)}].filter((c):c is AssignmentProblem['checks'][number]=>!!c.input)};
 }
 export function assignedChecks(problem:AssignmentProblem,order:readonly string[]) {
   const points=new Map(order.map((id,i)=>[id,problem.slots[i].point]));

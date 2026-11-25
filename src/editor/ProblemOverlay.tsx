@@ -6,6 +6,9 @@ import { formatTimelineCount as fmt } from './timelineNavigation';
 import { transitionInput } from '../analysis/input';
 import type { AnalysisInput } from '../analysis/input';
 import type { TransitionIssue } from '../types';
+import { sampleProject } from '../domain';
+import { footprintDiameter, performerShape, propShape } from '../analysis/clearance';
+import { findingType } from './problemTrack';
 import './problems.css';
 
 function marks(input: AnalysisInput, issues: TransitionIssue[], draft: boolean, outgoing = false) {
@@ -20,14 +23,31 @@ export function ProblemOverlay() {
   const showPreviewPaths = useEditorSelector(s=>s.ui.formationPreview?.scatterShowTravel!==false);
   const selected = checks.selected;
   const preview = checks.draft?.state;
+  const enabled = !!selected && !playing && Math.abs(count - (selected.issue.atCount ?? 0)) <= 1e-6;
   const paths = useMemo(() => {
     if (preview && !showPreviewPaths) return [];
     if (preview) return preview.status === 'ready' ? (checks.draft?.results ?? []).flatMap(r => marks(r.input,r.result.issues,true,r.input.moveId === checks.project.moves[checks.draft!.index]?.id)) : [];
-    if (!selected || playing || Math.abs(count-(selected.issue.atCount ?? 0)) > 1e-6) return [];
+    if (!selected || !enabled || selected.issue.type === 'clearance') return [];
     const input = transitionInput(checks.project, selected.index, checks.epoch);
     return input ? marks(input,[selected.issue],false) : [];
-  }, [showPreviewPaths,preview,checks.draft,selected,playing,count,checks.project,checks.epoch]);
-  return <g className={preview ? 'problem-preview' : 'problem-selected'} pointerEvents="none" aria-hidden="true">{paths.map((track,i) => <g key={`${track.id}:${i}`} data-problem-performer={track.id}><path className="problem-path" d={movementSvg(track.from, track.to, track.path)} /><circle className="problem-ring" cx={track.point.x} cy={track.point.y} r="1.25" /></g>)}</g>;
+  }, [showPreviewPaths,preview,checks.draft,selected,enabled,checks.project,checks.epoch]);
+  const clearance = useMemo(() => {
+    const rules = checks.project.clearanceRules;
+    if (!enabled || selected?.issue.type !== 'clearance' || !rules) return [];
+    const sample = sampleProject(checks.project, count);
+    return [
+      ...selected.issue.performerIds.map(id => ({ id, prop: false, ...sample.positions[id], ...performerShape(rules.performer, sample.facings?.[id]) })),
+      ...(sample.staging ?? []).filter(prop => selected.issue.propIds?.includes(prop.id)).map(prop => ({ ...prop, ...propShape(prop, prop.footprint), prop: true })),
+    ];
+  }, [checks.project, selected, enabled, count]);
+  return <g className={preview ? 'problem-preview' : 'problem-selected'} pointerEvents="none" aria-hidden="true">
+    {paths.map((track,i) => <g key={`${track.id}:${i}`} data-problem-performer={track.id}><path className="problem-path" d={movementSvg(track.from, track.to, track.path)} /><circle className="problem-ring" cx={track.point.x} cy={track.point.y} r="1.25" /></g>)}
+    {clearance.map(({ id, prop, shape, x, y, width, depth, angle }) => <g key={id} data-problem-prop={prop ? id : undefined} data-problem-performer={prop ? undefined : id}
+      className={`clearance-outline ${selected?.issue.severity === 'warning' ? 'clearance-outline--warning' : ''}${selected?.issue.certainty === 'possible' ? ' clearance-outline--possible' : ''}`} transform={`translate(${x} ${y}) rotate(${-angle})`}>
+      {shape === 'circle' ? <circle className="problem-ring" r={footprintDiameter({ width, depth }) / 2} />
+        : <rect className="problem-ring" x={-width / 2} y={-depth / 2} width={width} height={depth} />}
+    </g>)}
+  </g>;
 }
 export function ProblemFieldStatus() {
   const checks = useShowChecks(), service = useShowAnalysis();
@@ -38,5 +58,8 @@ export function ProblemFieldStatus() {
     return <div className="problem-field-status" data-draft-analysis-status={draft.state.status} role="status">{scatter ? 'Formation preview' : 'Drag preview'} · {draft.index === 0 ? 'outgoing move' : draft.index === checks.project.sets.length-1 ? 'incoming move' : 'both adjacent moves'} · {draft.state.status === 'pending' ? 'pending · old preview hidden' : draft.state.status === 'error' ? 'unavailable · release or cancel to return to committed checks' : `${draft.state.result?.issues.length ?? 0} flags`} · not committed</div>;
   }
   if (!checks.selected || playing || Math.abs(count-(checks.selected.issue.atCount ?? 0)) > 1e-6) return null;
-  return <div className="problem-field-status" role="status">{checks.selected.issue.certainty === 'possible' ? 'Possible ' : ''}{checks.selected.issue.type === 'collision' ? 'Spacing' : 'Stride'} flag · Move {checks.selected.index} · Show {fmt(count)}<button className="button subtle" onClick={service.clearSelection}>Clear highlight</button></div>;
+  const { issue, index } = checks.selected;
+  const label = issue.type === 'clearance' && issue.certainty === 'confirmed' ? issue.severity === 'danger' ? 'Footprint overlap' : 'Clearance warning'
+    : `${issue.certainty === 'possible' ? 'Possible ' : ''}${findingType(issue)} flag`;
+  return <div className="problem-field-status" role="status">{label} · {index ? `Move ${index}` : 'Opening set'} · Show {fmt(count)}<button className="button subtle" onClick={service.clearSelection}>Clear highlight</button></div>;
 }

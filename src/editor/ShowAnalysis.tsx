@@ -21,5 +21,5 @@ export function useShowChecks() {
 export function reviewProblem(service: ShowAnalysis, store: ReturnType<typeof useEditorStore>, finding: import('../analysis/show').Finding) {
   const checks = service.getSnapshot();
   if (!checks.moves.some(m => m.moveId === finding.moveId && m.status === 'ready' && m.issues.includes(finding.issue))) return;
-  if (store.dispatch('analysis.problem-review', { epoch: checks.epoch, moveId: finding.moveId, atCount: finding.issue.atCount ?? 0, ids: finding.issue.performerIds }) === true) service.select(finding);
+  if (store.dispatch('analysis.problem-review', { epoch: checks.epoch, moveId: finding.moveId, atCount: finding.issue.atCount ?? 0, ids: finding.issue.performerIds, propIds: finding.issue.propIds }) === true) service.select(finding);
 }
