@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { ArrowRight, ClipboardPaste, Plus } from 'lucide-react';
+import { ArrowRight, AudioLines, ClipboardPaste, Music, Plus, Timer, WrapText } from 'lucide-react';
 import { countToSeconds, PROJECT_LIMITS } from '../domain';
 import { Modal } from '../components/Modal';
 import { HelpButton } from './ControlHelp';
@@ -23,6 +23,7 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
   const draftRef = useRef<Draft | null>(null);
   const [paste, setPaste] = useState<Paste | null>(null);
   const [error, setError] = useState('');
+  const [wrap, setWrap] = useState(false);
   const table = useRef<HTMLDivElement>(null);
   function setDraft(value: Draft | null) { draftRef.current = value; setDraftState(value); }
   useEffect(() => () => { setPendingDraft(false, 'sheet-cell'); setPendingDraft(false, 'sheet-preview'); }, [setPendingDraft]);
@@ -103,15 +104,21 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
   }
   return <section className="production-workspace sheet-workspace" aria-label="Editable production sheet">
     <div className="sheet-toolbar">
-      <p><strong>{project.sets.length} sets · {duration} counts</strong><span>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} {project.tempoMap?'including tempo map · BPM cells edit base values':'at written tempos'}</span></p>
-      <HelpButton command="score.open" title="Score map" className="button subtle" onClick={() => dispatch('score.open')}>Score map</HelpButton><HelpButton command="tempo.open" title="Tempo map" className="button subtle" onClick={()=>dispatch('tempo.open')}>Tempo map</HelpButton><HelpButton command="audio.align-open" title="Align recording" className="button subtle" onClick={()=>dispatch('audio.align-open')}>Align recording</HelpButton>
-      <HelpButton title="Paste spreadsheet range" description="Review CSV or TSV starting at the focused cell. Use Name, Counts, BPM, Notes, Meter, Mark without a header row." className="button subtle" onClick={() => openPaste()}><ClipboardPaste size={16} />Paste range</HelpButton>
-      <HelpButton command="sheet.append" title="Append sheet row" disabled={controller.pendingDraft || project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`Finish the pending input first. The sheet supports at most ${PROJECT_LIMITS.sets} sets.`} className="button subtle" onClick={() => { if (dispatch('sheet.append') === true) focus({ row: store.getState().project.present.sets.length - 1, column: 0 }); }}><Plus size={16} />Add row</HelpButton>
-      <HelpButton title="Open sheet set on field" description="Open the active sheet row in Design." disabled={controller.pendingDraft} disabledReason="Apply or cancel the pending input first." className="button subtle" onClick={() => dispatch('workspace.show', { workspace: 'design' })}><ArrowRight size={16} />Field</HelpButton>
+      <p><strong>{project.sets.length} sets · {duration} counts</strong><span>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} {project.tempoMap ? 'with the tempo map · BPM cells edit base values' : 'at written tempos'}</span></p>
+      <HelpButton command="sheet.append" title="Append sheet row" disabled={controller.pendingDraft || project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`Finish the pending input first. The sheet supports at most ${PROJECT_LIMITS.sets} sets.`} className="button" onClick={() => { if (dispatch('sheet.append') === true) focus({ row: store.getState().project.present.sets.length - 1, column: 0 }); }}><Plus size={14} />Add set</HelpButton>
+      <HelpButton title="Paste spreadsheet range" description="Review CSV or TSV starting at the focused cell. Use Name, Counts, BPM, Notes, Meter, Mark without a header row." className="button subtle" onClick={() => openPaste()}><ClipboardPaste size={14} />Paste range</HelpButton>
+      <span className="divider-vertical" />
+      <HelpButton command="score.open" title="Score map" className="button subtle" onClick={() => dispatch('score.open')}><Music size={14} />Score map</HelpButton>
+      <HelpButton command="tempo.open" title="Tempo map" className="button subtle" onClick={() => dispatch('tempo.open')}><Timer size={14} />Tempo map</HelpButton>
+      <HelpButton command="audio.align-open" title="Align recording" className="button subtle" onClick={() => dispatch('audio.align-open')}><AudioLines size={14} />Align recording</HelpButton>
+      <span className="divider-vertical" />
+      <HelpButton title="Wrap notes" description="Show every line of the notes, or keep one line per set so more sets fit." className="button subtle" aria-pressed={wrap} onClick={() => setWrap(!wrap)}><WrapText size={14} />Wrap notes</HelpButton>
+      <HelpButton title="Open sheet set on field" description="Open the active sheet row on the field in Write mode." disabled={controller.pendingDraft} disabledReason="Apply or cancel the pending input first." className="button subtle" onClick={() => dispatch('workspace.show', { workspace: 'design' })}>Open on field<ArrowRight size={14} /></HelpButton>
     </div>
-    <details className="sheet-help"><summary>Keyboard, paste and meter help</summary><p id="sheet-help">Tab moves across · Enter or ↑ ↓ moves rows · Alt+← → moves columns · Shift+Enter adds a line to Notes · Escape cancels input. Counts arrive at each set; opening counts stay 0. Paste has a review step.</p><p id="sheet-meter-help">Meter is a time signature such as 4/4 or 6/8. Accents fall on each bar, or in threes for 6/8, 9/8 and 12/8; write other accent groups after a colon, as in 7/8:2+2+3. A blank Meter cell inherits the meter before it.</p></details>
+    <p id="sheet-help" className="sr-only">Tab moves across. Enter or Up and Down move rows. Alt+Left and Alt+Right move columns. Shift+Enter adds a line to Notes. Escape cancels input. Counts arrive at each set; opening counts stay 0. Paste has a review step.</p>
+    <p id="sheet-meter-help" className="sr-only">Meter is a time signature such as 4/4 or 6/8. Accents fall on each bar, or in threes for 6/8, 9/8 and 12/8; write other accent groups after a colon, as in 7/8:2+2+3. A blank Meter cell inherits the meter before it.</p>
     {error && <div className="sheet-error" role="alert">{error}{draft && <><button className="button subtle" onClick={() => { const d = draftRef.current; if (d) focus(d); }}>Return to input</button><button className="button subtle" onClick={() => { setDraft(null); setPendingDraft(false, 'sheet-cell'); setError(''); }}>Cancel input</button></>}</div>}
-    <div className="production-table sheet-scroll" ref={table}>
+    <div className={`production-table sheet-scroll${wrap ? '' : ' sheet-scroll--dense'}`} ref={table}>
       <table aria-label="Production sheet cells" aria-describedby="sheet-help"><thead><tr><th scope="col">Set / score</th>{sheetLabels.map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead><tbody>
         {project.sets.map((set, row) => { const start = project.moves.slice(0,row).reduce((n,m)=>n+m.counts,0), active = controller.index === row; return <tr key={set.id} className={active ? 'sheet-active' : ''}>
           <th scope="row" aria-current={active ? 'step' : undefined}>{String(row + 1).padStart(2, '0')}<span className="sheet-score-position">{scoreLabel(score,start)}</span>{active && <span className="sheet-current">Current</span>}</th>

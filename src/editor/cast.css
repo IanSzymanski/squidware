@@ -17,20 +17,24 @@
 .cast-select-visible { flex: none; padding: 7px 12px; border-bottom: 1px solid var(--hairline); color: var(--text-secondary) !important; font-size: var(--text-xs) !important; }
 .cast-select-visible span { margin-left: auto; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .table-scroll { flex: 1; min-height: 80px; overflow: auto; overscroll-behavior: contain; }
-.cast-list { padding: 4px; }
+.cast-list { padding: 0 4px 6px; }
+.cast-section-heading { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 8px; background: var(--surface); color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
+.cast-section-heading i { width: 9px; height: 9px; border-radius: 50%; }
+.cast-section-heading span { margin-left: auto; color: var(--text-tertiary); font-weight: 400; font-variant-numeric: tabular-nums; }
 .cast-list li > button {
-  appearance: none; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 3px 8px; border: 0; border-radius: var(--radius-sm);
+  appearance: none; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 28px; padding: 2px 8px; border: 0; border-radius: var(--radius-sm);
   background: transparent; color: var(--text); text-align: left;
 }
 .cast-list li > button:hover { background: var(--hover-bg); }
 .cast-list .selected > button { background: var(--accent-soft-strong); }
 .performer-label {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 20px; padding: 0 6px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 19px; padding: 0 6px; flex-shrink: 0;
   border: 1.5px solid var(--border-strong); border-radius: var(--radius-full); background: transparent; color: var(--text);
   font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .cast-person { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: var(--space-2); }
-.cast-person strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 500; }
+.cast-person strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 400; }
+.cast-person strong.unnamed { color: var(--text-tertiary); }
 .cast-person > span { margin-left: auto; flex-shrink: 0; color: var(--text-tertiary); font-size: var(--text-xs); }
 .cast-selection-mark { width: 12px; color: var(--accent-text); font-size: var(--text-sm); font-weight: 700; }
 .cast-edit { flex: none; display: flex; flex-direction: column; gap: var(--space-2); max-height: 46%; overflow: auto; padding: 12px; border-top: 1px solid var(--hairline); }

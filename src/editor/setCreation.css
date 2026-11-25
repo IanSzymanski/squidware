@@ -1,8 +1,16 @@
 /* Add set: four kinds, then counts and tempo. */
 .set-creation-kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.set-creation-kinds .button { justify-content: flex-start; min-height: 40px; padding: 0 12px; font-size: var(--text-sm); }
-.set-creation-kinds .button > span { flex: 1; text-align: left; }
-.set-creation-kinds .button[aria-pressed=true] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--text); }
-.set-creation-kinds .button[aria-pressed=true] svg { color: var(--accent-text); }
-.set-creation-summary { padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-muted); color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.5; }
+.set-creation-kind {
+  appearance: none; display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; text-align: left;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--control); color: var(--text);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.set-creation-kind:hover { border-color: var(--border-strong); background: var(--hover-bg); }
+.set-creation-kind > svg:first-child { margin-top: 2px; color: var(--text-secondary); }
+.set-creation-kind > svg:last-child { margin-top: 2px; color: var(--accent-text); }
+.set-creation-kind-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.set-creation-kind-text strong { font-size: var(--text-md); font-weight: 600; }
+.set-creation-kind-text small { color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.4; }
+.set-creation-kind[aria-pressed=true] { border-color: var(--accent-line); background: var(--accent-soft); }
+.set-creation-kind[aria-pressed=true] > svg:first-child { color: var(--accent-text); }
 @media (max-width: 420px) { .set-creation-kinds { grid-template-columns: 1fr; } }

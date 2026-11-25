@@ -303,7 +303,7 @@ export function Stage3D({ project, positions, facings, staging, selectedIds, onS
   const cameraProps=useRef({cameraRequest,onCameraPreset,splitReview,activeCamera});cameraProps.current={cameraRequest,onCameraPreset,splitReview,activeCamera};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
-  const [stadiumVisible, setStadiumVisible] = useState(false);
+  const [stadiumVisible, setStadiumVisible] = useState(true);
   const [cameraSnapshot, setCameraSnapshot] = useState<CameraView | null>(null);
   const equipmentEnabled = assetReview?.showEquipment ?? quality === 'detailed';
   const program = useMemo(() => compileChoreography(project), [project.choreography, project.moves]);

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AudioLines, Bookmark, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Film, Images, LoaderCircle, LocateFixed, Maximize2, Music, Pause, Play, Plus, Repeat2, Ruler, Search, SkipBack, SkipForward, SlidersHorizontal, Timer, Volume2, VolumeX, Waves, ZoomIn, ZoomOut } from 'lucide-react';
+import { AudioLines, Bookmark, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Images, LoaderCircle, LocateFixed, Maximize2, Music, PanelBottomClose, PanelBottomOpen, Pause, Play, Plus, Repeat2, Ruler, Search, SkipBack, SkipForward, SlidersHorizontal, Timer, TriangleAlert, Volume2, VolumeX, Waves, ZoomIn, ZoomOut } from 'lucide-react';
 import { compileScore, scoreLabel, scorePosition, scoreTicks } from '../score';
 import { countToSeconds, PROJECT_LIMITS, secondsToCount, setStartCount, setTiming } from '../domain';
 import { activePassage, resolvePassage } from '../rehearsal';
@@ -10,6 +10,7 @@ import { HelpButton } from '../editor/ControlHelp';
 import { MiniField } from '../editor/EditorControls';
 import { OverflowMenu } from '../editor/OverflowMenu';
 import { ProblemTimeline } from '../editor/ProblemTimeline';
+import { useShowChecks } from '../editor/ShowAnalysis';
 import { canChangeLayout } from '../editor/commands';
 import { useEditorSelector } from '../editor/react';
 import { matchingSets } from '../editor/setList';
@@ -120,6 +121,10 @@ function SetStrip({ controller: c }: { controller: EditorController }) {
   useLayoutEffect(() => { card(activeId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, [activeId, index, project.sets.length, thumbnails]);
   const select = (next: number, focus = false) => { if (c.dispatch('set.select', { index: next }) && focus) card(project.sets[next].id)?.focus(); };
   const from = project.sets.findIndex(set => set.id === dragId);
+  // Problems found in the move into each set.
+  const checks = useShowChecks();
+  const flags = project.sets.map((_, i) => i === 0 ? 0 : checks.moves[i - 1]?.issues.length ?? 0);
+  const danger = project.sets.map((_, i) => i > 0 && !!checks.moves[i - 1]?.issues.some(issue => issue.severity === 'danger'));
   return <div className={`set-strip${thumbnails ? ' set-strip--thumbnails' : ''}`}>
     <div className="set-list" ref={list} role="group" aria-label="Sets"
       onWheel={event => { if (list.current && !event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX)) list.current.scrollLeft += event.deltaY; }}
@@ -131,7 +136,7 @@ function SetStrip({ controller: c }: { controller: EditorController }) {
       {project.sets.map((set, i) => {
         const timing = setTiming(project, i);
         return <HelpButton pointerPassThrough key={set.id} command="set.select" showShortcut={false} title={`Set ${i + 1}: ${set.name}`}
-          description={`${i === 0 ? 'Opening set' : `${timing.counts} counts at ${timing.tempo} ${project.tempoMap ? 'base BPM' : 'BPM'}`}. Drag to reorder, or use Alt+Left and Alt+Right.`}
+          description={`${i === 0 ? 'Opening set' : `${timing.counts} counts at ${timing.tempo} ${project.tempoMap ? 'base BPM' : 'BPM'}`}${flags[i] ? ` · ${flags[i]} ${flags[i] === 1 ? 'problem' : 'problems'} in the move into this set` : ''}. Drag to reorder, or use Alt+Left and Alt+Right.`}
           state={index === i ? 'Current set' : undefined} aria-current={index === i ? 'step' : undefined} tabIndex={i === index ? 0 : -1} data-set-id={set.id} disabled={locked}
           className={`set-card${index === i ? ' selected' : ''}${over === i && from !== i ? from < i ? ' drop-after' : ' drop-before' : ''}${dragId === set.id ? ' dragging' : ''}`}
           draggable={!locked}
@@ -155,10 +160,15 @@ function SetStrip({ controller: c }: { controller: EditorController }) {
               select(event.key === 'Home' ? 0 : event.key === 'End' ? project.sets.length - 1 : Math.max(0, Math.min(project.sets.length - 1, i + (forward ? 1 : -1))), true);
             }
           }}>
-          {thumbnails && <span className="set-card-thumb"><MiniField positions={set.positions} dots={thumbnailDots} />{i > 0 && <span className="set-row-counts">{timing.counts}</span>}</span>}
-          <span className="set-card-caption">
+          {thumbnails && <span className="set-card-thumb"><MiniField positions={set.positions} dots={thumbnailDots} />
             <span className="set-number">{pad(i + 1)}</span>
+            {i > 0 && <span className="set-row-counts">{timing.counts}</span>}
+            {flags[i] > 0 && <span className={`set-card-flag${danger[i] ? ' danger' : ''}`}><TriangleAlert size={10} aria-hidden="true" />{flags[i]}</span>}
+          </span>}
+          <span className="set-card-caption">
+            {!thumbnails && <span className="set-number">{pad(i + 1)}</span>}
             <span className="set-row-name">{set.name}</span>
+            {!thumbnails && flags[i] > 0 && <span className={`set-card-flag${danger[i] ? ' danger' : ''}`}><TriangleAlert size={10} aria-hidden="true" />{flags[i]}</span>}
             {!thumbnails && i > 0 && <span className="set-row-counts">{timing.counts}</span>}
           </span>
         </HelpButton>;
@@ -182,7 +192,8 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
   const passage = activePassage(project, rehearsalId), resolved = passage ? resolvePassage(project, passage) : undefined;
   const position = timelineReadout(project, count), shown = transportCount(position.count, playing);
   const score = useMemo(() => compileScore(project), [project]), musical = scorePosition(score, shown);
-  const setsVisible = layout.arrangement.timeline === 'full' && layout.mode !== 'plan';
+  const setsVisible = layout.arrangement.timeline === 'full' && layout.mode === 'write';
+  const toggleSets = () => { controller.dispatch('workspace.update', { update: { timeline: layout.arrangement.timeline === 'full' ? 'compact' : 'full' } }); };
 
   // The count window: fitted to the show by default, zoomable for precise scrubbing.
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -226,7 +237,6 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
     { label: 'Ruler in measures', icon: <Ruler size={15} />, checked: musicalRuler, keepOpen: true, onSelect: () => setMusicalRuler(true) },
     { label: 'Ruler in counts', icon: <Ruler size={15} />, checked: !musicalRuler, keepOpen: true, onSelect: () => setMusicalRuler(false) },
     { type: 'separator' },
-    { label: 'Set strip', icon: <Film size={15} />, checked: layout.arrangement.timeline === 'full', disabled: layout.locked, disabledReason: 'Finish or cancel the current input or preview first.', onSelect: () => { controller.dispatch('workspace.update', { update: { timeline: layout.arrangement.timeline === 'full' ? 'compact' : 'full' } }); } },
     { label: 'Set thumbnails', icon: <Images size={15} />, checked: controller.preferences.value.setThumbnails, keepOpen: true, onSelect: () => controller.preferences.update({ setThumbnails: !controller.preferences.value.setThumbnails }) },
     { type: 'heading', label: 'Music' },
     { label: 'Score map…', icon: <Music size={15} />, command: 'score.open', onSelect: () => { controller.dispatch('score.open'); } },
@@ -283,6 +293,7 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
         <HelpButton title={muted ? 'Unmute audio' : 'Mute audio'} description="Mute or restore the attached rehearsal audio; metronome clicks are separate." state={muted ? 'Muted' : 'Audible'} className="icon-button" active={muted} onClick={() => setMuted(!muted)}>{muted ? <VolumeX size={16} /> : <Volume2 size={16} />}</HelpButton>
         {folded.length > 0 && <OverflowMenu title="More playback options" description={transport === 'compact' ? 'Loop, metronome and playback speed. A wider window shows them in the transport.' : 'Rehearsal passages, audio, loop, metronome and playback speed. A wider window shows them in the transport.'} placement="above">{folded}</OverflowMenu>}
         <span className="divider-vertical" />
+        {layout.mode === 'write' && <HelpButton pointerPassThrough title={setsVisible ? 'Hide set strip' : 'Show set strip'} description="Show or hide the strip of set thumbnails to give the field more room." className="icon-button" aria-expanded={setsVisible} disabled={layout.locked} disabledReason="Finish or cancel the current input or preview first." onClick={toggleSets}>{setsVisible ? <PanelBottomClose size={16} /> : <PanelBottomOpen size={16} />}</HelpButton>}
         <Menu label="Timeline options" description="Zoom the timeline, show or hide the set strip, and open the score, tempo and recording tools." className="icon-button" align="end" side="above" items={timelineMenu}><SlidersHorizontal size={16} /></Menu>
       </div>
     </div>
@@ -299,12 +310,11 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
           </div>
           <div className="set-track">
             {/* The opening set leads the DOM so Tab follows set order. */}
-            {view.start === 0 && <HelpButton command="set.select" showShortcut={false} title={`Opening set: ${project.sets[0].name}`} description="Set 1 is the opening picture at show count zero." className={`timeline-opening ${index === 0 ? 'active' : ''}`} onClick={() => selectSet(0)}>01</HelpButton>}
+            {view.start === 0 && <HelpButton command="set.select" showShortcut={false} title={`Opening set: ${project.sets[0].name}`} description="Set 1 is the opening picture at show count zero." className={`timeline-opening ${index === 0 ? 'active' : ''}`} onClick={() => selectSet(0)}><span className="sr-only">01</span></HelpButton>}
             {arrivals.filter(a => a.index > 0 && a.count > view.start && a.from < view.start + span).map(a => {
               const left = Math.max(0, percent(a.from)), right = Math.min(100, percent(a.count));
-              const pixels = (right - left) / 100 * width;
-              return <HelpButton key={a.set.id} command="set.select" showShortcut={false} title={`Set ${a.index + 1}: ${a.set.name}`} description={`Arrive at show count ${a.count}; ${a.counts} move counts. Stop playback and edit this set.`} state={index === a.index ? 'Current set' : 'Available'} aria-current={index === a.index ? 'step' : undefined} className={index === a.index ? 'active' : ''} style={{ left: `${left}%`, width: `${right - left}%` }} onClick={() => selectSet(a.index)}>
-                <span>{pixels >= 22 ? pad(a.index + 1) : ''}</span>{pixels >= 96 && <span className="timeline-set-name">{a.set.name}</span>}
+              return <HelpButton key={a.set.id} pointerPassThrough command="set.select" showShortcut={false} title={`Set ${a.index + 1}: ${a.set.name}`} description={`Arrive at show count ${a.count}; ${a.counts} move counts. Stop playback and edit this set.`} state={index === a.index ? 'Current set' : 'Available'} aria-current={index === a.index ? 'step' : undefined} className={index === a.index ? 'active' : ''} style={{ left: `${left}%`, width: `${right - left}%` }} onClick={() => selectSet(a.index)}>
+                <span className="sr-only">{pad(a.index + 1)}</span>
               </HelpButton>;
             })}
           </div>

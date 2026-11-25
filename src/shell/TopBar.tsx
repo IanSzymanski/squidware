@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, CircleHelp, Download, FilePlus2, FolderOpen, History as HistoryIcon, LifeBuoy, Redo2, Save, SaveAll, Search, Settings2, SlidersHorizontal, Undo2 } from 'lucide-react';
+import { BookOpen, ChevronDown, CircleHelp, Download, FilePlus2, FolderOpen, History as HistoryIcon, LayoutPanelLeft, LifeBuoy, Redo2, Save, SaveAll, Search, Settings2, SlidersHorizontal, Undo2 } from 'lucide-react';
 import { CommandKeycaps, HelpButton } from '../editor/ControlHelp';
 import { ProblemTimelineLabel } from '../editor/ProblemTimeline';
 import { canSwitchWorkspace } from '../editor/workspaceCommands';
@@ -8,7 +8,7 @@ import { SquidMark } from '../ui/icons';
 import { SHELL_MODES, type ShellLayout } from './useShellLayout';
 
 /** The always-present bar: project, mode, history, search and export. */
-export function TopBar({ controller: c, layout }: { controller: EditorController; layout: ShellLayout }) {
+export function TopBar({ controller: c, layout, onWorkspaces }: { controller: EditorController; layout: ShellLayout; onWorkspaces: () => void }) {
   const { project, dirty, canUndo, canRedo, setDialog } = c;
   const busy = !!c.fileOperation;
   const narrow = layout.breakpoints.header === 'narrow', compact = layout.breakpoints.header !== 'full';
@@ -29,6 +29,7 @@ export function TopBar({ controller: c, layout }: { controller: EditorController
     { type: 'separator' },
     { label: 'Production settings…', icon: <Settings2 size={15} />, command: 'project.update', description: 'Title, ensemble, field, sections and audio offset.', onSelect: () => setDialog('settings') },
     { label: 'Preferences…', icon: <SlidersHorizontal size={15} />, command: 'preferences.open', description: 'Personal display and editing defaults for this device.', onSelect: () => setDialog('preferences') },
+    { label: 'Workspaces…', icon: <LayoutPanelLeft size={15} />, description: 'Switch, save, rename or reset arrangements of the window on this device.', onSelect: onWorkspaces },
     { type: 'separator' },
     { label: 'Help and shortcuts', icon: <CircleHelp size={15} />, command: 'help.open', onSelect: () => setDialog('help') },
   ];
@@ -46,6 +47,7 @@ export function TopBar({ controller: c, layout }: { controller: EditorController
           <span className={`status-dot ${dirty ? 'unsaved' : c.savedRevision === null ? 'idle' : ''}`} />
           <span className="save-state-text">{c.fileStatus}</span>
         </span>
+        <HelpButton title="Recovery copies" description="Squidware keeps automatic local recovery copies of your work. Review them here." className="recovery-indicator" onClick={() => { setDialog('recovery'); void c.recovery.refresh(); }}>{c.recovery.status}</HelpButton>
         {dirty && <HelpButton command="file.save" title="Save" state="Unsaved changes" disabled={busy} disabledReason="Wait for the current file operation to finish." className="button small header-save" onClick={() => void c.saveProject()}>Save</HelpButton>}
       </div>
     </div>

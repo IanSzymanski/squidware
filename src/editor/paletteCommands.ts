@@ -57,7 +57,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'selection.invert') return 'Add performers before inverting the selection.';
   if (id === 'selection.section') return 'This section has no performers to select.';
   if (id === 'group.select') return 'This saved group has no performers to select.';
-  if (id === 'layout.focus') return 'Open the Design workspace before focusing the field.';
+  if (id === 'layout.focus') return 'Open Write mode before focusing the field.';
   if (id === 'view.popout') return 'The 3D window is available in the desktop app.';
   if (id === 'view.popout-close') return 'The 3D window is not open.';
   return 'This action is unavailable in the current editing context.';

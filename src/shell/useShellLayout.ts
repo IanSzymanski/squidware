@@ -6,6 +6,8 @@ import { FIELD_RESERVE, effectiveViewport, workspaceBreakpoints, type Viewport }
 import { useEditorSelector } from '../editor/react';
 import type { EditorController } from '../editor/useEditorController';
 
+const PANEL_MIN = 288;
+
 /** The three stages of work. Each is a built-in workspace, so the arrangement is remembered per mode. */
 export type ShellMode = 'write' | 'plan' | 'rehearse';
 export const SHELL_MODES: readonly { id: ShellMode; label: string; workspace: 'design' | 'production' | 'rehearse'; description: string }[] = [
@@ -50,7 +52,8 @@ export function useShellLayout(controller: EditorController) {
   }, []);
   useLayoutEffect(measure, [controller.preferences.value.uiScale]);
 
-  const [min, max] = paneLimits[tab];
+  // The field is height-limited in a landscape window, so the panel can afford a comfortable minimum.
+  const [min, max] = [Math.max(PANEL_MIN, paneLimits[tab][0]), paneLimits[tab][1]];
   const saved = tab === 'cast' ? layout.castWidth : layout.inspectorWidth;
   const width = Math.round(Math.max(min, Math.min(max, draftWidth ?? saved)));
   // A preview needs its parameters: it shows a panel the writer collapsed for as long as it runs.

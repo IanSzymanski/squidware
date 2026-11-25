@@ -10,6 +10,12 @@ import './setCreation.css';
 
 const kinds = ['new', 'duplicate', 'insert-before', 'hold'] as const;
 const icons = { new: FilePlus2, duplicate: Copy, 'insert-before': ListStart, hold: Pause };
+const summaries = {
+  new: 'Everyone in a staging grid, ready to shape.',
+  duplicate: 'A copy of this picture and its notes.',
+  'insert-before': 'The previous picture, placed before this set.',
+  hold: 'Everyone stays in place for the counts.',
+};
 const descriptions = {
   new: 'Fresh staging grid for the whole cast. Blank notes; constant speed.',
   duplicate: 'Copy positions, notes and incoming timing. The new picture starts with a hold; incoming travel is not replayed.',
@@ -42,15 +48,18 @@ export function SetCreationPanel({ controller }: { controller: EditorController 
   return <Modal title="Add set" onClose={() => setDialog(null)}>
     <p className="modal-intro">{kind === 'insert-before' ? 'Before' : 'After'} set {index + 1} · <strong>{activeSet.name}</strong></p>
     <div className="set-creation-kinds" role="group" aria-label="Set creation action">
-      {kinds.map(value => { const Icon = icons[value]; return <HelpButton key={value} title={setCreationNames[value]} description={descriptions[value]} className="button subtle" aria-pressed={kind === value} onClick={() => choose(value)}><Icon size={15} /><span>{setCreationNames[value]}</span>{kind === value && <Check size={14} aria-hidden="true" />}</HelpButton>; })}
+      {kinds.map(value => { const Icon = icons[value]; return <HelpButton key={value} pointerPassThrough title={setCreationNames[value]} description={descriptions[value]} className="set-creation-kind" aria-pressed={kind === value} onClick={() => choose(value)}>
+        <Icon size={16} /><span className="set-creation-kind-text"><strong>{setCreationNames[value]}</strong><small>{summaries[value]}</small></span>{kind === value && <Check size={14} aria-hidden="true" />}
+      </HelpButton>; })}
     </div>
-    <p className="set-creation-summary" role="status">{descriptions[kind]} {opening && 'The new opening has zero counts. The timing below creates a move into the former opening, using the same positions.'}</p>
+    <p className="set-creation-summary sr-only" role="status">{descriptions[kind]} {opening && 'The new opening has zero counts. The timing below creates a move into the former opening, using the same positions.'}</p>
+    {opening && <p className="microcopy">The new opening has zero counts. The timing below is the move into the former opening.</p>}
     <div className="form-row">
-      <label className="form-label">{opening ? 'Counts into former opening' : 'Incoming counts'}<input ref={countsInput} aria-label="Creation counts" type="number" min={PROJECT_LIMITS.counts.min} max={PROJECT_LIMITS.counts.max} step={1} value={counts} aria-invalid={!!countError} aria-describedby={countError ? 'creation-count-error' : undefined} onChange={e => setCounts(e.target.value)} />{countError && <span id="creation-count-error" className="field-error" role="status">{countError}</span>}</label>
+      <label className="form-label">{opening ? 'Counts into former opening' : 'Counts'}<input ref={countsInput} aria-label="Creation counts" type="number" min={PROJECT_LIMITS.counts.min} max={PROJECT_LIMITS.counts.max} step={1} value={counts} aria-invalid={!!countError} aria-describedby={countError ? 'creation-count-error' : undefined} onChange={e => setCounts(e.target.value)} />{countError && <span id="creation-count-error" className="field-error" role="status">{countError}</span>}</label>
       <label className="form-label">Tempo · BPM<input aria-label="Creation tempo" type="number" min={PROJECT_LIMITS.tempo.min} max={PROJECT_LIMITS.tempo.max} step={.1} value={tempo} aria-invalid={!!tempoError} aria-describedby={tempoError ? 'creation-tempo-error' : undefined} onChange={e => setTempo(e.target.value)} />{tempoError && <span id="creation-tempo-error" className="field-error" role="status">{tempoError}</span>}</label>
     </div>
     <p className="microcopy">{kind === 'duplicate' && initial.transition === 'ease' ? 'Keeps this set’s ease in / out timing. ' : ''}Adds {countError ? 'the chosen' : counts} counts to the show. Existing sets keep their positions and timing.</p>
     {(full || error) && <p className="field-error" role="alert">{full ? `A production can contain at most ${PROJECT_LIMITS.sets} sets.` : error}</p>}
-    <div className="modal-actions"><button className="button subtle" onClick={() => setDialog(null)}>Cancel</button><button className="button primary" aria-label="Apply set creation" disabled={full || !!countError || !!tempoError} onClick={apply}>Add · {setCreationNames[kind]}</button></div>
+    <div className="modal-actions"><button className="button subtle" onClick={() => setDialog(null)}>Cancel</button><button className="button primary" aria-label="Apply set creation" disabled={full || !!countError || !!tempoError} onClick={apply}>Add set</button></div>
   </Modal>;
 }

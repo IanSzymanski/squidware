@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AlignHorizontalJustifyCenter, Bookmark, Box, Check, ChevronDown, Clapperboard, Clock3, Columns2, Eye, FlipHorizontal2, Focus, Grid2X2, Grid3X3, Hand, Lasso, ListFilter, Magnet, MapPin, Maximize, MoreHorizontal, MousePointer2, Package, PanelRight, Pencil, Play, Pause, RotateCw, Route, Scissors, Shapes, SlidersHorizontal, Sparkles, Tags, TriangleAlert, Users, Waypoints, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, ArrowRight, Bookmark, Check, ChevronDown, Clapperboard, Clock3, Eye, FlipHorizontal2, Focus, Grid3X3, Hand, Lasso, LayoutPanelLeft, ListFilter, Magnet, MapPin, MoreHorizontal, MousePointer2, Package, PanelRight, Pencil, RotateCw, Route, Scissors, Shapes, SlidersHorizontal, Sparkles, Tags, TriangleAlert, Users, Waypoints, X } from 'lucide-react';
 import { HelpButton } from '../editor/ControlHelp';
 import { commandRegistry, type CommandArguments, type CommandId } from '../editor/commands';
 import { fieldAction, type FieldAction } from '../editor/fieldToolbarModel';
@@ -8,6 +8,7 @@ import type { EditorController } from '../editor/useEditorController';
 import { fieldViews } from '../workspaces';
 import { Menu, type MenuEntry } from '../ui/Menu';
 import { ArcIcon, BezierIcon, BlockIcon, CircleIcon, LineIcon, PathsFromIcon, PathsToIcon, ScatterIcon, WaveIcon } from '../ui/icons';
+import { formatTransportCount, timelineReadout } from '../editor/timelineNavigation';
 import type { ShellLayout } from './useShellLayout';
 
 const PREVIEW_NAMES = { selection: 'Selection', transform: 'Transform', formation: 'Formation', spacing: 'Align and space', coordinates: 'Coordinates' } as const;
@@ -35,47 +36,9 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   const three = c.view === '3d';
   const rehearse = layout.mode === 'rehearse';
 
-  // View controls on the right are shared by every state of the strip.
-  const labelsState = !c.showLabels ? 'hidden' : c.selectionLabelsOnly ? 'selected' : 'all';
-  const setLabels = (next: 'all' | 'selected' | 'hidden') => { c.setShowLabels(next !== 'hidden'); c.setSelectionLabelsOnly(next === 'selected'); };
-  const zoomIn = action('field.zoom-in', undefined), zoomOut = action('field.zoom-out', undefined), fit = action('field.fit', undefined);
-  const grid = action('display.grid', undefined), snap = action('display.snap', undefined), snapping = action('dialog.open', { dialog: 'snapping' });
-  const focus = action('layout.focus', undefined);
-  const viewMenu: MenuEntry[] = [
-    { type: 'heading', label: 'Performer labels' },
-    { label: 'All labels', icon: <Tags size={15} />, checked: labelsState === 'all', keepOpen: true, onSelect: () => setLabels('all') },
-    { label: 'Selected only', icon: <Tags size={15} />, checked: labelsState === 'selected', keepOpen: true, onSelect: () => setLabels('selected') },
-    { label: 'Hidden', icon: <Tags size={15} />, checked: labelsState === 'hidden', keepOpen: true, onSelect: () => setLabels('hidden') },
-    { type: 'separator' },
-    item(grid, <Grid3X3 size={15} />, { label: 'Field grid', checked: c.showGrid, keepOpen: true }),
-    item(snap, <Magnet size={15} />, { label: 'Snap to grid', checked: c.snap, keepOpen: true }),
-    item(snapping, <SlidersHorizontal size={15} />, { label: 'Grid and snapping…', command: undefined, description: 'Choose the step grid and what direct edits snap to.' }),
-    { type: 'separator' },
-    item(zoomIn, <ZoomIn size={15} />, { label: 'Zoom in', keepOpen: true }),
-    item(zoomOut, <ZoomOut size={15} />, { label: 'Zoom out', keepOpen: true }),
-    item(fit, <Maximize size={15} />, { label: 'Fit field' }),
-    { type: 'separator' },
-    item(focus, <Focus size={15} />, { label: layout.focusMode ? 'Exit focus' : 'Focus field', checked: layout.focusMode }),
-  ];
-  const viewSwitch = <div className="segmented view-switch" role="group" aria-label="Field view">
-    {fieldViews.map(view => {
-      const a = action('view.select', { view }, view === '2d' ? '2D' : view === '3d' ? '3D' : 'Split', view === '2d' ? '2D field' : view === '3d' ? '3D preview' : 'Split review', c.view === view);
-      return <HelpButton key={view} command="view.select" showShortcut={view !== 'split'} title={a.title} description={view === '2d' ? 'Edit on the flat field.' : view === '3d' ? 'Watch from the stands in 3D.' : 'Edit in 2D beside a live 3D preview.'}
-        aria-pressed={c.view === view} disabled={!!a.disabledReason} disabledReason={a.disabledReason ?? undefined} data-toolbar-item={`view-${view}`} onClick={() => run(a)}>
-        {view === '2d' ? <Grid2X2 size={14} /> : view === '3d' ? <Box size={14} /> : <Columns2 size={14} />}<span>{a.label}</span>
-      </HelpButton>;
-    })}
-  </div>;
-  const panelToggle = <HelpButton pointerPassThrough title={layout.panelVisible ? 'Hide side panel' : 'Show side panel'} description="Show or hide the properties and Cast panel." className="tool" active={layout.panelVisible}
+  const panelToggle = <HelpButton pointerPassThrough title={layout.panelVisible ? 'Hide side panel' : 'Show side panel'} description="Show or hide the Properties and Cast panel." className="tool tool--quiet" aria-expanded={layout.panelVisible}
     disabled={layout.locked && layout.docked} disabledReason="Finish or cancel the current input or preview first." onClick={layout.togglePanel}><PanelRight size={17} /></HelpButton>;
-  const end = (extra?: ReactNode) => <div className="toolbar-end">
-    {extra}
-    {!three && <Menu label="View options" description="Labels, grid, snapping, zoom and focus." className="tool tool--labelled" align="end" items={viewMenu}><Eye size={16} /><span className="tool-label">View</span><ChevronDown size={12} /></Menu>}
-    {viewSwitch}
-    <Popout3DButton controller={c} toolbarItem="popout" />
-    <span className="divider-vertical" />
-    {panelToggle}
-  </div>;
+  const end = (extra?: ReactNode) => <div className="toolbar-end">{extra}{panelToggle}</div>;
   const bar = (context: string, children: ReactNode) => <div className="canvas-toolbar field-command-toolbar toolbar" role="toolbar" aria-label="Field tools" aria-orientation="horizontal" data-context={context}>{children}</div>;
 
   // A preview owns the strip: what is being previewed, and the two ways out.
@@ -97,23 +60,35 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     </>);
   }
 
+  // Playing or between sets: say so here, and offer the way back to editing. The field stays clear.
+  const position = timelineReadout(c.project, state.playback.count);
+  if (c.readOnly && !three && !rehearse) {
+    const moving = position.setIndex > 0 && !position.arrived;
+    return bar(c.playing ? 'playback' : 'scrub', <>
+      <div className="toolbar-preview" role="status" id="field-lock-message">
+        <span className={`toolbar-preview-dot${c.playing ? ' is-playing' : ' is-locked'}`} />
+        <strong>{c.playing ? 'Playing' : state.playback.rehearsalId ? 'Rehearsal passage' : 'Between sets'}</strong>
+        <span>{moving ? `Move ${position.setIndex} → ${position.setIndex + 1} · count ${formatTransportCount(position.localCount, c.playing)} of ${position.counts}` : `Set ${position.setIndex + 1} · ${position.name}`} · positions are a preview</span>
+      </div>
+      <div className="toolbar-commit">
+        <HelpButton command="set.select" showShortcut={false} title={`Go to set ${position.setIndex + 1} to edit`} description="Stop at this set so its positions can be edited." className="button" onClick={() => c.selectSet(position.setIndex)}>Edit set {position.setIndex + 1}<ArrowRight size={14} /></HelpButton>
+      </div>
+      {end()}
+    </>);
+  }
+
   // Rehearsing and the 3D view: cameras and review, no editing tools.
   if (three || rehearse) {
     const cameras = ([['perspective', 'Perspective'], ['front', 'Front'], ['press-box', 'Press box'], ['top', 'Overhead']] as const)
       .map(([preset, label]) => action('view.camera', { preset }, label, `${label} camera`, state.ui.camera.preset === preset && !state.ui.camera.savedId));
-    const play = action('playback.toggle', undefined, c.playing ? 'Pause' : 'Play', c.playing ? 'Pause playback' : 'Play show');
     const passages = action('rehearsal.open', undefined, 'Passages', 'Rehearsal passages');
     const problems = action('analysis.problems-open', undefined, 'Problems', 'Show-wide problems');
     const video = action('dialog.open', { dialog: 'video-export' }, 'Record video', 'Rehearsal video');
     return bar(three ? '3d' : 'rehearsal', <>
-      <div className="toolbar-group">
-        {tool(play, c.playing ? <Pause size={15} /> : <Play size={15} />, { label: true, className: 'tool--play' })}
-      </div>
-      {three && <><span className="divider-vertical" /><div className="toolbar-group stage-three__controls" role="group" aria-label="Camera">
+      {three && <><div className="toolbar-group stage-three__controls" role="group" aria-label="Camera">
         <span className="toolbar-caption">Camera</span>
         <div className="segmented">{cameras.map(a => <HelpButton key={a.key} command="view.camera" showShortcut={false} title={a.title} aria-pressed={!!a.active} disabled={!!a.disabledReason} disabledReason={a.disabledReason ?? undefined} data-command="view.camera" onClick={() => run(a)}>{a.label}</HelpButton>)}</div>
-      </div></>}
-      <span className="divider-vertical" />
+      </div><span className="divider-vertical" /></>}
       <div className="toolbar-group">
         {tool(passages, <Bookmark size={15} />, { label: true })}
         {tool(problems, <TriangleAlert size={15} />, { label: true })}
@@ -180,7 +155,6 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition…' }),
     item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues…' }),
   ];
-  const paths = action('display.paths', undefined, 'From', 'Paths from previous set', c.showPaths), nextPaths = action('display.next-paths', undefined, 'To', 'Paths to next set', c.showNextPaths);
   const shapeMenu: MenuEntry[] = [...shapes.map(shape => item(shape.action, shape.icon, { key: shape.action.key })), ...moreShapes];
   const arrangeMenu: MenuEntry[] = [
     item(align, <AlignHorizontalJustifyCenter size={15} />, { label: 'Align and space' }), item(rotate, <RotateCw size={15} />, { label: 'Rotate and scale' }),
@@ -197,24 +171,22 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     </div>
     <span className="divider-vertical" />
     <div className="toolbar-group toolbar-shapes" role="group" aria-label="Shape the selection">
-      <span className="toolbar-caption">Shape</span>
-      {shapes.map(shape => tool({ ...shape.action, active: !!session && !session.scatter && !session.bezier && session.kind === shape.kind }, shape.icon, { description: shapeHelp ?? `Arrange the ${count} selected performers in ${shape.kind === 'arc' ? 'an' : 'a'} ${shape.action.label.toLowerCase()}. Adjust on the field, then Apply.` }))}
+      {shapes.map(shape => tool({ ...shape.action, active: !!session && !session.scatter && !session.bezier && session.kind === shape.kind }, shape.icon, { label: true, description: shapeHelp ?? `Arrange the ${count} selected performers in ${shape.kind === 'arc' ? 'an' : 'a'} ${shape.action.label.toLowerCase()}. Adjust on the field, then Apply.` }))}
       <Menu label="More shapes" description="Bézier curves, scatter and your saved formations." className="tool tool--menu" items={moreShapes}><MoreHorizontal size={16} /></Menu>
-    </div>
-    <span className="divider-vertical" />
-    <div className="toolbar-group toolbar-arrange" role="group" aria-label="Arrange the selection">
-      <span className="toolbar-caption">Arrange</span>
-      {tool(align, <AlignHorizontalJustifyCenter size={16} />, { description: 'Align, distribute or set an exact interval between the selected performers.' })}
-      {tool(rotate, <RotateCw size={16} />, { description: 'Rotate or scale the selection around a pivot.' })}
-      <span className="tool-split">
-        {tool(mirror, <FlipHorizontal2 size={16} />, { description: 'Flip the selection across the 50 yard line.' })}
-        <Menu label="Mirror options" className="tool tool--caret" items={[item(mirror, <FlipHorizontal2 size={15} />, { label: 'Mirror across the 50' }), item(mirrorFrontBack, <FlipHorizontal2 size={15} style={{ transform: 'rotate(90deg)' }} />)]}><ChevronDown size={11} /></Menu>
-      </span>
-      {tool(place, <MapPin size={16} />, { description: 'Type drill coordinates such as “4 outside the 40, 8 behind the front hash”.' })}
     </div>
     <span className="toolbar-shape-menu">
       <Menu label="Shape" description="Arrange the selection in a line, arc, circle, block, wave, curve or scatter." className="tool tool--labelled" items={shapeMenu}><ArcIcon size={18} /><span className="tool-label">Shape</span><ChevronDown size={12} /></Menu>
     </span>
+    <span className="divider-vertical" />
+    <div className="toolbar-group toolbar-arrange" role="group" aria-label="Arrange the selection">
+      {tool(align, <AlignHorizontalJustifyCenter size={16} />, { label: true, description: 'Align, distribute or set an exact interval between the selected performers.' })}
+      {tool(rotate, <RotateCw size={16} />, { label: true, description: 'Rotate or scale the selection around a pivot.' })}
+      <span className="tool-split">
+        {tool(mirror, <FlipHorizontal2 size={16} />, { label: true, description: 'Flip the selection across the 50 yard line.' })}
+        <Menu label="Mirror options" className="tool tool--caret" items={[item(mirror, <FlipHorizontal2 size={15} />, { label: 'Mirror across the 50' }), item(mirrorFrontBack, <FlipHorizontal2 size={15} style={{ transform: 'rotate(90deg)' }} />)]}><ChevronDown size={11} /></Menu>
+      </span>
+      {tool(place, <MapPin size={16} />, { label: true, description: 'Type drill coordinates such as “4 outside the 40, 8 behind the front hash”.' })}
+    </div>
     <span className="toolbar-arrange-menu">
       <Menu label="Arrange" description="Align, rotate, mirror or place the selection." className="tool tool--labelled" items={arrangeMenu}><AlignHorizontalJustifyCenter size={16} /><span className="tool-label">Arrange</span><ChevronDown size={12} /></Menu>
     </span>
@@ -223,9 +195,49 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
       <Menu label="Motion" description="Travel paths, timing, group movement and transitions for the move into this set." className="tool tool--labelled" items={motionMenu}><Route size={16} /><span className="tool-label">Motion</span><ChevronDown size={12} /></Menu>
       {tool(staging, <Package size={16} />, { label: true, description: 'Place and pose props and front ensemble equipment on this set.', className: 'toolbar-optional' })}
     </div>
-    {end(<div className="toolbar-group toolbar-paths" role="group" aria-label="Travel paths">
-      {tool(paths, <PathsFromIcon size={17} />, { state: c.showPaths ? 'On' : 'Off', description: 'Show how performers travel into this set from the previous one.' })}
-      {tool(nextPaths, <PathsToIcon size={17} />, { state: c.showNextPaths ? 'On' : 'Off', description: 'Show how performers travel from this set to the next one.' })}
-    </div>)}
+    {end()}
   </>);
+}
+
+/** View controls that float over the field's margin: travel paths, display options and 2D / 3D / Split. */
+export function ViewControls({ controller: c, layout, onWorkspaces }: { controller: EditorController; layout: ShellLayout; onWorkspaces: () => void }) {
+  const state = c.store.getState();
+  const action = <I extends CommandId>(id: I, args: CommandArguments[I], label?: string, title?: string, active?: boolean) => fieldAction(state, id, args, '', label, title, active);
+  const run = (a: FieldAction) => { c.dispatch(a.invocation.id, a.invocation.args as never); };
+  const item = (a: FieldAction, icon: ReactNode, extra: Partial<Extract<MenuEntry, { label: string }>> = {}): MenuEntry => ({
+    label: a.label, icon, command: a.invocation.id, disabled: !!a.disabledReason, disabledReason: a.disabledReason ?? undefined, onSelect: () => run(a), ...extra,
+  });
+  const three = c.view === '3d';
+  const labelsState = !c.showLabels ? 'hidden' : c.selectionLabelsOnly ? 'selected' : 'all';
+  const setLabels = (next: 'all' | 'selected' | 'hidden') => { c.setShowLabels(next !== 'hidden'); c.setSelectionLabelsOnly(next === 'selected'); };
+  const paths = action('display.paths', undefined), nextPaths = action('display.next-paths', undefined);
+  const pathsMenu: MenuEntry[] = [
+    item(paths, <PathsFromIcon size={16} />, { label: 'From the previous set', checked: c.showPaths, keepOpen: true, description: 'Show how performers travel into this set.' }),
+    item(nextPaths, <PathsToIcon size={16} />, { label: 'To the next set', checked: c.showNextPaths, keepOpen: true, description: 'Show how performers travel out of this set.' }),
+  ];
+  const viewMenu: MenuEntry[] = [
+    { type: 'heading', label: 'Performer labels' },
+    { label: 'Show labels', icon: <Tags size={15} />, hint: 'where they fit', checked: labelsState === 'all', keepOpen: true, description: 'Label every performer. Labels that would overlap are left out; zoom in to see them all.', onSelect: () => setLabels('all') },
+    { label: 'Selected only', icon: <Tags size={15} />, checked: labelsState === 'selected', keepOpen: true, onSelect: () => setLabels('selected') },
+    { label: 'Hide labels', icon: <Tags size={15} />, checked: labelsState === 'hidden', keepOpen: true, onSelect: () => setLabels('hidden') },
+    { type: 'heading', label: 'Grid' },
+    item(action('display.grid', undefined), <Grid3X3 size={15} />, { label: 'Show the step grid', checked: c.showGrid, keepOpen: true }),
+    item(action('display.snap', undefined), <Magnet size={15} />, { label: 'Snap to grid', checked: c.snap, keepOpen: true }),
+    item(action('dialog.open', { dialog: 'snapping' }), <SlidersHorizontal size={15} />, { label: 'Grid and snapping…', command: undefined, description: 'Choose the step grid and what direct edits snap to.' }),
+    { type: 'heading', label: 'Window' },
+    item(action('layout.focus', undefined), <Focus size={15} />, { label: layout.focusMode ? 'Exit focus' : 'Focus on the field', checked: layout.focusMode }),
+    { label: 'Workspaces…', icon: <LayoutPanelLeft size={15} />, description: 'Switch, save, rename or reset arrangements of the window on this device.', onSelect: onWorkspaces },
+  ];
+  return <div className="canvas-view" role="toolbar" aria-label="View">
+    {!three && <Menu label="Travel paths" description="Show how performers travel into or out of this set." className={`canvas-chip${c.showPaths || c.showNextPaths ? ' active' : ''}`} align="end" items={pathsMenu}><PathsFromIcon size={15} /><span>Paths</span><ChevronDown size={11} /></Menu>}
+    {!three && <Menu label="View options" description="Labels, grid, snapping and focus." className="canvas-chip" align="end" items={viewMenu}><Eye size={14} /><span>View</span><ChevronDown size={11} /></Menu>}
+    <div className="canvas-segmented view-switch" role="group" aria-label="Field view">
+      {fieldViews.map(view => {
+        const a = action('view.select', { view }, view === '2d' ? '2D' : view === '3d' ? '3D' : 'Split', view === '2d' ? '2D field' : view === '3d' ? '3D preview' : 'Split review', c.view === view);
+        return <HelpButton key={view} command="view.select" showShortcut={view !== 'split'} title={a.title} description={view === '2d' ? 'Edit on the flat field.' : view === '3d' ? 'Watch from the stands in 3D.' : 'Edit in 2D beside a live 3D preview.'}
+          aria-pressed={c.view === view} disabled={!!a.disabledReason} disabledReason={a.disabledReason ?? undefined} data-toolbar-item={`view-${view}`} onClick={() => run(a)}>{a.label}</HelpButton>;
+      })}
+    </div>
+    <Popout3DButton controller={c} toolbarItem="popout" />
+  </div>;
 }

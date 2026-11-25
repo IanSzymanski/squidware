@@ -1,12 +1,10 @@
-import { countToSeconds } from '../domain';
-import { SURFACE_NAMES } from '../surfaces';
 import { DEFAULT_SNAPPING, fieldSnapStatus } from '../snapping';
 import { nudgeLabel } from '../editIncrements';
 import { HelpButton, useShowHints } from '../editor/ControlHelp';
 import type { EditorController } from '../editor/useEditorController';
 import type { ShellLayout } from './useShellLayout';
 
-/** One quiet line: what to do next on the left, the facts of the production on the right. */
+/** What to do next, for the state the editor is in. */
 function hint(c: EditorController, layout: ShellLayout): string {
   if (layout.mode === 'plan') return 'Tab moves across cells · Enter moves down · paste a spreadsheet range to fill many sets at once';
   if (c.pathOperations || c.routeEditor || c.movementEditor) return 'Adjust the preview on the field, then Apply or Cancel in the side panel';
@@ -22,22 +20,16 @@ function hint(c: EditorController, layout: ShellLayout): string {
   return `Drag to move · Alt+arrows nudge ${nudgeLabel(c.preferences.value, c.project)} · choose a shape to arrange the selection`;
 }
 
-export function StatusBar({ controller: c, layout }: { controller: EditorController; layout: ShellLayout }) {
+/** One quiet line on the field's margin that says what to do next. Hidden with the Show hints preference. */
+export function FieldHint({ controller, layout }: { controller: EditorController; layout: ShellLayout }) {
   const showHints = useShowHints();
+  return showHints ? <p className="canvas-hint" data-hint="">{hint(controller, layout)}</p> : null;
+}
+
+/** The grid the field snaps to, and the way to change it. */
+export function SnapStatus({ controller: c }: { controller: EditorController }) {
   const { project } = c;
-  const seconds = Math.round(countToSeconds(project, c.duration));
-  return <footer className="statusbar">
-    <span className="statusbar-hint">{showHints && <span data-hint="">{hint(c, layout)}</span>}</span>
-    <span className="statusbar-facts">
-      <span>{project.sets.length} {project.sets.length === 1 ? 'set' : 'sets'} · {c.duration} counts · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</span>
-      <i />
-      <span>{project.performers.length} performers</span>
-      <i />
-      <span className="statusbar-field">{SURFACE_NAMES[project.field.preset]}</span>
-      <i />
-      <span className="statusbar-snap" role="status">{fieldSnapStatus(project.snapping ?? DEFAULT_SNAPPING, c.snap, c.coordinatePreview ? 'coordinates' : c.spacingPreview ? 'spacing' : undefined, project.field)}</span>
-      <i />
-      <HelpButton title="Recovery copies" description="Squidware keeps automatic local recovery copies. Review them here." className="recovery-indicator" onClick={() => { c.setDialog('recovery'); void c.recovery.refresh(); }}>{c.recovery.status}</HelpButton>
-    </span>
-  </footer>;
+  return <HelpButton pointerPassThrough title="Grid and snapping" description="The step grid direct edits snap to. Open to change it." className="canvas-chip statusbar-snap-button" onClick={() => c.setDialog('snapping')}>
+    <span className="statusbar-snap" role="status">{fieldSnapStatus(project.snapping ?? DEFAULT_SNAPPING, c.snap, c.coordinatePreview ? 'coordinates' : c.spacingPreview ? 'spacing' : undefined, project.field)}</span>
+  </HelpButton>;
 }

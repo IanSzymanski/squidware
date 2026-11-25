@@ -30,7 +30,7 @@
   --text: #eceef1;
   --text-secondary: #a8b0ba;
   --muted: #a8b0ba;
-  --text-tertiary: #7b848f;
+  --text-tertiary: #8f98a3;
   --disabled-text: #5c646e;
   --disabled-bg: #1a1d21;
 
@@ -68,6 +68,7 @@
   /* The field keeps one look in every theme. */
   --field-accent: #ffffff;
   --field-well: #0b0d0f;
+  --field-well-glow: #141a17;
   --field-chip: #10151af0;
   --field-chip-line: #ffffff24;
   --field-chip-text: #eef2f6;
@@ -112,8 +113,7 @@
   /* Shell metrics. */
   --topbar-height: 44px;
   --toolbar-height: 44px;
-  --transport-height: 48px;
-  --statusbar-height: 26px;
+  --transport-height: 44px;
   --panel-width: 288px;
 
   /* Motion. */
@@ -179,6 +179,10 @@
   --shadow-md: 0 8px 24px #10172024, 0 1px 2px #1017201a;
   --shadow-lg: 0 24px 64px #10172038, 0 2px 8px #1017201f;
   --backdrop: #10172066;
+
+  /* A slate well keeps the field's own captions readable without a hard black edge against light chrome. */
+  --field-well: #262c33;
+  --field-well-glow: #323941;
 }
 
 :root[data-theme=high-contrast] {

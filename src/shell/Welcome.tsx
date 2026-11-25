@@ -79,32 +79,38 @@ export function Welcome({ controller: c, onClose }: { controller: EditorControll
   }
   return <dialog ref={dialog} tabIndex={-1} className="welcome" aria-labelledby="welcome-title" onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="welcome-hero">
-      <SquidMark size={40} />
-      <h1 id="welcome-title">Write your show</h1>
-      <p>Pick an ensemble and you are on the field with dots to move. Everything stays on this computer.</p>
+      <SquidMark size={36} />
+      <div><h1 id="welcome-title">Write your show</h1>
+        <p>Pick an ensemble and you are on the field with dots to move.</p></div>
     </div>
     <div className="welcome-body">
       <section aria-labelledby="welcome-new">
-        <h2 id="welcome-new">Start a new show</h2>
+        <h2 id="welcome-new">New production</h2>
         <div className="welcome-starts">
           {STARTS.map((start, i) => <button key={start.id} type="button" className="welcome-start" disabled={busy} onClick={() => void create(starterProject(start.counts))}>
             <StarterPreview counts={start.counts} />
             <span className="welcome-start-text"><strong>{start.name}</strong><span>{totals[i]} performers</span></span>
           </button>)}
         </div>
-        <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(createBlankProject(), true)}><Plus size={14} />Empty field — I'll add my own cast</button>
+        <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(createBlankProject(), true)}><Plus size={14} />Empty field, add my own cast</button>
       </section>
       <section aria-labelledby="welcome-continue" className="welcome-actions">
-        <h2 id="welcome-continue">Or pick up where you left off</h2>
+        <h2 id="welcome-continue">Continue</h2>
         <button type="button" className="welcome-action" disabled={busy} onClick={() => { onClose(); void c.openProject(); }}>
-          <FolderOpen size={18} /><span><strong>Open a show…</strong><small>A .squid file from this computer</small></span><CommandKeycaps command="file.open" />
+          <FolderOpen size={18} /><span><strong>Open a production…</strong><small>A .squid file on this computer</small></span><CommandKeycaps command="file.open" />
         </button>
         <button type="button" className="welcome-action" onClick={onClose}>
           <Play size={18} /><span><strong>Explore the demo</strong><small>Tether · 165 performers, 67 sets</small></span><ArrowRight size={15} />
         </button>
-        {recoveries > 0 && <button type="button" className="welcome-action" onClick={() => { onClose(); c.setDialog('recovery'); void c.recovery.refresh(); }}>
-          <LifeBuoy size={18} /><span><strong>Recovery copies</strong><small>{recoveries} automatic {recoveries === 1 ? 'copy' : 'copies'} on this computer</small></span><ArrowRight size={15} />
-        </button>}
+        <button type="button" className="welcome-action" onClick={() => { onClose(); c.setDialog('recovery'); void c.recovery.refresh(); }}>
+          <LifeBuoy size={18} /><span><strong>Recovery copies</strong><small>{recoveries > 0 ? `${recoveries} automatic ${recoveries === 1 ? 'copy' : 'copies'} on this computer` : 'Automatic copies of your work'}</small></span><ArrowRight size={15} />
+        </button>
+        <h2 className="welcome-keys-title">Good to know</h2>
+        <dl className="welcome-keys">
+          <div><dt>Find any action</dt><dd><CommandKeycaps command="palette.open" /></dd></div>
+          <div><dt>Play or pause</dt><dd><CommandKeycaps command="playback.toggle" /></dd></div>
+          <div><dt>Previous / next set</dt><dd><CommandKeycaps command="set.previous" /><CommandKeycaps command="set.next" /></dd></div>
+        </dl>
       </section>
     </div>
   </dialog>;

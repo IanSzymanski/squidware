@@ -7,15 +7,16 @@ import { EditorDialogs } from '../editor/EditorDialogs';
 import { EditorField } from '../editor/EditorField';
 import { Popout3D } from '../editor/Popout3D';
 import { ProductionWorkspace } from '../editor/ProductionWorkspace';
-import { SelectionTools, SectionSelectionButton, revealFocusedChip } from '../editor/SelectionTools';
+import { SelectionTools } from '../editor/SelectionTools';
 import { useEditorSelector } from '../editor/react';
 import { useEditorController } from '../editor/useEditorController';
 import { ShowStrip } from './ShowStrip';
 import { SidePanel } from './SidePanel';
-import { StatusBar } from './StatusBar';
-import { Toolbar } from './Toolbar';
+import { FieldHint, SnapStatus } from './StatusBar';
+import { Toolbar, ViewControls } from './Toolbar';
 import { TopBar } from './TopBar';
 import { Welcome } from './Welcome';
+import { WorkspacesDialog } from './WorkspacesDialog';
 import { useShellLayout } from './useShellLayout';
 import './shell.css';
 
@@ -27,26 +28,30 @@ export function AppShell() {
   // The startup sample has nothing to lose: offer a fresh start over it. Automated runs open straight into the editor.
   const [welcome, setWelcome] = useState(() => !window.squidware?.legacyDemo && !new URLSearchParams(location.search).has('editor'));
   const { project, projectEpoch, toast, setToast, printMode, printing, audioUrl, muted, audioRef, audioInput, projectInput, rosterInput, onProjectFile, onAudioFile, onRosterFile } = controller;
+  const [workspacesOpen, setWorkspacesOpen] = useState(false);
+  const openWorkspaces = () => setWorkspacesOpen(true);
   const planning = layout.mode === 'plan';
   const notice = controller.preferences.value.workspaces.notice;
 
   return <>
     <div ref={layout.studio} className={`studio studio--${controller.preferences.value.panelLayout}${layout.focusMode ? ' studio--focus' : ''}`}
       data-mode={layout.mode} data-header={layout.breakpoints.header} data-transport={layout.breakpoints.transport} data-height={layout.breakpoints.short ? 'short' : 'tall'} data-timeline={layout.arrangement.timeline}>
-      <TopBar controller={controller} layout={layout} />
+      <TopBar controller={controller} layout={layout} onWorkspaces={openWorkspaces} />
       {notice && <div className="workspace-recovery shell-notice" role="status">{notice}<button className="button small" onClick={() => controller.preferences.update({ workspaces: { ...controller.preferences.value.workspaces, notice: '' } })}>Dismiss</button></div>}
       <div className="studio-body">
         <main className="main-workspace">
           <div className="workspace-field" hidden={planning} inert={planning}>
             <Toolbar controller={controller} layout={layout} />
             <EditorField controller={controller}>
-              <div className="field-legend" role="group" aria-label="Select a section">
-                <div className="field-legend-scroll" onFocus={revealFocusedChip}>{project.sections.map(section => <SectionSelectionButton section={section} controller={controller} key={section.id} />)}</div>
-              </div>
-              <div className="canvas-zoom" role="group" aria-label="Field zoom">
-                <HelpButton pointerPassThrough command="field.zoom-out" title="Zoom out" disabled={controller.zoom <= .6} disabledReason="The field is at its smallest zoom." onClick={() => controller.dispatch('field.zoom-out')}><Minus size={13} /></HelpButton>
-                <HelpButton pointerPassThrough command="field.fit" title="Fit field" description="Reset zoom and pan to show the whole field." className="zoom-value" onClick={() => controller.dispatch('field.fit')}>{Math.round(controller.zoom * 100)}%</HelpButton>
-                <HelpButton pointerPassThrough command="field.zoom-in" title="Zoom in" disabled={controller.zoom >= 3} disabledReason="The field is at its largest zoom." onClick={() => controller.dispatch('field.zoom-in')}><Plus size={13} /></HelpButton>
+              <ViewControls controller={controller} layout={layout} onWorkspaces={openWorkspaces} />
+              <FieldHint controller={controller} layout={layout} />
+              <div className="canvas-zoom-row">
+                <SnapStatus controller={controller} />
+                <div className="canvas-zoom" role="group" aria-label="Field zoom">
+                  <HelpButton pointerPassThrough command="field.zoom-out" title="Zoom out" disabled={controller.zoom <= .6} disabledReason="The field is at its smallest zoom." onClick={() => controller.dispatch('field.zoom-out')}><Minus size={13} /></HelpButton>
+                  <HelpButton pointerPassThrough command="field.fit" title="Fit field" description="Reset zoom and pan to show the whole field." className="zoom-value" onClick={() => controller.dispatch('field.fit')}>{Math.round(controller.zoom * 100)}%</HelpButton>
+                  <HelpButton pointerPassThrough command="field.zoom-in" title="Zoom in" disabled={controller.zoom >= 3} disabledReason="The field is at its largest zoom." onClick={() => controller.dispatch('field.zoom-in')}><Plus size={13} /></HelpButton>
+                </div>
               </div>
             </EditorField>
             {layout.focusMode && <HelpButton pointerPassThrough title="Exit focus" description="Restore the toolbar and panels. Escape also exits focus." className="focus-restore button" onClick={layout.toggleFocus}><Maximize size={14} />Exit focus<kbd>Esc</kbd></HelpButton>}
@@ -57,7 +62,6 @@ export function AppShell() {
         <SidePanel controller={controller} layout={layout} />
       </div>
       <ShowStrip controller={controller} layout={layout} />
-      <StatusBar controller={controller} layout={layout} />
     </div>
     <input ref={projectInput} type="file" accept=".squid,.json" hidden onChange={event => void onProjectFile(event)} />
     <input ref={rosterInput} type="file" accept=".csv" hidden onChange={event => void onRosterFile(event)} />
@@ -68,6 +72,7 @@ export function AppShell() {
     <Popout3D controller={controller} />
     {paletteOpen && <CommandPalette />}
     <EditorDialogs key={projectEpoch} controller={controller} />
+    {workspacesOpen && <WorkspacesDialog controller={controller} onClose={() => setWorkspacesOpen(false)} />}
     {welcome && !controller.dialog && !paletteOpen && <Welcome controller={controller} onClose={() => setWelcome(false)} />}
     {printing && <PrintOutput project={project} mode={printMode} paper={controller.preferences.value.paperSize} coordinateFormat={controller.coordinateFormat} />}
   </>;

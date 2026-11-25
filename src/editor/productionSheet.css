@@ -1,12 +1,10 @@
 /* Plan: the whole show as an editable sheet. */
 .production-workspace.sheet-workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
 .sheet-toolbar { flex: none; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: var(--toolbar-height); padding: 6px 12px; border-bottom: 1px solid var(--hairline); }
+.sheet-toolbar .divider-vertical { margin: 6px 4px; }
 .sheet-toolbar p { margin-right: auto; display: flex; align-items: baseline; gap: var(--space-3); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
 .sheet-toolbar p strong { font-weight: 600; }
 .sheet-toolbar p span { color: var(--text-tertiary); font-size: var(--text-xs); }
-.sheet-help { flex: none; padding: 0 12px; border-bottom: 1px solid var(--hairline); color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.5; }
-.sheet-help > summary { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
-.sheet-help p { max-width: 900px; padding-bottom: 8px; }
 .sheet-scroll { flex: 1; min-height: 0; overflow: auto; }
 .production-table table { width: 100%; min-width: 820px; border-collapse: collapse; table-layout: fixed; text-align: left; font-size: var(--text-sm); }
 .production-table thead th {
@@ -29,7 +27,11 @@
   background: transparent !important; box-shadow: none !important; color: var(--text); font-size: var(--text-sm) !important; font-variant-numeric: tabular-nums; scroll-margin-top: 44px;
 }
 /* Notes grow to whole lines (up to three), then scroll; rows=1 remains the fallback height. */
-.sheet-scroll textarea { resize: none; line-height: 1.4; field-sizing: content; max-height: calc(3lh + 16px); overflow-y: auto; }
+.sheet-scroll textarea { resize: none; line-height: 1.4; field-sizing: content; max-height: calc(4lh + 16px); overflow-y: auto; }
+/* One line per set until a cell is being edited, so more of the show fits. */
+.sheet-scroll--dense textarea:not(:focus) { max-height: calc(1lh + 16px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sheet-scroll--dense tbody th { padding-top: 6px; padding-bottom: 4px; display: table-cell; }
+.sheet-scroll--dense .sheet-score-position { display: inline; margin-left: 8px; }
 .sheet-scroll input:hover, .sheet-scroll textarea:hover { border-color: var(--border) !important; }
 .sheet-scroll input:focus, .sheet-scroll textarea:focus { border-color: var(--accent-line) !important; background: var(--input-bg) !important; box-shadow: 0 0 0 3px var(--accent-soft) !important; }
 .sheet-scroll input[readonly] { color: var(--text-tertiary); }

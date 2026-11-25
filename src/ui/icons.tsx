@@ -23,6 +23,11 @@ export const BezierIcon = (props: IconProps) => <Glyph {...props}>
   {dots([[3, 15], [7.2, 8.6], [12.6, 11.6], [17, 5]])}
 </Glyph>;
 
+export const BezierWaveIcon = (props: IconProps) => <Glyph {...props}>
+  <path d="M3 10C6 2 9 2 10 10s4 8 7 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity=".45" />
+  {dots([[3, 10], [6.6, 4.6], [10, 10], [13.4, 15.4], [17, 10]])}
+</Glyph>;
+
 /** Paths from the previous set: travel arrives at the solid dot. */
 export const PathsFromIcon = (props: IconProps) => <Glyph {...props}>
   <path d="M3.5 15.5 13 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2.2 2.6" />

@@ -1,6 +1,6 @@
 /* The 2D field and the 3D stage. Their surface keeps one look in every theme: UI themes never recolor a show. */
 .field-stage, .stage-three { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; background: var(--field-well); }
-.field-stage { background: radial-gradient(ellipse at 50% 46%, #141a17 0%, var(--field-well) 70%); }
+.field-stage { background: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
 .field-stage__background, .field-stage__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 .field-stage__canvas { visibility: hidden; }
 .field-stage__svg { position: relative; display: block; width: 100%; height: 100%; min-height: 0; touch-action: none; user-select: none; outline: none; }
@@ -30,8 +30,9 @@
   background: #ffffff; color: #101418; font-size: var(--text-sm); font-weight: 600;
 }
 .field-preview-banner button:hover { background: #e7ebef; }
-/* The tool strip names the active preview; the field repeats it only when something is wrong. */
-.field-preview-banner.transform-preview-banner { display: none; padding: 6px 12px; }
+/* The tool strip names the active preview and the playback lock; the field repeats it only when something is wrong. */
+.field-preview-banner { display: none; }
+.field-preview-banner.transform-preview-banner { padding: 6px 12px; }
 .field-preview-banner.transform-preview-banner--error { display: flex; border-color: var(--error-line); color: var(--error); }
 .field-readout {
   position: absolute; z-index: 2; display: flex; flex-direction: column; gap: 2px; width: max-content; max-width: min(300px, calc(100% - 16px)); padding: 7px 10px;
@@ -40,7 +41,7 @@
 .field-readout strong { font-weight: 600; font-size: var(--text-sm); }
 .field-readout span { color: var(--field-chip-muted); }
 .neighbor-legend {
-  position: absolute; z-index: 2; top: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: calc(100% - 24px); padding: 6px 10px;
+  position: absolute; z-index: 2; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: calc(100% - 330px); padding: 5px 10px;
   border-radius: var(--radius-md); font-size: var(--text-xs); line-height: 1.4; pointer-events: none;
 }
 .neighbor-legend > span { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
@@ -51,9 +52,9 @@
 .neighbor-legend [data-neighbor-legend=next] svg > path:first-child { stroke-dasharray: 1 4; stroke-linecap: round; }
 .neighbor-legend__scope { color: var(--field-chip-muted); }
 .field-container:has(.field-stage--moving) .neighbor-legend { display: none; }
-.field-container:has(.field-preview-banner:not(.transform-preview-banner), .transform-preview-banner--error) .neighbor-legend { top: 64px; }
+.field-container:has(.transform-preview-banner--error) .neighbor-legend { top: 54px; }
 .problem-field-status {
-  position: absolute; z-index: 3; top: 12px; right: 12px; display: flex; align-items: center; gap: var(--space-2); max-width: calc(100% - 24px); padding: 5px 6px 5px 10px;
+  position: absolute; z-index: 3; top: 46px; right: 10px; display: flex; align-items: center; gap: var(--space-2); max-width: calc(100% - 24px); padding: 5px 6px 5px 10px;
   border-radius: var(--radius-md); font-size: var(--text-xs);
 }
 .problem-field-status .button { min-height: 22px; padding: 0 8px; border-color: var(--field-chip-line); color: var(--field-chip-text); font-size: var(--text-xs); }
@@ -71,14 +72,14 @@
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; pointer-events: none;
   border-radius: var(--radius-md); font-size: var(--text-xs); line-height: 1.45;
 }
-.field-stage--keyboard .field-keyboard-help { left: 12px; right: 12px; bottom: 48px; width: auto; height: auto; margin: 0; padding: 6px 10px; overflow: visible; clip-path: none; white-space: normal; }
+.field-stage--keyboard .field-keyboard-help { left: 10px; right: 300px; bottom: 10px; width: auto; height: auto; margin: 0; padding: 6px 10px; overflow: visible; clip-path: none; white-space: normal; }
 .field-drag-status { position: absolute; z-index: 3; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 4px 10px; border-radius: var(--radius-full); font-size: var(--text-xs); white-space: nowrap; pointer-events: none; }
 
 /* 3D stage */
 .stage-three__canvas { width: 100%; height: 100%; min-height: 0; touch-action: none; }
 .stage-three__canvas > canvas { display: block; width: 100%; height: 100%; outline: none; }
 .stage-three__controls, .stage-three__quality {
-  position: absolute; z-index: 3; top: 12px; right: 12px; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 24px); padding: 3px; flex-wrap: wrap;
+  position: absolute; z-index: 3; top: 10px; left: 10px; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 24px); padding: 3px; flex-wrap: wrap;
   border-radius: var(--radius-lg); font-size: var(--text-xs);
 }
 .stage-three__controls > button, .stage-three__quality > button {
@@ -102,4 +103,4 @@
 .stage-three__fallback > button, .stage-three__fallback .button {
   appearance: none; min-height: var(--control-lg); padding: 0 14px; border: 0; border-radius: var(--radius-sm); background: #ffffff; color: #101418; font-size: var(--text-sm); font-weight: 600;
 }
-@container (max-height: 260px) { .field-legend, .canvas-zoom { display: none; } }
+@container (max-height: 260px) { .canvas-hint, .canvas-zoom-row { display: none; } }

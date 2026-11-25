@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2, Users, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2 } from 'lucide-react';
 import { isCustomSurface, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import { nudgeLabel } from '../editIncrements';
 import { DEFAULT_SNAPPING, gridInterval, snapDescription } from '../snapping';
@@ -11,6 +11,7 @@ import { CommitInput } from '../editor/EditorControls';
 import { HelpButton } from '../editor/ControlHelp';
 import { FacingControls } from '../editor/FacingControls';
 import { FormationPanel } from '../editor/FormationPanel';
+import { SectionSelectionButton } from '../editor/SelectionTools';
 import { TransformPanel } from '../editor/TransformPanel';
 import { SpacingPanel } from '../editor/SpacingPanel';
 import { CoordinatePanel } from '../editor/CoordinatePanel';
@@ -44,7 +45,7 @@ function Section({ title, preference, controller, children, className = '', asid
 
 /** Properties of whatever the writer is working on: the selection when there is one, and always the set. */
 export function Inspector({ controller }: { controller: EditorController }) {
-  const { project, projectEpoch, activeSet, selectedIds, selectedPerformers, index, readOnly, setPendingDraft, updateSet, setPlaying, setDialog, reorderSet, applyFormation, selectSet, setSelectedIds } = controller;
+  const { project, projectEpoch, activeSet, selectedIds, selectedPerformers, index, readOnly, setPendingDraft, updateSet, setPlaying, setDialog, reorderSet, setSelectedIds } = controller;
   const unit = surfaceUnits(project.field);
   const custom = isCustomSurface(project.field);
   const toUnit = (value: number) => yardsInUnit(value, unit);
@@ -63,6 +64,22 @@ export function Inspector({ controller }: { controller: EditorController }) {
     return project.sections.filter(section => counts.has(section.id)).map(section => ({ ...section, count: counts.get(section.id)! }));
   }, [selectedPerformers, project.sections]);
   const format = (n: number) => Number(toUnit(n).toFixed(2));
+  const stepYards = 5 / (project.snapping ?? DEFAULT_SNAPPING).steps;
+  /** A length in the production's steps on a football field, or in the surface's own unit. */
+  const inSteps = (yards: number) => Number((isCustomSurface(project.field) ? toUnit(yards) : yards / stepYards).toFixed(1));
+  // How the selection travels into this set: counts, the longest path and the largest step.
+  const travel = useMemo(() => {
+    if (index === 0 || !selectedPerformers.length) return null;
+    let counts = 0, distance = 0, step: number | null = null;
+    for (const performer of selectedPerformers) {
+      try {
+        const move = performerMoveOutput(project, index, performer.id, controller.coordinateFormat);
+        counts = move.counts; distance = Math.max(distance, move.distanceYards);
+        if (move.averageStepsPerFive !== null) step = step === null ? move.averageStepsPerFive : Math.min(step, move.averageStepsPerFive);
+      } catch { /* A performer without a position on this set has no travel to report. */ }
+    }
+    return counts ? { counts, distance, step } : null;
+  }, [project, index, selectedPerformers, controller.coordinateFormat]);
 
   const check = useTransitionAnalysis(project, index, projectEpoch);
 
@@ -78,13 +95,6 @@ export function Inspector({ controller }: { controller: EditorController }) {
   const planning = controller.workspace === 'production', three = controller.view === '3d';
   const enabled = (id: 'set.split-open' | 'choreography.open' | 'set.duplicate' | 'set.hold' | 'set.insert-before') => commandRegistry[id].enabled(state, undefined);
   const reason = (id: 'set.split-open' | 'choreography.open' | 'set.duplicate' | 'set.hold' | 'set.insert-before') => commandUnavailable(state, { id, args: undefined }) ?? undefined;
-
-  const commit = (kind: 'formation' | 'transform' | 'spacing' | 'coordinates', result: { error?: string | null; changed?: boolean } | null | undefined, apply: () => void, idle: string) =>
-    <div className="transform-commit-actions inspector-commit" role="group" aria-label={`Commit ${kind === 'coordinates' ? 'coordinate' : kind} preview`}>
-      <HelpButton command={`${kind}.cancel`} title={kind === 'coordinates' ? 'Cancel coordinate entry' : `Cancel ${kind}`} className="button subtle" onClick={() => controller.dispatch(`${kind}.cancel`)}>Cancel</HelpButton>
-      <HelpButton command={`${kind}.apply`} title={`Apply ${kind}`} className={`button primary${kind === 'formation' ? ' apply-formation' : ''}`}
-        disabled={controller.pendingDraft || !!result?.error || !result?.changed} disabledReason={result?.error || (controller.pendingDraft ? 'Finish or cancel incomplete inputs.' : idle)} onClick={apply}>Apply {kind}</HelpButton>
-    </div>;
 
   const setMenu: MenuEntry[] = [
     { label: 'Duplicate set', icon: <Copy size={15} />, command: 'set.duplicate', disabled: !enabled('set.duplicate'), disabledReason: reason('set.duplicate'), onSelect: () => controller.duplicateSet() },
@@ -103,66 +113,68 @@ export function Inspector({ controller }: { controller: EditorController }) {
   return <aside className="inspector">
     <div hidden={planning} className="selection-bar" role="region" aria-label="Selection actions" tabIndex={-1}>
       <div className="selection-bar-heading">
-        {selectedIds.length > 0 ? <>
-          <div className="selection-summary">
-            <strong className="selection-count" role="status">{selectedIds.length} selected</strong>
-            <span className="selection-sections">{single ? `${single.label}${single.name ? ` · ${single.name}` : ''}` : sections.slice(0, 3).map(section => section.name).join(', ')}{!single && sections.length > 3 ? ` +${sections.length - 3}` : ''}</span>
-          </div>
-          <HelpButton command="selection.clear" title="Clear selection" className="icon-button" onClick={() => setSelectedIds([])}><X size={15} /></HelpButton>
-        </> : <>
-          <div className="selection-summary">
-            <strong className="selection-count" role="status">0 selected</strong>
-            <span className="selection-sections">Click a dot, drag a box, or pick a section.</span>
-          </div>
-          <HelpButton command="selection.all" title="Select all for editing" className="button small" disabled={!project.performers.length} disabledReason="Add performers to the cast first." onClick={() => setSelectedIds(project.performers.map(p => p.id))}><Users size={13} />Select all</HelpButton>
-        </>}
+        <div className="selection-summary">
+          <strong className="selection-count" role="status">{selectedIds.length} selected</strong>
+          <span className="selection-sections">{!selectedIds.length ? 'Click a dot, drag a box, or pick a section' : single ? `${single.label}${single.name ? ` · ${single.name}` : ''}` : sections.slice(0, 3).map(section => section.name).join(', ')}{!single && sections.length > 3 ? ` +${sections.length - 3}` : ''}</span>
+        </div>
+        {selectedIds.length > 0
+          ? <HelpButton command="selection.clear" title="Clear selection" className="button small" onClick={() => setSelectedIds([])}>Clear</HelpButton>
+          : <HelpButton command="selection.all" title="Select all for editing" className="button small" disabled={!project.performers.length} disabledReason="Add performers to the cast first." onClick={() => setSelectedIds(project.performers.map(p => p.id))}>Select all</HelpButton>}
       </div>
-      {bounds && <div className="selection-bounds">
-        <span>{previewing ? 'Preview' : `Set ${index + 1}`} · {single ? coordinateDescription(displayPositions[single.id], project.field, controller.coordinateFormat) : `Center ${format(bounds.centerX)}, ${format(bounds.centerY)} ${unit}`}</span>
-        {!single && <span>Bounds {format(bounds.width)} × {format(bounds.height)} {unit}</span>}
+      {!previewing && project.sections.length > 0 && <div className="field-legend section-chips" role="group" aria-label="Select a section">
+        {project.sections.map(section => <SectionSelectionButton section={section} controller={controller} key={section.id} />)}
       </div>}
-      {readOnly && !controller.selectionPreview && !previewing && <HelpButton command="set.select" showShortcut={false} title="Return to this set to edit" className="return-to-set" onClick={() => selectSet(index)}>Return to set {index + 1} to edit<ArrowRight size={13} /></HelpButton>}
     </div>
 
     <div className="inspector-scroll">
-      {controller.formationPreview && <div className="inspector-tool"><h3 className="inspector-tool-title">Formation</h3><FormationPanel controller={controller} /></div>}
-      {controller.transformPreview && <div className="inspector-tool"><h3 className="inspector-tool-title">Rotate and scale</h3><TransformPanel controller={controller} /></div>}
-      {controller.spacingPreview && <div className="inspector-tool"><h3 className="inspector-tool-title">Align and space</h3><SpacingPanel controller={controller} /></div>}
-      {controller.coordinatePreview && <div className="inspector-tool"><h3 className="inspector-tool-title">Coordinates</h3><CoordinatePanel controller={controller} /></div>}
+      {controller.formationPreview && <div className="inspector-tool"><FormationPanel controller={controller} /></div>}
+      {controller.transformPreview && <div className="inspector-tool"><TransformPanel controller={controller} /></div>}
+      {controller.spacingPreview && <div className="inspector-tool"><SpacingPanel controller={controller} /></div>}
+      {controller.coordinatePreview && <div className="inspector-tool"><CoordinatePanel controller={controller} /></div>}
 
-      {points.length > 0 && !previewing && <div hidden={planning || three}>
-        <Section title={single ? 'Position' : 'Move'} preference="inspectorSelectionOpen" className="selection-section" controller={controller}>
-          {single && <div key={`${projectEpoch}:${activeSet.id}:${single.id}`} className="selected-performer">
+      {points.length > 0 && bounds && !previewing && <div hidden={planning || three}>
+        <Section title={single ? 'Position' : 'Selection'} preference="inspectorSelectionOpen" className="selection-section" controller={controller}>
+          <div className="selection-bounds">
+            <p className="selection-coordinate">
+              {!single && <span className="selection-coordinate-label">Center</span>}
+              {coordinateDescription(single ? displayPositions[single.id] : { x: bounds.centerX, y: bounds.centerY }, project.field, controller.coordinateFormat).split('; ').map((line, i) => <span key={i}>{line}</span>)}
+            </p>
+            <dl className="selection-stats">
+              {!single && <div><dt>Size</dt><dd>{inSteps(bounds.width)} × {inSteps(bounds.height)}<small>{custom ? unit : 'steps'}</small></dd></div>}
+              {travel && <>
+                <div><dt>Move in</dt><dd>{travel.counts}<small>counts</small></dd></div>
+                <div><dt>{single ? 'Travel' : 'Longest'}</dt><dd>{format(travel.distance)}<small>{unit}</small></dd></div>
+                {travel.step !== null && <div><dt>{single ? 'Step size' : 'Biggest step'}</dt><dd>{travel.step.toFixed(1)}<small>to 5</small></dd></div>}
+              </>}
+              {!travel && index === 0 && <div><dt>Move in</dt><dd className="selection-stat-text">Opening set</dd></div>}
+            </dl>
+          </div>
+          <div className="nudge-row">
+            <span className="nudge-label">Nudge</span>
+            <div className="transform-buttons move-buttons" role="group" aria-label={`Move ${selectedIds.length === 1 ? 'performer' : 'group'}`}>
+              {([{ label: 'left', icon: ArrowLeft, key: 'ArrowLeft' }, { label: 'back', icon: ArrowUp, key: 'ArrowUp' }, { label: 'front', icon: ArrowDown, key: 'ArrowDown' }, { label: 'right', icon: ArrowRight, key: 'ArrowRight' }] as const).map(({ label, icon: Icon, key }) =>
+                <HelpButton key={label} command="selection.nudge" className={`icon-button move-selection-${label}`} title={`Move selection ${label}`} description={`Request ${nudgeLabel(controller.preferences.value, project)} toward field ${label}; arrow icons follow the displayed orientation. ${controller.snap ? snapDescription(project.snapping ?? DEFAULT_SNAPPING) : 'Snapping is off'}. Targets and field boundaries determine the accepted distance. Shift-click requests ${nudgeLabel(controller.preferences.value, project, true)}.`} disabled={readOnly || controller.pendingDraft} disabledReason={unavailable} onClick={event => controller.dispatch('selection.nudge', { key, fast: event.shiftKey, fieldRelative: true })}><Icon size={14} style={{ transform: controller.preferences.value.fieldOrientation === 'audience-top' ? 'rotate(180deg)' : undefined }} /></HelpButton>)}
+            </div>
+            {points.length > 1 && <div className="transform-buttons" role="group" aria-label="Rotate and scale in steps">
+              <HelpButton command="selection.increment" className="icon-button" title={`Rotate selection ${controller.preferences.value.rotationStep}° counterclockwise`} description={`Preview a ${controller.preferences.value.rotationStep}-degree counterclockwise rotation. Adjust its pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'rotate', direction: -1 })}><RotateCcw size={14} /></HelpButton>
+              <HelpButton className="icon-button rotate-selection-clockwise" command="selection.increment" title={`Rotate selection ${controller.preferences.value.rotationStep}° clockwise`} description={`Preview a ${controller.preferences.value.rotationStep}-degree clockwise rotation. Adjust its pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'rotate', direction: 1 })}><RotateCw size={14} /></HelpButton>
+              <HelpButton command="selection.increment" className="icon-button" title={`Compress selection by ${controller.preferences.value.scaleStep}%`} description={`Preview ${100 - controller.preferences.value.scaleStep}% scale around the chosen pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'scale', direction: -1 })}><Minus size={14} /></HelpButton>
+              <HelpButton command="selection.increment" className="icon-button" title={`Expand selection by ${controller.preferences.value.scaleStep}%`} description={`Preview ${100 + controller.preferences.value.scaleStep}% scale around the chosen pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'scale', direction: 1 })}><Plus size={14} /></HelpButton>
+            </div>}
+          </div>
+          {single && <details key={`${projectEpoch}:${activeSet.id}:${single.id}`} className="selected-performer performer-facing">
+            <summary>Exact position</summary>
             <div className="form-row exact-position">
               <NumberField onDraftChange={setPendingDraft} label={custom ? `X · ${unit} from left` : 'X · yards from left'} description="Set this performer’s horizontal distance from the left edge." disabledReason={unavailable} value={Number(toUnit(activeSet.positions[single.id].x).toFixed(3))} min={0} max={toUnit(project.field.width)} step={toUnit(gridInterval(project.snapping ?? DEFAULT_SNAPPING))} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'x', value: unitInYards(value, unit) })} />
               <NumberField onDraftChange={setPendingDraft} label={custom ? `Y · ${unit} from back` : 'Y · yards from back'} description={custom ? 'Set this performer’s distance from the back edge.' : 'Set this performer’s distance in yards from the back sideline.'} disabledReason={unavailable} value={Number(toUnit(activeSet.positions[single.id].y).toFixed(3))} min={0} max={toUnit(project.field.height)} step={toUnit(gridInterval(project.snapping ?? DEFAULT_SNAPPING))} disabled={readOnly} onChange={value => controller.dispatch('positions.place', { index, id: single.id, axis: 'y', value: unitInYards(value, unit) })} />
             </div>
-            <p className="selection-move">{performerMoveOutput(project, index, single.id, controller.coordinateFormat).description}</p>
-          </div>}
-          <div className="nudge-row">
-            <div className="transform-buttons move-buttons" role="group" aria-label={`Move ${selectedIds.length === 1 ? 'performer' : 'group'}`}>
-              {([{ label: 'left', icon: ArrowLeft, key: 'ArrowLeft' }, { label: 'back', icon: ArrowUp, key: 'ArrowUp' }, { label: 'front', icon: ArrowDown, key: 'ArrowDown' }, { label: 'right', icon: ArrowRight, key: 'ArrowRight' }] as const).map(({ label, icon: Icon, key }) =>
-                <HelpButton key={label} command="selection.nudge" className={`icon-button move-selection-${label}`} title={`Move selection ${label}`} description={`Request ${nudgeLabel(controller.preferences.value, project)} toward field ${label}; arrow icons follow the displayed orientation. ${controller.snap ? snapDescription(project.snapping ?? DEFAULT_SNAPPING) : 'Snapping is off'}. Targets and field boundaries determine the accepted distance. Shift-click requests ${nudgeLabel(controller.preferences.value, project, true)}.`} disabled={readOnly || controller.pendingDraft} disabledReason={unavailable} onClick={event => controller.dispatch('selection.nudge', { key, fast: event.shiftKey, fieldRelative: true })}><Icon size={15} style={{ transform: controller.preferences.value.fieldOrientation === 'audience-top' ? 'rotate(180deg)' : undefined }} /></HelpButton>)}
-            </div>
-            <span className="nudge-step">{nudgeLabel(controller.preferences.value, project)} per press</span>
-          </div>
-          {points.length > 1 && <div className="nudge-row">
-            <div className="transform-buttons" role="group" aria-label="Rotate and scale in steps">
-              <HelpButton command="selection.increment" className="icon-button" title={`Rotate selection ${controller.preferences.value.rotationStep}° counterclockwise`} description={`Preview a ${controller.preferences.value.rotationStep}-degree counterclockwise rotation. Adjust its pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'rotate', direction: -1 })}><RotateCcw size={15} /></HelpButton>
-              <HelpButton className="icon-button rotate-selection-clockwise" command="selection.increment" title={`Rotate selection ${controller.preferences.value.rotationStep}° clockwise`} description={`Preview a ${controller.preferences.value.rotationStep}-degree clockwise rotation. Adjust its pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'rotate', direction: 1 })}><RotateCw size={15} /></HelpButton>
-              <HelpButton command="selection.increment" className="icon-button" title={`Compress selection by ${controller.preferences.value.scaleStep}%`} description={`Preview ${100 - controller.preferences.value.scaleStep}% scale around the chosen pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'scale', direction: -1 })}><Minus size={15} /></HelpButton>
-              <HelpButton command="selection.increment" className="icon-button" title={`Expand selection by ${controller.preferences.value.scaleStep}%`} description={`Preview ${100 + controller.preferences.value.scaleStep}% scale around the chosen pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'scale', direction: 1 })}><Plus size={15} /></HelpButton>
-            </div>
-            <span className="nudge-step">{controller.preferences.value.rotationStep}° · {controller.preferences.value.scaleStep}%</span>
-          </div>}
+          </details>}
           <details className="performer-facing">
             <summary>Facing</summary>
             <FacingControls key={JSON.stringify([projectEpoch, activeSet.id, selectedIds])} controller={controller} unavailable={unavailable} />
           </details>
         </Section>
       </div>}
-
-      {!previewing && !!activeSet.liveFormations?.length && <div hidden={planning || three} className="inspector-live"><FormationPanel controller={controller} /></div>}
 
       {!previewing && <Section title={`Set ${index + 1}`} preference="inspectorSetOpen" controller={controller} className="set-section">
         <div key={`${projectEpoch}-${activeSet.id}`} className="set-fields">
@@ -179,6 +191,7 @@ export function Inspector({ controller }: { controller: EditorController }) {
               <select disabled={index === 0} value={timing.transition} onChange={e => updateSet({ transition: e.target.value as 'linear' | 'ease' })}><option value="linear">Linear timing</option><option value="ease">Ease in / out</option></select>
             </Tooltip>
           </label>
+          {!!activeSet.liveFormations?.length && !planning && !three && <div className="inspector-live"><FormationPanel controller={controller} /></div>}
           <label className="form-label">Rehearsal notes<CommitInput label="Rehearsal notes" description="Add instructions for this set. Enter applies; Shift+Enter adds a line; Escape cancels." multiline allowEmpty onDraftChange={setPendingDraft} placeholder="What should the ensemble know?" value={activeSet.notes} maxLength={PROJECT_LIMITS.text.notes} onCommit={notes => updateSet({ notes })} /></label>
         </div>
       </Section>}
@@ -187,9 +200,5 @@ export function Inspector({ controller }: { controller: EditorController }) {
         aside={index === 0 ? undefined : check.status === 'pending' ? <span className="badge">…</span> : check.status === 'error' ? <span className="badge warning">!</span> : check.issues.length ? <span className="badge warning">{check.issues.length}</span> : <span className="badge ok"><Check size={11} /></span>}><TransitionCheck controller={controller} /></Section>}
     </div>
 
-    {controller.formationPreview && commit('formation', controller.formationResult, applyFormation, 'The preview matches the original positions.')}
-    {controller.transformPreview && commit('transform', controller.transformResult, () => controller.dispatch('transform.apply'), 'Change the angle, scale, pivot or mirror to preview a new position.')}
-    {controller.spacingPreview && commit('spacing', controller.spacingResult, () => controller.dispatch('spacing.apply'), 'The preview matches the original positions.')}
-    {controller.coordinatePreview && commit('coordinates', controller.coordinateResult, () => controller.dispatch('coordinates.apply'), 'The preview matches the original positions.')}
   </aside>;
 }

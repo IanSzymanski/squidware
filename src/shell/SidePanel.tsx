@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { X } from 'lucide-react';
+import { PanelRightClose } from 'lucide-react';
 import { CastWorkspace } from '../editor/CastWorkspace';
 import { HelpButton } from '../editor/ControlHelp';
 import type { EditorController } from '../editor/useEditorController';
@@ -38,7 +38,7 @@ export function SidePanel({ controller, layout }: { controller: EditorController
             layout.selectTab(next); requestAnimationFrame(() => document.getElementById(`panel-tab-${next}`)?.focus());
           }}>{tab.label}{tab.id === 'cast' && <span className="badge">{controller.project.performers.length}</span>}</button>)}
       </div>
-      <HelpButton pointerPassThrough title="Hide side panel" description="Hide this panel. The panel button in the toolbar brings it back." className="icon-button" disabled={layout.locked && layout.docked} disabledReason="Finish or cancel the current input or preview first." onClick={layout.hidePanel}><X size={15} /></HelpButton>
+      <HelpButton pointerPassThrough title="Hide side panel" description="Hide this panel. The panel button in the toolbar brings it back." className="icon-button" disabled={layout.locked && layout.docked} disabledReason="Finish or cancel the current input or preview first." onClick={layout.hidePanel}><PanelRightClose size={15} /></HelpButton>
     </div>
     <div className="side-panel-content workspace-pane-content">
       <div id="panel-content-inspector" role="tabpanel" aria-labelledby="panel-tab-inspector" className="workspace-tab-content" hidden={layout.tab !== 'inspector'} inert={layout.tab !== 'inspector'}><Inspector controller={controller} /></div>
