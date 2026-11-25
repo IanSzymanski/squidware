@@ -36,7 +36,8 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   const three = c.view === '3d';
   const rehearse = layout.mode === 'rehearse';
 
-  const panelToggle = <HelpButton pointerPassThrough title={layout.panelVisible ? 'Hide side panel' : 'Show side panel'} description="Show or hide the Properties and Cast panel." className="tool tool--quiet" aria-expanded={layout.panelVisible}
+  const panelName = layout.tab === 'cast' ? 'Cast' : 'Inspector';
+  const panelToggle = <HelpButton pointerPassThrough title={layout.panelVisible ? `Collapse ${panelName}` : `Show ${panelName}`} description="Show or hide the Inspector and Cast panel beside the field." className="tool tool--quiet" aria-expanded={layout.panelVisible} aria-controls={`workspace-pane-${layout.tab}`}
     disabled={layout.locked && layout.docked} disabledReason="Finish or cancel the current input or preview first." onClick={layout.togglePanel}><PanelRight size={17} /></HelpButton>;
   const end = (extra?: ReactNode) => <div className="toolbar-end">{extra}{panelToggle}</div>;
   const bar = (context: string, children: ReactNode) => <div className="canvas-toolbar field-command-toolbar toolbar" role="toolbar" aria-label="Field tools" aria-orientation="horizontal" data-context={context}>{children}</div>;

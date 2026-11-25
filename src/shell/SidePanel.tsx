@@ -7,7 +7,7 @@ import { uiScale } from '../uiScale';
 import { Inspector } from './Inspector';
 import type { ShellLayout } from './useShellLayout';
 
-const TABS = [{ id: 'inspector', label: 'Properties' }, { id: 'cast', label: 'Cast' }] as const;
+const TABS = [{ id: 'inspector', label: 'Inspector' }, { id: 'cast', label: 'Cast' }] as const;
 
 /** The one side panel: properties of the current work, or the cast list. It docks beside the field or opens over it. */
 export function SidePanel({ controller, layout }: { controller: EditorController; layout: ShellLayout }) {
@@ -15,10 +15,11 @@ export function SidePanel({ controller, layout }: { controller: EditorController
   const [min, max] = layout.limits;
   const finish = (commit: boolean) => { const state = drag.current; if (!state) return; drag.current = null; layout.resize(commit ? state.current : state.width, true); };
   const hidden = !layout.panelVisible;
-  return <section id="workspace-pane-inspector" aria-label="Side panel" data-pane={layout.tab} hidden={hidden} inert={hidden}
+  const name = layout.tab === 'cast' ? 'Cast' : 'Inspector';
+  return <section id={`workspace-pane-${layout.tab}`} aria-label={`${name} workspace panel`} data-pane={layout.tab} hidden={hidden} inert={hidden}
     className={`side-panel workspace-pane${layout.overlay ? ' workspace-pane--overlay side-panel--overlay' : ''}`} style={{ width: layout.width }}>
-    {!layout.overlay && <div className="workspace-resizer side-panel-resizer" role="separator" tabIndex={layout.locked ? -1 : 0} aria-label="Resize side panel" aria-orientation="vertical"
-      aria-valuemin={min} aria-valuemax={max} aria-valuenow={layout.width} aria-valuetext={`${layout.width} pixels. Left and right arrows resize.`} aria-controls="workspace-pane-inspector" aria-disabled={layout.locked}
+    {!layout.overlay && <div className="workspace-resizer side-panel-resizer" role="separator" tabIndex={layout.locked ? -1 : 0} aria-label={`Resize ${name}`} aria-orientation="vertical"
+      aria-valuemin={min} aria-valuemax={max} aria-valuenow={layout.width} aria-valuetext={`${layout.width} pixels. Left and right arrows resize.`} aria-controls={`workspace-pane-${layout.tab}`} aria-disabled={layout.locked}
       onKeyDown={event => {
         if (layout.locked || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation();
@@ -38,7 +39,7 @@ export function SidePanel({ controller, layout }: { controller: EditorController
             layout.selectTab(next); requestAnimationFrame(() => document.getElementById(`panel-tab-${next}`)?.focus());
           }}>{tab.label}{tab.id === 'cast' && <span className="badge">{controller.project.performers.length}</span>}</button>)}
       </div>
-      <HelpButton pointerPassThrough title="Hide side panel" description="Hide this panel. The panel button in the toolbar brings it back." className="icon-button" disabled={layout.locked && layout.docked} disabledReason="Finish or cancel the current input or preview first." onClick={layout.hidePanel}><PanelRightClose size={15} /></HelpButton>
+      {layout.overlay && <HelpButton pointerPassThrough title={`Close ${name}`} description="Close this panel. The panel button in the tool strip brings it back." className="icon-button" onClick={layout.hidePanel}><PanelRightClose size={15} /></HelpButton>}
     </div>
     <div className="side-panel-content workspace-pane-content">
       <div id="panel-content-inspector" role="tabpanel" aria-labelledby="panel-tab-inspector" className="workspace-tab-content" hidden={layout.tab !== 'inspector'} inert={layout.tab !== 'inspector'}><Inspector controller={controller} /></div>

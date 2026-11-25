@@ -52,7 +52,7 @@ export function useEditorController() {
     if (dispatch('cast.show', { mode }) === true && mode !== 'panel') requestAnimationFrame(() => {
       const target = document.querySelector<HTMLElement>(mode === 'closed' ? '.selection-bar button' : '[aria-label="Find a performer"]');
       // Never focus into a tucked (hidden, inert) pane, which would drop focus to the page: its Show button opens it.
-      (target && !target.closest('[inert], [hidden]') ? target : document.querySelector<HTMLElement>('[aria-label="Show side panel"]'))?.focus();
+      (target && !target.closest('[inert], [hidden]') ? target : document.querySelector<HTMLElement>(`[aria-label="Show ${mode === 'closed' ? 'Inspector' : 'Cast'}"]`))?.focus();
     });
   }
   const projectEpoch = useEditorSelector(state => state.ui.projectEpoch);

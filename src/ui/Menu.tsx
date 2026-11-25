@@ -10,6 +10,8 @@ export type MenuEntry =
   | { type: 'heading'; label: string }
   | {
     type?: 'item'; key?: string; label: string; icon?: ReactNode; description?: string;
+    /** The action's name for assistive technology and Help, when the visible label is a shorter or longer form. */
+    name?: string;
     /** Shows this command's shortcut and Help text beside the label. */
     command?: CommandId;
     hint?: string; checked?: boolean; disabled?: boolean; disabledReason?: string; danger?: boolean;
@@ -25,6 +27,8 @@ interface MenuProps {
   items: readonly (MenuEntry | false | null | undefined)[];
   children: ReactNode;
   className?: string;
+  /** Extra class for the menu panel. */
+  menuClassName?: string;
   align?: 'start' | 'end';
   side?: 'below' | 'above';
   disabled?: boolean;
@@ -34,7 +38,7 @@ interface MenuProps {
 }
 
 /** A button that opens a menu of actions. Arrow keys move, Enter chooses, Escape returns focus to the button. */
-export function Menu({ label, description, items, children, className = 'icon-button', align = 'start', side = 'below', disabled, disabledReason, active, tabIndex }: MenuProps) {
+export function Menu({ label, description, items, children, className = 'icon-button', menuClassName = '', align = 'start', side = 'below', disabled, disabledReason, active, tabIndex }: MenuProps) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement | null>(null), panel = useRef<HTMLDivElement>(null);
   const keyboard = useRef(false);
@@ -100,13 +104,13 @@ export function Menu({ label, description, items, children, className = 'icon-bu
       }}
       onClick={event => { trigger.current = event.currentTarget; keyboard.current = event.detail === 0; setOpen(!open); }}>{children}</HelpButton>
     {/* The menu stays mounted while closed (hidden and inert), so its actions keep one place in the document. */}
-    {createPortal(<div ref={panel} id={id} role="menu" aria-label={label} tabIndex={-1} className="popover menu" hidden={!open} inert={!open} data-escape-scope={open ? '' : undefined} onKeyDown={keyDown}>
+    {createPortal(<div ref={panel} id={id} role="menu" aria-label={label} tabIndex={-1} className={`popover menu ${menuClassName}`} hidden={!open} inert={!open} data-escape-scope={open ? '' : undefined} onKeyDown={keyDown}>
       {entries.map((entry, index) => {
         if (entry.type === 'separator') return <div key={index} className="menu-separator" role="separator" />;
         if (entry.type === 'heading') return <div key={index} className="menu-heading">{entry.label}</div>;
         const role = entry.checked === undefined ? 'menuitem' : 'menuitemcheckbox';
         return <HelpButton key={entry.key ?? `${entry.label}-${index}`} pointerPassThrough role={role} aria-checked={entry.checked} tabIndex={-1}
-          title={entry.label} description={entry.description} command={entry.command} showShortcut={false}
+          title={entry.name ?? entry.label.replace(/…$/, '')} description={entry.description} command={entry.command} showShortcut={false}
           disabled={entry.disabled} disabledReason={entry.disabledReason}
           className={`menu-item${entry.danger ? ' danger' : ''}`}
           onClick={() => {

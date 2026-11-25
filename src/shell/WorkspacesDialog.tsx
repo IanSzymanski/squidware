@@ -6,7 +6,7 @@ import { canSwitchWorkspace } from '../editor/workspaceCommands';
 import type { EditorController } from '../editor/useEditorController';
 import { MAX_WORKSPACES, isBuiltInWorkspace } from '../workspaces';
 
-const BUILT_IN_NAMES: Record<string, string> = { design: 'Write', production: 'Plan', rehearse: 'Rehearse', review: 'Split review', field: 'Field only' };
+const BUILT_IN_NAMES: Record<string, string> = { design: 'Write', production: 'Plan', rehearse: 'Rehearse', review: 'Review', field: 'Field' };
 /** Built-in workspaces show the mode they stand behind, unless the writer renamed them. */
 const displayName = (id: string, name: string) => BUILT_IN_NAMES[id] && name.toLowerCase() === id ? BUILT_IN_NAMES[id] : name;
 const BUILT_IN_NOTES: Record<string, string> = {

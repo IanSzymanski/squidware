@@ -17,7 +17,7 @@ export function TopBar({ controller: c, layout, onWorkspaces }: { controller: Ed
 
   const menu: MenuEntry[] = [
     { label: 'New production…', icon: <FilePlus2 size={15} />, command: 'file.new', onSelect: () => setDialog('new') },
-    { label: 'Open…', icon: <FolderOpen size={15} />, command: 'file.open', disabled: busy, disabledReason: 'Wait for the current file operation to finish.', onSelect: () => void c.openProject() },
+    { label: 'Open…', name: 'Open project', icon: <FolderOpen size={15} />, command: 'file.open', disabled: busy, disabledReason: 'Wait for the current file operation to finish.', onSelect: () => void c.openProject() },
     { type: 'separator' },
     { label: 'Save', icon: <Save size={15} />, command: 'file.save', disabled: busy, disabledReason: 'Wait for the current file operation to finish.', onSelect: () => void c.saveProject() },
     { label: 'Save as…', icon: <SaveAll size={15} />, command: 'file.save-as', disabled: busy, disabledReason: 'Wait for the current file operation to finish.', onSelect: () => void c.saveProject(true) },
@@ -31,12 +31,12 @@ export function TopBar({ controller: c, layout, onWorkspaces }: { controller: Ed
     { label: 'Preferences…', icon: <SlidersHorizontal size={15} />, command: 'preferences.open', description: 'Personal display and editing defaults for this device.', onSelect: () => setDialog('preferences') },
     { label: 'Workspaces…', icon: <LayoutPanelLeft size={15} />, description: 'Switch, save, rename or reset arrangements of the window on this device.', onSelect: onWorkspaces },
     { type: 'separator' },
-    { label: 'Help and shortcuts', icon: <CircleHelp size={15} />, command: 'help.open', onSelect: () => setDialog('help') },
+    { label: 'Help and shortcuts', name: 'Help', icon: <CircleHelp size={15} />, command: 'help.open', onSelect: () => setDialog('help') },
   ];
 
   return <header className="app-header topbar">
     <div className="topbar-start">
-      <Menu label="Project menu" description="File actions, templates, recovery, production settings, preferences and Help." className="app-menu" items={menu}>
+      <Menu label="Project menu" description="File actions, templates, recovery, production settings, preferences and Help." className="app-menu" menuClassName="dropdown" items={menu}>
         <SquidMark size={22} /><ChevronDown size={12} />
       </Menu>
       <div className="project-file-state">
