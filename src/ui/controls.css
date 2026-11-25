@@ -209,6 +209,7 @@ details > summary:hover { color: var(--text); }
   font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .badge.warning { background: var(--warning-bg); color: var(--warning); }
+.badge.ok { background: var(--success-bg); color: var(--success); padding: 0 4px; }
 .badge.accent { background: var(--accent-soft-strong); color: var(--accent-text); }
 .divider-vertical { width: 1px; align-self: stretch; margin: 6px 4px; background: var(--hairline); flex-shrink: 0; }
 .swatch { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }

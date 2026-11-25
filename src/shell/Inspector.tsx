@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2, Users, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2, Users, X } from 'lucide-react';
 import { isCustomSurface, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import { nudgeLabel } from '../editIncrements';
 import { DEFAULT_SNAPPING, gridInterval, snapDescription } from '../snapping';
@@ -18,6 +18,7 @@ import { PathOperationsPanel } from '../editor/PathOperationsPanel';
 import { SharedRoutesPanel } from '../editor/SharedRoutesPanel';
 import { MovementSchedulePanel } from '../editor/MovementSchedulePanel';
 import { TransitionCheck } from '../editor/TransitionCheck';
+import { useTransitionAnalysis } from '../editor/useTransitionAnalysis';
 import { SET_REORDER_POLICY } from '../editor/setList';
 import { commandRegistry } from '../editor/commands';
 import { commandUnavailable } from '../editor/paletteCommands';
@@ -62,6 +63,8 @@ export function Inspector({ controller }: { controller: EditorController }) {
     return project.sections.filter(section => counts.has(section.id)).map(section => ({ ...section, count: counts.get(section.id)! }));
   }, [selectedPerformers, project.sections]);
   const format = (n: number) => Number(toUnit(n).toFixed(2));
+
+  const check = useTransitionAnalysis(project, index, projectEpoch);
 
   if (controller.pathOperations) return <PathOperationsPanel editor={controller.pathOperations} />;
   if (controller.routeEditor) return <SharedRoutesPanel editor={controller.routeEditor} />;
@@ -180,7 +183,8 @@ export function Inspector({ controller }: { controller: EditorController }) {
         </div>
       </Section>}
 
-      {!planning && !previewing && <Section title="Move check" preference="inspectorChecksOpen" className="transition-check" controller={controller}><TransitionCheck controller={controller} /></Section>}
+      {!planning && !previewing && <Section title="Move check" preference="inspectorChecksOpen" className="transition-check" controller={controller}
+        aside={index === 0 ? undefined : check.status === 'pending' ? <span className="badge">…</span> : check.status === 'error' ? <span className="badge warning">!</span> : check.issues.length ? <span className="badge warning">{check.issues.length}</span> : <span className="badge ok"><Check size={11} /></span>}><TransitionCheck controller={controller} /></Section>}
     </div>
 
     {controller.formationPreview && commit('formation', controller.formationResult, applyFormation, 'The preview matches the original positions.')}

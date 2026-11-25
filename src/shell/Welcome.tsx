@@ -1,9 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, FolderOpen, LifeBuoy, Play, Plus } from 'lucide-react';
-import { createBlankProject } from '../domain';
-import { productionFromTemplate } from '../templates/production';
-import type { ShowTemplate } from '../templates/library';
-import type { Project } from '../types';
+import { createBlankProject, uid, validateProject } from '../domain';
+import type { Point, Project } from '../types';
 import { CommandKeycaps } from '../editor/ControlHelp';
 import type { EditorController } from '../editor/useEditorController';
 import { SquidMark } from '../ui/icons';
@@ -20,19 +18,45 @@ const STARTS = [
   { id: 'corps', name: 'Drum corps', counts: [76, 0, 34, 40] },
 ] as const;
 
+/** A tidy staging block on the step grid, centered on the field: four-step intervals, about three times as wide as deep. */
+function stagingBlock(count: number, width: number, height: number): Point[] {
+  const interval = 2.5, step = .625;
+  const columns = Math.min(count, Math.max(4, Math.round(Math.sqrt(count * 2.5) / 2) * 2));
+  const rows = Math.ceil(count / columns);
+  const snap = (value: number) => Math.round(value / step) * step;
+  const x0 = snap(width / 2 - (columns - 1) * interval / 2), y0 = snap(height / 2 - (rows - 1) * interval / 2);
+  return Array.from({ length: count }, (_, i) => {
+    // Center a short last row under the block.
+    const row = Math.floor(i / columns), inRow = row === rows - 1 ? count - row * columns : columns;
+    return { x: x0 + ((columns - inRow) / 2 + i % columns) * interval, y: y0 + row * interval };
+  });
+}
+
+function starterSections(counts: readonly number[]) {
+  return SECTIONS.map((section, i) => ({ ...section, count: counts[i] })).filter(section => section.count > 0);
+}
+
 function starterProject(counts: readonly number[]): Project {
   const blank = createBlankProject();
-  const sections = SECTIONS.map((section, i) => ({ ...section, count: counts[i] })).filter(section => section.count > 0);
-  const template: ShowTemplate = { kind: 'show', name: 'Starter', field: blank.field, openingTiming: blank.openingTiming, sections: sections.map(({ name, color, count }) => ({ name, color, count })) };
-  const project = productionFromTemplate(template);
+  const sections = starterSections(counts).map(section => ({ ...section, id: uid() }));
   // Labels a writer can read at a glance: B1, W1, P1, G1.
-  let offset = 0;
-  const performers = sections.flatMap(section => {
-    const members = project.performers.slice(offset, offset + section.count).map((performer, i) => ({ ...performer, label: `${section.prefix}${i + 1}` }));
-    offset += section.count;
-    return members;
+  const performers = sections.flatMap(section => Array.from({ length: section.count }, (_, i) => ({ id: uid(), sectionId: section.id, label: `${section.prefix}${i + 1}`, name: '' })));
+  const points = stagingBlock(performers.length, blank.field.width, blank.field.height);
+  return validateProject({
+    ...blank, sections: sections.map(({ id, name, color }) => ({ id, name, color })), performers,
+    sets: [{ ...blank.sets[0], positions: Object.fromEntries(performers.map((performer, i) => [performer.id, points[i]])) }],
   });
-  return { ...project, title: 'Untitled show', ensemble: 'My ensemble', performers };
+}
+
+/** The picture a starter opens with, drawn small. */
+function StarterPreview({ counts }: { counts: readonly number[] }) {
+  const sections = starterSections(counts);
+  const colors = sections.flatMap(section => Array.from({ length: section.count }, () => section.color));
+  const points = stagingBlock(colors.length, 100, 53.333);
+  return <svg className="welcome-start-preview" viewBox="18 12.5 64 28.2" aria-hidden="true">
+    {Array.from({ length: 21 }, (_, i) => <path key={i} d={`M${i * 5},0v53.333`} className={i % 2 ? 'minor' : 'major'} />)}
+    {points.map((point, i) => <circle key={i} cx={point.x} cy={point.y} r={.8} fill={colors[i]} />)}
+  </svg>;
 }
 
 /** Shown once at launch over the sample show: start something new, open a file, or look around. */
@@ -64,9 +88,8 @@ export function Welcome({ controller: c, onClose }: { controller: EditorControll
         <h2 id="welcome-new">Start a new show</h2>
         <div className="welcome-starts">
           {STARTS.map((start, i) => <button key={start.id} type="button" className="welcome-start" disabled={busy} onClick={() => void create(starterProject(start.counts))}>
-            <span className="welcome-start-count">{totals[i]}</span>
-            <strong>{start.name}</strong>
-            <span className="welcome-start-sections">{SECTIONS.map((section, s) => start.counts[s] > 0 && <i key={section.name} style={{ background: section.color, flexGrow: start.counts[s] }} title={`${section.name} ${start.counts[s]}`} />)}</span>
+            <StarterPreview counts={start.counts} />
+            <span className="welcome-start-text"><strong>{start.name}</strong><span>{totals[i]} performers</span></span>
           </button>)}
         </div>
         <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(createBlankProject(), true)}><Plus size={14} />Empty field — I'll add my own cast</button>
