@@ -31,3 +31,15 @@ dialog.modal::backdrop { background: var(--backdrop); backdrop-filter: blur(3px)
 dialog.modal.confirm-dialog { width: min(400px, calc(var(--viewport-width) - 32px)); }
 dialog.modal.confirm-dialog .modal-header { border-bottom: 0; min-height: 48px; }
 dialog.modal.confirm-dialog .modal-body { padding-top: 0; }
+
+/* Large tool dialogs keep their actions in view: the body holds still and one inner region scrolls. */
+dialog.modal:is(.path-panel, .score-panel, .analysis-rules-panel, .metronome-panel, .formation-transition-panel, .assignment-panel) .modal-body { overflow: hidden; }
+.modal-body > form { display: flex; flex-direction: column; gap: var(--space-3); min-height: 0; }
+dialog.modal:is(.path-panel, .score-panel, .analysis-rules-panel, .metronome-panel, .formation-transition-panel, .assignment-panel) .modal-body > form { flex: 1; }
+:is(.path-fields, .score-fields, .analysis-rules-content, .metronome-fields, .transition-body, .assignment-body) {
+  flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--space-3);
+  margin: 0 calc(-1 * var(--space-5)); padding: 2px var(--space-5);
+}
+dialog.modal fieldset:not([class]) { display: flex; flex-direction: column; gap: var(--space-3); }
+dialog.modal legend { padding: 0; margin-bottom: var(--space-2); color: var(--text); font-size: var(--text-sm); font-weight: 600; }
+dialog.modal table { font-variant-numeric: tabular-nums; }

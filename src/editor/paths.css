@@ -1,27 +1,15 @@
-.modal.path-panel { display: flex; flex-direction: column; overflow: hidden; max-height: calc(var(--viewport-height, 100dvh) - 24px); }
-.path-panel .modal-header, .path-panel .modal-actions { flex-shrink: 0; }
-.path-panel .modal-actions { flex-wrap: wrap; }
-.path-fields { overflow: auto; min-height: 0; padding: 2px 4px; }
-.path-panel input, .path-panel select { min-width: 0; width: 100%; }
-.path-panel .path-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.path-panel .path-preview { width: 100%; max-height: 300px; background: var(--surface-muted); }
+/* Travel paths, movement timing, shared routes and move operations. */
+.path-panel .path-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
+.path-panel .path-preview { width: 100%; max-height: 300px; border-radius: var(--radius-md); background: #1a2b23; }
+@media (max-width: 700px) { .path-panel .path-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* On-field path artwork keeps its own colors in every theme. */
 .path-original, .path-proposed, .path-polygon path { fill: none; stroke: #b9e3f4; stroke-width: .45; }
 .path-original { stroke-dasharray: 1.2 1; opacity: .7; }
 .path-proposed { stroke: var(--field-accent); stroke-width: .65; }
 .path-polygon path { stroke-dasharray: .4 .6; stroke-width: .2; }
 .path-polygon circle { fill: #141d1a; stroke: #b9e3f4; stroke-width: .3; }
 .path-polygon text { fill: #edf0f5; stroke: #141d1a; stroke-width: .5; paint-order: stroke; font-size: 2.5px; }
-@media (max-width: 700px) { .path-panel .path-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.schedule-rows { list-style: none; padding: 0; margin: 0; }
-.schedule-rows > li { border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin: 8px 0; }
-.schedule-row-header, .schedule-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.schedule-timing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.schedule-timing .form-label { margin-bottom: 4px; }
-.schedule-actions { margin: 8px 0; }
-@media (max-width: 600px) { .schedule-timing { grid-template-columns: repeat(2, minmax(0, 1fr)); } .schedule-timing > :first-child { grid-column: 1 / -1; } }
-.path-copy-list { margin: 8px 0; padding-left: 24px; font-size: 12px; }
-.path-copy-list li { padding: 6px 0; }
-.path-operations-panel input[type=checkbox] { width: auto; }
 .travel-field { touch-action: none; user-select: none; display: block; min-height: 240px; }
 .travel-field:focus { outline: 2px solid var(--field-accent); outline-offset: 2px; }
 .travel-field.is-drawing { cursor: crosshair; }
@@ -34,30 +22,37 @@
 .travel-ticks circle, .travel-endpoints rect { fill: #141d1a; stroke: #edf0f5; stroke-width: 1px; vector-effect: non-scaling-stroke; }
 .travel-ticks text, .travel-endpoints text { fill: #edf0f5; stroke: #141d1a; stroke-width: .6px; paint-order: stroke; }
 .travel-stroke { fill: none; stroke: #ffd681; stroke-width: 2px; stroke-dasharray: 5 3; vector-effect: non-scaling-stroke; }
-.travel-canvas .form-label { margin: 0; max-width: 140px; }
-.travel-tick-table { max-height: 160px; overflow: auto; font-size: 12px; font-variant-numeric: tabular-nums; }
-.travel-tick-table table { width: 100%; text-align: right; }
-.draw-travel { padding: 8px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; }
-.draw-anchors { max-height: 220px; overflow: auto; padding-left: 20px; }
-.route-coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.shared-routes-panel .route-closed { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.shared-routes-panel input[type=checkbox] { width: auto; }
-
-.shared-routes-panel .route-error { flex-basis: 100%; margin: 0 0 8px; }
-
-/* A spatial draft borrows the existing Inspector. Its actions stay visible
-   while the long interval form scrolls, including a tucked panel at 150%. */
-.docked-path-editor { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
-.docked-path-heading { padding: 12px; }
-.docked-path-heading h2 { font-size: 13px; margin: 0; }
-.docked-path-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; border-bottom: 1px solid var(--border); }
-.docked-path-editor .path-fields { flex: 1; padding: 10px 12px; }
-.docked-path-editor .path-controls, .docked-path-editor .schedule-timing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.docked-path-editor .schedule-timing > :first-child { grid-column: 1 / -1; }
 .field-stage__svg .travel-field { min-height: 0; }
 .field-stage__svg .travel-field:focus { outline: none; }
 .field-stage__svg:has(.travel-field:focus-visible) { outline: 2px solid var(--field-accent); outline-offset: -2px; }
-
 .move-operation-overlay .path-original { opacity: 1; stroke-width: 3px; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
 .move-operation-overlay circle.path-original { stroke-width: 2px; }
 .move-operation-overlay .path-proposed { stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+
+.schedule-rows { display: flex; flex-direction: column; gap: var(--space-2); }
+.schedule-rows > li { display: flex; flex-direction: column; gap: var(--space-2); padding: 10px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-muted); }
+.schedule-row-header, .schedule-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; font-size: var(--text-sm); }
+.schedule-timing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+@media (max-width: 600px) { .schedule-timing { grid-template-columns: repeat(2, minmax(0, 1fr)); } .schedule-timing > :first-child { grid-column: 1 / -1; } }
+.path-copy-list { padding-left: 20px; list-style: decimal; font-size: var(--text-sm); }
+.path-copy-list li { padding: 4px 0; }
+.travel-canvas .form-label { max-width: 140px; }
+.travel-tick-table { max-height: 160px; overflow: auto; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.travel-tick-table table { width: 100%; text-align: right; }
+.travel-details > summary { min-height: var(--control-sm); }
+.draw-travel { display: flex; flex-direction: column; gap: var(--space-2); padding: 10px; border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.draw-anchors { max-height: 220px; overflow: auto; padding-left: 20px; list-style: decimal; font-size: var(--text-sm); }
+.route-coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.shared-routes-panel .route-closed { font-size: var(--text-sm); }
+.shared-routes-panel .route-error { flex-basis: 100%; }
+
+/* A spatial edit borrows the side panel. Its actions stay in view while the form scrolls. */
+.docked-path-editor { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
+.docked-path-heading { flex: none; padding: 14px 14px 8px; }
+.docked-path-heading h2 { font-size: var(--text-lg); font-weight: 600; }
+.docked-path-heading p { margin-top: 2px; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.45; }
+.docked-path-actions { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 14px 12px; border-bottom: 1px solid var(--hairline); }
+.docked-path-actions .button { flex: 1; }
+.docked-path-editor .path-fields { flex: 1; margin: 0; padding: 12px 14px; }
+.docked-path-editor .path-controls, .docked-path-editor .schedule-timing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.docked-path-editor .schedule-timing > :first-child { grid-column: 1 / -1; }

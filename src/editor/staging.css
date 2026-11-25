@@ -1,16 +1,14 @@
-.staging-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, 1fr); gap: 18px; align-items: start; }
-.staging-preview { min-width: 0; margin: 0; }
-.staging-preview svg { display: block; width: 100%; max-height: 44vh; background: #172e24; border: 1px solid var(--border); border-radius: 8px; }
+/* Staging props: a preview of the set beside the prop's pose. */
+dialog.modal:has(.staging-layout) { width: min(860px, calc(var(--viewport-width) - 32px)); }
+.staging-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, 1fr); gap: var(--space-5); align-items: start; }
+.staging-preview { min-width: 0; }
+.staging-preview svg { display: block; width: 100%; max-height: 44vh; border-radius: var(--radius-md); background: #172e24; }
 .staging-preview svg[data-placing] { cursor: crosshair; }
-.staging-preview figcaption { margin-top: 6px; }
-.staging-form .form-label, .staging-chooser .form-label { min-width: 0; margin-bottom: 7px; }
-.staging-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; }
-.staging-travel { min-width: 0; margin: 7px 0; padding: 8px 8px 0; border: 1px solid var(--border); border-radius: 6px; }
-.staging-travel legend { padding: 0 4px; font-size: 12px; }
-.staging-visible, .staging-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.staging-visible { font-size: 12px; }
-.staging-add { margin-top: 14px; }
-@media (max-width: 690px) {
-  .staging-layout { grid-template-columns: minmax(0, 1fr); }
-  .staging-preview svg { max-height: 30vh; }
-}
+.staging-preview figcaption { margin-top: 6px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.staging-form, .staging-chooser { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.staging-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.staging-travel { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; padding: 10px; border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.staging-travel legend { float: left; width: 100%; padding: 0; margin: 0; font-size: var(--text-sm); font-weight: 600; }
+.staging-visible, .staging-buttons { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.staging-visible { font-size: var(--text-sm); }
+@media (max-width: 690px) { .staging-layout { grid-template-columns: minmax(0, 1fr); } .staging-preview svg { max-height: 30vh; } }
