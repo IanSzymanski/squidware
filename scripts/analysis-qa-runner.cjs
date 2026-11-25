@@ -6,7 +6,7 @@ const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, waitForProgress, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--analysis-manifest=')).slice('--analysis-manifest='.length));
 const { root, output, profile, bundle } = manifest;
-const { analyzeTransition, createPerformanceFixture, fixture, findingName, performerLabels } = require(bundle);
+const { analyzeTransition, createPerformanceFixture, fixture, findingName, problemLabels } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 const showWindow = BrowserWindow.prototype.show; BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
@@ -158,7 +158,7 @@ app.whenReady().then(async () => {
     const group=markers.find(m=>m.group);await evaluate(`[...document.querySelectorAll('.problem-track .problem-marker')].find(e=>e.getAttribute('aria-label')===${JSON.stringify(group.label)}).focus()`);
     await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'cluster list');await key(window,'End');await wait("document.activeElement===[...document.querySelectorAll('.problem-cluster-list [role=menuitem]')].at(-1)",'End reaches the last finding');const last=await evaluate("document.activeElement.textContent");await key(window,'Return');
     await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(group.label)}`,'keyboard group choice');
-    const chosen=await evaluate(snapshot+'.selected'),labels=performerLabels(project);assert.ok(last.startsWith(findingName(chosen.issue,labels)),last);
+    const chosen=await evaluate(snapshot+'.selected'),labels=problemLabels(project);assert.ok(last.startsWith(findingName(chosen.issue,labels)),last);
     assert.equal(await evaluate(state+'.playback.count'),chosen.issue.atCount);assert.deepEqual(await evaluate(state+'.selection.selectedIds'),chosen.issue.performerIds);assert.ok(await evaluate("document.querySelectorAll('[data-problem-performer]').length>0"));
     await evaluate(`${editor}.dispatch('set.select',{index:1})`);await frames();
     await click('.problem-track .problem-marker[aria-haspopup=menu]');await wait("!!document.querySelector('.problem-cluster-list [role=menuitem]')",'pointer cluster list');await capture('problems-timeline-group.png');

@@ -6,7 +6,7 @@ const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, selectNativeOption, waitFor, waitForProgress, settleNativeViewport } = require('./testing/renderer.cjs');
 const manifest = require(process.argv.find(a => a.startsWith('--detailed-analysis-manifest=')).slice('--detailed-analysis-manifest='.length));
 const { root, output, profile, bundle } = manifest;
-const { analyzeTransition, parseProject, sampleProject, fixture, findingName, performerLabels } = require(bundle);
+const { analyzeTransition, parseProject, sampleProject, fixture, findingName, problemLabels } = require(bundle);
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 const showWindow = BrowserWindow.prototype.show; BrowserWindow.prototype.show = function () {};
 dialog.showMessageBox = async () => ({ response: 1 });
@@ -65,7 +65,7 @@ app.whenReady().then(async()=>{try{
  const p=fixture();await load(p);await evaluate(`${editor}.dispatch('set.select',{index:1})`);await capture('detailed-before.png');assert.deepEqual([viewports.at(-1).width,viewports.at(-1).height],[1366,768]);assert.ok(viewports.at(-1).fieldHeight>=470);BrowserWindow.prototype.show=showWindow;window.show();window.focus();await settleNativeViewport(window,'visible detailed analysis');
  const moves=await oracle();metrics.crossing=moves[0].issues;assert.equal(metrics.crossing.find(i=>i.type==='collision').certainty,'confirmed');
  // Timeline markers name detailed findings by their measured bounds; groups list the rest; the panel uses the same names.
- const labels=performerLabels(p),names=metrics.crossing.map(i=>findingName(i,labels)).sort(),row=await evaluate("[...document.querySelectorAll('.problem-track .problem-marker')].map(e=>({label:e.getAttribute('aria-label'),group:e.getAttribute('aria-haspopup')==='menu'}))");
+ const labels=problemLabels(p),names=metrics.crossing.map(i=>findingName(i,labels)).sort(),row=await evaluate("[...document.querySelectorAll('.problem-track .problem-marker')].map(e=>({label:e.getAttribute('aria-label'),group:e.getAttribute('aria-haspopup')==='menu'}))");
  const seen=row.filter(m=>!m.group).map(m=>m.label);
  for(const m of row.filter(m=>m.group)){await click(`.problem-track .problem-marker[aria-label=${JSON.stringify(m.label)}]`);await wait("!!document.querySelector('.problem-cluster-list [role=menuitem]')",'detailed group list');seen.push(...await evaluate("[...document.querySelectorAll('.problem-cluster-list [role=menuitem] > span')].map(e=>e.textContent)"));await key(window,'Escape');await wait("!document.querySelector('.problem-cluster-list')",'group list closes');}
  assert.deepEqual(seen.sort(),names);assert.ok(names.some(n=>/^Spacing \d+(\.\d+)?(–\d+(\.\d+)?)? yd · A1, A2 · count 4$/.test(n)),JSON.stringify(names));
@@ -77,7 +77,7 @@ app.whenReady().then(async()=>{try{
  await load(fixture('fast'));await evaluate(`${editor}.dispatch('set.select',{index:1})`);const fast=(await oracle())[0].issues;assert.ok(fast.some(i=>i.type==='stride'&&i.certainty==='confirmed'&&i.measurement.lower>1000));assert.ok(Math.abs(fast.find(i=>i.type==='collision').atCount-.115)<1e-8);metrics.fast=fast;await openProblems();await capture('detailed-fast.png');await close();
  await load(fixture('unresolved'));await evaluate(`${editor}.dispatch('set.select',{index:1})`);await openProblems();assert.match(await evaluate("document.querySelector('.problems-panel').textContent"),/Bounds remain unresolved/);await capture('detailed-unresolved.png');await close();
  await load(fixture('possible'));await evaluate(`${editor}.dispatch('set.select',{index:1})`);metrics.possible=(await oracle())[0].issues;assert.equal(metrics.possible[0].certainty,'possible');
- assert.equal(metrics.possible.length,1);const single=metrics.possible[0];assert.deepEqual(await evaluate("[...document.querySelectorAll('.problem-track .problem-marker')].map(e=>[e.getAttribute('aria-label'),e.tabIndex,e.getAttribute('aria-haspopup')])"),[[findingName(single,performerLabels(fixture('possible'))),0,null]]);
+ assert.equal(metrics.possible.length,1);const single=metrics.possible[0];assert.deepEqual(await evaluate("[...document.querySelectorAll('.problem-track .problem-marker')].map(e=>[e.getAttribute('aria-label'),e.tabIndex,e.getAttribute('aria-haspopup')])"),[[findingName(single,problemLabels(fixture('possible'))),0,null]]);
  // The one single marker reviews its finding by native Enter and by pointer, starting from no review, another count and no selection.
  for(const input of ['Enter','pointer']){await evaluate(`${analysis}.clearSelection();${editor}.dispatch('set.select',{index:0});${editor}.setValue('selection','selectedIds',[])`);await wait(`${snapshot}.selected===null&&${state}.playback.count===0&&${state}.selection.activeIndex===0&&${state}.selection.selectedIds.length===0&&!document.querySelector('[data-problem-performer]')`,'no review before '+input);
   if(input==='Enter'){await evaluate("document.querySelector('.problem-track .problem-marker').focus()");await key(window,'Return');}else await click('.problem-track .problem-marker');
