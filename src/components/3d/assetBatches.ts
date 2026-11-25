@@ -48,9 +48,11 @@ export class AssetBatches {
       }
     }
 
-    for (const { parts, at, angle, flagColor, tilt } of instances) {
+    for (const { parts, at, angle, flagColor, tilt, scale } of instances) {
       this.root.position.set(...at);
       this.root.rotation.y = angle ?? 0;
+      if (scale) this.root.scale.set(...scale);
+      else this.root.scale.setScalar(1);
       this.root.updateMatrix();
       if (tilt) {
         this.tilt.makeRotationX(tilt.pitch);

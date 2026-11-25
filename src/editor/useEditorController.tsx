@@ -8,6 +8,7 @@ import type { ChangeEvent } from 'react';
 
 import type { AudioAttachment, SetPropertyUpdate, Performer, Point, Project } from '../types';
 import { exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, totalCounts, uid, PROJECT_LIMITS } from '../domain';
+import { sampleStaging } from '../staging';
 import { FieldDrawing } from '../components/Field2D';
 
 import { useProject } from '../useProject';
@@ -246,7 +247,7 @@ export function useEditorController() {
   async function exportText(kind: 'csv' | 'svg') {
     try {
       const { renderToStaticMarkup } = kind === 'svg' ? await import('react-dom/server') : { renderToStaticMarkup: () => '' };
-      const content = kind === 'csv' ? exportCoordinatesCsv(project, coordinateFormat) : renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg" viewBox={isCustomSurface(project.field) ? surfaceViewBox(project.field, 7, 8) : "-7 -8 114 69.333"} width="1392" height="784"><title>{project.title} — {activeSet.name}</title><FieldDrawing project={project} positions={activeSet.positions} showLabels showGrid coordinateFormat={coordinateFormat} /></svg>);
+      const content = kind === 'csv' ? exportCoordinatesCsv(project, coordinateFormat) : renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg" viewBox={isCustomSurface(project.field) ? surfaceViewBox(project.field, 7, 8) : "-7 -8 114 69.333"} width="1392" height="784"><title>{project.title} — {activeSet.name}</title><FieldDrawing project={project} staging={sampleStaging(project, { setIndex: index, progress: 1 })} positions={activeSet.positions} showLabels showGrid coordinateFormat={coordinateFormat} /></svg>);
       const filename = `${cleanFilename(project.title)}${kind === 'svg' ? `-set-${index + 1}` : '-coordinates'}.${kind}`;
       if (window.squidware) { if (!await window.squidware.exportFile(content, filename, kind)) return; } else download(content, filename, kind === 'csv' ? 'text/csv;charset=utf-8' : 'image/svg+xml');
       notify(`${kind.toUpperCase()} exported`); setDialog(null);

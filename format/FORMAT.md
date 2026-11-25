@@ -1,6 +1,6 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–17**. Ordinary saves write **v2**; nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, custom performance surfaces **v16**, and named camera views **v17**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–18**. Ordinary saves write **v2**. Nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, custom performance surfaces **v16**, named camera views **v17**, and staging props **v18**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
 
 Independent movement is specified by [the v6 schema](squid-v6.schema.json) and [schedule example](examples/scheduled-v6.squid); full-move curves use [the v5 schema](squid-v5.schema.json). Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
@@ -247,3 +247,13 @@ The writer selects v16 for custom or indoor geometry. Football projects use the 
 [Schema v17](squid-v17.schema.json) adds optional `cameraViews`. Each entry has a unique `id`, a distinct case-insensitive `name` of up to 60 characters, `projection: "perspective"`, a vertical `fov` of 15–95 degrees, and three-coordinate `position` and `target` vectors. The 3D scene uses yard units around the center of the field. Positive Y is up and positive Z points toward the audience. Each coordinate is between −4096 and 4096, and a position must be at least one yard from its target. A project can store up to 32 views.
 
 The writer uses v17 while a project contains at least one saved view. Earlier versions with no saved views remain readable.
+
+## v18 staging props
+
+[Schema v18](squid-v18.schema.json) adds up to 64 `stagingObjects` with a unique `id` and a `name` of up to 60 characters. Object IDs are distinct from performer IDs. Every set has a `staging` map keyed by those IDs, with one pose per object. Refer to the [staging sample](examples/staging-v18.squid) for a complete file.
+
+Each pose stores the center `x` and `y` in surface yards. The center must stay within the surface. Rectangular `width`, `depth` and `height` range from 0.1 to 40 yards. `angle` is in degrees from 0 inclusive to 360 exclusive, from the audience edge toward positive X. `visible` is a boolean. The dimensions describe planning shapes. Clearance analysis uses its existing performer checks.
+
+The optional `travel` range uses fractions of the incoming move with `0 ≤ start < end ≤ 1`. Omission means the full move. The pose holds before its range, interpolates linearly during it and holds the destination after it. Orientation follows the shortest arc. Visibility switches to the destination value at set arrival. The opening picture ignores its incoming timing. A split partitions the staging range to preserve the original sample. New sets inherit the source pose with fresh travel timing.
+
+The writer uses v18 while the project contains a staging object. Projects without props use the lowest version required by their other content.

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { countToSeconds, sampleProject, setStartCount } from '../domain';
-import type { Point, Project } from '../types';
+import type { Project, TimelineSample } from '../types';
 import { FieldDrawing } from '../components/Field2D';
 import { fieldViewTransform } from '../components/fieldOrientation';
 import { Modal } from '../components/Modal';
@@ -27,11 +27,11 @@ export function SplitTransitionPanel({ controller: c }: { controller: EditorCont
   const proposed = useMemo(() => invalid ? null : splitTransition(project, { moveId: move.id, count: splitCount, allowEasingChange: true }), [project, move.id, splitCount, invalid]);
   const deviation = useMemo(() => invalid ? null : splitEasingDeviation(project, index, splitCount), [project, index, splitCount, invalid]);
   const compareCount = comparison ?? splitCount;
-  const original = proposed ? sampleProject(project, start + compareCount).positions : null;
-  const after = proposed ? sampleProject(proposed, start + compareCount).positions : null;
-  function preview(label: string, positions: Record<string, Point>, model: Project) {
+  const original = proposed ? sampleProject(project, start + compareCount) : null;
+  const after = proposed ? sampleProject(proposed, start + compareCount) : null;
+  function preview(label: string, sample: TimelineSample, model: Project) {
     return <figure><figcaption>{label}</figcaption><svg role="img" aria-label={label} viewBox={`-5 -8 ${project.field.width + 10} ${project.field.height + 16}`}>
-      <g transform={fieldViewTransform(project.field, c.preferences.value.fieldOrientation)}><FieldDrawing project={model} positions={positions} showLabels={project.performers.length <= 64} orientation={c.preferences.value.fieldOrientation} screen={{ scale: 3, bounds: { left: -15, top: -24, right: 315, bottom: 184 } }} /></g>
+      <g transform={fieldViewTransform(project.field, c.preferences.value.fieldOrientation)}><FieldDrawing project={model} positions={sample.positions} staging={sample.staging} showLabels={project.performers.length <= 64} orientation={c.preferences.value.fieldOrientation} screen={{ scale: 3, bounds: { left: -15, top: -24, right: 315, bottom: 184 } }} /></g>
     </svg></figure>;
   }
   function apply() {

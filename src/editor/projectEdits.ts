@@ -1,6 +1,7 @@
 import { rescaleGroupMotions } from '../groupMotion';
 import { rescalePaths } from '../movementPathOperations';
 import { hasDetailedPaths } from '../movementPaths';
+import { copyStaging } from '../staging';
 import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, Move, Project, SetPropertyUpdate } from '../types';
 
@@ -88,10 +89,12 @@ export function createPicture(project: Project, index: number, kind: SetCreation
   const at = kind === 'insert-before' ? index : index + 1;
   const positionSource = kind === 'insert-before' ? project.sets[Math.max(0, index - 1)] : source;
   const suffix = kind === 'duplicate' ? ' copy' : kind === 'hold' ? ' hold' : '';
+  const staging = copyStaging(positionSource);
   const picture: DrillSet = { id: uid(), name: suffix ? source.name.slice(0, PROJECT_LIMITS.text.setName - suffix.length) + suffix : `Set ${project.sets.length + 1}`,
     notes: kind === 'duplicate' ? source.notes : '',
     ...(kind === 'duplicate' && source.liveFormations ? { liveFormations: source.liveFormations.map(shape => ({ ...structuredClone(shape), id: uid() })) } : {}),
     ...(kind !== 'new' && positionSource.facings ? { facings: positionSource.facings } : {}),
+    ...(staging ? { staging } : {}),
     positions: kind === 'new' ? stagingPositions(project) : structuredClone(positionSource.positions) };
   const newTiming = new Map([[picture.id, timing]]);
   // Inserting a new opening picture gives the old opening its first incoming move.

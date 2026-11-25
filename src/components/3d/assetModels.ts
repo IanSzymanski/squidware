@@ -12,6 +12,7 @@ export interface AssetPart {
 export interface AssetPlacement {
   parts: readonly AssetPart[];
   at: XYZ;
+  scale?: XYZ;
   angle?: number;
   flagColor?: string;
   tilt?: { pivot: XYZ; pitch: number };

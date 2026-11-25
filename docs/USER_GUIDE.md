@@ -193,6 +193,14 @@ Only one 3D window exists. Choosing the command again brings it to the front. Wh
 
 The window remembers its size, position and display on this device. It reopens on that display, moved fully on screen if needed; if the display is disconnected, it opens centered on the main display. It stops drawing while minimized or hidden, and it keeps playback moving while the main window is minimized. If its graphics context fails, choose **Reload 3D preview** or **Close 3D window**; editing in the main window continues. The browser preview does not offer the 3D window, and `Shift+T` is free there for other commands.
 
+### Staging props
+
+In **2D field** or **Split review**, pause at a set and choose **Props** from the field toolbar or its **More** menu. You can also search for **Staging props** in Commands. Choose **Add prop**, then click the footprint preview or enter the center coordinates. Enter its width, depth, height and orientation. The preview stripe points toward the front of the prop and a dashed footprint marks a hidden prop during editing.
+
+A new prop starts with the same pose in every set. At another set, choose the prop and use **Edit prop** to move, resize, rotate or hide it there. Use **Start count** and **End count** to set when a move into that set travels. The prop holds before and after that window. Visibility changes at set arrival. **Apply prop** records one undo action, and **Remove prop** removes its placement from every set in one undoable edit.
+
+The 2D field, 3D preview, rehearsal video and field charts show the saved props. The 3D view uses simple boxes with the configured dimensions. The footprint is a planning aid. Current spacing and stride checks cover performers. Prop edits save in `.squid` format v18.
+
 ## Transition checks
 
 The Inspector analyzes the move into the selected set. Click an issue to select its performer or pair and show their paths.
@@ -276,7 +284,7 @@ In the 2D field, Tab enters at the remembered performer and the next Tab leaves 
 
 ## Current boundaries
 
-This release does not read or write proprietary Pyware projects, attach curved paths to individual performers, automatically optimize assignments, design props or equipment, render realistic uniforms, export video, collaborate in real time, or synchronize to a cloud service. Desktop packaging is configured for Windows, macOS, and Linux; release artifacts and successful platform checks should be verified for the build you are using.
+Current format support covers Squidware projects. Proprietary Pyware interchange, realistic uniforms, real-time collaboration and cloud synchronization remain roadmap items. Desktop packaging targets Windows, macOS and Linux. Check the release artifacts and platform results for the build you are using.
 
 See [the roadmap](../ROADMAP.md) for the intended next areas of work and [the engine contract](domain.md) for the implemented calculations and data schema.
 
@@ -324,7 +332,7 @@ Pause at an arrival set in 2D, select 2–500 performers and choose **Group rout
 
 ## Indoor floors and custom stages
 
-In **Project menu → Production settings → Performance surface**, choose **Indoor floor** or **Custom stage**, then set the width, depth, coordinate units and reference line spacing. The preview shows the outline and reference lines before you apply. **Apply surface** records one undo action. If existing dots, paths, formations or routes sit outside the proposed surface, move them inside the new boundary before applying the resize.
+In **Project menu → Production settings → Performance surface**, choose **Indoor floor** or **Custom stage**, then set the width, depth, coordinate units and reference line spacing. The preview shows the outline and reference lines before you apply. **Apply surface** records one undo action. If existing dots, prop centers, paths, formations or routes sit outside the proposed surface, move them inside the new boundary before applying the resize.
 
 The back-left corner is X 0, Y 0. X increases to the right and Y increases toward the audience edge. In **Enter coordinates**, enter a pair such as `X 12, Y 6 ft` to place one performer. The audience orientation preference turns the 2D view without changing any dot coordinates.
 

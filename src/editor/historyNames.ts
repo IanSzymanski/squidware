@@ -40,6 +40,8 @@ export function historyName<I extends CommandId>(state: EditorState, id: I, args
     case 'snapping.update': name = 'Change grid and snapping'; break;
     case 'positions.place': name = `Place ${project.performers.find(p => p.id === a.id)?.label ?? 'performer'} — ${picture}`; break;
     case 'surface.update': name = 'Change performance surface'; break;
+    case 'staging.save': name = `${a.create ? 'Add prop' : 'Edit prop'} · ${(a.object as { name?: string } | undefined)?.name?.trim() ?? 'Prop'} — ${picture}`; break;
+    case 'staging.remove': name = `Remove prop · ${project.stagingObjects?.find(item => item.id === a.id)?.name ?? 'Prop'}`; break;
     case 'view.camera-save': name = `Save camera view · ${(a.view as { name?: string } | undefined)?.name?.trim() ?? 'Camera'}`; break;
     case 'view.camera-remove': name = `Delete camera view · ${project.cameraViews?.find(view => view.id === a.id)?.name ?? 'Camera'}`; break;
     case 'project.update': name = Object.hasOwn(update, 'title') ? 'Rename production' : Object.hasOwn(update, 'ensemble') ? 'Edit ensemble' : Object.hasOwn(update, 'preset') ? 'Change field markings' : 'Edit production settings'; break;

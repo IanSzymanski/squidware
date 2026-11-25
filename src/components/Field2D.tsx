@@ -3,6 +3,8 @@ import { resolveEquipment } from '../equipment';
 import { describeFacing, facingAt } from '../performerFacing';
 import { TravelOverlay, type TravelPreview } from '../editor/TravelCanvas';
 import { FieldCanvas } from './FieldCanvas';
+import { StagingFootprints } from './StagingFootprints';
+import type { StagingSample } from '../staging';
 import { fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from './fieldScene';
 import { ScatterFormationHandles } from './ScatterFormationHandles';
 import { BezierFormationHandles } from './BezierFormationHandles';
@@ -33,6 +35,7 @@ interface DrawingProps {
   orientation?: FieldOrientation;
   project: Project;
   facings?: PerformerFacings;
+  staging?: readonly StagingSample[];
   positions: Record<string, Point>;
   neighbors?: NeighborOverlay[];
   selectedIds?: string[];
@@ -125,7 +128,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
 StaticFieldMarkings.displayName = 'StaticFieldMarkings';
 
 /** SVG children shared by the interactive field and exported field diagrams. */
-export function FieldDrawing({ project, facings, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, dynamicOnly = false, deferMotion = false, orientation = 'audience-bottom' }: DrawingProps) {
+export function FieldDrawing({ project, facings, staging, positions, neighbors, selectedIds = [], showLabels = true, showGrid = false, readoutId, focusedId, keyboardHelpId, keyboardFocusId, coordinateFormat, presentation, screen, dynamicOnly = false, deferMotion = false, orientation = 'audience-bottom' }: DrawingProps) {
   const selected = selectionMembership(selectedIds);
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
   const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
@@ -139,6 +142,7 @@ export function FieldDrawing({ project, facings, positions, neighbors, selectedI
   const labels = screen ? fieldLabels(project, positions, selected, keyboardFocusId, { ...display, labelMode: showLabels ? display.labelMode : 'none' }, screen, orientation, labelWidths) : null;
   return <>
     {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />}
+    <StagingFootprints objects={staging} />
     {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
       const point = positions[performer.id];
@@ -235,7 +239,7 @@ type Gesture =
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, facings, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, moveOperationPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, facings, staging, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, moveOperationPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const performerNodes = useRef<SVGGElement[]>([]);
@@ -564,7 +568,10 @@ export function Field2D({ project, facings, positions, neighbors, selectedIds, o
 
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`}>
     <svg className="field-stage__background" viewBox={viewport} aria-hidden="true">
-      <g transform={fieldViewTransform(project.field, orientation)}><StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} /></g>
+      <g transform={fieldViewTransform(project.field, orientation)}>
+        <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} />
+        <StagingFootprints objects={staging} />
+      </g>
     </svg>
     {screen && <FieldCanvas project={project} positions={displayedPositions} selectedIds={selectedIds} display={display} screen={screen} orientation={orientation} focusedId={keyboardFocus ? focusedId : null} showLabels={showLabels} enabled={wantsCanvas} neighbors={moving ? NO_NEIGHBORS : neighbors} selectionPreview={selectionPreview} snapPreview={moving ? preview : NO_POSITIONS} original={positions} onReady={setCanvasReady} />}
     <svg ref={svgRef} className="field-stage__svg" viewBox={viewport} tabIndex={moveOperationPreview ? 0 : travelPreview || focusedId ? -1 : 0} role="group" aria-label={moveOperationPreview ? 'Move operation field preview. Enter to apply or Escape to cancel.' : travelPreview?.routeMode ? 'Shared route preview. Draw or edit handles on the field, then Apply or Cancel in the panel.' : travelPreview ? 'Movement path preview. Draw or edit handles on the field, then Apply or Cancel in the panel.' : selectionPreview ? 'Selection preview. Review the candidate rings in Selection tools, then Apply or Cancel.' : coordinatePreview ? 'Coordinate preview. Type a phrase in the Inspector, then Apply or Cancel.' : spacingPreview ? 'Spacing preview. Adjust the Inspector or interval handle, then Apply or Cancel.' : formationPreview ? 'Formation preview. Adjust the Inspector or field handles, then Apply or Cancel.' : transformPreview ? 'Transform preview. Adjust the Inspector or field handles, then Apply or Cancel.' : readOnly ? 'Read-only drill preview. Go to a set to edit positions.' : 'Interactive drill field. Drag performers to move; drag empty space to select. Repeat a click or tap to cycle equally near performers.'} aria-describedby={spatialPreview ? undefined : `${keyboardHelpId}${readOnly ? ' field-preview-message' : ''}`} onFocus={event => { fieldHasFocus.current = true; const id = (event.target as Element).closest('[data-performer-id]')?.getAttribute('data-performer-id'); if (id) setRememberedFocus({ project: project.id, id }); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fieldHasFocus.current = false; }} onPointerDown={startGesture} onPointerMove={continueGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => { if (gesture.current) finishGesture(event, true); }} onKeyDown={onKeyDown} onDoubleClick={event => { if (!hitsAt(event.clientX, event.clientY).length) { setPan({ x: 0, y: 0 }); onZoom(1); } }}>

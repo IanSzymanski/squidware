@@ -1,4 +1,5 @@
 import { hasDetailedPaths } from '../movementPaths';
+import { splitStaging } from '../staging';
 import { PROJECT_LIMITS, sampleProject, setStartCount, uid } from '../domain';
 import type { Move, Project, RehearsalAnchor } from '../types';
 
@@ -27,8 +28,10 @@ export function splitTransition(project: Project, request: SplitTransitionReques
   const index = project.moves.findIndex(move => move.id === moveId), move = project.moves[index];
   if (move.transition === 'ease' && request.allowEasingChange !== true) throw new Error('Review and accept the easing change before splitting this transition.');
   const { positions, facings } = sampleProject(project, setStartCount(project, index) + count);
+  const from = project.sets[index], to = project.sets[index + 1];
+  const staging = to.staging ? splitStaging(from, to, count / move.counts) : undefined;
   const picture = { id: uid(), name: `Split · ${project.sets[index + 1].name}`.slice(0, PROJECT_LIMITS.text.setName), notes: '',
-    positions, ...(facings ? { facings } : {}) };
+    positions, ...(facings ? { facings } : {}), ...(staging ? { staging: staging.middle } : {}) };
   function paths(first: boolean): Move['paths'] {
     return Object.fromEntries(Object.entries(move.paths).map(([id, path]) => [id, { segments: path.segments.map(segment => ({
       ...segment, id: first ? uid() : segment.id, startCount: 0, endCount: first ? count : move.counts - count,
@@ -43,7 +46,7 @@ export function splitTransition(project: Project, request: SplitTransitionReques
     const next = value.count < count ? first : second;
     return { kind: 'move', moveId: next.id, fromSetId: next.fromSetId, toSetId: next.toSetId, count: value.count < count ? value.count : value.count - count };
   }
-  return { ...project, sets: [...project.sets.slice(0, index + 1), picture, ...project.sets.slice(index + 1)],
+  return { ...project, sets: [...project.sets.slice(0, index + 1), picture, staging ? { ...to, staging: staging.arrival } : to, ...project.sets.slice(index + 2)],
     moves: [...project.moves.slice(0, index), first, second, ...project.moves.slice(index + 1)],
     ...(project.rehearsal ? { rehearsal: project.rehearsal.map(passage => ({ ...passage, start: anchor(passage.start), ...(passage.end ? { end: anchor(passage.end) } : {}) })) } : {}) };
 }

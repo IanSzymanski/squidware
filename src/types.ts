@@ -1,4 +1,5 @@
 import type { SavedCameraView } from './cameraViews';
+import type { StagingObject, StagingPose, StagingSample } from './staging';
 import type { FootballSurface, Surface } from './surfaces';
 import type { PreferencesBridge } from './preferences';
 import type { SnapSettings } from './snapping';
@@ -35,7 +36,9 @@ export interface LegacyProject {
   sets: LegacyDrillSet[];
   audioOffsetSeconds: number;
 }
-export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'> & { liveFormations?: LiveFormation[]; facings?: PerformerFacings };
+export type DrillSet = Pick<LegacyDrillSet, 'id' | 'name' | 'notes' | 'positions'> & {
+  liveFormations?: LiveFormation[]; facings?: PerformerFacings; staging?: Record<string, StagingPose>;
+};
 export interface LiveFormation {
   id: string; name: string; kind: FormationKind; options: Required<FormationOptions>;
   bezier?: BezierFormation;
@@ -130,6 +133,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets' | 
   sharedRoutes?: SharedRoute[];
   choreography?: ChoreographyCue[];
   cameraViews?: SavedCameraView[];
+  stagingObjects?: StagingObject[];
   sets: DrillSet[];
   moves: Move[];
   openingTiming: OpeningTiming;
@@ -143,7 +147,7 @@ export interface TransitionIssue {
   certainty?: 'confirmed' | 'possible'; countRange?: [number, number];
   measurement?: { lower: number; upper: number; tolerance: number; unit: 'yd' | 'yd/count'; converged: boolean };
 }
-export interface TimelineSample { positions: Record<string, Point>; facings?: PerformerFacings; setIndex: number; progress: number; localCount: number }
+export interface TimelineSample { positions: Record<string, Point>; facings?: PerformerFacings; staging?: StagingSample[]; setIndex: number; progress: number; localCount: number }
 export interface RecoveryVersion {
   id: string; createdAt: number; revision: number; source: 'automatic' | 'legacy';
   projectId: string; title: string; performers: number; sets: number; bytes: number;

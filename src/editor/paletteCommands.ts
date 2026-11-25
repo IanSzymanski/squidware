@@ -35,6 +35,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'history.undo') return 'There are no earlier edits to undo.';
   if (id === 'history.redo') return 'There are no undone edits to restore.';
   if (id === 'path.operations-open') return 'Pause at a set in a production with at least one move. Finish other input first.';
+  if (id === 'staging.open') return 'Go to a set and pause playback to edit staging props.';
   if ((id==='path.open'||id==='path.draw-open'||id==='schedule.open')&&state.project.present.moves[state.selection.activeIndex-1]?.groupMotions?.some(g=>g.members.includes(state.selection.selectedIds[0])))return 'Edit Group route movement or remove this member there before editing individual travel.';
   if(id==='group.open')return 'Pause at an arrival set in 2D and select at least two members, or choose a saved group.';
   if (id === 'path.open' || id === 'path.draw-open' || id === 'schedule.open') return 'Pause at an arrival set and select exactly one performer. Finish other input first.';

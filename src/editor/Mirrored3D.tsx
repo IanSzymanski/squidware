@@ -28,7 +28,7 @@ export function Mirrored3D({ controller, quality, onQualityChange, interactive, 
     || controller.formationPreview || controller.spacingPreview || controller.transformPreview || controller.coordinatePreview;
   const canSelect = interactive && (!splitReview || !spatialPreview);
   const positions = useMemo(() => overlayDraft(scene.positions, draft, controller.index, editable), [scene.positions, draft, controller.index, editable]);
-  return <Stage3DLoader project={scene.rehearsalProject} facings={scene.facings} cueTiming={scene.sample} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={canSelect ? controller.setSelectedIds : undefined}
+  return <Stage3DLoader project={scene.rehearsalProject} facings={scene.facings} staging={scene.staging} cueTiming={scene.sample} positions={positions as Stage3DProps['positions']} selectedIds={controller.selectedIds} onSelect={canSelect ? controller.setSelectedIds : undefined}
     cameraLibrary={interactive && !spatialPreview ? {
       views: controller.project.cameraViews ?? [],
       open: controller.dialog === 'saved-cameras',
