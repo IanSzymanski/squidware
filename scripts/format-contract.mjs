@@ -8,11 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export async function formatTools() {
   const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
   const output = path.join(root, '.qa/format/contract.cjs'); await fs.mkdir(path.dirname(output), { recursive: true });
-  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews'; export {STAGING_LIMITS} from './src/staging';`, resolveDir: root },
+  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews'; export {STAGING_LIMITS} from './src/staging'; export {frontEnsembleCatalog} from './src/frontEnsemble';`, resolveDir: root },
     outfile: output, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent' });
   delete require.cache[output]; return require(output);
 }
-export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits, stagingLimits) {
+export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits, stagingLimits, frontEnsembleModels) {
   const ref = name => ({ $ref: `#/definitions/${name}` });
   const object = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required });
   const number = (minimum, maximum, integer = false) => ({ type: integer ? 'integer' : 'number', minimum, maximum });
@@ -164,6 +164,7 @@ export function formatSchema(version, limits, choreographyLimits, surfaceLimits,
       propertyNames: ref('id'), additionalProperties: ref('stagingPose') };
     properties.stagingObjects = array(object({ id: ref('id'), name: { ...text(stagingLimits.name),
       pattern: '^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$' } }), 0, stagingLimits.count);
+    if (version >= 19) properties.stagingObjects.items.properties.model = { enum: frontEnsembleModels };
   }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
     regions: array(object({ startCount: number(0,limits.counts.max*(limits.sets-1),true), endCount: number(1,limits.counts.max*(limits.sets-1),true), startTempo: number(limits.tempo.min,limits.tempo.max), endTempo: number(limits.tempo.min,limits.tempo.max) }),0,limits.tempoEvents),
@@ -280,11 +281,44 @@ export function stagingExample() {
   });
   return project;
 }
+export function frontEnsembleExample(catalog) {
+  const project = smallExample();
+  project.schemaVersion = 19;
+  project.id = 'front-ensemble-example';
+  project.title = 'Front ensemble sideline';
+  project.audioOffsetSeconds = 0;
+  delete project.selectionGroups;
+  project.performers = Array.from({ length: 12 }, (_, index) => ({
+    id: `brass-${index + 1}`, label: `B${index + 1}`, name: '', sectionId: 'brass',
+  }));
+  const entries = Object.entries(catalog);
+  project.stagingObjects = entries.map(([model, { name }]) => ({ id: `pit-${model}`, name, model }));
+  const staging = Object.fromEntries(entries.map(([model, { width, depth, height }], index) => [`pit-${model}`, {
+    x: 42.5 + index * 3, y: 48.5 + index % 3 * .75, width, depth, height,
+    angle: model === 'xylophone' ? 12 : model === 'rack' ? 345 : 0, visible: true,
+  }]));
+  project.sets = project.sets.map((set, picture) => ({ ...set, notes: ['', 'The pit holds along the front sideline.', ''][picture], staging,
+    positions: Object.fromEntries(project.performers.map(({ id }, index) => {
+      const column = index % 6 - 2.5, row = Math.floor(index / 6);
+      return [id, { x: 50 + column * (3 - picture * .35) + picture * (row ? -1 : 1),
+        y: 32 + row * 3 + picture * 3 - (picture === 1 ? Math.abs(column) : 0) }];
+    })),
+  }));
+  project.moves = project.moves.map(move => ({ ...move, paths: {}, tempo: 120 }));
+  project.cameraViews = [
+    { id: 'pit-front', name: 'Pit front', position: [0, 4.2, 42], target: [0, .85, 22], fov: 56 },
+    { id: 'pit-side', name: 'Pit side', position: [18, 5, 31.5], target: [0, .6, 22], fov: 54 },
+    { id: 'pit-press', name: 'Pit press box', position: [6, 14, 43], target: [0, .4, 19], fov: 50 },
+  ].map(view => ({ ...view, projection: 'perspective' }));
+  return project;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
   const files = new Map([
+    ['format/squid-v19.schema.json', JSON.stringify(formatSchema(19, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS, tools.STAGING_LIMITS, Object.keys(tools.frontEnsembleCatalog)), null, 2) + '\n'],
+    ['format/examples/front-ensemble-v19.squid', JSON.stringify(frontEnsembleExample(tools.frontEnsembleCatalog), null, 2) + '\n'],
     ['format/squid-v18.schema.json', JSON.stringify(formatSchema(18, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS, tools.STAGING_LIMITS), null, 2) + '\n'],
     ['format/examples/staging-v18.squid', JSON.stringify(stagingExample(), null, 2) + '\n'],
     ['format/squid-v17.schema.json', JSON.stringify(formatSchema(17, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS), null, 2) + '\n'],

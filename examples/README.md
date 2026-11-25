@@ -41,6 +41,10 @@ The [design and validation notes](../docs/evidence/leg-motion/README.md) cover t
 
 Run `pnpm dev` and open `/examples/3d-assets/` on the local Vite server. Choose carried equipment or a front-ensemble station to review one model. The 64- and 500-performer scenes support playback, scrubbing, stage context and comparison with ordinary markers. See the [asset inventory, rendered review and measurements](../docs/evidence/3d-assets/README.md).
 
+## Front ensemble sideline
+
+Open the sample in Squidware, then use **Saved views** in 3D to choose **Pit front**, **Pit side**, or **Pit press box**. Scrub the three sets to see the six stationary instruments beside the moving brass. Open **Props** at a set to inspect or edit a station’s footprint. [Front ensemble sample](../format/examples/front-ensemble-v19.squid)
+
 ## Count-timed choreography review
 
 Run `pnpm dev`, open `/examples/leg-motion/`, and choose **Plié and flag cues**. Scrub from 0 to 8 or play the phrase in a loop. Use the front, side, and press-box cameras to inspect foot turnout, knee flexion, and the flag grip. For editable cues in the editor, open [the v15 example](../format/examples/choreography-v15.squid). The [choreography design review](../docs/evidence/choreography/README.md) includes the pose sequence and verification results.

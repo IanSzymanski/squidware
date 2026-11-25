@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, stagingExample, generateContract } from './format-contract.mjs';
+import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, stagingExample, frontEnsembleExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all(Array.from({ length: 18 }, (_, index) => index + 1).map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all(Array.from({ length: 19 }, (_, index) => index + 1).map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -296,4 +296,20 @@ test('v18 retains prop identity and per-set poses and rejects missing or invalid
   assert.equal(check(malformed), false);
   assert.throws(() => tools.parseProject(JSON.stringify(malformed)), /less than 360 degrees/);
   assert.throws(() => tools.projectV2AsLegacy(project), /cannot be downgraded/);
+});
+
+test('v19 retains front ensemble models and writes v18 for unmodeled props', () => {
+  const wire = frontEnsembleExample(tools.frontEnsembleCatalog);
+  assert.ok(check(wire));
+  const project = tools.parseProject(JSON.stringify(wire));
+  const saved = tools.serializeProject(project);
+  assert.equal(JSON.parse(saved).schemaVersion, 19);
+  assert.deepEqual(tools.parseProject(saved), project);
+  assert.deepEqual(project.stagingObjects.map(object => object.model), Object.keys(tools.frontEnsembleCatalog));
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, schemaVersion: 18 })), /model requires schema version 19/);
+  const generic = { ...project, stagingObjects: project.stagingObjects.map(({ model, ...object }) => object) };
+  assert.equal(JSON.parse(tools.serializeProject(generic)).schemaVersion, 18);
+  const invalid = { ...wire, stagingObjects: [{ ...wire.stagingObjects[0], model: 'constructor' }, ...wire.stagingObjects.slice(1)] };
+  assert.equal(check(invalid), false);
+  assert.throws(() => tools.parseProject(JSON.stringify(invalid)), /supported front ensemble model/);
 });

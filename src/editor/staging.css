@@ -9,7 +9,7 @@
 .staging-travel legend { padding: 0 4px; font-size: 12px; }
 .staging-visible, .staging-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .staging-visible { font-size: 12px; }
-.staging-chooser > .button { margin-top: 8px; }
+.staging-add { margin-top: 14px; }
 @media (max-width: 690px) {
   .staging-layout { grid-template-columns: minmax(0, 1fr); }
   .staging-preview svg { max-height: 30vh; }

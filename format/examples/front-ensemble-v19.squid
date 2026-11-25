@@ -1,0 +1,534 @@
+{
+  "schemaVersion": 19,
+  "id": "front-ensemble-example",
+  "title": "Front ensemble sideline",
+  "ensemble": "Example ensemble",
+  "field": {
+    "width": 100,
+    "height": 53.333333333333336,
+    "preset": "college"
+  },
+  "sections": [
+    {
+      "id": "brass",
+      "name": "Brass",
+      "color": "#c3e889"
+    }
+  ],
+  "performers": [
+    {
+      "id": "brass-1",
+      "label": "B1",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-2",
+      "label": "B2",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-3",
+      "label": "B3",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-4",
+      "label": "B4",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-5",
+      "label": "B5",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-6",
+      "label": "B6",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-7",
+      "label": "B7",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-8",
+      "label": "B8",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-9",
+      "label": "B9",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-10",
+      "label": "B10",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-11",
+      "label": "B11",
+      "name": "",
+      "sectionId": "brass"
+    },
+    {
+      "id": "brass-12",
+      "label": "B12",
+      "name": "",
+      "sectionId": "brass"
+    }
+  ],
+  "sets": [
+    {
+      "id": "opening",
+      "name": "Opening",
+      "notes": "",
+      "positions": {
+        "brass-1": {
+          "x": 42.5,
+          "y": 32
+        },
+        "brass-2": {
+          "x": 45.5,
+          "y": 32
+        },
+        "brass-3": {
+          "x": 48.5,
+          "y": 32
+        },
+        "brass-4": {
+          "x": 51.5,
+          "y": 32
+        },
+        "brass-5": {
+          "x": 54.5,
+          "y": 32
+        },
+        "brass-6": {
+          "x": 57.5,
+          "y": 32
+        },
+        "brass-7": {
+          "x": 42.5,
+          "y": 35
+        },
+        "brass-8": {
+          "x": 45.5,
+          "y": 35
+        },
+        "brass-9": {
+          "x": 48.5,
+          "y": 35
+        },
+        "brass-10": {
+          "x": 51.5,
+          "y": 35
+        },
+        "brass-11": {
+          "x": 54.5,
+          "y": 35
+        },
+        "brass-12": {
+          "x": 57.5,
+          "y": 35
+        }
+      },
+      "staging": {
+        "pit-marimba": {
+          "x": 42.5,
+          "y": 48.5,
+          "width": 2.25,
+          "depth": 1.1,
+          "height": 1.05,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-vibraphone": {
+          "x": 45.5,
+          "y": 49.25,
+          "width": 2,
+          "depth": 1,
+          "height": 1.05,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-xylophone": {
+          "x": 48.5,
+          "y": 50,
+          "width": 1.5,
+          "depth": 0.85,
+          "height": 1.05,
+          "angle": 12,
+          "visible": true
+        },
+        "pit-timpani": {
+          "x": 51.5,
+          "y": 48.5,
+          "width": 2.05,
+          "depth": 1.25,
+          "height": 0.95,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-rack": {
+          "x": 54.5,
+          "y": 49.25,
+          "width": 1.9,
+          "depth": 1,
+          "height": 1.45,
+          "angle": 345,
+          "visible": true
+        },
+        "pit-synth": {
+          "x": 57.5,
+          "y": 50,
+          "width": 1.75,
+          "depth": 0.95,
+          "height": 1.1,
+          "angle": 0,
+          "visible": true
+        }
+      }
+    },
+    {
+      "id": "arrival",
+      "name": "Arrival",
+      "notes": "The pit holds along the front sideline.",
+      "positions": {
+        "brass-1": {
+          "x": 44.375,
+          "y": 32.5
+        },
+        "brass-2": {
+          "x": 47.025,
+          "y": 33.5
+        },
+        "brass-3": {
+          "x": 49.675,
+          "y": 34.5
+        },
+        "brass-4": {
+          "x": 52.325,
+          "y": 34.5
+        },
+        "brass-5": {
+          "x": 54.975,
+          "y": 33.5
+        },
+        "brass-6": {
+          "x": 57.625,
+          "y": 32.5
+        },
+        "brass-7": {
+          "x": 42.375,
+          "y": 35.5
+        },
+        "brass-8": {
+          "x": 45.025,
+          "y": 36.5
+        },
+        "brass-9": {
+          "x": 47.675,
+          "y": 37.5
+        },
+        "brass-10": {
+          "x": 50.325,
+          "y": 37.5
+        },
+        "brass-11": {
+          "x": 52.975,
+          "y": 36.5
+        },
+        "brass-12": {
+          "x": 55.625,
+          "y": 35.5
+        }
+      },
+      "staging": {
+        "pit-marimba": {
+          "x": 42.5,
+          "y": 48.5,
+          "width": 2.25,
+          "depth": 1.1,
+          "height": 1.05,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-vibraphone": {
+          "x": 45.5,
+          "y": 49.25,
+          "width": 2,
+          "depth": 1,
+          "height": 1.05,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-xylophone": {
+          "x": 48.5,
+          "y": 50,
+          "width": 1.5,
+          "depth": 0.85,
+          "height": 1.05,
+          "angle": 12,
+          "visible": true
+        },
+        "pit-timpani": {
+          "x": 51.5,
+          "y": 48.5,
+          "width": 2.05,
+          "depth": 1.25,
+          "height": 0.95,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-rack": {
+          "x": 54.5,
+          "y": 49.25,
+          "width": 1.9,
+          "depth": 1,
+          "height": 1.45,
+          "angle": 345,
+          "visible": true
+        },
+        "pit-synth": {
+          "x": 57.5,
+          "y": 50,
+          "width": 1.75,
+          "depth": 0.95,
+          "height": 1.1,
+          "angle": 0,
+          "visible": true
+        }
+      }
+    },
+    {
+      "id": "finish",
+      "name": "Finish",
+      "notes": "",
+      "positions": {
+        "brass-1": {
+          "x": 46.25,
+          "y": 38
+        },
+        "brass-2": {
+          "x": 48.55,
+          "y": 38
+        },
+        "brass-3": {
+          "x": 50.85,
+          "y": 38
+        },
+        "brass-4": {
+          "x": 53.15,
+          "y": 38
+        },
+        "brass-5": {
+          "x": 55.45,
+          "y": 38
+        },
+        "brass-6": {
+          "x": 57.75,
+          "y": 38
+        },
+        "brass-7": {
+          "x": 42.25,
+          "y": 41
+        },
+        "brass-8": {
+          "x": 44.55,
+          "y": 41
+        },
+        "brass-9": {
+          "x": 46.85,
+          "y": 41
+        },
+        "brass-10": {
+          "x": 49.15,
+          "y": 41
+        },
+        "brass-11": {
+          "x": 51.45,
+          "y": 41
+        },
+        "brass-12": {
+          "x": 53.75,
+          "y": 41
+        }
+      },
+      "staging": {
+        "pit-marimba": {
+          "x": 42.5,
+          "y": 48.5,
+          "width": 2.25,
+          "depth": 1.1,
+          "height": 1.05,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-vibraphone": {
+          "x": 45.5,
+          "y": 49.25,
+          "width": 2,
+          "depth": 1,
+          "height": 1.05,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-xylophone": {
+          "x": 48.5,
+          "y": 50,
+          "width": 1.5,
+          "depth": 0.85,
+          "height": 1.05,
+          "angle": 12,
+          "visible": true
+        },
+        "pit-timpani": {
+          "x": 51.5,
+          "y": 48.5,
+          "width": 2.05,
+          "depth": 1.25,
+          "height": 0.95,
+          "angle": 0,
+          "visible": true
+        },
+        "pit-rack": {
+          "x": 54.5,
+          "y": 49.25,
+          "width": 1.9,
+          "depth": 1,
+          "height": 1.45,
+          "angle": 345,
+          "visible": true
+        },
+        "pit-synth": {
+          "x": 57.5,
+          "y": 50,
+          "width": 1.75,
+          "depth": 0.95,
+          "height": 1.1,
+          "angle": 0,
+          "visible": true
+        }
+      }
+    }
+  ],
+  "moves": [
+    {
+      "id": "move-a",
+      "fromSetId": "opening",
+      "toSetId": "arrival",
+      "counts": 16,
+      "tempo": 120,
+      "transition": "linear",
+      "paths": {}
+    },
+    {
+      "id": "move-b",
+      "fromSetId": "arrival",
+      "toSetId": "finish",
+      "counts": 8,
+      "tempo": 120,
+      "transition": "ease",
+      "paths": {}
+    }
+  ],
+  "openingTiming": {
+    "tempo": 120,
+    "transition": "linear"
+  },
+  "audioOffsetSeconds": 0,
+  "stagingObjects": [
+    {
+      "id": "pit-marimba",
+      "name": "Marimba",
+      "model": "marimba"
+    },
+    {
+      "id": "pit-vibraphone",
+      "name": "Vibraphone",
+      "model": "vibraphone"
+    },
+    {
+      "id": "pit-xylophone",
+      "name": "Xylophone / glockenspiel",
+      "model": "xylophone"
+    },
+    {
+      "id": "pit-timpani",
+      "name": "Timpani",
+      "model": "timpani"
+    },
+    {
+      "id": "pit-rack",
+      "name": "Percussion rack",
+      "model": "rack"
+    },
+    {
+      "id": "pit-synth",
+      "name": "Keyboard / synth",
+      "model": "synth"
+    }
+  ],
+  "cameraViews": [
+    {
+      "id": "pit-front",
+      "name": "Pit front",
+      "position": [
+        0,
+        4.2,
+        42
+      ],
+      "target": [
+        0,
+        0.85,
+        22
+      ],
+      "fov": 56,
+      "projection": "perspective"
+    },
+    {
+      "id": "pit-side",
+      "name": "Pit side",
+      "position": [
+        18,
+        5,
+        31.5
+      ],
+      "target": [
+        0,
+        0.6,
+        22
+      ],
+      "fov": 54,
+      "projection": "perspective"
+    },
+    {
+      "id": "pit-press",
+      "name": "Pit press box",
+      "position": [
+        6,
+        14,
+        43
+      ],
+      "target": [
+        0,
+        0.4,
+        19
+      ],
+      "fov": 50,
+      "projection": "perspective"
+    }
+  ]
+}

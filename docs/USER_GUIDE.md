@@ -199,7 +199,9 @@ In **2D field** or **Split review**, pause at a set and choose **Props** from th
 
 A new prop starts with the same pose in every set. At another set, choose the prop and use **Edit prop** to move, resize, rotate or hide it there. Use **Start count** and **End count** to set when a move into that set travels. The prop holds before and after that window. Visibility changes at set arrival. **Apply prop** records one undo action, and **Remove prop** removes its placement from every set in one undoable edit.
 
-The 2D field, 3D preview, rehearsal video and field charts show the saved props. The 3D view uses simple boxes with the configured dimensions. The footprint is a planning aid. Current spacing and stride checks cover performers. Prop edits save in `.squid` format v18.
+The 2D field, 3D preview, rehearsal video and field charts show the saved props. Generic props appear as boxes with the configured dimensions. The footprint is a planning aid. Current spacing and stride checks cover performers. Generic prop edits save in `.squid` format v18.
+
+Use **Prop type** before **Add prop** to choose a marimba, vibraphone, xylophone, timpani pair, percussion rack or keyboard. Each instrument starts with a planning footprint that you can adjust per set. Its 3D model keeps the same scale as it turns and moves, in both Lightweight and Detailed preview. Modeled equipment saves in `.squid` format v19. Open the sample and choose one of the three saved pit cameras to see the sideline against moving drill. [Front ensemble example](../format/examples/front-ensemble-v19.squid)
 
 ## Transition checks
 

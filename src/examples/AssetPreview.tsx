@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Stage3D, type PreviewCamera, type RenderStats, type Stage3DQuality } from '../components/Stage3D';
-import { pitModels, type AssetPlacement } from '../components/3d/assetModels';
+import { frontEnsembleModels, type AssetPlacement } from '../components/3d/assetModels';
 import { createBlankProject, sampleProject } from '../domain';
 import { guardCatalog, instrumentCatalog, type CarriedEquipment } from '../equipment';
+import { frontEnsembleCatalog, type FrontEnsembleModel } from '../frontEnsemble';
 import type { Project } from '../types';
 import { createLegMotionFixture } from './legMotionFixture';
 import './legMotionPreview.css';
 
 const carriedCatalog = { ...instrumentCatalog, ...guardCatalog };
 const carriedIds = Object.keys(carriedCatalog) as CarriedEquipment[];
-type PitId = keyof typeof pitModels;
 const emptyPit: AssetPlacement[] = [];
 const selection: string[] = [];
 const modes = { carried: 'Carried equipment', pit: 'Front ensemble', mixed: 'Mixed cast · 64', stress: 'Stress cast · 500' };
@@ -62,7 +62,7 @@ function ensembleProject(size: 64 | 500): Project {
 export function AssetPreview() {
   const [mode, setMode] = useState<Mode>('carried');
   const [equipment, setEquipment] = useState<CarriedEquipment>('trumpet');
-  const [pitItem, setPitItem] = useState<PitId>('marimba');
+  const [pitItem, setPitItem] = useState<FrontEnsembleModel>('marimba');
   const [view, setView] = useState<View>('front');
   const [quality, setQuality] = useState<Stage3DQuality>('lightweight');
   const [showEquipment, setShowEquipment] = useState(true);
@@ -81,9 +81,9 @@ export function AssetPreview() {
   const ensemble = mode === 'mixed' || mode === 'stress';
   const sample = useMemo(() => sampleProject(project, count), [project, count]);
   const pit = useMemo(() => {
-    if (mode === 'pit') return [{ parts: pitModels[pitItem].parts, at: [0, 0, 0] } satisfies AssetPlacement];
+    if (mode === 'pit') return [{ parts: frontEnsembleModels[pitItem], at: [0, 0, 0] } satisfies AssetPlacement];
     if (!ensemble || !showPit) return emptyPit;
-    return Object.values(pitModels).map(({ parts }, i): AssetPlacement => ({
+    return Object.values(frontEnsembleModels).map((parts, i): AssetPlacement => ({
       parts, at: [(i - 2.5) * 3, 0, project.field.height / 2 + 1.65],
     }));
   }, [mode, ensemble, pitItem, project.field.height, showPit]);
@@ -119,8 +119,8 @@ export function AssetPreview() {
       {mode === 'carried' && <label>Equipment <select value={equipment} onChange={event => setEquipment(event.target.value as CarriedEquipment)}>
         {Object.entries(carriedCatalog).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
       </select></label>}
-      {mode === 'pit' && <label>Equipment <select value={pitItem} onChange={event => setPitItem(event.target.value as PitId)}>
-        {Object.entries(pitModels).map(([key, { name }]) => <option key={key} value={key}>{name}</option>)}
+      {mode === 'pit' && <label>Equipment <select value={pitItem} onChange={event => setPitItem(event.target.value as FrontEnsembleModel)}>
+        {Object.entries(frontEnsembleCatalog).map(([key, { name }]) => <option key={key} value={key}>{name}</option>)}
       </select></label>}
       <label>Camera view <select value={view} onChange={event => setView(event.target.value as View)}>
         {Object.entries(viewNames).map(([key, name]) => <option key={key} value={key}>{name}</option>)}

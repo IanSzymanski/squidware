@@ -1,4 +1,5 @@
 import type { CarriedEquipment } from '../../equipment';
+import type { FrontEnsembleModel } from '../../frontEnsemble';
 
 export type XYZ = readonly [x: number, y: number, z: number];
 export interface AssetPart {
@@ -189,23 +190,23 @@ const keyboard = (width: number, depth: number, barCount: number, bars: string, 
   }).flat(),
 ];
 
-export const pitModels = {
-  marimba: { name: 'Marimba', parts: keyboard(1.95, .69, 14, wood, true) },
-  vibraphone: { name: 'Vibraphone', parts: keyboard(1.65, .58, 12, silver, true) },
-  xylophone: { name: 'Xylophone / glockenspiel', parts: keyboard(1.22, .43, 12, bright, false) },
-  timpani: { name: 'Timpani', parts: [-.48, .48].flatMap<AssetPart>((x, i) => [
+export const frontEnsembleModels: Record<FrontEnsembleModel, readonly AssetPart[]> = {
+  marimba: keyboard(1.95, .69, 14, wood, true),
+  vibraphone: keyboard(1.65, .58, 12, silver, true),
+  xylophone: keyboard(1.22, .43, 12, bright, false),
+  timpani: [-.48, .48].flatMap<AssetPart>((x, i) => [
     box([x, .23, 0], [.50, .34, .48], dark),
     { shape: 'flare', at: [x, .56, 0], size: [.68 + i * .15, .51, .68 + i * .15], color: wood },
     cylinder([x, .83, 0], [.72 + i * .15, .045, .72 + i * .15], white),
-  ]) },
-  rack: { name: 'Percussion rack', parts: [
+  ]),
+  rack: [
     ...frame(1.55, .54), box([0, 1.33, 0], [1.49, .07, .07], dark),
     box([-.67, .9, 0], [.07, .91, .07], dark), box([.67, .9, 0], [.07, .91, .07], dark),
     ...drum([-.40, 1.04, .05], .35, .17), ...drum([.02, .96, .05], .41, .22),
     cylinder([.46, 1.17, .05], [.42, .047, .42], bright, [.2, 1, 0]),
-  ] },
-  synth: { name: 'Keyboard / synth', parts: [
+  ],
+  synth: [
     ...keyboard(1.42, .52, 12, white, false), box([0, .97, -.20], [1.34, .090, .11], dark),
     box([.37, 1.02, -.21], [.22, .02, .07], blue),
-  ] },
+  ],
 };

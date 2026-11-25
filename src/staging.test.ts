@@ -5,6 +5,8 @@ import { splitTransition } from './editor/splitTransition';
 import { saveStagingObject } from './editor/stagingEdits';
 import { createEditorStore } from './editor/store';
 import { stagingPlacements } from './components/3d/stagingModels';
+import { frontEnsembleModels } from './components/3d/assetModels';
+import { frontEnsembleCatalog } from './frontEnsemble';
 import type { StagingPose } from './staging';
 
 const object = { id: 'platform', name: 'Platform' };
@@ -22,6 +24,26 @@ function fixture() {
 }
 
 describe('set staging', () => {
+  it('shares fixed-scale models between independent prop instances and keeps both footprints editable', () => {
+    const project = fixture();
+    const model = 'marimba' as const;
+    const { width, depth, height } = frontEnsembleCatalog[model];
+    const left = { id: 'marimba-left', name: 'Left marimba', model }, right = { id: 'marimba-right', name: 'Right marimba', model };
+    const defaultPose = { ...opening, width, depth, height, angle: 0 };
+    const pair = saveStagingObject(saveStagingObject(project, 0, { object: left, pose: defaultPose, create: true }), 0,
+      { object: right, pose: { ...defaultPose, x: 50 }, create: true });
+    const changed = saveStagingObject(pair, 1, { object: left, pose: { ...defaultPose, width: 8, angle: 90, visible: false }, create: false });
+    const reopened = parseProject(serializeProject(changed));
+    const halfway = sampleProject(reopened, 8).staging!.filter(item => item.model);
+    const atArrival = sampleProject(reopened, 16).staging!.filter(item => item.model);
+    expect(halfway).toMatchObject([{ id: left.id, angle: 45, width: (8 + width) / 2 }, { id: right.id, x: 50, angle: 0, width }]);
+    const placements = stagingPlacements(halfway, 100, project.field.height);
+    expect(placements).toMatchObject([{ at: [-30, 0, 40 - project.field.height / 2], angle: Math.PI / 4 },
+      { at: [0, 0, 40 - project.field.height / 2], angle: 0 }]);
+    expect(placements.every(placement => placement.parts === frontEnsembleModels.marimba && !placement.scale)).toBe(true);
+    expect(stagingPlacements(atArrival, 100, project.field.height)).toEqual([placements[1]]);
+  });
+
   it('samples stationary and timed travel, using the shortest turn and switching visibility on arrival', () => {
     const project = fixture();
     const sample = (count: number) => sampleProject(project, count).staging![0];
