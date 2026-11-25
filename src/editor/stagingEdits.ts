@@ -12,8 +12,10 @@ export function saveStagingObject(project: Project, index: number, { object, pos
   if (create === objects.some(({ id }) => id === object.id)) {
     throw new Error(create ? 'This prop ID already exists.' : 'This prop no longer exists.');
   }
-  const stagingObjects = validateStagingObjects(create ? [...objects, object] : objects.map(item => item.id === object.id ? object : item),
+  const validated = validateStagingObjects(create ? [...objects, object] : objects.map(item => item.id === object.id ? object : item),
     new Set(project.performers.map(({ id }) => id)))!;
+  const stagingObjects = !create && validated.every((item, i) => item.name === objects[i].name && item.model === objects[i].model && item.footprint === objects[i].footprint)
+    ? objects : validated;
   const checked = validateStagingPoses({ [object.id]: pose }, [object], project.field, 'Prop pose')![object.id];
   const { travel: _travel, ...placement } = checked;
   const sets = project.sets.map((set, i) => {

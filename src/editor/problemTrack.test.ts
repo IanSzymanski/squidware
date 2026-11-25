@@ -3,7 +3,7 @@ import { analyzeTransition, createBlankProject } from '../domain';
 import type { MoveCheck } from '../analysis/show';
 import type { TransitionIssue } from '../types';
 import type { Finding } from '../analysis/show';
-import { BADGE_CAP, CAPPED_TARGET, PROBLEM_TARGET, activeCluster, awaitsRecheck, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, findingQuantity, performerLabels, problemClusters, rovingIndex, wholeCount, type ProblemCluster } from './problemTrack';
+import { BADGE_CAP, CAPPED_TARGET, PROBLEM_TARGET, activeCluster, awaitsRecheck, clusterBadge, clusterFindings, clusterName, clusterSeverity, findingName, findingQuantity, problemLabels, problemClusters, rovingIndex, wholeCount, type ProblemCluster } from './problemTrack';
 
 const issue = (atCount: number, severity: 'danger' | 'warning' = 'warning', type: 'collision' | 'stride' = 'collision', ids = type === 'collision' ? ['a', 'b'] : ['a']): TransitionIssue =>
   ({ type, severity, performerIds: ids, message: type === 'collision' ? `A / B: 0.75 yards apart near count ${atCount}.` : 'A: 6.0 yards in 2 counts; 1.7 steps per 5 yards. Limit 1.25 yd/count (minimum 4 steps per 5 yd); base.', atCount });
@@ -142,7 +142,7 @@ describe('problem names', () => {
     p.performers = Array.from({ length: 16 }, (_, i) => ({ id: `p${i}`, label: `P${i}`, name: '', sectionId: p.sections[0].id }));
     p.sets = Array.from({ length: 3 }, (_, i) => ({ id: `s${i}`, name: `Picture ${i}`, notes: '', positions: Object.fromEntries(p.performers.map((person, j) => [person.id, { x: 10 + i * 12, y: 10 + j * .2 }])) }));
     p.moves = Array.from({ length: 2 }, (_, i) => ({ id: `m${i}`, fromSetId: `s${i}`, toSetId: `s${i + 1}`, counts: 8, tempo: 120, transition: i ? 'ease' as const : 'linear' as const, paths: {} }));
-    const issues = [1, 2].flatMap(i => analyzeTransition(p, i)), names = issues.map(i => findingName(i, performerLabels(p)));
+    const issues = [1, 2].flatMap(i => analyzeTransition(p, i)), names = issues.map(i => findingName(i, problemLabels(p)));
     expect(issues.some(i => i.type === 'stride') && issues.some(i => i.type === 'collision')).toBe(true);
     for (const name of names) expect(name).toMatch(/^(Spacing \d+(\.\d+)? yd · P\d+, P\d+|Stride \d+(\.\d+)? steps per 5 yd · P\d+) · count \d+$/);
   });

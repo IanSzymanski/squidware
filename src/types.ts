@@ -1,4 +1,5 @@
 import type { SavedCameraView } from './cameraViews';
+import type { ClearanceRules } from './analysis/clearanceRules';
 import type { StagingObject, StagingPose, StagingSample } from './staging';
 import type { FootballSurface, Surface } from './surfaces';
 import type { PreferencesBridge } from './preferences';
@@ -126,6 +127,7 @@ export interface Project extends Omit<LegacyProject, 'schemaVersion' | 'sets' | 
   selectionGroups?: SelectionGroup[];
   rehearsal?: RehearsalPassage[];
   analysisRules?: ProjectAnalysisRules;
+  clearanceRules?: ClearanceRules;
   meter?: Meter;
   score?: ScoreMap;
   tempoMap?: TempoMap;
@@ -143,7 +145,7 @@ export type FormationKind = 'line' | 'arc' | 'circle' | 'block' | 'curve';
 export type FormationAssignment = 'position' | 'roster';
 export interface FormationOptions { center: Point; width: number; height: number; rotation: number; columns: number; assignment?: FormationAssignment }
 export interface TransitionIssue {
-  type: 'collision' | 'stride'; performerIds: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number;
+  type: 'collision' | 'stride' | 'clearance'; performerIds: string[]; propIds?: string[]; message: string; severity: 'warning' | 'danger'; atCount?: number;
   certainty?: 'confirmed' | 'possible'; countRange?: [number, number];
   measurement?: { lower: number; upper: number; tolerance: number; unit: 'yd' | 'yd/count'; converged: boolean };
 }

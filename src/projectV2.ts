@@ -1,5 +1,6 @@
 import { isCustomSurface, validateSurface, validateFootballSurface } from './surfaces';
 import { validateCameraViews } from './cameraViews';
+import { validateClearanceRules } from './analysis/clearanceRules';
 import { validateStagingObjects, validateStagingPoses } from './staging';
 import { validateChoreography } from './choreography';
 import { validateEquipment } from './equipment';
@@ -50,7 +51,7 @@ function timing(value: unknown, path: string): OpeningTiming {
     transition: data.transition,
   };
 }
-const LAST_WIRE_VERSION = 19;
+const LAST_WIRE_VERSION = 20;
 const supportedWireVersion = (version: unknown): version is number =>
   typeof version === 'number' && Number.isInteger(version) && version >= 2 && version <= LAST_WIRE_VERSION;
 
@@ -221,6 +222,8 @@ export function validateProjectV2(input: unknown, geometry: GeometryValidation =
   const project: Project = { schemaVersion: 2, ...common, ...(data.score === undefined ? {} : { score: validateScore(data.score) }), ...(data.meter === undefined ? {} : { meter: validateMeter(data.meter) }), ...(data.analysisRules === undefined ? {} : { analysisRules: validateAnalysisRules(data.analysisRules, new Set(base.sections.map(s => s.id))) }), ...(data.rehearsal === undefined ? {} : { rehearsal: validateRehearsal(data.rehearsal) }), ...(selectionGroups === undefined ? {} : { selectionGroups }), ...(data.snapping === undefined ? {} : { snapping: validateSnapSettings(data.snapping) }), sections, performers, sets: pictures, moves, openingTiming: timing(data.openingTiming, 'openingTiming') };
   const cameras = validateCameraViews(data.cameraViews);
   if (cameras) project.cameraViews = cameras;
+  const clearance = validateClearanceRules(data.clearanceRules);
+  if (clearance) project.clearanceRules = clearance;
   if (stagingObjects) project.stagingObjects = stagingObjects;
   const choreography = validateChoreography(data.choreography, project);
   if (choreography) project.choreography = choreography;
@@ -271,6 +274,9 @@ export function parseProjectV2(content: string): ProjectV2 {
     || Array.isArray(data.sets) && data.sets.some(set => Object.hasOwn(object(set, 'set'), 'staging')))) invalid('staging', 'requires schema version 18.');
   if (Number(data.schemaVersion) < 19 && Array.isArray(data.stagingObjects)
     && data.stagingObjects.some(value => Object.hasOwn(object(value, 'staging object'), 'model'))) invalid('stagingObjects.model', 'requires schema version 19.');
+  if (Number(data.schemaVersion) < 20 && Object.hasOwn(data, 'clearanceRules')) invalid('clearanceRules', 'requires schema version 20.');
+  if (Number(data.schemaVersion) < 20 && Array.isArray(data.stagingObjects)
+    && data.stagingObjects.some(value => Object.hasOwn(object(value, 'staging object'), 'footprint'))) invalid('stagingObjects.footprint', 'requires schema version 20.');
   if (data.schemaVersion === 1) return migrateProjectV1(data);
   if (supportedWireVersion(data.schemaVersion)) {
     if (data.schemaVersion < 16) {
@@ -293,8 +299,9 @@ export function serializeProjectV2(project: ProjectV2): string {
   const { tempoMap, audioAnchors, ...plain } = checked;
   const performerPresentation = checked.sets.some(set => set.facings) || checked.performers.some(performer => performer.appearance);
   const equipment = checked.sections.some(section => section.equipment) || checked.performers.some(person => person.appearance?.equipment || person.appearance?.flagColor);
+  const hasClearance = checked.clearanceRules || checked.stagingObjects?.some(item => item.footprint);
   const stagingVersion = checked.stagingObjects?.some(item => item.model !== undefined) ? 19 : 18;
-  const content = `${JSON.stringify(checked.stagingObjects?.length ? { ...checked, schemaVersion: stagingVersion } : checked.cameraViews?.length ? { ...checked, schemaVersion: 17 } : isCustomSurface(checked.field) ? { ...checked, schemaVersion: 16 } : checked.choreography?.length ? { ...checked, schemaVersion: 15 } : equipment ? { ...checked, schemaVersion: 14 } : performerPresentation ? { ...checked, schemaVersion: 13 } : checked.moves.some(m=>m.groupMotions?.length) ? {...plain,...(tempoMap?{tempoMap}:{}),...(audioAnchors?.length?{audioAnchors}:{}),schemaVersion:12} : checked.sets.some(set=>set.liveFormations?.some(f=>f.assignmentConstraints)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:11 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.scatter)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:10 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.bezier)) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion:9 } : checked.sharedRoutes?.length ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 8 } : checked.sets.some(set => set.liveFormations?.length) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 7 } : checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
+  const content = `${JSON.stringify(hasClearance ? { ...checked, schemaVersion: 20 } : checked.stagingObjects?.length ? { ...checked, schemaVersion: stagingVersion } : checked.cameraViews?.length ? { ...checked, schemaVersion: 17 } : isCustomSurface(checked.field) ? { ...checked, schemaVersion: 16 } : checked.choreography?.length ? { ...checked, schemaVersion: 15 } : equipment ? { ...checked, schemaVersion: 14 } : performerPresentation ? { ...checked, schemaVersion: 13 } : checked.moves.some(m=>m.groupMotions?.length) ? {...plain,...(tempoMap?{tempoMap}:{}),...(audioAnchors?.length?{audioAnchors}:{}),schemaVersion:12} : checked.sets.some(set=>set.liveFormations?.some(f=>f.assignmentConstraints)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:11 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.scatter)) ? { ...plain, ...(tempoMap ? {tempoMap} : {}), ...(audioAnchors?.length ? {audioAnchors} : {}), schemaVersion:10 } : checked.sets.some(set=>set.liveFormations?.some(f=>f.bezier)) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion:9 } : checked.sharedRoutes?.length ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 8 } : checked.sets.some(set => set.liveFormations?.length) ? { ...plain, ...(tempoMap ? { tempoMap } : {}), ...(audioAnchors?.length ? { audioAnchors } : {}), schemaVersion: 7 } : checked.moves.some(hasScheduledPaths) ? { ...checked, schemaVersion: 6 } : checked.moves.some(hasCurvedPaths) ? { ...checked, schemaVersion: 5 } : audioAnchors?.length ? { ...checked, schemaVersion: 4 } : mapped ? { ...plain, tempoMap, schemaVersion: 3 } : plain)}\n`;
   assertSize(content);
   return content;
 }
@@ -304,6 +311,7 @@ export function serializeProjectV2(project: ProjectV2): string {
  */
 export function projectV2AsLegacy(input: ProjectV2): LegacyProject {
   const checked = validateProjectV2(input);
+  if (checked.clearanceRules) throw Error('Footprint clearance rules cannot be downgraded to legacy data.');
   if (checked.stagingObjects?.length) throw Error('Staging objects cannot be downgraded to legacy data.');
   if (checked.cameraViews?.length) throw Error('Saved cameras cannot be downgraded to legacy data.');
   if (isCustomSurface(checked.field)) throw Error('Custom surfaces cannot be downgraded to legacy data.');

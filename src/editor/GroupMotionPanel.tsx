@@ -46,7 +46,7 @@ export function GroupMotionPanel({controller:c}:{controller:EditorController}) {
       worker.onmessage=({data}:{data:{generation:number;result?:TransitionComparison;error?:string}})=>{if(!active||data.generation!==1)return;if(data.error){fail(data.error);return;}if(data.result){clearTimeout(watchdog);worker?.terminate();setChecks({fingerprint,status:'ready',result:data.result});}};
       worker.onerror=worker.onmessageerror=()=>fail('Group movement checks are unavailable. Retry or cancel.');
       watchdog=setTimeout(()=>fail('Group movement checks timed out. Simplify travel or select fewer members.'),30000);
-      worker.postMessage({generation:1,current:transitionInput(project,plan.index+1,initial.review.epoch),proposed:transitionInput(plan.project,plan.index+1,initial.review.epoch),ids:plan.ids});
+      worker.postMessage({generation:1,current:transitionInput(project,plan.index+1,initial.review.epoch,undefined,false),proposed:transitionInput(plan.project,plan.index+1,initial.review.epoch,undefined,false),ids:plan.ids});
     }catch{fail('Group movement checks could not start. Retry or cancel.');}},100);
     return ()=>{active=false;clearTimeout(scheduled);clearTimeout(watchdog);worker?.terminate();};
   },[fingerprint,retry,stale]);

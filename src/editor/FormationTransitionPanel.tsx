@@ -54,7 +54,7 @@ export function FormationTransitionPanel({controller:c}:{controller:EditorContro
         };
         worker.onerror=worker.onmessageerror=()=>fail('Movement comparison is unavailable. Retry the checks or cancel this review.');
         watchdog=setTimeout(()=>fail('Movement comparison timed out. Retry with fewer members or simpler paths.'),30000);
-        worker.postMessage({generation:1,current:transitionInput(project,index+1,review.epoch),proposed:transitionInput(plan.project,index+1,review.epoch),ids:review.ids});
+        worker.postMessage({generation:1,current:transitionInput(project,index+1,review.epoch,undefined,false),proposed:transitionInput(plan.project,index+1,review.epoch,undefined,false),ids:review.ids});
       }catch{fail('Movement comparison could not start. Retry the checks or cancel this review.');}
     },100);
     return ()=>{active=false;clearTimeout(scheduled);clearTimeout(watchdog);worker?.terminate();};

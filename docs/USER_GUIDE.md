@@ -199,15 +199,15 @@ In **2D field** or **Split review**, pause at a set and choose **Props** from th
 
 A new prop starts with the same pose in every set. At another set, choose the prop and use **Edit prop** to move, resize, rotate or hide it there. Use **Start count** and **End count** to set when a move into that set travels. The prop holds before and after that window. Visibility changes at set arrival. **Apply prop** records one undo action, and **Remove prop** removes its placement from every set in one undoable edit.
 
-The 2D field, 3D preview, rehearsal video and field charts show the saved props. Generic props appear as boxes with the configured dimensions. The footprint is a planning aid. Current spacing and stride checks cover performers. Generic prop edits save in `.squid` format v18.
+The 2D field, 3D preview, rehearsal video and field charts show the saved props. Under **Planning footprint**, choose **Rectangle** or **Circle**. A rectangle uses the pose’s width, depth and orientation. A circle uses the larger of its width and depth for its diameter. The shape applies to the prop across the production. The 3D preview represents generic props with boxes.
 
 Use **Prop type** before **Add prop** to choose a marimba, vibraphone, xylophone, timpani pair, percussion rack or keyboard. Each instrument starts with a planning footprint that you can adjust per set. Its 3D model keeps the same scale as it turns and moves, in both Lightweight and Detailed preview. Modeled equipment saves in `.squid` format v19. Open the sample and choose one of the three saved pit cameras to see the sideline against moving drill. [Front ensemble example](../format/examples/front-ensemble-v19.squid)
 
 ## Transition checks
 
-The Inspector analyzes the move into the selected set. Click an issue to select its performer or pair and show their paths.
+The Inspector analyzes the move into the selected set. Click a flag to review it at its show count. Spacing and stride flags highlight the performers and their paths. Clearance flags outline the affected footprints.
 
-For the whole show, use the timeline’s problem row. Each marker names the problem type, performers and count, such as “Spacing 1.13 yd · B4, B5 · count 6”; nearby findings share a numbered marker that lists them. Arrow keys move along the row, and Enter goes to a finding or opens a group. The ⚠ count beside the row opens **Show-wide problems**, which lists every finding and opens **Analysis rules**.
+For the whole show, use the timeline’s problem row. Each marker names the problem type, participants and count, such as “Spacing 1.13 yd · B4, B5 · count 6”. Nearby findings share a numbered marker. Arrow keys move along the row, and Enter goes to a finding or opens a group. The ⚠ count beside the row opens **Show-wide problems**, which lists findings and opens **Analysis rules**.
 
 The current checks are:
 
@@ -218,7 +218,13 @@ The current checks are:
 
 Spacing is calculated across the continuous transition, so crossings between playback frames can be detected. For eased transitions, stride analysis accounts for peak speed rather than only average distance per count.
 
-Flags help identify moves to review. They do not certify safe movement, account for instrument clearance, model individual ability, or optimize routes. A lack of flags is not a substitute for instructor review on the field. The opening picture has no incoming transition to analyze.
+### Footprint clearance
+
+In **Analysis rules**, expand **Footprint clearance** and enable **Check clearance with props**. Set a performer circle diameter or rectangle width and depth, then enter a required edge gap in yards and choose **Save rules**. A gap of zero checks for overlap only. The production-wide performer rectangle follows authored facing and defaults to facing the audience when no heading is available. Props use their saved planning shape, dimensions, movement and visibility.
+
+In **Show-wide problems**, filter **Type** to **Clearance**. The results distinguish confirmed overlaps, confirmed gaps below your requirement and possible violations that need review. Choose a finding to inspect the named participants and footprint assumptions at the reported count. The first move includes the opening picture. A single-picture project checks its opening pose directly. [Editable clearance example](../format/examples/clearance-v20.squid)
+
+Use the flags as a ground-plane rehearsal aid. Check instrument extensions, performers’ movement and vertical clearance on the field with the instructor. A flagged count is one point to inspect for the pair during that move. [Clearance calculation and limits](../format/FORMAT.md#v20-footprint-clearance)
 
 ## Export a rehearsal packet
 

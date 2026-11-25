@@ -4,7 +4,7 @@ import type { DrillSet, Point, Project, TimelineSample } from './types';
 
 export const STAGING_LIMITS = { count: 64, name: 60, minSize: .1, maxSize: 40 };
 
-export interface StagingObject { id: string; name: string; model?: FrontEnsembleModel }
+export interface StagingObject { id: string; name: string; model?: FrontEnsembleModel; footprint?: 'circle' }
 export interface StagingTransform extends Point {
   width: number; depth: number; height: number; angle: number; visible: boolean;
 }
@@ -32,17 +32,18 @@ export function validateStagingObjects(input: unknown, performerIds: ReadonlySet
   if (input === undefined) return;
   if (!Array.isArray(input) || input.length > STAGING_LIMITS.count) invalid('stagingObjects', `can contain up to ${STAGING_LIMITS.count} objects.`);
   const ids = new Set(performerIds);
-  const objects = input.map((value, index) => {
+  const objects = input.map((value, index): StagingObject => {
     const path = `stagingObjects[${index}]`;
-    const { id, name, model } = record(value, path);
+    const { id, name, model, footprint } = record(value, path);
     if (typeof id !== 'string' || id.length > PROJECT_LIMITS.text.id || !/^[A-Za-z0-9_-]+$/.test(id)
       || ['__proto__', 'constructor', 'prototype'].includes(id) || ids.has(id)) invalid(`${path}.id`, 'must be a unique staging ID distinct from performer IDs.');
     if (typeof name !== 'string' || !name.trim() || name.length > STAGING_LIMITS.name || /[\u0000-\u001f]/.test(name)) {
       invalid(`${path}.name`, `must be a nonempty name of up to ${STAGING_LIMITS.name} characters without control characters.`);
     }
     if (model !== undefined && !isFrontEnsembleModel(model)) invalid(`${path}.model`, 'must be a supported front ensemble model.');
+    if (footprint !== undefined && footprint !== 'circle') invalid(`${path}.footprint`, 'must be circle when specified.');
     ids.add(id);
-    return { id, name: name.trim(), ...(model === undefined ? {} : { model }) };
+    return { id, name: name.trim(), ...(model === undefined ? {} : { model }), ...(footprint === undefined ? {} : { footprint }) };
   });
   return objects.length ? objects : undefined;
 }
@@ -77,16 +78,21 @@ export function validateStagingPoses(input: unknown, objects: readonly StagingOb
 
 const fullTravel = { start: 0, end: 1 };
 function transform({ travel: _travel, ...pose }: StagingPose): StagingTransform { return pose; }
-function interpolate(from: StagingPose, to: StagingPose, progress: number): StagingTransform {
-  if (progress >= 1) return transform(to);
+export function stagingTurn(from: number, to: number) {
+  const delta = to - from;
+  return Math.abs(delta) <= 180 ? delta : delta - Math.sign(delta) * 360;
+}
+export function stagingProgress(to: StagingPose, progress: number) {
   const { start, end } = to.travel ?? fullTravel;
-  const t = Math.min(1, Math.max(0, (progress - start) / (end - start)));
+  return Math.min(1, Math.max(0, (progress - start) / (end - start)));
+}
+export function interpolateStagingPose(from: StagingPose, to: StagingPose, progress: number): StagingTransform {
+  if (progress >= 1) return transform(to);
+  const t = stagingProgress(to, progress);
   if (t === 0) return transform(from);
   if (t === 1) return { ...transform(to), visible: from.visible };
   const lerp = (a: number, b: number) => a + (b - a) * t;
-  const delta = to.angle - from.angle;
-  const turn = Math.abs(delta) <= 180 ? delta : delta - Math.sign(delta) * 360;
-  const angle = from.angle + turn * t;
+  const angle = from.angle + stagingTurn(from.angle, to.angle) * t;
   return { x: lerp(from.x, to.x), y: lerp(from.y, to.y), width: lerp(from.width, to.width),
     depth: lerp(from.depth, to.depth), height: lerp(from.height, to.height),
     angle: angle < 0 ? angle + 360 : angle >= 360 ? angle - 360 : angle, visible: from.visible };
@@ -97,7 +103,7 @@ export function sampleStaging(project: Project, { setIndex, progress }: Pick<Tim
   const to = project.sets[setIndex]?.staging;
   if (!to || !project.stagingObjects) return [];
   return project.stagingObjects.map(object => ({ ...object,
-    ...(from ? interpolate(from[object.id], to[object.id], progress) : transform(to[object.id])) }));
+    ...(from ? interpolateStagingPose(from[object.id], to[object.id], progress) : transform(to[object.id])) }));
 }
 
 /** A new picture inherits placement and visibility, with a fresh incoming move. */
@@ -115,7 +121,7 @@ export function splitStaging(from: DrillSet, to: DrillSet, at: number) {
       return a < b && (a !== 0 || b !== 1) ? { start: a, end: b } : undefined;
     }
     const first = range(0, at), second = range(at, 1 - at);
-    middle[id] = { ...interpolate(from.staging![id], pose, at), ...(first ? { travel: first } : {}) };
+    middle[id] = { ...interpolateStagingPose(from.staging![id], pose, at), ...(first ? { travel: first } : {}) };
     arrival[id] = { ...transform(pose), ...(second ? { travel: second } : {}) };
   }
   return { middle, arrival };

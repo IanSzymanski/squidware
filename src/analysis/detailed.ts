@@ -62,7 +62,7 @@ function box(points: Point[]): SweptBounds {
   for (const p of points) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
   return { minX, maxX, minY, maxY };
 }
-export function compileTrack(track: Track, counts: number, transition: AnalysisInput['transition']): CompiledTrack {
+export function compileTrack(track: Pick<Track, 'from' | 'to' | 'path'>, counts: number, transition: AnalysisInput['transition']): CompiledTrack {
   const parts: Curve[] = []; let at = 0, position = track.from;
   const add = (start: number, end: number, points: Point[], velocity?: Point[]) => { if (end > start) parts.push({ start, end, points, velocity }); };
   for (const s of track.path?.segments ?? [{ id: 'implicit', kind: 'line' as const, startCount: 0, endCount: counts }]) {
@@ -83,7 +83,7 @@ export function compileTrack(track: Track, counts: number, transition: AnalysisI
   const pad = 1e-8 * Math.max(1, ...Object.values(bounds).map(Math.abs));
   return { parts, bounds: { minX: bounds.minX - pad, maxX: bounds.maxX + pad, minY: bounds.minY - pad, maxY: bounds.maxY + pad } };
 }
-function* relativeCurves(a: CompiledTrack, b: CompiledTrack): Generator<Curve> {
+export function* relativeCurves(a: CompiledTrack, b: CompiledTrack): Generator<Curve> {
   let i = 0, j = 0;
   while (i < a.parts.length && j < b.parts.length) {
     const x = a.parts[i], y = b.parts[j], start = Math.max(x.start, y.start), end = Math.min(x.end, y.end);

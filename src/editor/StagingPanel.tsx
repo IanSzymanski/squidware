@@ -158,6 +158,11 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
       {draft ? <form className="staging-form" aria-label="Prop settings" onSubmit={save} noValidate>
         <label className="form-label">Prop name<input ref={formName} required maxLength={STAGING_LIMITS.name} value={draft.object.name}
           onChange={event => { setDraft({ ...draft, object: { ...draft.object, name: event.target.value } }); setError(''); }} /></label>
+        <label className="form-label">Planning footprint<select value={draft.object.footprint ?? 'rectangle'}
+          onChange={event => setDraft({ ...draft, object: { ...draft.object, footprint: event.target.value === 'circle' ? 'circle' : undefined } })}>
+          <option value="rectangle">Rectangle</option><option value="circle">Circle</option>
+        </select></label>
+        {draft.object.footprint && <p className="microcopy">The larger of width and depth sets the circle’s diameter.</p>}
         <div className="staging-inputs">{dimensions.map(([key, label]) => {
           const [min, max] = bounds(key);
           const planning = draft.object.model && key !== 'x' && key !== 'y' ? 'Planning ' : '';
@@ -173,7 +178,7 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
         </fieldset>}
         <label className="staging-visible"><input type="checkbox" checked={draft.visible}
           onChange={event => setDraft({ ...draft, visible: event.target.checked })} />Visible at this set</label>
-        <p className="microcopy">{draft.create ? 'New props start with the same placement and visibility in every set.' : 'Placement and visibility apply to this set. The prop name applies to the whole production.'}</p>
+        <p className="microcopy">{draft.create ? 'New props start with the same placement and visibility in every set.' : 'Placement and visibility apply to this set. The name and footprint shape apply to the whole production.'}</p>
         {invalid && <p className="field-error" role="status">{invalid}</p>}
         <div className="modal-actions"><button type="button" className="button subtle" onClick={() => { setDraft(undefined); setError(''); }}>Cancel</button>
           <button type="submit" className="button primary" disabled={!proposed || !draft.object.name.trim()}>Apply prop</button></div>

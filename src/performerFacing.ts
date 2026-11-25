@@ -42,6 +42,12 @@ export function facingAt(facings: PerformerFacings | undefined, id: string): num
   return typeof angle === 'number' ? angle : undefined;
 }
 
+/** A half-turn proceeds toward increasing degrees. */
+export function performerTurn(from: number, to: number) {
+  const arc = wrap(to - from + 180) - 180;
+  return arc === -180 ? 180 : arc;
+}
+
 /** Angles use field axes. A half-turn proceeds toward increasing degrees. */
 export function sampleFacings(project: Project, setIndex: number, progress: number): PerformerFacings | undefined {
   const to = project.sets[setIndex]?.facings;
@@ -53,8 +59,7 @@ export function sampleFacings(project: Project, setIndex: number, progress: numb
     const target = facingAt(to, id);
     if (target === undefined) return [];
     if (target === angle) return [[id, angle] as const];
-    const arc = wrap(target - angle + 180) - 180;
-    return [[id, wrap(angle + progress * (arc === -180 ? 180 : arc))] as const];
+    return [[id, wrap(angle + progress * performerTurn(angle, target))] as const];
   });
   return facings.length ? Object.fromEntries(facings) : undefined;
 }

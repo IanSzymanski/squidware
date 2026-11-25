@@ -3,6 +3,8 @@ import { hasDetailedPaths } from '../movementPaths';
 import { PROJECT_LIMITS } from '../projectValidation';
 import { setStartCount } from '../domain';
 import { resolveAnalysisRules } from './rules';
+import { OPENING_CLEARANCE_ID } from './clearanceRules';
+import type { ClearanceInput } from './clearance';
 import type { ResolvedAnalysisRules } from './rules';
 import type { Point, Project, TransitionIssue, PerformerPath } from '../types';
 
@@ -13,6 +15,7 @@ export interface AnalysisInput extends AnalysisRules {
   counts: number; tempo: number; transition: 'linear' | 'ease'; startCount: number;
   tracks: Track[];
   detailedPaths?: boolean;
+  clearance?: ClearanceInput;
 }
 export interface AnalysisStats {
   mode: 'full' | 'incremental' | 'cached'; changedPerformers: number;
@@ -23,13 +26,20 @@ export type AnalysisRequest = { revision: number; input: AnalysisInput | null };
 export type AnalysisResponse = { revision: number; result: AnalysisResult } | { revision: number; error: string };
 
 /** Only the selected move crosses the worker boundary, never the whole show. */
-export function transitionInput(project: Project, index: number, epoch: number, rules?: AnalysisRules): AnalysisInput | null {
-  if (index < 1 || index >= project.sets.length) return null;
-  const move = effectiveMove(project,index - 1), previous = project.sets[index - 1], destination = project.sets[index];
-  const tracks = project.performers.map(p => ({ id: p.id, label: p.label, from: previous.positions[p.id], to: destination.positions[p.id], ...(move.paths[p.id] ? { path: move.paths[p.id] } : {}), ...resolveAnalysisRules(project, index - 1, p, rules) }));
-  return { projectKey: `${epoch}:${project.id}`, moveId: move.id,
-    modelKey: JSON.stringify([project.schemaVersion, project.field, move.fromSetId, move.toSetId, hasDetailedPaths(move) ? 'bounded-paths-v1' : move.paths, project.analysisRules, move.marchingDirections]),
-    counts: move.counts, tempo: move.tempo, transition: move.transition, startCount: setStartCount(project, index - 1),
+export function transitionInput(project: Project, index: number, epoch: number, rules?: Partial<AnalysisRules>, includeClearance = true): AnalysisInput | null {
+  const clearanceRules = includeClearance ? project.clearanceRules : undefined;
+  if (index < 0 || index >= project.sets.length || index === 0 && (project.moves.length || !clearanceRules || !project.stagingObjects?.length)) return null;
+  const move = index > 0 ? effectiveMove(project, index - 1) : undefined;
+  const previous = project.sets[Math.max(0, index - 1)], destination = project.sets[index];
+  const tracks = project.performers.map(p => ({ id: p.id, label: p.label, from: previous.positions[p.id], to: destination.positions[p.id], ...(move?.paths[p.id] ? { path: move.paths[p.id] } : {}), ...resolveAnalysisRules(project, index - 1, p, rules) }));
+  const clearance = clearanceRules && project.stagingObjects?.length ? {
+    rules: clearanceRules, fromFacings: previous.facings, toFacings: destination.facings,
+    props: project.stagingObjects.map(prop => ({ ...prop, from: previous.staging![prop.id], to: destination.staging![prop.id] })),
+  } : undefined;
+  const detailedPaths = !!move && hasDetailedPaths(move);
+  return { projectKey: `${epoch}:${project.id}`, moveId: move?.id ?? OPENING_CLEARANCE_ID,
+    modelKey: JSON.stringify([project.schemaVersion, project.field, previous.id, destination.id, detailedPaths ? 'bounded-paths-v1' : move?.paths, project.analysisRules, move?.marchingDirections, clearance]),
+    counts: move?.counts ?? 0, tempo: move?.tempo ?? project.openingTiming.tempo, transition: move?.transition ?? 'linear', startCount: setStartCount(project, index - 1),
     minimumSpacing: Math.max(PROJECT_LIMITS.analysisThreshold.min, ...tracks.map(t => t.minimumSpacing)), maximumStride: Math.max(PROJECT_LIMITS.analysisThreshold.min, ...tracks.map(t => t.maximumStride)),
-    tracks, ...(hasDetailedPaths(move) ? { detailedPaths: true } : {}) };
+    tracks, ...(detailedPaths ? { detailedPaths: true } : {}), ...(clearance ? { clearance } : {}) };
 }

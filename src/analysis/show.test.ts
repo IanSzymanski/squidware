@@ -121,4 +121,48 @@ describe('show-wide result ownership',()=>{
     for(const m of service.getSnapshot().moves)expect(m.issues).toEqual(analyzeTransition(store.getState().project.present,m.index));service.dispose();
   });
 
+  it('reviews prop-only flags and invalidates clearance after pose, path, facing and rule edits', async () => {
+    const project = fixture();
+    project.clearanceRules = { minimumGap: .25, performer: { shape: 'rectangle', width: 1, depth: 2 } };
+    project.stagingObjects = [{ id: 'deck', name: 'Deck' }, { id: 'speaker', name: 'Speaker', footprint: 'circle' }];
+    const base = { x: 60, y: 25, width: 2, depth: 2, height: 1, angle: 0, visible: true };
+    for (const set of project.sets) set.staging = { deck: base, speaker: { ...base, x: 61 } };
+    const { store, service, drain } = setup(project);
+    await drain();
+    const before = service.getSnapshot(), [row] = findings(before, { ...defaultProblemFilter, type: 'clearance', query: 'speaker' });
+    expect(row.issue).toMatchObject({ atCount: 0, propIds: ['deck', 'speaker'], performerIds: [] });
+    const review = { epoch: before.epoch, moveId: row.moveId, atCount: row.issue.atCount!, ids: [], propIds: row.issue.propIds };
+    expect(store.dispatch('analysis.problem-review', { ...review, propIds: ['missing'] })).toBe(false);
+    expect(store.dispatch('analysis.problem-review', review)).toBe(true);
+    expect(store.getState().playback.count).toBe(0);
+    expect(store.getState().selection.selectedIds).toEqual([]);
+    service.select(row);
+    store.dispatch('set.select', { index: 1 });
+    store.dispatch('staging.open');
+    const state = store.getState();
+    expect(store.dispatch('staging.save', { epoch: before.epoch, revision: state.project.revision, setId: project.sets[1].id,
+      object: project.stagingObjects[0], pose: { ...base, depth: 3 }, create: false })).toBe(true);
+    expect(service.getSnapshot().selected).toBeNull();
+    expect(service.getSnapshot().moves.map(move => move.status)).toEqual(['pending', 'pending', 'ready']);
+    store.setValue('ui', 'dialog', null);
+    await drain();
+
+    expect(store.dispatch('performer.facing', { index: 1, ids: ['p0'], angle: 90 })).toBe(true);
+    expect(service.getSnapshot().moves.map(move => move.status)).toEqual(['pending', 'pending', 'ready']);
+    await drain();
+    store.setValue('selection', 'selectedIds', ['p0']);
+    const path = { segments: [{ id: 'arc', kind: 'cubic' as const, startCount: 0, endCount: 8, control1: { x: 14, y: 22 }, control2: { x: 18, y: 22 } }] };
+    expect(store.dispatch('schedule.save', { moveId: 'm0', performerId: 'p0', path, revision: store.getState().project.revision, epoch: before.epoch })).toBe(true);
+    expect(service.getSnapshot().moves.map(move => move.status)).toEqual(['pending', 'ready', 'ready']);
+    await drain();
+
+    expect(store.dispatch('analysis.rules-save', { rules: { defaults: { minimumSpacing: 1, maximumStride: 1.25 } }, clearance: null })).toBe(true);
+    expect(service.getSnapshot().moves.every(move => move.status === 'pending')).toBe(true);
+    await drain();
+    expect(findings(service.getSnapshot(), { ...defaultProblemFilter, type: 'clearance' })).toHaveLength(0);
+    store.dispatch('history.undo');
+    await drain();
+    expect(findings(service.getSnapshot(), { ...defaultProblemFilter, type: 'clearance' })).toHaveLength(3);
+    service.dispose();
+  });
 });
