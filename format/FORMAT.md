@@ -1,6 +1,6 @@
 # The .squid project format
 
-Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–18**. Ordinary saves write **v2**. Nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, custom performance surfaces **v16**, named camera views **v17**, and staging props **v18**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
+Squidware projects are local UTF-8 JSON files with a `.squid` extension. They contain formation geometry and move timing, with no account or network dependency. Current readers accept schema versions **1–19**. Ordinary saves write **v2**. Nonempty tempo maps write **v3**, recording anchors **v4**, whole-move cubic paths **v5**, independent movement intervals **v6**, and live formation membership **v7**, shared routes **v8**, editable Bézier formations **v9**, seeded scatter formations **v10**, saved assignment constraints **v11**, group route movement **v12**, performer facing and appearance **v13**, carried equipment **v14**, choreography cues **v15**, custom performance surfaces **v16**, named camera views **v17**, staging props **v18**, and front ensemble models **v19**. Older applications reject unfamiliar versions before discarding authored data. This is Squidware's format, with no claim of proprietary Pyware file compatibility.
 
 Independent movement is specified by [the v6 schema](squid-v6.schema.json) and [schedule example](examples/scheduled-v6.squid); full-move curves use [the v5 schema](squid-v5.schema.json). Mapped timing is specified by [the v3 schema](squid-v3.schema.json), [tempo example](examples/tempo-v3.squid) and [v3 integration contract](../docs/schema-v3.md).
 
@@ -256,4 +256,10 @@ Each pose stores the center `x` and `y` in surface yards. The center must stay w
 
 The optional `travel` range uses fractions of the incoming move with `0 ≤ start < end ≤ 1`. Omission means the full move. The pose holds before its range, interpolates linearly during it and holds the destination after it. Orientation follows the shortest arc. Visibility switches to the destination value at set arrival. The opening picture ignores its incoming timing. A split partitions the staging range to preserve the original sample. New sets inherit the source pose with fresh travel timing.
 
-The writer uses v18 while the project contains a staging object. Projects without props use the lowest version required by their other content.
+The writer uses v18 when a project has only generic staging objects. Projects without props use the lowest version required by their other content.
+
+## v19 front ensemble models
+
+[Schema v19](squid-v19.schema.json) adds the optional `model` field to each `stagingObjects` entry. Its supported values are `marimba`, `vibraphone`, `xylophone`, `timpani`, `rack` and `synth`. A generic prop omits `model`. The project uses v19 while any staging object has a model.
+
+The model follows the same center, orientation, travel and visibility samples as the v18 footprint. Its mesh is drawn at a fixed scale in field yards. The pose’s width, depth and height describe the authored planning dimensions. [Front ensemble example](examples/front-ensemble-v19.squid)

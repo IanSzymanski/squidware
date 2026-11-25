@@ -1,9 +1,10 @@
 import { PROJECT_LIMITS } from './projectValidation';
+import { isFrontEnsembleModel, type FrontEnsembleModel } from './frontEnsemble';
 import type { DrillSet, Point, Project, TimelineSample } from './types';
 
 export const STAGING_LIMITS = { count: 64, name: 60, minSize: .1, maxSize: 40 };
 
-export interface StagingObject { id: string; name: string }
+export interface StagingObject { id: string; name: string; model?: FrontEnsembleModel }
 export interface StagingTransform extends Point {
   width: number; depth: number; height: number; angle: number; visible: boolean;
 }
@@ -33,14 +34,15 @@ export function validateStagingObjects(input: unknown, performerIds: ReadonlySet
   const ids = new Set(performerIds);
   const objects = input.map((value, index) => {
     const path = `stagingObjects[${index}]`;
-    const { id, name } = record(value, path);
+    const { id, name, model } = record(value, path);
     if (typeof id !== 'string' || id.length > PROJECT_LIMITS.text.id || !/^[A-Za-z0-9_-]+$/.test(id)
       || ['__proto__', 'constructor', 'prototype'].includes(id) || ids.has(id)) invalid(`${path}.id`, 'must be a unique staging ID distinct from performer IDs.');
     if (typeof name !== 'string' || !name.trim() || name.length > STAGING_LIMITS.name || /[\u0000-\u001f]/.test(name)) {
       invalid(`${path}.name`, `must be a nonempty name of up to ${STAGING_LIMITS.name} characters without control characters.`);
     }
+    if (model !== undefined && !isFrontEnsembleModel(model)) invalid(`${path}.model`, 'must be a supported front ensemble model.');
     ids.add(id);
-    return { id, name: name.trim() };
+    return { id, name: name.trim(), ...(model === undefined ? {} : { model }) };
   });
   return objects.length ? objects : undefined;
 }

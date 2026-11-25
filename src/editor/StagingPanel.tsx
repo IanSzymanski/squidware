@@ -5,6 +5,7 @@ import { fieldViewTransform } from '../components/fieldOrientation';
 import { Modal } from '../components/Modal';
 import { StagingFootprints } from '../components/StagingFootprints';
 import { uid } from '../domain';
+import { frontEnsembleCatalog, isFrontEnsembleModel, type FrontEnsembleModel } from '../frontEnsemble';
 import { sampleStaging, STAGING_LIMITS, validateStagingPoses, type StagingObject, type StagingPose } from '../staging';
 import { surfaceNumber, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import type { EditorController } from './useEditorController';
@@ -26,11 +27,13 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
   const orientation = c.preferences.value.fieldOrientation;
   const counts = project.moves[index - 1]?.counts ?? 0;
   const [selectedId, setSelectedId] = useState(objects[0]?.id);
+  const [newModel, setNewModel] = useState<FrontEnsembleModel | ''>('');
   const [draft, setDraft] = useState<Draft>();
   const [error, setError] = useState('');
   const editing = !!draft;
   const selected = objects.find(object => object.id === selectedId) ?? objects[0];
   const selectedPose = selected && activeSet.staging?.[selected.id];
+  const atLimit = objects.length >= STAGING_LIMITS.count;
   const formName = useRef<HTMLInputElement>(null);
   const chooser = useRef<HTMLSelectElement>(null);
   const add = useRef<HTMLButtonElement>(null);
@@ -44,8 +47,16 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
   }, [editing]);
 
   function begin(object?: StagingObject) {
+    const model = object ? object.model : newModel || undefined;
+    const equipment = model ? frontEnsembleCatalog[model] : undefined;
+    let name = equipment?.name ?? `Prop ${objects.length + 1}`;
+    if (!object && equipment) {
+      const taken = new Set(objects.map(item => item.name.toLowerCase()));
+      for (let suffix = 2; taken.has(name.toLowerCase()); suffix++) name = `${equipment.name} ${suffix}`;
+    }
     const source = object ? activeSet.staging![object.id] : {
-      x: field.width / 2, y: field.height * .9, width: 3, depth: 1.5, height: 1.5, angle: 0, visible: true,
+      x: field.width / 2, y: field.height * .9, angle: 0, visible: true,
+      width: equipment?.width ?? 3, depth: equipment?.depth ?? 1.5, height: equipment?.height ?? 1.5,
     };
     const values: Values = {
       x: surfaceNumber(yardsInUnit(source.x, unit)), y: surfaceNumber(yardsInUnit(source.y, unit)),
@@ -54,7 +65,7 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
       start: surfaceNumber((source.travel?.start ?? 0) * counts), end: surfaceNumber((source.travel?.end ?? 1) * counts),
     };
     setError('');
-    setDraft({ ...context(), create: !object, object: object ?? { id: uid(), name: `Prop ${objects.length + 1}` },
+    setDraft({ ...context(), create: !object, object: object ?? { id: uid(), name, ...(model ? { model } : {}) },
       source, values, initial: values, visible: source.visible });
   }
 
@@ -149,11 +160,13 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
           onChange={event => { setDraft({ ...draft, object: { ...draft.object, name: event.target.value } }); setError(''); }} /></label>
         <div className="staging-inputs">{dimensions.map(([key, label]) => {
           const [min, max] = bounds(key);
-          return numericField(key, `${label} · ${unit}`, yardsInUnit(min, unit), yardsInUnit(max, unit));
+          const planning = draft.object.model && key !== 'x' && key !== 'y' ? 'Planning ' : '';
+          return numericField(key, `${planning}${planning ? label.toLowerCase() : label} · ${unit}`, yardsInUnit(min, unit), yardsInUnit(max, unit));
         })}
           {numericField('angle', 'Orientation · degrees', 0, 360)}
         </div>
         <p className="microcopy">X is measured from the left and Y from the back. At 0° the prop faces the audience.</p>
+        {draft.object.model && <p className="microcopy">The {frontEnsembleCatalog[draft.object.model].name.toLowerCase()} model keeps its scale. Width and depth set the planning footprint.</p>}
         {counts > 0 && <fieldset className="staging-travel">
           <legend>Incoming move · {counts} counts</legend>
           <div className="staging-inputs">{numericField('start', 'Start count', 0, counts)}{numericField('end', 'End count', 0, counts)}</div>
@@ -169,12 +182,21 @@ export function StagingPanel({ controller: c }: { controller: EditorController }
           <label className="form-label">Prop<select ref={chooser} value={selected.id} onChange={event => { setSelectedId(event.target.value); setError(''); }}>
             {objects.map(object => <option key={object.id} value={object.id}>{object.name}</option>)}
           </select></label>
-          <p className="microcopy">{selectedPose?.visible ? 'Visible' : 'Hidden'} at this set</p>
+          <p className="microcopy">{selected.model && `${frontEnsembleCatalog[selected.model].name} · `}{selectedPose?.visible ? 'Visible' : 'Hidden'} at this set</p>
           <div className="staging-buttons"><button className="button primary" onClick={() => begin(selected)}>Edit prop</button>
             <button className="button subtle" onClick={() => void remove(selected)}>Remove prop…</button></div>
         </> : <p className="microcopy">No props in this production.</p>}
-        <button ref={add} className={`button ${selected ? 'subtle' : 'primary'}`} disabled={objects.length >= STAGING_LIMITS.count} onClick={() => begin()}><Plus size={15} />Add prop</button>
-        {objects.length >= STAGING_LIMITS.count && <p className="microcopy">This production has the maximum of {STAGING_LIMITS.count} props.</p>}
+        <div className="staging-add">
+          <label className="form-label">Prop type<select value={newModel} disabled={atLimit} onChange={event => {
+            const value = event.target.value;
+            setNewModel(isFrontEnsembleModel(value) ? value : '');
+          }}>
+            <option value="">Generic prop</option>
+            <optgroup label="Front ensemble">{Object.entries(frontEnsembleCatalog).map(([id, { name }]) => <option key={id} value={id}>{name}</option>)}</optgroup>
+          </select></label>
+          <button ref={add} className={`button ${selected ? 'subtle' : 'primary'}`} disabled={atLimit} onClick={() => begin()}><Plus size={15} />Add prop</button>
+          {atLimit && <p className="microcopy">This production has the maximum of {STAGING_LIMITS.count} props.</p>}
+        </div>
       </div>}
     </div>
     {error && <p className="field-error" role="alert">{error}</p>}

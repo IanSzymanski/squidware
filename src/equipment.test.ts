@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { Color, InstancedMesh, Matrix4, Scene, Vector3 } from 'three';
+import { Box3, Color, InstancedMesh, Matrix4, Scene, Vector3 } from 'three';
 import { AssetBatches, AssetResources } from './components/3d/assetBatches';
-import { carriedModels, pitModels, type AssetPart } from './components/3d/assetModels';
+import { carriedModels, frontEnsembleModels, type AssetPart } from './components/3d/assetModels';
 import { stadiumParts } from './components/3d/stadium';
 import { createDemoProject, parseProject, sampleProject, serializeProject } from './domain';
 import { equipmentKey, guardCatalog, instrumentCatalog, resolveEquipment } from './equipment';
+import { frontEnsembleCatalog, type FrontEnsembleModel } from './frontEnsemble';
 import { createEditorStore } from './editor/store';
 
 describe('carried equipment', () => {
@@ -47,7 +48,7 @@ describe('carried equipment', () => {
 
   it('has positive, finite model dimensions and keeps stadium geometry outside the field', () => {
     expect(Object.keys(carriedModels).sort()).toEqual([...Object.keys(instrumentCatalog), ...Object.keys(guardCatalog)].sort());
-    const models = [...Object.values(carriedModels), ...Object.values(pitModels).map(model => model.parts)];
+    const models = [...Object.values(carriedModels), ...Object.values(frontEnsembleModels)];
     for (const part of models.flat()) {
       expect(part.at.every(Number.isFinite)).toBe(true);
       expect(part.size.every(size => Number.isFinite(size) && size > 0)).toBe(true);
@@ -55,6 +56,28 @@ describe('carried equipment', () => {
     const field = { width: 100, height: 160 / 3 };
     for (const { at, size } of stadiumParts(field.width, field.height)) {
       expect(Math.abs(at[0]) - size[0] / 2 > field.width / 2 || Math.abs(at[2]) - size[2] / 2 > field.height / 2).toBe(true);
+    }
+  });
+
+  it('encloses every model in its default planning dimensions around the same ground origin', () => {
+    const scene = new Scene();
+    const batches = new AssetBatches(scene, new AssetResources());
+    const matrix = new Matrix4();
+    for (const [key, parts] of Object.entries(frontEnsembleModels)) {
+      batches.update([{ parts, at: [0, 0, 0] }]);
+      const bounds = new Box3();
+      for (const mesh of scene.children as InstancedMesh[]) {
+        mesh.geometry.computeBoundingBox();
+        for (let index = 0; index < mesh.count; index++) {
+          mesh.getMatrixAt(index, matrix);
+          bounds.union(mesh.geometry.boundingBox!.clone().applyMatrix4(matrix));
+        }
+      }
+      const { width, depth, height } = frontEnsembleCatalog[key as FrontEnsembleModel];
+      expect(Math.max(-bounds.min.x, bounds.max.x) * 2, key).toBeLessThanOrEqual(width);
+      expect(Math.max(-bounds.min.z, bounds.max.z) * 2, key).toBeLessThanOrEqual(depth);
+      expect(bounds.min.y, key).toBeGreaterThanOrEqual(-1e-6);
+      expect(bounds.max.y, key).toBeLessThanOrEqual(height);
     }
   });
 

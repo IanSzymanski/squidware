@@ -1,0 +1,16 @@
+{
+  "fieldHeight": 513,
+  "performers": 12,
+  "sets": 3,
+  "models": 6,
+  "withoutModels": {
+    "calls": 6,
+    "instances": 84,
+    "indices": 10656
+  },
+  "withModels": {
+    "calls": 9,
+    "instances": 227,
+    "indices": 19224
+  }
+}
