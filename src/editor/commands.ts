@@ -3,6 +3,7 @@ import type { CameraPreset } from '../components/Stage3D';
 import { validateCameraViews, type SavedCameraView } from '../cameraViews';
 import { FOOTBALL_SURFACE, isCustomSurface, validateSurface, type FootballSurface } from '../surfaces';
 import { saveChoreographyCue, removeChoreographyCue } from './choreographyEdits';
+import { removeStagingObject, saveStagingObject, type StagingEdit } from './stagingEdits';
 import type { ChoreographyCue } from '../types';
 import { validateEquipment } from '../equipment';
 import { setFacing, setAppearance, pruneFacings, type AppearanceUpdate } from './performerEdits';
@@ -83,6 +84,9 @@ export interface CommandArguments {
   'path.operation-apply': PathOperationRequest;
   'path.copy-intervals': PathCopyRequest;
   'choreography.open': undefined;
+  'staging.open': undefined;
+  'staging.save': StagingEdit & { setId: string; revision: number; epoch: number };
+  'staging.remove': { id: string; setId: string; revision: number; epoch: number };
   'choreography.save': { cue: ChoreographyCue; revision: number; epoch: number };
   'choreography.remove': { id: string; revision: number; epoch: number };
   'path.draw-open': undefined;
@@ -228,6 +232,12 @@ const showDialog = (context: CommandContext, dialog: Dialog) => {
   context.patch('ui', { dialog });
 };
 const editable = canEditPositions;
+const canOpenStaging = (s: EditorState) => canNavigate(s) && editable(s) && !s.ui.confirmation;
+function canEditStaging(s: EditorState, a: CommandArguments['staging.save' | 'staging.remove']) {
+  return !!a && s.ui.dialog === 'staging' && !s.ui.confirmation && !s.project.transactionName && editable(s)
+    && a.epoch === s.ui.projectEpoch && a.revision === s.project.revision
+    && a.setId === s.project.present.sets[s.selection.activeIndex]?.id;
+}
 const canIncrement = (s: EditorState) => editable(s) && !s.ui.dialog && !s.project.transactionName && !s.ui.pendingDraft && s.selection.selectedIds.length > 0;
 function beginTransform(c: CommandContext, args: CommandArguments['transform.preview']) {
   const s = c.getState();
@@ -305,6 +315,16 @@ export const commandRegistry = {
     execute: (c,a) => { const p=c.getState().project.present,index=p.moves.findIndex(m=>m.id===a.moveId),clipboard=copyIntervals(p,index,a.performerId,a.segmentIds,a.wholeMove,uid(),a.epoch);c.patch('ui',{movementClipboard:clipboard,dialog:null,toast:`Copied ${clipboard.intervals.length} intervals from ${clipboard.sourceLabel}`}); } }),
   'choreography.open': simple('choreography.open', 'Choreography cues', 'Author count-timed lower-body poses and flag cues for the selected performers.',
     s => canNavigate(s) && s.project.present.moves.length > 0, c => showDialog(c, 'choreography')),
+  'staging.open': simple('staging.open', 'Staging props', 'Place props and edit their footprint, orientation, visibility and movement by set.',
+    canOpenStaging, c => showDialog(c, 'staging')),
+  'staging.save': define({ id: 'staging.save', name: 'Save prop pose', description: 'Save a prop and its placement as one undoable edit.',
+    arguments: { object: 'prop identity', pose: 'reviewed pose', create: 'new prop', setId: 'active set', revision: 'project revision', epoch: 'project session' },
+    enabled: (s, a) => canEditStaging(s, a) && !!a.object && !!a.pose,
+    execute: (c, a) => c.edit(project => saveStagingObject(project, c.getState().selection.activeIndex, a)) }),
+  'staging.remove': define({ id: 'staging.remove', name: 'Remove staging prop', description: 'Remove a prop from the production as one undoable edit.',
+    arguments: { id: 'prop ID', setId: 'active set', revision: 'project revision', epoch: 'project session' },
+    enabled: (s, a) => canEditStaging(s, a) && !!s.project.present.stagingObjects?.some(item => item.id === a.id),
+    execute: (c, a) => c.edit(project => removeStagingObject(project, a.id)) }),
   'choreography.save': define({ id: 'choreography.save', name: 'Save choreography cue', description: 'Save the reviewed choreography cue as one undoable edit.',
     arguments: { cue: 'reviewed cue', revision: 'project revision', epoch: 'project session' },
     enabled: (s, a) => !!a?.cue && s.ui.dialog === 'choreography' && a.revision === s.project.revision && a.epoch === s.ui.projectEpoch,
@@ -702,6 +722,7 @@ export const commandRegistry = {
   'dialog.open': define({ id: 'dialog.open', name: 'Open dialog', description: 'Open an editor dialog and stop playback.', arguments: { dialog: 'Dialog' }, enabled: always, execute: (c, a) => {
     if (a.dialog === 'path-operations' && !canReviewPaths(c.getState())) throw new Error('Go to a set with a move to review.');
     if (a.dialog === 'set-split' && !canOpenSplit(c.getState())) throw new Error('Choose a transition with at least two counts and room for another set.');
+    if (a.dialog === 'staging' && !canOpenStaging(c.getState())) throw new Error('Go to a set to edit its staging props.');
     showDialog(c, a.dialog);
     if (a.dialog === 'add-cast') { const s = c.getState(); c.patch('ui', { castAmount: Math.max(1, Math.min(s.ui.castAmount, PROJECT_LIMITS.performers - s.project.present.performers.length)) }); }
   } }),

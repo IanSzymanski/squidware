@@ -18,6 +18,7 @@ export function fieldAction<I extends CommandId>(state: EditorState, id: I, args
 export function fieldToolbar(state: EditorState) {
   const action = <I extends CommandId>(id:I,args:CommandArguments[I],icon:string,label?:string,title?:string,active?:boolean) => fieldAction(state,id,args,icon,label,title,active);
   const selection = state.selection.selectedIds.length;
+  const staging = action('staging.open', undefined, 'prop', 'Props', 'Staging props');
   const display = [action('display.paths',undefined,'previous','Paths from previous set','Show paths from previous set',state.ui.showPaths),
     action('display.next-paths',undefined,'next','Paths to next set','Show paths to next set',state.ui.showNextPaths),
     action('display.snap',undefined,'snap','Snap to grid',undefined,state.ui.snap),
@@ -43,7 +44,7 @@ export function fieldToolbar(state: EditorState) {
   const shared = [action('routes.open',undefined,'route','Shared routes'),action('path.operations-open',undefined,'operations','Move operations'),action('templates.open',undefined,'saved','Saved formations','Browse saved formations')];
   const groups = [action('group.open',{},'group','Group route movement','Edit group route movement'),action('transition.open',undefined,'transition','Formation transition','Edit formation transition')];
   const savedGroups = (state.project.present.moves[state.selection.activeIndex-1]?.groupMotions??[]).map(g => action('group.open',{id:g.id},'group',`Edit group ${g.name}`,`Edit group ${g.name}`));
-  if (!selection) return {context:'selection',primary:select.slice(0,4),secondary:[select[4],move,...editing,...single,...groups,...shared,...savedGroups,...display]};
-  if (selection===1) return {context:'performer',primary:[editing[3],...single],secondary:[move,...editing.slice(0,3),editing[4],...select,...shared,...savedGroups,...display]};
-  return {context:'group',primary:[move,...editing.slice(0,3)],secondary:[editing[3],editing[4],...groups,...select,...shared,...savedGroups,...display]};
+  if (!selection) return {context:'selection',primary:[...select.slice(0,4),staging],secondary:[select[4],move,...editing,...single,...groups,...shared,...savedGroups,...display]};
+  if (selection===1) return {context:'performer',primary:[editing[3],...single],secondary:[staging,move,...editing.slice(0,3),editing[4],...select,...shared,...savedGroups,...display]};
+  return {context:'group',primary:[move,...editing.slice(0,3)],secondary:[staging,editing[3],editing[4],...groups,...select,...shared,...savedGroups,...display]};
 }

@@ -138,6 +138,23 @@ test('native save/open retains production analysis rules and directions and reje
   await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Rules'), /maximumStride/); assert.equal(await fs.readFile(filename, 'utf8'), before);
 });
 
+test('native save/open round-trips v18 prop poses and rejects an incomplete pose map before replacing the file', async t => {
+  const h = await harness(t);
+  const data = JSON.parse(await fs.readFile(path.join(root, 'format/examples/staging-v18.squid'), 'utf8'));
+  const filename = path.join(h.directory, 'staging.squid');
+  h.dialog({ canceled: false, filePath: filename });
+  assert.equal(await h.invoke('save-project', JSON.stringify(data), 'Staging'), filename);
+  h.dialog({ canceled: false, filePaths: [filename] });
+  const reopened = JSON.parse((await h.invoke('open-project')).content);
+  assert.equal(reopened.schemaVersion, 18);
+  assert.deepEqual(reopened.stagingObjects, data.stagingObjects);
+  assert.deepEqual(reopened.sets.map(set => set.staging), data.sets.map(set => set.staging));
+  const before = await fs.readFile(filename, 'utf8');
+  delete data.sets[1].staging.platform;
+  await assert.rejects(h.invoke('save-project', JSON.stringify(data), 'Staging'), /one pose for each staging object/);
+  assert.equal(await fs.readFile(filename, 'utf8'), before);
+});
+
 test('failed atomic replacement preserves the previous file and removes its temporary file', async t => {
   const h = await harness(t, { failRename: true });
   const filename = path.join(h.directory, 'show.squid');

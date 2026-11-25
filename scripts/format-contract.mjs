@@ -8,11 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export async function formatTools() {
   const esbuild = require(require.resolve('esbuild', { paths: [path.dirname(require.resolve('vite/package.json'))] }));
   const output = path.join(root, '.qa/format/contract.cjs'); await fs.mkdir(path.dirname(output), { recursive: true });
-  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews';`, resolveDir: root },
+  await esbuild.build({ stdin: { contents: `export {PROJECT_LIMITS,parseProject,serializeProject,sampleProject,countToSeconds,secondsToCount} from './src/domain'; export {projectV2AsLegacy} from './src/projectV2'; export {createPerformanceFixture} from './src/performanceFixtures'; export {CHOREOGRAPHY_LIMITS} from './src/choreography'; export {SURFACE_LIMITS} from './src/surfaces'; export {CAMERA_VIEW_LIMITS} from './src/cameraViews'; export {STAGING_LIMITS} from './src/staging';`, resolveDir: root },
     outfile: output, bundle: true, platform: 'node', format: 'cjs', logLevel: 'silent' });
   delete require.cache[output]; return require(output);
 }
-export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits) {
+export function formatSchema(version, limits, choreographyLimits, surfaceLimits, cameraLimits, stagingLimits) {
   const ref = name => ({ $ref: `#/definitions/${name}` });
   const object = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required });
   const number = (minimum, maximum, integer = false) => ({ type: integer ? 'integer' : 'number', minimum, maximum });
@@ -154,13 +154,24 @@ export function formatSchema(version, limits, choreographyLimits, surfaceLimits,
     properties.cameraViews = array(object({ id: ref('id'), name: text(cameraLimits.name), projection: { const: 'perspective' },
       fov: number(cameraLimits.minFov, cameraLimits.maxFov), position: vector, target: vector }), 0, cameraLimits.count);
   }
+  if (version >= 18) {
+    const size = number(stagingLimits.minSize, stagingLimits.maxSize);
+    definitions.stagingPose = object({ ...definitions.point.properties,
+      width: size, depth: size, height: size, angle: { type: 'number', minimum: 0, exclusiveMaximum: 360 }, visible: { type: 'boolean' },
+      travel: object({ start: number(0, 1), end: number(0, 1) }),
+    }, ['x', 'y', 'width', 'depth', 'height', 'angle', 'visible']);
+    definitions.picture.properties.staging = { type: 'object', maxProperties: stagingLimits.count,
+      propertyNames: ref('id'), additionalProperties: ref('stagingPose') };
+    properties.stagingObjects = array(object({ id: ref('id'), name: { ...text(stagingLimits.name),
+      pattern: '^(?=[\\s\\S]*\\S)[^\\u0000-\\u001f]*$' } }), 0, stagingLimits.count);
+  }
   if (version >= 3) properties.tempoMap = object({ version: { const: 1 },
     regions: array(object({ startCount: number(0,limits.counts.max*(limits.sets-1),true), endCount: number(1,limits.counts.max*(limits.sets-1),true), startTempo: number(limits.tempo.min,limits.tempo.max), endTempo: number(limits.tempo.min,limits.tempo.max) }),0,limits.tempoEvents),
     holds: array(object({ count: number(0,limits.counts.max*(limits.sets-1)-1,true), seconds: number(.001,limits.holdSeconds) }),0,limits.tempoEvents) });
   if (version >= 4) properties.audioAnchors = array(object({ count: number(1,limits.counts.max*(limits.sets-1),true), seconds: { type:'number',exclusiveMinimum:0,maximum:86400 } }),1,limits.tempoEvents);
   return { $schema:'http://json-schema.org/draft-07/schema#', $id:`https://raw.githubusercontent.com/IanSzymanski/squidware/main/format/squid-v${version}.schema.json`,
     title:`Squidware project format v${version}`,description:'Structural validation. Also enforce FORMAT.md semantic constraints, UTF-16 text limits and the 10 MiB UTF-8 file limit. Unknown informational properties are accepted and discarded by the canonical reader.',
-    ...object(properties, Object.keys(properties).filter(key => key !== 'sharedRoutes' && key !== 'cameraViews' && key !== 'choreography' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
+    ...object(properties, Object.keys(properties).filter(key => key !== 'sharedRoutes' && key !== 'cameraViews' && key !== 'stagingObjects' && key !== 'choreography' && key !== 'snapping' && key !== 'selectionGroups' && key !== 'rehearsal' && key !== 'analysisRules' && key !== 'meter' && key !== 'score' && !(version >= 4 && key === 'tempoMap') && !(version >= 5 && key === 'audioAnchors'))),...(version < 8 ? {not:{required:['sharedRoutes']}} : {}),definitions };
 }
 export function smallExample() {
   const positions = (x,y) => ({a:{x,y},b:{x:x+10,y}});
@@ -257,11 +268,25 @@ export function surfaceExample() {
   }
   return project;
 }
+export function stagingExample() {
+  const project = smallExample();
+  const pose = { x: 45, y: 48, width: 5, depth: 3, height: 2, angle: 0, visible: true };
+  project.schemaVersion = 18;
+  project.title = 'Staging props example';
+  project.stagingObjects = [{ id: 'platform', name: 'Platform' }];
+  project.sets.forEach((set, index) => {
+    set.staging = { platform: index === 0 ? pose : { ...pose, x: 55, angle: 90, visible: index === 1,
+      ...(index === 1 ? { travel: { start: .25, end: .75 } } : {}) } };
+  });
+  return project;
+}
 export async function generateContract(check=false) {
   const tools = await formatTools(); const small = smallExample();
   const scored = {...small, meter:{numerator:4,denominator:4,grouping:[4]},score:{firstMeasure:1,pickupCounts:2,changes:[{count:10,meter:{numerator:6,denominator:8,grouping:[3,3]}},{count:22,meter:{numerator:3,denominator:4,grouping:[3]}}],marks:[{count:0,label:'Pickup'},{count:10,label:'A'},{count:22,label:'B'}]}};
   const tempo = {...small, schemaVersion:3, tempoMap:{version:1,regions:[{startCount:0,endCount:16,startTempo:120,endTempo:180},{startCount:16,endCount:24,startTempo:180,endTempo:90}],holds:[{count:8,seconds:2}]}};
   const files = new Map([
+    ['format/squid-v18.schema.json', JSON.stringify(formatSchema(18, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS, tools.STAGING_LIMITS), null, 2) + '\n'],
+    ['format/examples/staging-v18.squid', JSON.stringify(stagingExample(), null, 2) + '\n'],
     ['format/squid-v17.schema.json', JSON.stringify(formatSchema(17, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS, tools.CAMERA_VIEW_LIMITS), null, 2) + '\n'],
     ['format/squid-v16.schema.json', JSON.stringify(formatSchema(16, tools.PROJECT_LIMITS, tools.CHOREOGRAPHY_LIMITS, tools.SURFACE_LIMITS), null, 2) + '\n'],
     ['format/examples/indoor-v16.squid', JSON.stringify(surfaceExample(), null, 2) + '\n'],

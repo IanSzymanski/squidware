@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv';
-import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, generateContract } from './format-contract.mjs';
+import { formatTools, smallExample, liveExample, routeExample, bezierExample, scatterExample, assignmentExample, groupExample, stagingExample, generateContract } from './format-contract.mjs';
 const tools = await formatTools();
 const ajv = new Ajv({strict:false,allErrors:true});
-const schemas = new Map(await Promise.all([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
+const schemas = new Map(await Promise.all(Array.from({ length: 18 }, (_, index) => index + 1).map(async version=>[version,ajv.compile(JSON.parse(await readFile(new URL(`../format/squid-v${version}.schema.json`,import.meta.url),'utf8')))])));
 const check = input => schemas.get(input.schemaVersion)(input);
 test('optional selection groups preserve IDs and reject malformed structure or stale membership', () => {
   const project = smallExample();
@@ -278,4 +278,22 @@ test('v17 keeps camera vectors and projection and refuses to discard them in old
   assert.throws(() => tools.parseProject(JSON.stringify({ ...input, cameraViews: [{ ...view, position: view.target }] })), /at least one yard/);
   assert.throws(() => tools.parseProject(JSON.stringify({ ...input, cameraViews: [view, { ...view, id: 'camera-2', name: view.name.toUpperCase() }] })), /unique name and ID/);
   assert.equal(JSON.parse(tools.serializeProject({ ...checked, cameraViews: [] })).schemaVersion, 2);
+});
+
+test('v18 retains prop identity and per-set poses and rejects missing or invalid staging data', () => {
+  const wire = stagingExample();
+  assert.ok(check(wire));
+  const project = tools.parseProject(JSON.stringify(wire));
+  const saved = tools.serializeProject(project);
+  assert.equal(JSON.parse(saved).schemaVersion, 18);
+  assert.deepEqual(tools.parseProject(saved), project);
+  assert.throws(() => tools.parseProject(JSON.stringify({ ...wire, schemaVersion: 17 })), /requires schema version 18/);
+  const missing = structuredClone(wire);
+  delete missing.sets[0].staging;
+  assert.throws(() => tools.parseProject(JSON.stringify(missing)), /sets\[0\]\.staging/);
+  const malformed = structuredClone(wire);
+  malformed.sets[0].staging.platform.angle = 360;
+  assert.equal(check(malformed), false);
+  assert.throws(() => tools.parseProject(JSON.stringify(malformed)), /less than 360 degrees/);
+  assert.throws(() => tools.projectV2AsLegacy(project), /cannot be downgraded/);
 });

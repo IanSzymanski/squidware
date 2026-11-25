@@ -4,6 +4,8 @@ import { resolveEquipment, type CarriedEquipment } from '../equipment';
 import { AssetBatches, AssetResources } from './3d/assetBatches';
 import { carriedModels, flagGrip, flagHolderParts, flagPoleParts, type AssetPlacement } from './3d/assetModels';
 import { stadiumParts } from './3d/stadium';
+import { stagingPlacements } from './3d/stagingModels';
+import type { StagingSample } from '../staging';
 import { facingAt } from '../performerFacing';
 import { HelpButton } from '../editor/ControlHelp';
 import { Tooltip } from './Tooltip';
@@ -24,6 +26,7 @@ export interface Stage3DProps {
   project: Project;
   positions: Record<string, Point>;
   facings?: PerformerFacings;
+  staging?: readonly StagingSample[];
   selectedIds: string[];
   /** Omitted in the read-only 3D window: clicks orbit the camera but never change selection. */
   onSelect?: (ids: string[]) => void;
@@ -66,6 +69,7 @@ interface SceneState {
   roster: string;
   performers: { id: string; color: string; appearance?: PerformerAppearance; role?: PerformerAppearance['role']; equipment?: CarriedEquipment }[];
   carried: AssetBatches;
+  staging: AssetBatches;
   pit: AssetBatches;
   stadium: AssetBatches;
   stadiumParts: ReturnType<typeof stadiumParts>;
@@ -295,7 +299,7 @@ function updatePerformers(state: SceneState, positions: Record<string, Point>, f
   }
 }
 
-export function Stage3D({ project, positions, facings, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, splitReview, previewCamera, legMotion, cueTiming, assetReview, cameraLibrary, activeCamera, capture }: Stage3DProps) {
+export function Stage3D({ project, positions, facings, staging, selectedIds, onSelect, quality, onQualityChange, onReturnTo2D, recovery, cameraRequest, onCameraPreset, hideCameraPresets, splitReview, previewCamera, legMotion, cueTiming, assetReview, cameraLibrary, activeCamera, capture }: Stage3DProps) {
   const cameraProps=useRef({cameraRequest,onCameraPreset,splitReview,activeCamera});cameraProps.current={cameraRequest,onCameraPreset,splitReview,activeCamera};
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -577,11 +581,12 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
         if (!renderer || disposed || renderer.getContext().isContextLost()) throw new Error('The 3D graphics context was interrupted. Try exporting with Lightweight quality.');
         const details = currentRef.current.equipmentEnabled;
         updatePerformers(state, sample.positions, sample.facings, [], width, height, details, undefined, details ? sampleChoreography(program, sample) : undefined);
+        state.staging.update(stagingPlacements(sample.staging, width, height));
         renderer.render(scene, camera);
         destination.drawImage(renderer.domElement, 0, 0);
       };
       const state: SceneState = { scene, capacity: count, roster, performers, bodies, heads, caps, legs, rings, headings, roleMarkers,
-        carried: new AssetBatches(scene, assets), pit: new AssetBatches(scene, assets), stadium: new AssetBatches(scene, assets), stadiumParts: stadiumParts(width, height),
+        carried: new AssetBatches(scene, assets), staging: new AssetBatches(scene, assets), pit: new AssetBatches(scene, assets), stadium: new AssetBatches(scene, assets), stadiumParts: stadiumParts(width, height),
         setCamera, setPreviewCamera, readCamera, restoreCamera, drawFrame, setQuality, setFieldSurface, invalidate, fail };
       sceneRef.current = state;
       updatePerformers(state, currentRef.current.positions, currentRef.current.facings, currentRef.current.selectedIds, width, height, currentRef.current.equipmentEnabled, currentRef.current.legMotion, currentRef.current.cues);
@@ -678,6 +683,15 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     const state = sceneRef.current;
     if (!state) return;
     try {
+      state.staging.update(stagingPlacements(staging, width, height));
+      state.invalidate();
+    } catch (cause) { state.fail(cause); }
+  }, [staging, width, height, capture]);
+
+  useEffect(() => {
+    const state = sceneRef.current;
+    if (!state) return;
+    try {
       state.pit.update(pit ?? []);
       state.stadium.update(stadiumVisible && !customSurface ? [{ parts: state.stadiumParts, at: [0, 0, 0] }] : []);
       state.invalidate();
@@ -694,7 +708,10 @@ export function Stage3D({ project, positions, facings, selectedIds, onSelect, qu
     const apply = (image?: HTMLImageElement) => {
       try {
         state.setFieldSurface(surface, image);
-        capture?.ready(state.drawFrame);
+        if (capture) queueMicrotask(() => {
+          // React development remounts dispose the first scene before exporting can use it.
+          if (sceneRef.current === state) capture.ready(state.drawFrame);
+        });
       }
       catch (cause) { state.fail(cause); }
     };

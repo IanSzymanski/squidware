@@ -136,7 +136,7 @@ export function SurfaceSettings({ controller: { project, dispatch } }: { control
     try {
       if (!samePosition(preview.width, previous.width) || !samePosition(preview.height, previous.height)) validateProjectEdit(project, { ...project, field: preview });
     } catch (cause) {
-      setError(`The surface was kept at its current size. Check existing performer positions, formations, paths and routes. ${(cause as Error).message}`);
+      setError(`The surface was kept at its current size. Check existing performer positions, props, formations, paths and routes. ${(cause as Error).message}`);
       return;
     }
     if (dispatch('surface.update', { field: preview }) === true) setDraft(toDraft(preview));

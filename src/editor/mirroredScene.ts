@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { sampleFacings } from '../performerFacing';
 import { sampleProject } from '../domain';
+import { sampleStaging } from '../staging';
 import { activePassage, resolvePassage } from '../rehearsal';
 import type { Point, Project, TimelineSample } from '../types';
 import { isAtActiveSet } from './editMode';
@@ -67,5 +68,9 @@ export function useFieldScene(controller: EditorController) {
     candidate.proposedCount / candidate.candidate.moves[operation.initial.index].counts)
     : controller.movementEditor ? controller.movementEditor.previewFacings
     : atSet && !playing ? activeSet.facings : sample.facings;
-  return { rehearsalId, rehearsalProject, atSet, count, sample, positions, facings };
+  const currentStaging = useMemo(() => atSet && !playing && project.stagingObjects?.length
+    ? sampleStaging(project, { setIndex: controller.index, progress: 1 }) : sample.staging,
+  [atSet, playing, controller.index, project, sample.staging]);
+  const staging = candidate ? candidate.staging : controller.movementEditor ? controller.movementEditor.previewStaging : currentStaging;
+  return { rehearsalId, rehearsalProject, atSet, count, sample, positions, facings, staging };
 }

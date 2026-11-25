@@ -12,7 +12,7 @@ import type { CoordinateEntrySession } from '../drillEntry';
 import type { SelectionReview } from '../selectionTools';
 import type { SetCreationKind } from './projectEdits';
 
-export type Dialog = 'choreography' | 'cast-table' | 'group-motion' | 'formation-transition' | 'assignment' | 'routes' | 'path-draw' | 'path-operations' | 'movement-schedule' | 'path' | 'templates' | 'audio-alignment' | 'tempo' | 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'saved-cameras' | 'video-export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
+export type Dialog = 'staging' | 'choreography' | 'cast-table' | 'group-motion' | 'formation-transition' | 'assignment' | 'routes' | 'path-draw' | 'path-operations' | 'movement-schedule' | 'path' | 'templates' | 'audio-alignment' | 'tempo' | 'package' | 'set-split' | 'score' | 'sheet-paste' | 'metronome' | 'problems' | 'analysis-rules' | 'rehearsal' | 'set-create' | 'snapping' | 'new' | 'settings' | 'preferences' | 'export' | 'saved-cameras' | 'video-export' | 'help' | 'history' | 'recovery' | 'add-cast' | 'remove-cast' | 'remove-set' | null;
 export type Workspace = 'design' | 'cast' | 'production';
 export interface ProjectHistory {
   past: HistoryEntry[]; present: Project; future: HistoryEntry[]; revision: number;

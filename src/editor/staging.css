@@ -1,0 +1,16 @@
+.staging-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, 1fr); gap: 18px; align-items: start; }
+.staging-preview { min-width: 0; margin: 0; }
+.staging-preview svg { display: block; width: 100%; max-height: 44vh; background: #172e24; border: 1px solid var(--border); border-radius: 8px; }
+.staging-preview svg[data-placing] { cursor: crosshair; }
+.staging-preview figcaption { margin-top: 6px; }
+.staging-form .form-label, .staging-chooser .form-label { min-width: 0; margin-bottom: 7px; }
+.staging-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; }
+.staging-travel { min-width: 0; margin: 7px 0; padding: 8px 8px 0; border: 1px solid var(--border); border-radius: 6px; }
+.staging-travel legend { padding: 0 4px; font-size: 12px; }
+.staging-visible, .staging-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.staging-visible { font-size: 12px; }
+.staging-chooser > .button { margin-top: 8px; }
+@media (max-width: 690px) {
+  .staging-layout { grid-template-columns: minmax(0, 1fr); }
+  .staging-preview svg { max-height: 30vh; }
+}

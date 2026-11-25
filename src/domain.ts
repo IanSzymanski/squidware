@@ -1,5 +1,6 @@
 import { FOOTBALL_SURFACE, isCustomSurface, surfaceUnits, SURFACE_UNITS, yardsInUnit } from './surfaces';
 import { sampleFacings } from './performerFacing';
+import { sampleStaging } from './staging';
 import { effectiveMove } from './groupMotion';
 import { generateFormation } from './formationGeometry';
 export { generateFormation } from './formationGeometry';
@@ -182,7 +183,7 @@ export function setStartCount(project: Project, index: number): number {
 }
 
 /** Timeline metadata without allocating performer geometry for clock/navigation users. */
-export function sampleTimeline(project: Project, count: number): Omit<TimelineSample, 'positions'> {
+export function sampleTimeline(project: Project, count: number): Pick<TimelineSample, 'setIndex' | 'progress' | 'localCount'> {
   const boundedCount = clamp(Number.isFinite(count) ? count : 0, 0, totalCounts(project));
   if (boundedCount === 0 || project.sets.length <= 1) {
     return { setIndex: 0, progress: 0, localCount: 0 };
@@ -215,7 +216,7 @@ export function sampleProject(project: Project, count: number): TimelineSample {
   const timing = sampleTimeline(project, count);
   if (!project.sets.length) return { ...timing, positions: {} };
   const facings = sampleFacings(project, timing.setIndex, timing.progress);
-  const pose = facings ? { facings } : {};
+  const pose = { ...(facings ? { facings } : {}), ...(project.stagingObjects?.length ? { staging: sampleStaging(project, timing) } : {}) };
   if (timing.setIndex === 0) return { ...timing, ...pose, positions: Object.fromEntries(Object.entries(project.sets[0].positions).map(([id, point]) => [id, { ...point }])) };
   const move = effectiveMove(project,timing.setIndex - 1);
   return { ...timing, ...pose, positions: Object.fromEntries(project.performers.map(performer => {

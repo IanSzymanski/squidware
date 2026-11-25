@@ -155,9 +155,10 @@ export function usePathOperations(c: Controller) {
     const sample = ({ start, end }: PreviewRange) => start + (end - start) * progress / 100;
     const proposedCount = sample(reviewed.proposedRange);
     const savedCount = values.kind === 'copy' ? proposedCount : sample(reviewed.savedRange);
+    const proposed = sampleProject(reviewed.candidate, reviewed.start + proposedCount);
     return { ...reviewed, savedCount, proposedCount,
       before: sampleProject(project, reviewed.start + savedCount).positions,
-      after: sampleProject(reviewed.candidate, reviewed.start + proposedCount).positions };
+      after: proposed.positions, staging: proposed.staging };
   })();
 
   function update(patch: Partial<OperationOptions>) {

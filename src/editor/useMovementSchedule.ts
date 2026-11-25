@@ -77,7 +77,7 @@ export function useMovementSchedule(c: Controller) {
     }
   }
   function selectRow(id: string) { if (!capture && !gesture) patch({ selectedRow: id }); }
-  const { positions, facings } = sampleProject(candidate, setStartCount(candidate, index) + count);
+  const { positions, facings, staging } = sampleProject(candidate, setStartCount(candidate, index) + count);
   const field: TravelPreview = { project, positions, performerId: id, from, to, path: path ?? undefined, original: move.paths[id], counts: move.counts, transition: move.transition,
     snapHandles: draft.snapHandles, handles: error || stale ? [] : travelHandles(from, to, path ?? undefined), selectedRow, onSelectRow: selectRow,
     onHandle: (handle, point) => setRows(old => moveTravelHandle(old, handle, point)),
@@ -85,7 +85,7 @@ export function useMovementSchedule(c: Controller) {
     onStroke: stroke => patch({ stroke }), onCancelCapture: () => patch({ capture: null, stroke: [] }),
     onError: submitError => patch({ submitError }), onGesture: gesture => patch({ gesture }), label: 'Timed movement preview',
     onApply: apply, onCancel: close };
-  return { ...draft, project, index, id, move, from, to, path, error, stale, changed, travel, preview: positions, previewFacings: facings, field,
+  return { ...draft, project, index, id, move, from, to, path, error, stale, changed, travel, preview: positions, previewFacings: facings, previewStaging: staging, field,
     label: project.performers.find(p => p.id === id)!.label, drawInitially: initial.draw,
     lastTravel: rows.reduce((last, row, i) => row.kind !== 'hold' ? i : last, -1),
     setRows, selectRow, apply, close, patch,
