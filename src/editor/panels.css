@@ -1,0 +1,71 @@
+/* Content of the shared dialogs: export, new production, settings, help, history, recovery, preferences, video. */
+
+/* Choice cards: large, obvious options. */
+.new-options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.new-options button, .export-options > label {
+  appearance: none; display: flex; align-items: flex-start; gap: var(--space-3); padding: 14px; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--control); color: var(--text-secondary);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.new-options button { flex-direction: column; gap: var(--space-2); }
+.new-options button:hover, .export-options > label:hover { border-color: var(--border-strong); background: var(--hover-bg); }
+.new-options strong, .export-options strong { display: block; color: var(--text); font-size: var(--text-md); font-weight: 600; }
+.new-options span, .export-options span { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.45; }
+.new-options svg, .export-options svg { color: var(--text-secondary); }
+.export-options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.export-options > label.selected { border-color: var(--accent-line); background: var(--accent-soft); }
+.export-options > label.selected svg { color: var(--accent-text); }
+.export-options input[type=radio] { position: absolute; opacity: 0; pointer-events: none; }
+.export-options > label:has(input:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.export-pdf { width: 100%; min-height: var(--control-xl) !important; font-size: var(--text-md) !important; }
+.export-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.export-secondary > button { justify-content: space-between; min-height: var(--control-lg); }
+
+/* Production settings */
+.section-edit { display: flex; align-items: center; gap: var(--space-2); }
+.section-edit > input:not([type=color]) { flex: 1; }
+.section-edit > select, .section-edit > span > select { width: 150px; flex: none; }
+
+/* Help */
+.guide-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-8); }
+.guide-grid h3 { margin: var(--space-4) 0 6px; color: var(--text); font-size: var(--text-md); font-weight: 600; }
+.guide-grid section > h3:first-child { margin-top: 0; }
+.guide-grid p { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; }
+.shortcut-list { display: flex; flex-direction: column; margin-top: var(--space-2); }
+.shortcut-list > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 32px; border-bottom: 1px solid var(--hairline); color: var(--text-secondary); font-size: var(--text-sm); }
+.shortcut-list dd { color: var(--text); font-weight: 500; text-align: right; }
+.help-note { display: flex; align-items: flex-start; gap: var(--space-3); padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-muted); color: var(--text-secondary); }
+.help-note > svg { margin-top: 2px; color: var(--accent-text); }
+.help-note p { font-size: var(--text-sm); line-height: 1.6; }
+
+/* History and recovery */
+.history-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.history-actions button { white-space: normal; text-align: left; }
+.history-list, .recovery-list { max-height: 320px; overflow: auto; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); }
+.history-list li, .recovery-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 9px 12px; border-bottom: 1px solid var(--hairline); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.history-list li:last-child, .recovery-list li:last-child { border-bottom: 0; }
+.history-list small, .history-policy, .history-empty { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.5; }
+.recovery-list li div { display: grid; gap: 2px; min-width: 0; }
+.recovery-list strong { font-weight: 600; overflow-wrap: anywhere; }
+.recovery-list time, .recovery-list span, .recovery-status { color: var(--text-tertiary); font-size: var(--text-xs); }
+.recovery-error { color: var(--error); font-size: var(--text-sm); line-height: 1.5; }
+
+/* Preferences */
+.preferences-nav { position: sticky; top: calc(-1 * var(--space-4)); z-index: 2; display: flex; gap: 2px; margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-5)) 0; padding: var(--space-2) var(--space-5); border-bottom: 1px solid var(--hairline); background: var(--surface-raised); }
+.preferences-nav .button { border-color: transparent; background: transparent; color: var(--text-secondary); }
+.preferences-nav .button:hover { background: var(--hover-bg); color: var(--text); }
+.preferences-nav .button[aria-pressed=true] { background: var(--active-bg); border-color: transparent; color: var(--text); }
+.preferences-fields { display: flex; flex-direction: column; gap: var(--space-3); }
+.preferences-section { display: flex; flex-direction: column; gap: var(--space-3); }
+.preferences-section + .preferences-section { margin-top: var(--space-4); padding-top: var(--space-5); border-top: 1px solid var(--hairline); }
+.preferences-section > h3 { font-size: var(--text-lg); font-weight: 600; }
+.preferences-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px var(--space-4); }
+.display-color-control { display: flex; align-items: center; gap: var(--space-2); font-variant-numeric: tabular-nums; }
+.field-display-preferences { display: flex; flex-direction: column; gap: var(--space-3); }
+.checkbox-label { color: var(--text) !important; }
+
+/* Rehearsal video */
+.video-export-options { display: flex; flex-direction: column; gap: var(--space-3); }
+.video-export-audio { font-size: var(--text-sm); }
+.video-export-progress progress { width: 100%; accent-color: var(--accent); }
+@media (max-width: 620px) { .guide-grid, .new-options, .export-options, .export-secondary, .preferences-toggles { grid-template-columns: 1fr; } }

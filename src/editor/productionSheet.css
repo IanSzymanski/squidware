@@ -1,46 +1,43 @@
-.production-workspace.sheet-workspace{padding:0;gap:0;overflow:hidden}
-.sheet-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border);flex-shrink:0}
-.sheet-toolbar p{margin-right:auto;display:flex;flex-direction:column;gap:4px;font-size:12px;font-variant-numeric:tabular-nums}
-.sheet-toolbar p span{color:var(--muted)}
-.sheet-toolbar .button{font-size:12px;min-height:32px}
-.sheet-help{padding:8px 12px;font-size:12px;color:var(--muted);line-height:1.5;flex-shrink:0}
-.sheet-help summary{cursor:pointer}
-.sheet-help p{margin-top:6px}
-.sheet-scroll{overflow:auto;flex:1;min-height:0}
-/* 820px keeps every column, including Mark, in view beside the default panels at 1366 px. */
-.sheet-scroll table{min-width:820px;table-layout:fixed}
-.sheet-scroll th:first-child{width:120px}
-.sheet-scroll th:nth-child(2){width:16%}
-.sheet-scroll th:nth-child(3),.sheet-scroll th:nth-child(4){width:72px}
-.sheet-scroll td:first-child{display:table-cell}
-.sheet-scroll td,.sheet-scroll tbody th{padding:3px;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;letter-spacing:0}
-.sheet-scroll tbody th{position:static;text-align:left;font-weight:500;padding:4px 8px;font-variant-numeric:tabular-nums}
-/* Top-aligned cells keep single-line values on the first line of multi-line notes. */
-.sheet-scroll tbody td,.sheet-scroll tbody th{vertical-align:top}
-.sheet-current{display:block;font-size:11px;color:var(--accent)}
-.sheet-scroll .sheet-active>*{background:var(--selected-bg)}
-.sheet-scroll input,.sheet-scroll textarea{display:block;width:100%;min-width:0;min-height:32px;font-size:12px;color:var(--text);padding:7px 6px;background:transparent;border:1px solid transparent;border-radius:3px;font-variant-numeric:tabular-nums}
+/* Plan: the whole show as an editable sheet. */
+.production-workspace.sheet-workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+.sheet-toolbar { flex: none; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: var(--toolbar-height); padding: 6px 12px; border-bottom: 1px solid var(--hairline); }
+.sheet-toolbar p { margin-right: auto; display: flex; align-items: baseline; gap: var(--space-3); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
+.sheet-toolbar p strong { font-weight: 600; }
+.sheet-toolbar p span { color: var(--text-tertiary); font-size: var(--text-xs); }
+.sheet-help { flex: none; padding: 0 12px; border-bottom: 1px solid var(--hairline); color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.5; }
+.sheet-help > summary { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
+.sheet-help p { max-width: 900px; padding-bottom: 8px; }
+.sheet-scroll { flex: 1; min-height: 0; overflow: auto; }
+.production-table table { width: 100%; min-width: 820px; border-collapse: collapse; table-layout: fixed; text-align: left; font-size: var(--text-sm); }
+.production-table thead th {
+  position: sticky; top: 0; z-index: 2; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--surface);
+  color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 600; white-space: nowrap;
+}
+.sheet-scroll th:first-child { width: 112px; }
+.sheet-scroll th:nth-child(2) { width: 18%; }
+.sheet-scroll th:nth-child(3), .sheet-scroll th:nth-child(4) { width: 76px; }
+.sheet-scroll th:nth-child(6) { width: 112px; }
+.sheet-scroll th:nth-child(7) { width: 130px; }
+.sheet-scroll tbody td, .sheet-scroll tbody th { padding: 2px 3px; border-bottom: 1px solid var(--hairline); color: var(--text); vertical-align: top; }
+.sheet-scroll tbody th { padding: 9px 12px 6px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sheet-score-position { display: block; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 400; white-space: nowrap; }
+.sheet-current { display: none; }
+.sheet-scroll .sheet-active > * { background: var(--accent-soft); }
+.sheet-scroll .sheet-active > th { box-shadow: inset 3px 0 var(--accent); color: var(--accent-text); }
+.sheet-scroll input, .sheet-scroll textarea {
+  display: block; width: 100%; min-width: 0; min-height: 32px !important; padding: 7px 8px !important; border: 1px solid transparent !important; border-radius: var(--radius-xs) !important;
+  background: transparent !important; box-shadow: none !important; color: var(--text); font-size: var(--text-sm) !important; font-variant-numeric: tabular-nums; scroll-margin-top: 44px;
+}
 /* Notes grow to whole lines (up to three), then scroll; rows=1 remains the fallback height. */
-.sheet-scroll textarea{resize:vertical;line-height:1.4;field-sizing:content;max-height:calc(3lh + 16px);overflow-y:auto}
-.sheet-scroll input:hover,.sheet-scroll textarea:hover,.sheet-scroll .sheet-active :is(input,textarea):placeholder-shown{border-color:var(--border)}
-.sheet-scroll input:focus,.sheet-scroll textarea:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
-.sheet-scroll input[readonly]{color:var(--muted)}
-.sheet-scroll input,.sheet-scroll textarea{scroll-margin-top:44px}
-.sheet-error{padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--warning);font-size:12px;border:1px solid var(--warning)}
-.sheet-error .button{padding:5px;font-size:12px}
-.sheet-paste-modal{display:flex;flex-direction:column;overflow:auto;gap:8px}
-.sheet-paste-modal .modal-header,.sheet-paste-modal .modal-intro,.sheet-paste-modal .form-label{margin-bottom:4px}
-.sheet-paste-modal textarea{width:100%;min-height:70px;resize:vertical;font-size:12px}
-.sheet-paste-modal p{font-size:12px;line-height:1.5}
-.sheet-preview-scroll{overflow:auto;max-height:28vh;min-height:60px;flex-shrink:0;border:1px solid var(--border)}
-.sheet-preview{border-collapse:collapse;width:100%;font-size:12px;text-align:left;table-layout:fixed}
-.sheet-preview th,.sheet-preview td{padding:6px;border-bottom:1px solid var(--border);white-space:pre-wrap;overflow-wrap:anywhere}
-.sheet-preview thead th{position:sticky;top:0;background:var(--surface-muted)}
-.sheet-preview tbody th{font-weight:500}
-.sheet-invalid strong{display:block;color:var(--warning)}
-.sheet-error-list{font-size:12px;line-height:1.5;color:var(--warning);max-height:15vh;overflow:auto;padding-left:24px;flex-shrink:0}
-.sheet-paste-modal .modal-actions{margin-top:4px;flex-shrink:0;flex-wrap:wrap}
-
-.sheet-score-position{display:block;font-size:11px;color:var(--muted);white-space:nowrap}
-.sheet-scroll th:nth-child(6){width:108px}
-.sheet-scroll th:nth-child(7){width:100px}
+.sheet-scroll textarea { resize: none; line-height: 1.4; field-sizing: content; max-height: calc(3lh + 16px); overflow-y: auto; }
+.sheet-scroll input:hover, .sheet-scroll textarea:hover { border-color: var(--border) !important; }
+.sheet-scroll input:focus, .sheet-scroll textarea:focus { border-color: var(--accent-line) !important; background: var(--input-bg) !important; box-shadow: 0 0 0 3px var(--accent-soft) !important; }
+.sheet-scroll input[readonly] { color: var(--text-tertiary); }
+.sheet-error { flex: none; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--warning-line); background: var(--warning-bg); color: var(--warning); font-size: var(--text-sm); }
+.sheet-preview-scroll { flex-shrink: 0; min-height: 60px; max-height: 28vh; overflow: auto; border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.sheet-preview { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: left; font-size: var(--text-sm); }
+.sheet-preview th, .sheet-preview td { padding: 6px 10px; border-bottom: 1px solid var(--hairline); white-space: pre-wrap; overflow-wrap: anywhere; }
+.sheet-preview thead th { position: sticky; top: 0; background: var(--surface-muted); color: var(--text-tertiary); font-size: var(--text-xs); }
+.sheet-preview tbody th { font-weight: 500; }
+.sheet-invalid strong { display: block; color: var(--warning); }
+.sheet-error-list { flex-shrink: 0; max-height: 15vh; overflow: auto; padding-left: 20px; list-style: disc; color: var(--warning); font-size: var(--text-sm); line-height: 1.5; }

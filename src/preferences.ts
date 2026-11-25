@@ -41,7 +41,7 @@ export interface PreferencesBridge {
 }
 export function defaultPreferences(): Preferences {
   return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), workspaces: defaultWorkspaces(), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
-    selectionLabelsOnly: false, setThumbnails: false, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
+    selectionLabelsOnly: false, setThumbnails: true, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3, fieldLabelSizePx: 12,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
     nudgeStep: .625, fastNudgeStep: 2.5, nudgeUnit: 'yards', rotationStep: 15, scaleStep: 10, coordinateDecimals: 2, coordinatePrecision: 'quarter', paperSize: 'letter', printMode: 'charts', minimumSpacing: 1, maximumStride: 1.25, newSetCounts: 32, popout3dBounds: null };

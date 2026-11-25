@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import './panels.css';
 import { SurfaceSettings } from './SurfaceSettings';
 import { ChoreographyPanel } from './ChoreographyPanel';
 import { StagingPanel } from './StagingPanel';

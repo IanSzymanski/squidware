@@ -3,8 +3,8 @@ import { defaultPreferences, validatePreferences } from './preferences';
 import { analyzeTransition, coordinateDescription, createDemoProject, parseProject, serializeProject } from './domain';
 describe('personal preferences codec', () => {
   it('defaults to compact sets and retains optional thumbnails only in device preferences', () => {
-    expect(validatePreferences({ version: 1 }).setThumbnails).toBe(false);
-    expect(validatePreferences({ setThumbnails: true }).setThumbnails).toBe(true);
+    expect(validatePreferences({ version: 1 }).setThumbnails).toBe(true);
+    expect(validatePreferences({ setThumbnails: false }).setThumbnails).toBe(false);
     expect(() => validatePreferences({ setThumbnails: 'true' })).toThrow();
     expect(serializeProject(createDemoProject())).not.toContain('setThumbnails');
   });

@@ -1,0 +1,49 @@
+/* Print output. PDF drill books are rendered from #print-output; the editor is hidden on paper. */
+#print-output { display: none; }
+@media print {
+  @page { size: letter landscape; margin: 12mm; }
+  body { background: #fff; color: #14251b; overflow: visible; height: auto; }
+  .studio, .toast, dialog, input[type=file], audio { display: none !important; }
+  #print-output { display: block; font-family: Arial,sans-serif; color: #173221; }
+  .print-page { break-after: page; page-break-after: always; padding: 0; max-height: none; }
+  .print-page:last-child { break-after: auto; page-break-after: auto; }
+  .print-page header { display: flex; justify-content: space-between; border-bottom: 1px solid #a8b69c; padding-bottom: 12px; margin-bottom: 10px; }
+  .print-page header span { font-size: 8px; letter-spacing: 2px; color: #819274; }
+  .print-page h1 { font-size: 24px; margin: 7px 0 4px; font-weight: 600; }
+  .print-page header p { font-size: 10px; color: #819274; }
+  .print-set { font-size: 28px; font-weight: 600; text-align: right; }
+  .print-set small { display: block; font-size: 12px; font-weight: 400; margin-top: 5px; }
+  .print-meta { display: flex; gap: 35px; font-size: 9px; color: #728263; }
+  .print-page > svg { width: 100%; height: 125mm; display: block; margin: 3mm 0; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .print-notes { font-size: 10px; line-height: 1.5; margin-top: 6px; }
+  .print-page footer { font-size: 8px; color: #819274; margin-top: 12px; }
+  .performer-page table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+  .performer-page th, .performer-page td { text-align: left; padding: 12px; border-bottom: 1px solid #d7dfd2; }
+  .performer-page th { background: #edf2e5; font-weight: 600; print-color-adjust: exact; }
+  .performer-page thead { display: table-header-group; }
+  .performer-page tr { break-inside: avoid; }
+}
+@media print {
+  @page squid-letter { size: letter landscape; margin: 12mm; }
+  @page squid-a4 { size: A4 landscape; margin: 12mm; }
+  #print-output[data-paper=letter] .print-page { page: squid-letter; }
+  #print-output[data-paper=a4] .print-page { page: squid-a4; }
+}
+/* Preserve long production text when Chromium paginates rehearsal packets. */
+@media print {
+  @page { background: #fff; }
+  @page squid-letter { background: #fff; }
+  @page squid-a4 { background: #fff; }
+  html, body, #root { background: #fff !important; height: auto; }
+  .print-page header { break-inside: avoid; }
+  .print-page header > div:first-child { min-width: 0; flex: 1; }
+  .print-page h1, .print-page header p, .print-set small { overflow-wrap: anywhere; }
+  .print-set { flex: 0 0 25%; margin-left: 12px; }
+  .print-meta { flex-wrap: wrap; gap: 8px 35px; }
+  .print-page > svg { break-inside: avoid; }
+  .print-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .performer-page td { overflow-wrap: anywhere; }
+  .performer-page table { table-layout: fixed; }
+  .performer-page th, .performer-page td { padding: 9px; }
+  .print-coordinate-key { font-size: 10px; line-height: 1.5; margin-top: 12px; }
+}

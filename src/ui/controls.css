@@ -1,0 +1,244 @@
+/*
+ * Shared controls: buttons, fields, menus, tabs, tooltips, toasts.
+ * Feature panels compose these; they do not restyle them.
+ */
+
+/* ---------- Buttons ---------- */
+.button {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: var(--control-md); padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--control); color: var(--text); font-size: var(--text-sm); font-weight: 500; line-height: 1.2;
+  white-space: nowrap; text-decoration: none; user-select: none;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.button:hover { background: var(--hover-bg); border-color: var(--border-strong); }
+.button:active { background: var(--active-bg); }
+.button.subtle { background: transparent; }
+.button.subtle:hover { background: var(--hover-bg); }
+.button.ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+.button.ghost:hover { background: var(--hover-bg); color: var(--text); }
+.button.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); font-weight: 600; }
+.button.primary:hover { background: var(--accent-hover); border-color: transparent; }
+.button.primary:active { background: var(--accent-pressed); }
+.button.danger { background: var(--error-bg); border-color: var(--error-line); color: var(--error); }
+.button.danger:hover { background: var(--error-bg); border-color: var(--error); }
+.button.large { min-height: var(--control-lg); padding: 0 14px; font-size: var(--text-md); }
+.button.small { min-height: var(--control-sm); padding: 0 8px; font-size: var(--text-xs); }
+.button.block { display: flex; width: 100%; }
+.button[aria-pressed=true]:not(.primary) { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+
+.icon-button {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0;
+  min-width: var(--control-md); height: var(--control-md); padding: 0 5px; border: 1px solid transparent;
+  border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary);
+  font-size: var(--text-sm); font-weight: 500;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.icon-button:hover { background: var(--hover-bg); color: var(--text); }
+.icon-button:active { background: var(--active-bg); }
+.icon-button.active, .icon-button[aria-pressed=true], .icon-button[aria-expanded=true] { background: var(--accent-soft); color: var(--accent-text); }
+.icon-button.large { min-width: var(--control-lg); height: var(--control-lg); }
+
+/* One unavailable treatment for every control. HelpButton keeps unavailable buttons focusable with aria-disabled. */
+button:disabled, button[aria-disabled=true], .button:disabled, .button[aria-disabled=true],
+.icon-button:disabled, .icon-button[aria-disabled=true] {
+  opacity: .48; cursor: not-allowed;
+}
+.button[aria-disabled=true]:not(.primary):not(.danger):hover, .button:disabled:not(.primary):not(.danger):hover { background: var(--control); border-color: var(--border); }
+.button.subtle[aria-disabled=true]:hover, .button.subtle:disabled:hover, .icon-button[aria-disabled=true]:hover, .icon-button:disabled:hover { background: transparent; }
+.icon-button[aria-disabled=true]:hover, .icon-button:disabled:hover { color: var(--text-secondary); }
+.button.primary[aria-disabled=true]:hover, .button.primary:disabled:hover { background: var(--accent); }
+
+/* ---------- Fields ---------- */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), textarea, select {
+  appearance: none; width: 100%; min-width: 0; min-height: var(--control-md); padding: 4px 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
+  font-size: var(--text-sm); line-height: 1.35; caret-color: var(--accent-text);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):hover, textarea:hover, select:hover { border-color: var(--border-strong); }
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):focus, textarea:focus, select:focus {
+  outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input[aria-invalid=true], textarea[aria-invalid=true] { border-color: var(--error); box-shadow: 0 0 0 3px var(--error-bg); }
+input:disabled, textarea:disabled, select:disabled { opacity: .5; cursor: not-allowed; background: var(--disabled-bg); }
+textarea { min-height: 56px; resize: vertical; }
+input[type=number] { font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
+select {
+  padding-right: 26px; cursor: pointer; text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa3ae' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+}
+select option { background: var(--overlay); color: var(--text); }
+input[type=checkbox], input[type=radio] { width: 14px; height: 14px; margin: 0; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+input[type=range] { accent-color: var(--accent); min-width: 0; height: 16px; cursor: pointer; }
+input[type=color] {
+  appearance: none; width: var(--control-md); height: var(--control-md); padding: 2px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); cursor: pointer;
+}
+input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type=color]::-webkit-color-swatch { border: 0; border-radius: 3px; }
+
+.form-label {
+  display: flex; flex-direction: column; gap: 5px; min-width: 0;
+  color: var(--text-secondary); font-size: var(--text-xs); font-weight: 500; line-height: 1.3;
+}
+.form-label > span:first-child { color: var(--text-secondary); }
+.form-row { display: flex; gap: var(--space-2); align-items: flex-end; }
+.form-row > * { flex: 1; min-width: 0; }
+.field-error { color: var(--error); font-size: var(--text-xs); font-weight: 400; line-height: 1.4; }
+.microcopy { color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 400; line-height: 1.45; }
+small.microcopy { display: block; }
+.section-description { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.45; }
+.tooltip-disabled-field { display: block; border-radius: var(--radius-sm); }
+.empty-state { padding: var(--space-6) var(--space-4); color: var(--text-tertiary); font-size: var(--text-sm); text-align: center; }
+
+/* Label-wrapped checkboxes and radios read as one row. */
+label:has(> input[type=checkbox]), label:has(> input[type=radio]) {
+  display: flex; align-items: center; gap: var(--space-2); color: var(--text); font-size: var(--text-sm); font-weight: 400; cursor: pointer;
+}
+
+/* Disclosure rows. */
+details > summary {
+  display: flex; align-items: center; gap: 6px; min-height: var(--control-md); cursor: pointer; list-style: none;
+  color: var(--text-secondary); font-size: var(--text-sm); font-weight: 500; user-select: none; border-radius: var(--radius-xs);
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: ""; width: 12px; height: 12px; flex-shrink: 0; background: currentColor; opacity: .7;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform var(--fast) var(--ease);
+}
+details[open] > summary::before { transform: rotate(90deg); }
+details > summary:hover { color: var(--text); }
+
+/* ---------- Segmented control ---------- */
+.segmented {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: var(--radius-md);
+  background: var(--app-bg); border: 1px solid var(--hairline);
+}
+.segmented > button {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: var(--control-sm); padding: 0 10px; border: 0; border-radius: var(--radius-sm); background: transparent;
+  color: var(--text-secondary); font-size: var(--text-sm); font-weight: 500; white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.segmented > button:hover { color: var(--text); }
+.segmented > button[aria-pressed=true], .segmented > button[aria-selected=true], .segmented > button[aria-checked=true], .segmented > button.active {
+  background: var(--active-bg); color: var(--text); box-shadow: var(--shadow-sm);
+}
+.segmented.fill { display: flex; }
+.segmented.fill > button { flex: 1; }
+
+/* ---------- Menus and popovers ---------- */
+.popover {
+  position: fixed; z-index: 60; min-width: 200px; padding: var(--space-1);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--overlay);
+  box-shadow: var(--shadow-lg); animation: pop-in var(--normal) var(--ease);
+}
+.menu { display: flex; flex-direction: column; min-width: 220px; max-width: 340px; overflow-y: auto; }
+.menu-item, .dropdown > button {
+  appearance: none; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 30px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text);
+  font-size: var(--text-sm); font-weight: 400; text-align: left; white-space: nowrap;
+}
+.menu-item > svg:first-child, .dropdown > button > svg:first-child { color: var(--text-secondary); }
+.menu-item:hover, .menu-item:focus-visible, .menu-item[data-active=true], .dropdown > button:hover, .dropdown > button:focus-visible { background: var(--hover-bg); outline: none; }
+.menu-item .menu-item-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.menu-item .menu-item-hint { color: var(--text-tertiary); font-size: var(--text-xs); }
+.menu-item .menu-item-check { width: 16px; display: inline-flex; justify-content: center; color: var(--accent-text); }
+.menu-item.danger, .menu-item.danger > svg:first-child { color: var(--error); }
+.menu-item .shortcut-keycaps, .dropdown > button .shortcut-keycaps { margin-left: auto; padding-left: var(--space-4); }
+.menu-heading {
+  padding: 8px 8px 4px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.menu-separator { height: 1px; margin: var(--space-1) calc(-1 * var(--space-1)); background: var(--hairline); flex-shrink: 0; }
+
+/* ---------- Keycaps ---------- */
+.shortcut-keycaps { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.shortcut-keycaps > span { display: inline-flex; align-items: center; gap: 2px; }
+.shortcut-keycaps kbd, kbd {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 4px;
+  border: 1px solid var(--border); border-radius: var(--radius-xs); background: var(--surface-muted);
+  color: var(--text-secondary); font-family: var(--font-ui); font-size: var(--text-2xs); font-weight: 500; line-height: 1;
+}
+.shortcut-or { margin-right: 4px; color: var(--text-tertiary); font-size: var(--text-2xs); }
+
+/* ---------- Tooltip ---------- */
+.tooltip-panel {
+  position: fixed; z-index: 100; max-width: min(280px, calc(var(--viewport-width) - 16px)); max-height: calc(var(--viewport-height) - 16px);
+  overflow: auto; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--overlay); box-shadow: var(--shadow-md); color: var(--text);
+  font-size: var(--text-sm); line-height: 1.4; animation: fade-in var(--fast) var(--ease);
+}
+.tooltip-panel--pointer-through { pointer-events: none; }
+.tooltip-panel [role=tooltip] { display: flex; flex-direction: column; gap: 4px; }
+.tooltip-panel strong { font-weight: 600; }
+.tooltip-panel p { color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.45; }
+.tooltip-panel .tooltip-state { color: var(--text-tertiary); }
+.tooltip-panel .tooltip-reason { color: var(--warning); }
+.tooltip-panel .shortcut-keycaps { margin-top: 2px; }
+.tooltip-panel .shortcut-keycaps:empty { display: none; }
+.tooltip-panel a { display: inline-block; margin-top: 6px; font-size: var(--text-xs); }
+@media print { .tooltip-panel { display: none; } }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; z-index: 90; left: 50%; bottom: 24px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; max-width: min(560px, calc(var(--viewport-width) - 32px));
+  padding: 8px 8px 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--overlay); box-shadow: var(--shadow-lg); color: var(--text); font-size: var(--text-sm);
+  animation: pop-in var(--normal) var(--ease);
+}
+.toast > svg { color: var(--accent-text); }
+.toast > span { min-width: 0; overflow-wrap: anywhere; }
+.toast > button {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+  border: 0; border-radius: 50%; background: transparent; color: var(--text-tertiary);
+}
+.toast > button:hover { background: var(--hover-bg); color: var(--text); }
+
+/* ---------- Small parts ---------- */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 6px;
+  border-radius: var(--radius-full); background: var(--control); color: var(--text-secondary);
+  font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.badge.warning { background: var(--warning-bg); color: var(--warning); }
+.badge.accent { background: var(--accent-soft-strong); color: var(--accent-text); }
+.divider-vertical { width: 1px; align-self: stretch; margin: 6px 4px; background: var(--hairline); flex-shrink: 0; }
+.swatch { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Underline tabs for panel headers. */
+.tabs { display: flex; align-items: stretch; gap: var(--space-1); }
+.tabs > button {
+  appearance: none; position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary);
+  font-size: var(--text-sm); font-weight: 600;
+}
+.tabs > button:hover { color: var(--text); }
+.tabs > button[aria-selected=true] { color: var(--text); }
+.tabs > button[aria-selected=true]::after {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: 0; height: 2px; border-radius: 2px 2px 0 0; background: var(--accent);
+}
+
+/* The overflow menu that folds controls on narrow windows. */
+.overflow-menu { position: relative; display: inline-flex; }
+.overflow-menu-panel {
+  position: absolute; z-index: 50; right: 0; display: flex; flex-direction: column; gap: 2px; min-width: 220px; padding: var(--space-1);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--overlay); box-shadow: var(--shadow-lg);
+  animation: pop-in var(--normal) var(--ease);
+}
+.overflow-menu-panel--above { bottom: calc(100% + 6px); }
+.overflow-menu-panel--below { top: calc(100% + 6px); }
+.overflow-menu-panel > button, .overflow-menu-panel > label {
+  display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; height: 30px; padding: 0 8px;
+  border-radius: var(--radius-sm); color: var(--text); font-size: var(--text-sm); font-weight: 400;
+}
+.overflow-option-label { display: none; }
+.overflow-menu-panel .overflow-option-label { display: inline; flex: 1; text-align: left; }
+.overflow-menu-panel select { width: auto; min-height: var(--control-sm); }

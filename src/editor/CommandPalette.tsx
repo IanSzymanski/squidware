@@ -7,7 +7,6 @@ import { DEFAULT_SNAPPING } from '../snapping';
 import { drillPlan } from './drillCommands';
 import { paletteQuery, commandUnavailable, type PaletteEntry } from './paletteCommands';
 import { commandKeycaps } from './shortcutDisplay';
-import { Hint } from './ControlHelp';
 import { useEditorSelector, useEditorStore } from './react';
 import './commands.css';
 
@@ -31,9 +30,8 @@ export function CommandPalette() {
     if (!result.plan) { setError(result.error!); return; }
     close(); void store.dispatch('drill.preview', { text: query });
   }
-  return <Modal title="Command palette" onClose={close}>
-    {state.preferences.value.showHints && <p className="modal-intro" data-hint="">Search an action or type a drill phrase. Drill phrases open a field preview before Apply.</p>}
-    <label className="palette-search"><Search size={18} aria-hidden="true" /><input ref={input} role="combobox" aria-label="Search commands or drill phrases" placeholder="Search commands or type move 4 forward" aria-expanded={!phrase} aria-controls={phrase ? undefined : list} aria-activedescendant={entries.length ? `${list}-${current}` : undefined} aria-autocomplete="list" aria-describedby={help} autoComplete="off" spellCheck={false} maxLength={DRILL_ENTRY_LIMIT} value={query}
+  return <Modal title="Command palette" className="command-palette" onClose={close}>
+    <label className="palette-search"><Search size={17} aria-hidden="true" /><input ref={input} role="combobox" aria-label="Search commands or drill phrases" placeholder="Search actions, or type a drill phrase like “move 4 forward”" aria-expanded={!phrase} aria-controls={phrase ? undefined : list} aria-activedescendant={entries.length ? `${list}-${current}` : undefined} aria-autocomplete="list" aria-describedby={help} autoComplete="off" spellCheck={false} maxLength={DRILL_ENTRY_LIMIT} value={query}
       onChange={event => { setQuery(event.target.value); setActive(0); setError(''); }} onKeyDown={event => {
         if (event.nativeEvent.isComposing) return;
         if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key) && !phrase && entries.length) {
@@ -42,8 +40,8 @@ export function CommandPalette() {
           event.preventDefault(); setActive(event.key === 'Home' ? 0 : event.key === 'End' ? entries.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + entries.length) % entries.length);
         }
         if (event.key === 'Enter') { event.preventDefault(); if (phrase) preview(); else if (entries[current]) run(entries[current]); }
-      }} /></label>
-    <Hint id={help}>↑ / ↓ explore · Enter runs or previews · Escape closes · Tab moves between controls</Hint>
+      }} /><kbd>Esc</kbd></label>
+    <span id={help} className="sr-only">Up and Down explore results. Enter runs or previews. Escape closes. Tab moves between controls.</span>
     {error && <p className="field-error" role="alert">{error}</p>}
     {phrase ? <div className="palette-phrase">
       <h3>Drill phrase preview</h3><p role="status" className={resolved?.error ? 'field-error' : ''}>{resolved?.error ?? resolved?.plan?.summary}</p>
@@ -63,6 +61,6 @@ export function CommandPalette() {
       {/* One fixed-height detail region for the active result: rows never expand, so hover cannot shift the list. */}
       {selected && <p className="palette-detail" id={detail}><span className="palette-description">{selected.description}</span>{selected.disabledReason && <> <span className="palette-unavailable"><strong>Unavailable:</strong> {selected.disabledReason}</span></>}</p>}
     </div>}
-    <details className="palette-examples"><summary>Drill phrase examples</summary><p>move 4 forward<br />mirror across 50<br />interval 2 steps horizontal<br />place B1 at Side 1: on the 40; on front hash</p><p className="microcopy">Move, mirror and interval use the explicit selection. Place uses an exact performer label. Name both coordinate axes and the side; incomplete phrases leave the production unchanged.</p></details>
+    <div className="palette-footer"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> run</span><details className="palette-examples"><summary>Drill phrases</summary><p>move 4 forward<br />mirror across 50<br />interval 2 steps horizontal<br />place B1 at Side 1: on the 40; on front hash</p><p className="microcopy">Move, mirror and interval use the selection. Place names one performer, both axes and the side.</p></details></div>
   </Modal>;
 }

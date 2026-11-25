@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { FolderOpen, List, PanelRight, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { FolderOpen, List, ListFilter, MoreHorizontal, PanelRight, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Menu } from '../ui/Menu';
 import { DEFAULT_FLAG_COLOR, resolveEquipment } from '../equipment';
 import { EquipmentSelect } from './EquipmentSelect';
 import { coordinateDescription, PROJECT_LIMITS } from '../domain';
@@ -112,15 +113,20 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
     }
   }
   const content = <>
-    <div className="cast-panel-heading"><h2>Cast <span className="count-badge">{project.performers.length}</span></h2><div><SelectionToolsButton controller={controller} />
-
-      <Button title={docked ? 'Full Cast table' : 'Return to Cast panel'} description="Review the full roster table, then return to the right panel." onClick={() => docked ? controller.showCast('table') : controller.setDialog(null)}>{docked ? <List size={16} /> : <PanelRight size={16} />}</Button>
-      {docked && <Button command="cast.show" title="Show Inspector" description="Close the Cast panel and show selection tools beside the field." disabled={locked} disabledReason={lockReason} onClick={() => controller.showCast('closed')}><X size={16} /></Button>}
-    </div></div>
-    <div className="cast-controls"><label className="search-field"><Search size={16} /><input aria-label="Find a performer" placeholder="Find a performer…" value={castQuery} onChange={e => setCastQuery(e.target.value)} /></label><select aria-label="Filter section" value={sectionFilter} onChange={e => setSectionFilter(e.target.value)}><option value="all">All sections</option>{project.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
-      <HelpButton title="Add performers" description="Add performers to the roster and every set." className="button subtle" disabled={locked} disabledReason={lockReason} onClick={() => setDialog('add-cast')}><Plus size={15} />Add</HelpButton>
-      <HelpButton title="Import roster CSV" description="Import performer labels, names and sections from a CSV file." className="button subtle" disabled={locked} disabledReason={lockReason} onClick={() => rosterInput.current?.click()}><FolderOpen size={15} />{!docked && 'Import CSV'}</HelpButton>
-      <Button command="performers.remove" title="Remove selected performers" disabledReason={locked ? lockReason : 'Select performers before removing them from the show.'} onClick={() => setDialog('remove-cast')} disabled={!selectedIds.length || locked}><Trash2 size={16} /></Button>
+    {!docked && <div className="cast-panel-heading"><h2>Cast <span className="count-badge">{project.performers.length}</span></h2><div><SelectionToolsButton controller={controller} />
+      <Button title="Return to Cast panel" description="Review the full roster table, then return to the side panel." onClick={() => controller.setDialog(null)}><PanelRight size={16} /></Button>
+    </div></div>}
+    <div className="cast-controls"><label className="search-field"><Search size={14} /><input aria-label="Find a performer" placeholder="Find a performer…" value={castQuery} onChange={e => setCastQuery(e.target.value)} /></label>
+      <div className="cast-controls-row"><select aria-label="Filter section" value={sectionFilter} onChange={e => setSectionFilter(e.target.value)}><option value="all">All sections</option>{project.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+      <HelpButton title="Add performers" description="Add performers to the roster and every set." className="button subtle" disabled={locked} disabledReason={lockReason} onClick={() => setDialog('add-cast')}><Plus size={14} />Add</HelpButton>
+      {!docked && <HelpButton title="Import roster CSV" description="Import performer labels, names and sections from a CSV file." className="button subtle" disabled={locked} disabledReason={lockReason} onClick={() => rosterInput.current?.click()}><FolderOpen size={15} />Import CSV</HelpButton>}
+      <Button command="performers.remove" title="Remove selected performers" disabledReason={locked ? lockReason : 'Select performers before removing them from the show.'} onClick={() => setDialog('remove-cast')} disabled={!selectedIds.length || locked}><Trash2 size={15} /></Button>
+      {docked && <Menu label="More Cast actions" description="Import a roster, open the full table, or select by rank, file and saved group." className="icon-button" align="end" items={[
+        { label: 'Import roster CSV…', icon: <FolderOpen size={15} />, description: 'Import performer labels, names and sections from a CSV file.', disabled: locked, disabledReason: lockReason, onSelect: () => rosterInput.current?.click() },
+        { label: 'Full Cast table…', icon: <List size={15} />, description: 'Review and edit the whole roster in a table.', onSelect: () => controller.showCast('table') },
+        { label: 'Rank, file and saved groups…', icon: <ListFilter size={15} />, command: 'selection.tools', onSelect: () => { controller.dispatch('selection.tools'); } },
+      ]}><MoreHorizontal size={15} /></Menu>}
+      </div>
     </div>
     {hiddenSelected > 0 && <div className="cast-filter-notice" role="status">{hiddenSelected} selected {hiddenSelected === 1 ? 'performer is' : 'performers are'} hidden by the current filters. Selection is kept.<button onClick={() => { setCastQuery(''); setSectionFilter('all'); }}>Show selected performers</button></div>}
     {locked && <p className="cast-filter-notice" role="status">{lockReason}</p>}
@@ -131,13 +137,13 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
       </li>)}</ul> : <table className="cast-table"><thead><tr><th><input ref={allCheckbox} type="checkbox" aria-label="Select all visible performers" disabled={locked || !visibleIds.length} checked={visibleIds.length > 0 && visibleSelected === visibleIds.length} onChange={e => setSelectedIds(ids => selectVisible(ids, visibleIds, e.target.checked))} /></th><th>Label</th><th>Performer</th><th>Section</th><th>Set {controller.index + 1} coordinate</th></tr></thead><tbody>{filteredCast.map(p => <tr key={p.id} data-cast-id={p.id} ref={node => { if (node) rows.current.set(p.id, node); else rows.current.delete(p.id); }} className={selectedSet.has(p.id) ? 'selected' : ''}><td><input type="checkbox" aria-label={`Select ${p.label}`} disabled={locked} checked={selectedSet.has(p.id)} onChange={e => setSelectedIds(ids => selectVisible(ids, [p.id], e.target.checked))} /></td><td><button className="performer-label" aria-label={`Select only ${p.label}`} disabled={locked} style={{ borderColor: project.sections.find(s => s.id === p.sectionId)?.color }} onClick={e => choose(p.id, e.shiftKey, e.ctrlKey || e.metaKey)}>{p.label}</button></td><td><fieldset className="cast-inline-edit" disabled={locked}><CommitInput key={`${projectEpoch}:${p.id}`} label={`Name for ${p.label}`} placeholder="Add a name" allowEmpty value={p.name} onDraftChange={setPendingDraft} maxLength={PROJECT_LIMITS.text.performerName} onCommit={name => dispatch('performer.update', { id: p.id, update: { name } })} /></fieldset></td><td><select disabled={locked} aria-label={`Section for ${p.label}`} value={p.sectionId} onChange={e => dispatch('performer.update', { id: p.id, update: { sectionId: e.target.value } })}>{project.sections.map(s => <option value={s.id} key={s.id}>{s.name}</option>)}</select></td><td className="coordinate-cell">{coordinateDescription(activeSet.positions[p.id], project.field, controller.coordinateFormat)}</td></tr>)}</tbody></table>}
       {!filteredCast.length && <div className="empty-state"><Users /><h3>{project.performers.length ? 'No matching performers' : 'Start with your ensemble'}</h3><p>{project.performers.length ? 'Change search or section filters to see more performers.' : 'Add performers or import a CSV roster to start designing.'}</p>{project.performers.length > 0 && <button className="button subtle" onClick={() => { setCastQuery(''); setSectionFilter('all'); }}>Clear Cast filters</button>}</div>}
     </div>
-    {docked && <div className="cast-edit"><h3>{editing ? `Edit ${editing.label}` : 'Performer details'}</h3>{editing ? <>
+    {docked && editing && <div className="cast-edit"><h3>{editing.label}{editing.name ? ` · ${editing.name}` : ''}</h3>
       {selectedIds.length !== 1 || selectedIds[0] !== editing.id ? <p className="microcopy">Finish or cancel this name edit before editing another performer.</p> : null}
       <fieldset disabled={locked}><PerformerFields key={`${projectEpoch}:${editing.id}`} person={editing} controller={controller} /></fieldset><PerformerAppearanceFields key={`${projectEpoch}:${editing.id}`} person={editing} controller={controller}
-        locked={locked || !!controller.spacingPreview || !!controller.coordinatePreview} /><p className="microcopy">Set {controller.index + 1}: {coordinateDescription(activeSet.positions[editing.id], project.field, controller.coordinateFormat)}</p><p className="microcopy">Enter applies · Escape cancels. Names and sections update across every set.</p>
-    </> : <p className="microcopy">Select one performer to edit their name and section.</p>}</div>}
+        locked={locked || !!controller.spacingPreview || !!controller.coordinatePreview} /><p className="microcopy">Set {controller.index + 1}: {coordinateDescription(activeSet.positions[editing.id], project.field, controller.coordinateFormat)}</p>
+    </div>}
     <div className="table-footer">{filteredCast.length} shown · {selectedIds.length} selected{!docked && <span>Names and sections update across every set.</span>}</div>
-    {docked && <p className="cast-keyboard-help">Arrows/Home/End: focus · Space: toggle · Enter: select · Shift: add range · Ctrl/⌘-click: toggle</p>}
+    {docked && <p className="cast-keyboard-help sr-only">Arrows/Home/End: focus · Space: toggle · Enter: select · Shift: add range · Ctrl/⌘-click: toggle</p>}
   </>;
   return docked ? <aside className="cast-workspace cast-dock" aria-label="Cast panel">{content}</aside> : <section className="cast-workspace" aria-label="Full Cast table">{content}</section>;
 }
