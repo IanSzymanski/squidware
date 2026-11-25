@@ -8,7 +8,7 @@ Write formations, refine transitions, rehearse in 3D, and export the next rehear
 
 > **Release and development:** v0.6.0 is the newest published prerelease. This README and its screenshots show current `main`, including unreleased musical timing, editable travel paths, reusable formations and group route movement. [Run from source](#run-from-source) to use these features.
 
-![The Tether demo in Squidware's updated 2D editor, with 24 sopranos selected in the Accretion disc set, compact set navigation, a contextual Inspector and the musical timeline](docs/images/studio.png)
+![The Tether demo in Squidware's Write mode: 24 sopranos selected on the field, the shape and arrange tools above it, the selection described in steps in the side panel, and the set strip below](docs/images/studio.png)
 
 ## Design with precision
 
@@ -22,9 +22,11 @@ Start with **Tether**, the bundled demo: a full 165-member drum corps show with 
 | Shape and refine | Preview [lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md), editable Bézier curves and seeded scatter; [rotate, scale and mirror](docs/EXACT_TRANSFORMS.md); set [alignment and exact intervals](docs/SPACING_ALIGNMENT.md). |
 | Connect the sets | Previous/next ghosts and paths, counts and tempo per move, distinct New/Duplicate/Insert/Hold actions, and a [sampled transition split](docs/split-transition.md). |
 
-Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture. The [contextual field toolbar](docs/FIELD_TOOLS.md) puts selection tools, individual paths, group transforms and preview Apply/Cancel above the field, with additional commands in More. The Inspector holds details and preview parameters. Resize or collapse panels, switch **Write / Review / Rehearse** layouts, or focus the field and timeline. Cast docks beside the field; on smaller windows, panels tuck behind Show controls or open over the field.
+Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture.
 
-The workspace adapts to window size and UI scale. The compact transport moves loop, metronome and speed into **More playback options**. Preferences groups **Appearance**, **Field display**, **Editing** and **Shortcuts**, with dark, light and high-contrast themes. Display and layout choices leave drill geometry unchanged. See the [workspace guide](docs/WORKSPACE_LAYOUT.md).
+The window is built around the field. A top bar holds the project, the three modes (**Write**, **Plan** and **Rehearse**), undo, problems and command search. One tool strip above the field holds the pointer tools, the shapes (Line, Arc, Circle, Block, Wave), the arrangers (Align, Rotate, Mirror, Place) and the Motion menu; while a preview is open the strip shows what is being previewed with Cancel and Apply. The side panel shows the sections, the selection in drill terms (coordinate, size in steps, counts, travel and step size) and the current set, or the Cast list. Below the field are the transport, a count timeline with problem markers, and every set as a thumbnail. Any command is one search away with `Ctrl/⌘ K`.
+
+The layout adapts to window size and UI scale: tool groups fold into Shape and Arrange menus, the side panel opens over the field, and playback options move into **More playback options**. Preferences groups **Appearance**, **Field display**, **Editing** and **Shortcuts**, with dark, light and high-contrast themes. Display and layout choices leave drill geometry unchanged. The [design system](docs/DESIGN_SYSTEM.md) describes the shell, tokens and shared controls.
 
 ## Shape the movement
 
@@ -35,7 +37,7 @@ Pause at an arrival set and select one performer to **Edit performer path**. Ref
 | Build on your work | Current tools |
 | --- | --- |
 | Keep formations editable | [Live formations](docs/live-formations.md) retain shape parameters and member slots. Refine [Bézier curves and waves](docs/bezier-formations.md) or preview [seeded scatter](docs/scatter-formations.md) with spacing constraints. |
-| Arrange your tools | Switch Field, Design, Production or Rehearse, and save named [personal workspaces](docs/WORKSPACES.md). |
+| Arrange your tools | Switch Write, Plan or Rehearse, and save named [personal workspaces](docs/WORKSPACES.md) from the Project menu. |
 | Reuse a starting point | Save anonymous ensemble setups and formation presets in a [personal template library](docs/template-library.md), then preview placement on the current cast. |
 | Compare destinations | [Optimize assignment](docs/assignment-optimization.md) compares travel and movement checks while respecting pins, section slots and explicit role constraints. |
 | Control ensemble travel | Review [formation transitions](docs/formation-transitions.md), or use [shared routes](docs/shared-routes.md) for [follow-the-leader, counter-march and conveyor movement](docs/group-movement.md). Preview connectors, count ticks and spacing/stride findings before committing. |
@@ -48,13 +50,13 @@ Edit set names, counts, tempos and notes in the **Production sheet**. Navigate c
 
 ![Tether's editable Production sheet, showing the opening rows of its 67-set show with multiline notes, incoming counts, base tempos, readable meters and rehearsal marks](docs/images/production-sheet.png)
 
-Use the [compact set list](docs/set-list.md) to search by number or name, reorder by drag or direct position, and enable thumbnails when useful. The [Production sheet guide](docs/production-sheet.md) and [Score map guide](docs/score-map.md) explain editing and timing rules.
+Use the set strip to move between sets and reorder them by drag, and the set finder in the transport to search by number or name. The [Production sheet guide](docs/production-sheet.md) and [Score map guide](docs/score-map.md) explain editing and timing rules.
 
 ## Rehearse and review
 
 Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras, or open it in a separate [3D window](docs/USER_GUIDE.md#3d-window) that follows the editor, for example on a second display. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in. Use [recording anchors](docs/audio-alignment.md) to align set arrivals and individual counts to variable-tempo recordings, with waveform/tap assistance and an undoable preview.
 
-![Squidware's live 3D preview of Tether's Accretion disc set, with 165 section-colored performer markers, perspective camera controls and the shared show timeline in the Rehearse layout](docs/images/rehearsal-3d.png)
+![Squidware's live 3D preview of Tether's Accretion disc set, with 165 section-colored performer markers, camera controls and the shared show timeline in Rehearse mode](docs/images/rehearsal-3d.png)
 
 [Show-wide problems](docs/show-wide-problems.md) flag minimum spacing and excessive stride and take you to the affected count and performers. Timeline markers group nearby findings so you can review them from the affected move. [Production, section and direction rules](docs/analysis-rules.md) travel with the project. Checks describe performer-center geometry; review physical clearance and traffic separately.
 
@@ -101,9 +103,9 @@ pnpm start
 
 ## Your first rehearsal
 
-1. Explore the demo, choose a set, and select a section from the field legend.
-2. Move the selection or preview a formation. Apply it, then use Undo to compare. Keep a formation editable to refine it later.
-3. Add a New, Duplicate, Insert before or Hold set. Set its incoming counts, tempo and rehearsal notes.
+1. Start a new production from the welcome screen (pick an ensemble size and you are on the field), or explore the demo. Choose a set and click a section in the side panel.
+2. Drag the selection, or click a shape such as Arc to preview a formation. Apply it, then use Undo to compare. Keep it as a live formation to refine it later.
+3. Choose **Add set** at the end of the set strip: a new picture, a duplicate, an insert or a hold. Set its counts, tempo and rehearsal notes.
 4. Select one performer at an arrival set to preview a travel-path edit. Review flagged transitions, attach audio, then play or scrub in 2D or 3D.
 5. Save the editable project and export field charts, performer sheets or a portable audio package.
 
@@ -148,7 +150,9 @@ Squidware uses Electron, React, TypeScript and Three.js. Geometry, timing and va
 
 | Path | Responsibility |
 | --- | --- |
-| `src/editor/` | Editor state, commands, workspaces, playback and file sessions |
+| `src/ui/` | Design tokens, shared controls, dialogs, menus and icons ([design system](docs/DESIGN_SYSTEM.md)) |
+| `src/shell/` | The application shell: top bar, tool strip, side panel, show strip and welcome |
+| `src/editor/` | Editor state, commands, feature panels, playback and file sessions |
 | `src/domain.ts` | Geometry, timeline, validation and data exchange |
 | `src/components/` | Interactive 2D field, Three.js rehearsal scene and print output |
 | `electron/` | Isolated native window, file dialogs, atomic saves, packages and recovery |

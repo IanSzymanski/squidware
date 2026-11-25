@@ -16,7 +16,7 @@ import { FieldViewports } from './FieldViewports';
 import { Mirrored3D } from './Mirrored3D';
 import { moveDrafts, useFieldScene } from './mirroredScene';
 import { Popout3DPlaceholder } from './Popout3D';
-import { neighborOverlays } from '../neighborPaths';
+import { neighborOverlays, STRIDE_COLORS } from '../neighborPaths';
 import { formatTransportCount } from './timelineNavigation';
 import { DEFAULT_SNAPPING, fieldSnapStatus } from '../snapping';
 import type { PathOperationsSession } from './usePathOperations';
@@ -110,6 +110,7 @@ export function EditorField({ controller, children }: { controller: EditorContro
                   <svg width="32" height="14" viewBox="0 0 32 14" aria-hidden="true"><path d="M 1 7 H 30" />{neighbor.direction === 'previous' ? <circle cx="8" cy="7" r="4" /> : <path className="neighbor-legend__dot" d="M 8 2 L 13 7 L 8 12 L 3 7 Z" />}</svg>
                   {neighbor.direction === 'previous' ? 'From' : 'To'} set {neighbor.setIndex + 1} · {neighbor.setName}
                 </span>)}
+                {(['large', 'over'] as const).map(level => { const count = neighbors.reduce((n, neighbor) => n + neighbor.paths.filter(path => path.level === level).length, 0); return count > 0 && <span key={level} className="neighbor-legend__stride" style={{ color: STRIDE_COLORS[level] }}><i />{count} {level === 'over' ? 'over the stride limit' : count === 1 ? 'big step' : 'big steps'}</span>; })}
                 <span className="neighbor-legend__scope">{!neighbors.length ? 'No performers match this review scope.' : <>{neighbors[0].paths.length} {selectedIds.length ? 'selected' : 'performers'}{controller.sectionFilter !== 'all' ? ` · ${project.sections.find(section => section.id === controller.sectionFilter)?.name ?? 'Section filter'}` : ''}</>}</span>
               </div>}
               {hasField && <ProblemFieldStatus />}

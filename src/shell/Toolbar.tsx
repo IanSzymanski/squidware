@@ -105,10 +105,10 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   const shapes = ([['line', 'Line', <LineIcon size={20} />], ['arc', 'Arc', <ArcIcon size={20} />], ['circle', 'Circle', <CircleIcon size={20} />], ['block', 'Block', <BlockIcon size={20} />], ['curve', 'Wave', <WaveIcon size={20} />]] as const)
     .map(([kind, label, icon]) => ({ kind, icon, action: action('formation.preview', { kind }, label, `${label} formation`) }));
   const bezier = action('formation.bezier', { wave: false }, 'Bézier curve'), bezierWave = action('formation.bezier', { wave: true }, 'Bézier wave'), scatter = action('formation.scatter', undefined, 'Scatter…');
-  const saved = action('templates.open', undefined, 'Saved formations…');
-  const align = action('spacing.preview', undefined, 'Align', 'Align and space');
-  const rotate = action('transform.preview', {}, 'Rotate', 'Rotate and scale');
-  const mirror = action('transform.preview', { operation: 'across-50' }, 'Mirror', 'Mirror across the 50');
+  const saved = action('templates.open', undefined, 'Browse saved formations');
+  const align = action('spacing.preview', undefined, 'Align', 'Align selection');
+  const rotate = action('transform.preview', {}, 'Rotate', 'Rotate selection');
+  const mirror = action('transform.preview', { operation: 'across-50' }, 'Mirror', 'Mirror selection');
   const mirrorFrontBack = action('transform.preview', { operation: 'front-back' }, 'Mirror front / back');
   const place = action('coordinates.preview', {}, 'Place', 'Enter coordinates');
   const staging = action('staging.open', undefined, 'Props', 'Staging props');
@@ -129,7 +129,7 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
       return { key: group.id, label: group.name, icon: <Users size={15} />, hint: String(group.performerIds.length), disabled: !!a.disabledReason, disabledReason: a.disabledReason ?? undefined, onSelect: () => run(a) };
     })] : []),
     { type: 'separator' },
-    item(action('selection.tools', undefined), <SlidersHorizontal size={15} />, { label: 'Rank, file and saved groups…', description: 'Select a rank or file, type a lasso, and save named groups.' }),
+    item(action('selection.tools', undefined), <SlidersHorizontal size={15} />, { label: 'Selection tools and groups', description: 'Select a rank or file, type a lasso, and save named groups.' }),
   ];
   const moreShapes: MenuEntry[] = [
     item(bezier, <BezierIcon size={16} />), item(bezierWave, <WaveIcon size={16} />), item(scatter, <ScatterIcon size={16} />),
@@ -142,22 +142,22 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   ];
   const motionMenu: MenuEntry[] = [
     { type: 'heading', label: 'One performer' },
-    item(action('path.open', undefined), <Waypoints size={15} />, { label: 'Edit travel path…' }),
-    item(action('path.draw-open', undefined), <Pencil size={15} />, { label: 'Draw travel path' }),
-    item(action('schedule.open', undefined), <Clock3 size={15} />, { label: 'Movement timing' }),
+    item(action('path.open', undefined), <Waypoints size={15} />, { label: 'Edit performer path', description: 'Curve one performer’s travel into this set with handles on the field.' }),
+    item(action('path.draw-open', undefined), <Pencil size={15} />, { label: 'Draw performer path', description: 'Sketch one performer’s travel into this set on the field.' }),
+    item(action('schedule.open', undefined), <Clock3 size={15} />, { label: 'Edit movement timing', description: 'Give one performer holds and timed stages within the move.' }),
     { type: 'heading', label: 'Groups' },
-    item(action('group.open', {}), <Users size={15} />, { label: 'Follow, counter-march, conveyor…' }),
-    ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, label: `Edit “${group.name}”` })),
-    item(action('transition.open', undefined), <Waypoints size={15} />, { label: 'Formation transition…' }),
-    item(action('routes.open', undefined), <Route size={15} />, { label: 'Shared routes' }),
+    item(action('group.open', {}), <Users size={15} />, { label: 'Group route movement', description: 'Follow the leader, counter-march or conveyor along a shared route.' }),
+    ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, label: `Edit group ${group.name}` })),
+    item(action('transition.open', undefined), <Waypoints size={15} />, { label: 'Formation transition', description: 'Morph one live formation into another with shared timing and checks.' }),
+    item(action('routes.open', undefined), <Route size={15} />, { label: 'Shared routes', description: 'Draw reusable routes that group movements travel along.' }),
     { type: 'heading', label: 'This move' },
-    item(action('path.operations-open', undefined), <SlidersHorizontal size={15} />, { label: 'Resize, reverse or copy timing' }),
-    item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition…' }),
-    item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues…' }),
+    item(action('path.operations-open', undefined), <SlidersHorizontal size={15} />, { label: 'Move operations', description: 'Resize the move’s counts, reverse it, or copy its intervals.' }),
+    item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition' }),
+    item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues' }),
   ];
   const shapeMenu: MenuEntry[] = [...shapes.map(shape => item(shape.action, shape.icon, { key: shape.action.key })), ...moreShapes];
   const arrangeMenu: MenuEntry[] = [
-    item(align, <AlignHorizontalJustifyCenter size={15} />, { label: 'Align and space' }), item(rotate, <RotateCw size={15} />, { label: 'Rotate and scale' }),
+    item(align, <AlignHorizontalJustifyCenter size={15} />, { label: 'Align selection' }), item(rotate, <RotateCw size={15} />, { label: 'Rotate selection' }),
     item(mirror, <FlipHorizontal2 size={15} />, { label: 'Mirror across the 50' }), item(mirrorFrontBack, <FlipHorizontal2 size={15} style={{ transform: 'rotate(90deg)' }} />),
     item(place, <MapPin size={15} />, { label: 'Enter coordinates' }),
   ];
@@ -212,8 +212,8 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
   const setLabels = (next: 'all' | 'selected' | 'hidden') => { c.setShowLabels(next !== 'hidden'); c.setSelectionLabelsOnly(next === 'selected'); };
   const paths = action('display.paths', undefined), nextPaths = action('display.next-paths', undefined);
   const pathsMenu: MenuEntry[] = [
-    item(paths, <PathsFromIcon size={16} />, { label: 'From the previous set', checked: c.showPaths, keepOpen: true, description: 'Show how performers travel into this set.' }),
-    item(nextPaths, <PathsToIcon size={16} />, { label: 'To the next set', checked: c.showNextPaths, keepOpen: true, description: 'Show how performers travel out of this set.' }),
+    item(paths, <PathsFromIcon size={16} />, { label: 'Show paths from previous set', checked: c.showPaths, keepOpen: true, description: 'Show how performers travel into this set.' }),
+    item(nextPaths, <PathsToIcon size={16} />, { label: 'Show paths to next set', checked: c.showNextPaths, keepOpen: true, description: 'Show how performers travel out of this set.' }),
   ];
   const viewMenu: MenuEntry[] = [
     { type: 'heading', label: 'Performer labels' },
@@ -221,11 +221,11 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
     { label: 'Selected only', icon: <Tags size={15} />, checked: labelsState === 'selected', keepOpen: true, onSelect: () => setLabels('selected') },
     { label: 'Hide labels', icon: <Tags size={15} />, checked: labelsState === 'hidden', keepOpen: true, onSelect: () => setLabels('hidden') },
     { type: 'heading', label: 'Grid' },
-    item(action('display.grid', undefined), <Grid3X3 size={15} />, { label: 'Show the step grid', checked: c.showGrid, keepOpen: true }),
+    item(action('display.grid', undefined), <Grid3X3 size={15} />, { label: 'Show field grid', checked: c.showGrid, keepOpen: true }),
     item(action('display.snap', undefined), <Magnet size={15} />, { label: 'Snap to grid', checked: c.snap, keepOpen: true }),
-    item(action('dialog.open', { dialog: 'snapping' }), <SlidersHorizontal size={15} />, { label: 'Grid and snapping…', command: undefined, description: 'Choose the step grid and what direct edits snap to.' }),
+    item(action('dialog.open', { dialog: 'snapping' }), <SlidersHorizontal size={15} />, { label: 'Grid and snapping', command: undefined, description: 'Choose the step grid and what direct edits snap to.' }),
     { type: 'heading', label: 'Window' },
-    item(action('layout.focus', undefined), <Focus size={15} />, { label: layout.focusMode ? 'Exit focus' : 'Focus on the field', checked: layout.focusMode }),
+    item(action('layout.focus', undefined), <Focus size={15} />, { label: layout.focusMode ? 'Exit focus' : 'Focus field', checked: layout.focusMode }),
     { label: 'Workspaces…', icon: <LayoutPanelLeft size={15} />, description: 'Switch, save, rename or reset arrangements of the window on this device.', onSelect: onWorkspaces },
   ];
   return <div className="canvas-view" role="toolbar" aria-label="View">

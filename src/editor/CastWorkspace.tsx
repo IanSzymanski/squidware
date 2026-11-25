@@ -122,9 +122,9 @@ export function CastWorkspace({ controller, docked = false }: { controller: Edit
       {!docked && <HelpButton title="Import roster CSV" description="Import performer labels, names and sections from a CSV file." className="button subtle" disabled={locked} disabledReason={lockReason} onClick={() => rosterInput.current?.click()}><FolderOpen size={15} />Import CSV</HelpButton>}
       <Button command="performers.remove" title="Remove selected performers" disabledReason={locked ? lockReason : 'Select performers before removing them from the show.'} onClick={() => setDialog('remove-cast')} disabled={!selectedIds.length || locked}><Trash2 size={15} /></Button>
       {docked && <Menu label="More Cast actions" description="Import a roster, open the full table, or select by rank, file and saved group." className="icon-button" align="end" items={[
-        { label: 'Import roster CSV…', icon: <FolderOpen size={15} />, description: 'Import performer labels, names and sections from a CSV file.', disabled: locked, disabledReason: lockReason, onSelect: () => rosterInput.current?.click() },
-        { label: 'Full Cast table…', icon: <List size={15} />, description: 'Review and edit the whole roster in a table.', onSelect: () => controller.showCast('table') },
-        { label: 'Rank, file and saved groups…', icon: <ListFilter size={15} />, command: 'selection.tools', onSelect: () => { controller.dispatch('selection.tools'); } },
+        { label: 'Import roster CSV', icon: <FolderOpen size={15} />, description: 'Import performer labels, names and sections from a CSV file.', disabled: locked, disabledReason: lockReason, onSelect: () => rosterInput.current?.click() },
+        { label: 'Full Cast table', icon: <List size={15} />, description: 'Review and edit the whole roster in a table.', onSelect: () => controller.showCast('table') },
+        { label: 'Selection tools and groups', icon: <ListFilter size={15} />, command: 'selection.tools', onSelect: () => { controller.dispatch('selection.tools'); } },
       ]}><MoreHorizontal size={15} /></Menu>}
       </div>
     </div>

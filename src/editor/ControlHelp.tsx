@@ -1,5 +1,5 @@
 import { duringSpatialEditor, isDockedSpatialEditor } from './movementEditor';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { Tooltip, Keycaps } from '../components/Tooltip';
 import { commandRegistry } from './commands';
 import type { CommandId } from './commands';
@@ -18,7 +18,7 @@ export interface ControlHelpProps {
   pointerPassThrough?: boolean;
 }
 
-export function HelpButton({ title, description, command, shortcutVariant, showShortcut = true, active, state, disabledReason, pointerPassThrough, disabled, children, onClick, ...props }: ControlHelpProps & ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+export function HelpButton({ title, description, command, shortcutVariant, showShortcut = true, active, state, disabledReason, pointerPassThrough, disabled, children, onClick, ...props }: ControlHelpProps & ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode; ref?: Ref<HTMLButtonElement> }) {
   const spatialLocked = useEditorSelector(state => !!command && isDockedSpatialEditor(state.ui.dialog) && !duringSpatialEditor(command, state.ui.dialog));
   disabled = disabled || spatialLocked;
   if (spatialLocked) disabledReason = 'Apply or cancel spatial editing first.';

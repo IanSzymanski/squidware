@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { selectionMembership } from '../selection';
 import type { Point, Project } from '../types';
-import type { NeighborOverlay, NeighborPath } from '../neighborPaths';
+import { STRIDE_COLORS, type NeighborOverlay, type NeighborPath } from '../neighborPaths';
 import type { SelectionReview } from '../selectionTools';
 import type { FieldPresentation } from './fieldPresentation';
 import { fieldViewPoint, type FieldOrientation } from './fieldOrientation';
@@ -59,9 +59,10 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
       if (orientation === 'audience-top') { context.translate(project.field.width, project.field.height); context.rotate(Math.PI); }
       for (const overlay of neighbors ?? []) {
         const incoming = overlay.direction === 'previous';
-        context.strokeStyle = incoming ? '#b9e3f4' : '#f1d39a'; context.lineWidth = 1.5 / scale;
+        const base = incoming ? '#b9e3f4' : '#f1d39a'; context.lineWidth = 1.5 / scale;
         context.lineCap = 'round';
         for (const path of overlay.paths) {
+          context.strokeStyle = path.level === 'ok' ? base : STRIDE_COLORS[path.level]; context.lineWidth = 1.5 / scale;
           if (path.moving) {
             let cached = paths.current.get(path);
             if (!cached) {

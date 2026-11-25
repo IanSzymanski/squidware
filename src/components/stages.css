@@ -51,6 +51,7 @@
 .neighbor-legend [data-neighbor-legend=next] { color: #f1d39a; }
 .neighbor-legend [data-neighbor-legend=next] svg > path:first-child { stroke-dasharray: 1 4; stroke-linecap: round; }
 .neighbor-legend__scope { color: var(--field-chip-muted); }
+.neighbor-legend__stride i { width: 14px; height: 2px; border-radius: 1px; background: currentColor; }
 .field-container:has(.field-stage--moving) .neighbor-legend { display: none; }
 .field-container:has(.transform-preview-banner--error) .neighbor-legend { top: 54px; }
 .problem-field-status {

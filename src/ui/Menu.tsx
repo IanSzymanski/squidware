@@ -40,6 +40,9 @@ export function Menu({ label, description, items, children, className = 'icon-bu
   const keyboard = useRef(false);
   const id = useId();
   const entries = items.filter(Boolean) as MenuEntry[];
+  // A menu opened from a dialog must live inside it, in the top layer.
+  const [host, setHost] = useState<Element>(() => document.body);
+  useLayoutEffect(() => { setHost(trigger.current?.closest('dialog') ?? document.body); }, []);
 
   const close = (restoreFocus = true) => { setOpen(false); if (restoreFocus) trigger.current?.focus({ preventScroll: true }); };
 
@@ -89,14 +92,15 @@ export function Menu({ label, description, items, children, className = 'icon-bu
 
   return <>
     <HelpButton pointerPassThrough title={label} description={description ?? label} className={`${className}${open ? ' active' : ''}`}
-      aria-haspopup="menu" aria-expanded={open} aria-controls={open ? id : undefined} aria-pressed={active} tabIndex={tabIndex}
-      disabled={disabled} disabledReason={disabledReason} data-menu-trigger=""
+      aria-haspopup="menu" aria-expanded={open} aria-controls={id} aria-pressed={active} tabIndex={tabIndex}
+      disabled={disabled} disabledReason={disabledReason} data-menu-trigger="" ref={(node: HTMLButtonElement | null) => { if (node) trigger.current = node; }}
       onKeyDown={event => {
         if (event.key === 'ArrowDown' && !open && !disabled) { event.preventDefault(); event.stopPropagation(); trigger.current = event.currentTarget; keyboard.current = true; setOpen(true); }
         if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
       }}
       onClick={event => { trigger.current = event.currentTarget; keyboard.current = event.detail === 0; setOpen(!open); }}>{children}</HelpButton>
-    {open && createPortal(<div ref={panel} id={id} role="menu" aria-label={label} tabIndex={-1} className="popover menu" data-escape-scope="" onKeyDown={keyDown}>
+    {/* The menu stays mounted while closed (hidden and inert), so its actions keep one place in the document. */}
+    {createPortal(<div ref={panel} id={id} role="menu" aria-label={label} tabIndex={-1} className="popover menu" hidden={!open} inert={!open} data-escape-scope={open ? '' : undefined} onKeyDown={keyDown}>
       {entries.map((entry, index) => {
         if (entry.type === 'separator') return <div key={index} className="menu-separator" role="separator" />;
         if (entry.type === 'heading') return <div key={index} className="menu-heading">{entry.label}</div>;
@@ -117,6 +121,6 @@ export function Menu({ label, description, items, children, className = 'icon-bu
           {entry.checked !== undefined && <span className="menu-item-check">{entry.checked && <Check size={14} />}</span>}
         </HelpButton>;
       })}
-    </div>, trigger.current?.closest('dialog') ?? document.body)}
+    </div>, host)}
   </>;
 }
