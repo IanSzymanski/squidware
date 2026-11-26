@@ -18,7 +18,8 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
   const nav = useRef<HTMLDivElement>(null); const jumped = useRef(-1); const uid = useId();
   // Every group stays mounted (the close guard and number drafts need all fields); the nav only scrolls.
   useEffect(() => {
-    const bar = nav.current, dialog = bar?.closest('dialog'); if (!bar || !dialog) return;
+    // The dialog's body scrolls, not the dialog: follow, pad and reset that element.
+    const bar = nav.current, dialog = bar?.closest<HTMLElement>('.modal-body') ?? bar?.closest('dialog'); if (!bar || !dialog) return;
     const follow = () => {
       const tops = preferencesSections.map(({ id }) => document.getElementById(uid + id)?.getBoundingClientRect().top ?? Infinity);
       const index = preferencesSectionAt(tops, bar.getBoundingClientRect().bottom, dialog.getBoundingClientRect().bottom, dialog.scrollTop > 0 && dialog.scrollTop + dialog.clientHeight >= dialog.scrollHeight - 2, jumped.current);
@@ -36,7 +37,7 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
     jumped.current = index; setCurrent(preferencesSections[index].id);
     // Jumping to a group that is a single collapsed disclosure (Keyboard shortcuts) opens it.
     if (heading.nextElementSibling instanceof HTMLDetailsElement) heading.nextElementSibling.open = true;
-    if (index) heading.scrollIntoView({ block: 'start' }); else heading.closest('dialog')?.scrollTo({ top: 0 });
+    if (index) heading.scrollIntoView({ block: 'start' }); else (heading.closest('.modal-body') ?? heading.closest('dialog'))?.scrollTo({ top: 0 });
     heading.focus({ preventScroll: true });
   }
   const section = (index: number, children: ReactNode) => { const { id, title } = preferencesSections[index]; return <section className="preferences-section" aria-labelledby={uid + id}><h3 id={uid + id} tabIndex={-1}>{title}</h3>{children}</section>; };
