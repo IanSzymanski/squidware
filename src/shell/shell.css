@@ -432,6 +432,8 @@
 [data-transport=narrow] .transport { gap: 6px; padding: 0 8px; }
 /* In a narrower transport the audio control is its icon, and the narrowest gives the room to playback itself. */
 :is([data-transport=compact], [data-transport=narrow]) .audio-file-label { display: none; }
+/* Folded into the overflow menu, the audio control is a row like the others and keeps its words. */
+:is([data-transport=compact], [data-transport=narrow]) .overflow-menu-panel .audio-file-label { display: inline; }
 :is([data-transport=compact], [data-transport=narrow]) .audio-attach { padding: 0 7px; margin-right: 0; }
 [data-transport=compact] .transport { gap: var(--space-2); }
 [data-transport=narrow] :is(.strip-toggle, .play-controls .divider-vertical, .transport-options .divider-vertical, .set-jump > svg) { display: none; }
