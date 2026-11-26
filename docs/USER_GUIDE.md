@@ -176,7 +176,7 @@ The audio follows the show timeline and playback-speed setting. Recordings are l
 
 ## 3D rehearsal
 
-Select **3D** in the view control over the field, or switch to **Rehearse** mode, to see the same positions and playback on a textured field. Select **Split** to edit the 2D chart beside a live 3D preview; the chart starts with the larger share and the divider changes it. Drag to orbit, right-drag to pan, and scroll to zoom. In 3D the tool strip shows the **Camera** buttons (**Perspective**, **Front**, **Press box** and **Overhead**), which reset the camera to views that frame the field, with **Passages**, **Problems** and **Record video** beside them. The small podium identifies the front sideline.
+Select **3D** in the view control over the field, or switch to **Rehearse** mode, to see the same positions and playback on a textured field. Select **Split** to edit the 2D chart above a live 3D preview, which runs under it as a wide strip; the chart starts with the larger share and the divider changes it. Drag to orbit, right-drag to pan, and scroll to zoom. In 3D the tool strip shows the **Camera** buttons (**Perspective**, **Front**, **Press box** and **Overhead**), which reset the camera to views that frame the field, with **Passages**, **Problems** and **Record video** beside them. The small podium identifies the front sideline.
 
 Click a performer to select them; Shift-click modifies the selection. Selection appears as a ground ring. Use the 2D field or Inspector to edit positions.
 
