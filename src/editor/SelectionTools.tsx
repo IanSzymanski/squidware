@@ -42,8 +42,10 @@ export function revealFocusedChip(event: FocusEvent<HTMLElement>) {
 export function SectionSelectionButton({ section, controller }: { section: Section; controller: EditorController }) {
   const shift = useRef(false), ids = controller.sectionMembers.get(section.id) ?? [];
   const selected = ids.length > 0 && ids.every(id => controller.selectedSet.has(id));
+  // Some of the section is selected: its chip still shows where the selection lives.
+  const partial = !selected && ids.some(id => controller.selectedSet.has(id));
   const enabled = useEditorSelector(canSelectSection);
-  return <HelpButton pointerPassThrough command="selection.section" title={`Select all ${section.name}`} description={`Select ${ids.length} performers in the whole section. Shift-click or Shift-Enter adds them. Cast filters do not limit section buttons.`} active={selected} state={selected ? 'Selected' : 'Not selected'} disabled={!enabled} disabledReason="Finish the current gesture or selection review first." className={selected ? 'selected' : ''}
+  return <HelpButton pointerPassThrough command="selection.section" title={`Select all ${section.name}`} description={`Select ${ids.length} performers in the whole section. Shift-click or Shift-Enter adds them. Cast filters do not limit section buttons.`} active={selected} state={selected ? 'Selected' : 'Not selected'} disabled={!enabled} disabledReason="Finish the current gesture or selection review first." className={selected ? 'selected' : partial ? 'partial' : ''}
     onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') shift.current = event.shiftKey; }}
     onClick={event => { controller.dispatch('selection.section', { id: section.id, additive: event.detail === 0 ? shift.current || event.shiftKey : event.shiftKey }); shift.current = false; }}><i style={{ background: section.color }} />{section.name}<span>{ids.length}</span></HelpButton>;
 }

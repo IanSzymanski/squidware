@@ -20,7 +20,7 @@ import { coordinateDescription } from '../domain';
 import { FieldReadout } from './FieldReadout';
 import { FIELD_KEYS, nextFieldFocus } from './fieldKeyboard';
 import type { FieldKey } from './fieldKeyboard';
-import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, nearestFieldDots } from './fieldPresentation';
+import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, labelLeader, nearestFieldDots } from './fieldPresentation';
 import type { FieldPresentation, HitCycle, ScreenBox } from './fieldPresentation';
 import './stages.css';
 import { NeighborDrawing } from './NeighborDrawing';
@@ -53,12 +53,14 @@ interface DrawingProps {
   deferMotion?: boolean;
 }
 
-function CustomFieldMarkings({ field, showGrid, flipped, snapping }: { field: CustomSurface; showGrid: boolean; flipped: boolean; snapping: NonNullable<Project['snapping']> }) {
+function CustomFieldMarkings({ field, showGrid, flipped, snapping, gridScale }: { field: CustomSurface; showGrid: boolean; flipped: boolean; snapping: NonNullable<Project['snapping']>; gridScale?: number }) {
   const { width, height, background } = field;
   const x = surfaceReferences(field, 'x');
   const y = surfaceReferences(field, 'y');
-  const step = gridInterval(snapping);
+  const step = gridInterval(snapping) * gridStride(gridInterval(snapping), gridScale);
   const minorGrid = showGrid && snapping.target === 'grid';
+  // On screen the floor speaks as quietly as the football field does; print and export keep their stronger ink.
+  const screen = gridScale !== undefined;
   const line = (coordinate: number, axis: 'x' | 'y') => axis === 'x'
     ? <line key={coordinate} x1={coordinate} x2={coordinate} y2={height} />
     : <line key={coordinate} y1={coordinate} y2={coordinate} x2={width} />;
@@ -67,30 +69,41 @@ function CustomFieldMarkings({ field, showGrid, flipped, snapping }: { field: Cu
   return <g data-field-markings="true" aria-hidden="true">
     <rect data-field-surface="true" width={width} height={height} fill={field.preset === 'indoor' ? '#343139' : '#292f3a'} />
     {background && <image href={background.image} x={background.x} y={background.y} width={background.width} height={background.height} preserveAspectRatio="none" />}
-    {minorGrid && <g stroke="#dae0e8" strokeWidth=".035" opacity=".25">
+    {minorGrid && <g stroke="#dae0e8" strokeWidth=".035" opacity={screen ? .13 : .25}>
       {Array.from({ length: Math.floor(width / step) }, (_, i) => line((i + 1) * step, 'x'))}
       {Array.from({ length: Math.floor(height / step) }, (_, i) => line((i + 1) * step, 'y'))}
     </g>}
-    <g stroke="#e7edf5" strokeWidth=".09" opacity=".48" strokeDasharray=".35 .2">
+    <g stroke="#e7edf5" strokeWidth={screen ? .06 : .09} opacity={screen ? .3 : .48} strokeDasharray=".35 .2">
       {x.slice(1, -1).map(value => line(value, 'x'))}
       {y.slice(1, -1).map(value => line(value, 'y'))}
     </g>
-    <rect width={width} height={height} fill="none" stroke="#ced8e4" strokeWidth=".15" />
-    <path d={`M0,${mark}V0H${mark}`} fill="none" stroke="#fff" strokeWidth=".2" />
-    <g fill="#e0e7ef" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark} textAnchor="middle">
-      {label('0, 0', 0, -mark * 1.1)}
-      {label('AUDIENCE EDGE', width / 2, height + mark * 1.65)}
-    </g>
+    <rect width={width} height={height} fill="none" stroke="#ced8e4" strokeWidth={screen ? .1 : .15} strokeOpacity={screen ? .7 : 1} />
+    <path d={`M0,${mark}V0H${mark}`} fill="none" stroke="#fff" strokeWidth={screen ? .12 : .2} strokeOpacity={screen ? .8 : 1} />
+    {screen
+      ? <g className="field-captions" fill="#aeb8c4" opacity=".7" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark * .56} letterSpacing={mark * .18} textAnchor="middle">
+        {label('ORIGIN', mark * 1.6, -mark * .55)}
+        {label('AUDIENCE EDGE', width / 2, height + mark * 1.05)}
+      </g>
+      : <g fill="#e0e7ef" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark} textAnchor="middle">
+        {label('0, 0', 0, -mark * 1.1)}
+        {label('AUDIENCE EDGE', width / 2, height + mark * 1.65)}
+      </g>}
   </g>;
 }
 
-export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping'] }) {
-  const { width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING } = props;
-  if (isCustomSurface(props)) return <CustomFieldMarkings field={props} showGrid={showGrid} flipped={flipped} snapping={snapping} />;
+/** The coarsest whole multiple of the grid that keeps drawn lines at least this many pixels apart on screen. */
+const GRID_MIN_PITCH_PX = 6;
+const gridStride = (interval: number, scale?: number) => scale ? [1, 2, 4, 8, 16].find(stride => interval * stride * scale >= GRID_MIN_PITCH_PX) ?? 16 : 1;
+
+export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping']; /** Screen pixels per yard; the grid thins out when its lines would crowd into texture. Print and export draw every line. */ gridScale?: number }) {
+  const { width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING, gridScale } = props;
+  if (isCustomSurface(props)) return <CustomFieldMarkings field={props} showGrid={showGrid} flipped={flipped} snapping={snapping} gridScale={gridScale} />;
 
   const hashInset = preset === 'college' ? 20 : height / 3;
   const interval = snapping.target === 'grid' ? gridInterval(snapping) : 5;
-  const gridY = snapping.target === 'grid' ? Array.from({ length: Math.floor(height / interval) + 1 }, (_, i) => i * interval) : hashLines(props);
+  // Snapping still uses every grid point; only the drawing thins out.
+  const stride = snapping.target === 'grid' ? gridStride(interval, gridScale) : 1, drawn = interval * stride;
+  const gridY = snapping.target === 'grid' ? Array.from({ length: Math.floor(height / drawn) + 1 }, (_, i) => i * drawn) : hashLines(props);
   const yardLines = Array.from({ length: Math.floor(width / 5) + 1 }, (_, index) => index * 5);
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
   return <g data-field-markings="true" aria-hidden="true">
@@ -98,7 +111,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
     <rect data-field-surface="true" width={width} height={height} fill="#233c31" />
     {yardLines.filter((_, i) => i % 2 === 0).map(x => <rect key={`stripe-${x}`} x={x} width={Math.min(5, width - x)} height={height} fill="#294438" opacity="0.5" />)}
     {showGrid && <g stroke="#a3c0a4" strokeWidth="0.045" opacity="0.2">
-      {Array.from({ length: Math.floor(width / interval) + 1 }, (_, i) => <line key={`gx-${i}`} x1={i * interval} x2={i * interval} y1={0} y2={height} />)}
+      {Array.from({ length: Math.floor(width / drawn) + 1 }, (_, i) => <line key={`gx-${i}`} x1={i * drawn} x2={i * drawn} y1={0} y2={height} />)}
       {gridY.map((y, i) => <line key={`gy-${i}`} x1={0} x2={width} y1={y} y2={y} />)}
     </g>}
     <g stroke="#ccdcc9" opacity="0.5" strokeWidth="0.14">
@@ -144,8 +157,13 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
   // Measure the actual font once per roster/font change; use conservative fallback during SSR.
   const labelWidths = useMemo(() => measureFieldLabels(project, display.labelSizePx), [project.performers, display.labelSizePx]);
   const labels = screen ? fieldLabels(project, positions, selected, keyboardFocusId, { ...display, labelMode: showLabels ? display.labelMode : 'none' }, screen, orientation, labelWidths) : null;
+  // The tie between a dot and a label placed away from its usual side, in the performer's own frame.
+  const leader = (at: Point, box: ScreenBox) => {
+    const line = labelLeader({ x: at.x * scale, y: at.y * scale }, box, display.dotRadiusPx);
+    return line && <line className="field-label-leader" x1={line.x1 / scale - at.x} y1={line.y1 / scale - at.y} x2={line.x2 / scale - at.x} y2={line.y2 / scale - at.y} stroke="#c3d0c4" strokeOpacity=".75" strokeWidth={1 / scale} pointerEvents="none" />;
+  };
   return <>
-    {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} />}
+    {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} gridScale={screen?.scale} />}
     <StagingFootprints objects={staging} />
     {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
@@ -167,7 +185,8 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
         {isSelected && <circle className={screen ? "field-selection-ring" : undefined} r={screen ? (display.dotRadiusPx + 3) / scale : .96} fill={`${color}22`} stroke="#ffffff" strokeWidth={screen ? 1.5 / scale : .16} pointerEvents="none" />}
         <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth={screen ? 1 / scale : .16} />
         <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity="0.3" pointerEvents="none" />
-        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
+        {showLabels && screen && label && leader(labelPoint, label) }
+        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} strokeLinejoin="round" paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
         </g>
       </g>;
     })}
@@ -253,15 +272,13 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const readoutId = useId();
   const keyboardHelpId = useId();
   const fieldHasFocus = useRef(false);
-  // A handle drag on the selection box runs a transform preview; the Rotate tool's own handles stay out of its way.
-  const [boxDrag, setBoxDrag] = useState(false);
   const [keyboardFocus, setKeyboardFocus] = useState(false);
   // Keyboard help is drawn only after a key press inside the field; pointer focus never shows it.
   const [keyboardHelp, setKeyboardHelp] = useState(false);
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const hitCycle = useRef<HitCycle | null>(null);
-  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode]);
+  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut]);
   const [canvasReady, setCanvasReady] = useState(false);
   const [screen, setScreen] = useState<DrawingProps['screen']>();
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
@@ -574,10 +591,12 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
     }
   }
 
+  // The static markings redraw only when zoom crosses a grid level, not on every zoom step: one representative scale per level.
+  const gridLevel = screen ? 2 ** (Math.round(Math.log2(screen.scale) * 4) / 4) : undefined;
   return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`} data-surface={project.field.preset}>
     <svg className="field-stage__background" viewBox={viewport} aria-hidden="true">
       <g transform={fieldViewTransform(project.field, orientation)}>
-        <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} />
+        <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} gridScale={gridLevel} />
         <StagingFootprints objects={staging} />
       </g>
     </svg>
@@ -595,9 +614,13 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
       {selectionPreview && <g opacity={canvasActive ? 0 : 1} aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
       {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && (formationPreview.session.scatter ? <ScatterFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : formationPreview.session.bezier ? <BezierFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />)}
-      {transformPreview && !boxDrag && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
-      {screen && selectionBox && (!readOnly || boxDrag) && tool === 'select' && selectedIds.length > 1 && !spatialPreview && !formationPreview && !spacingPreview && !coordinatePreview && !selectionPreview && (!transformPreview || boxDrag)
-        && <SelectionBox key={orientation} ids={selectedIds} positions={displayedPositions} box={selectionBox} preview={transformPreview} field={project.field} scale={screen.scale} flipped={orientation === 'audience-top'} radius={display.dotRadiusPx} onDragChange={setBoxDrag} />}
+      {/* One selected performer among many: a second ring, so the eye finds it at once. */}
+      {screen && selectedIds.length === 1 && displayedPositions[selectedIds[0]] && !spatialPreview && <circle className="field-single-halo" data-single-selection="" cx={displayedPositions[selectedIds[0]].x} cy={displayedPositions[selectedIds[0]].y}
+        r={(display.dotRadiusPx + 8) / screen.scale} fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth={1.5 / screen.scale} pointerEvents="none" />}
+      {transformPreview && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
+      {screen && selectionBox && !readOnly && tool === 'select' && selectedIds.length > 1 && !spatialPreview && !formationPreview && !spacingPreview && !coordinatePreview && !selectionPreview && !transformPreview
+        && <SelectionBox key={orientation} ids={selectedIds} positions={displayedPositions} original={positions} box={selectionBox} field={project.field} scale={screen.scale} flipped={orientation === 'audience-top'} radius={display.dotRadiusPx}
+          onPreview={updates => { setPreview(updates ?? {}); onMovePreview?.(updates); }} />}
       {coordinatePreview && <CoordinateGuides preview={coordinatePreview} scale={screen?.scale ?? 1} />}
       {spacingPreview && <SpacingGuides key={orientation} preview={spacingPreview} project={project} scale={screen?.scale ?? 1} flipped={orientation === 'audience-top'} />}
       {moving && Object.keys(preview).length > 0 && <g opacity={canvasActive ? 0 : 1} data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke="#fff" strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{!canvasActive && Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}

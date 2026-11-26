@@ -51,7 +51,9 @@ button:disabled, button[aria-disabled=true], .button:disabled, .button[aria-disa
 :is(button:disabled, button[aria-disabled=true]) > svg { opacity: .5; }
 :is(button:disabled, button[aria-disabled=true]) kbd { color: inherit; background: transparent; border-color: var(--border-strong); }
 .button:disabled:not(.subtle):not(.ghost), .button[aria-disabled=true]:not(.subtle):not(.ghost) { border-style: dashed; border-color: var(--border-strong); background: transparent; box-shadow: none; }
+/* A choice that is both made and locked keeps its pressed look: a solid accent edge, where the unavailable ones beside it are dashed. */
 :is(button:disabled, button[aria-disabled=true]):is(.active, [aria-pressed=true]) { background: var(--accent-soft); color: var(--text-secondary); }
+.button:is(:disabled, [aria-disabled=true]):is(.active, [aria-pressed=true]):not(.subtle):not(.ghost) { border-style: solid; border-color: var(--accent-line); box-shadow: inset 0 0 0 1px var(--accent-line); }
 .button[aria-disabled=true]:not(.primary):not(.danger):hover, .button:disabled:not(.primary):not(.danger):hover { background: var(--control); border-color: var(--border); }
 .button.subtle[aria-disabled=true]:hover, .button.subtle:disabled:hover, .icon-button[aria-disabled=true]:hover, .icon-button:disabled:hover { background: transparent; }
 .icon-button[aria-disabled=true]:hover, .icon-button:disabled:hover { color: var(--text-secondary); }

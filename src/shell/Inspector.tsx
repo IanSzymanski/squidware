@@ -1,5 +1,5 @@
-import { type ReactNode, useMemo } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2 } from 'lucide-react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronUp, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2 } from 'lucide-react';
 import { isCustomSurface, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import { nudgeLabel } from '../editIncrements';
 import { DEFAULT_SNAPPING, gridInterval, snapDescription } from '../snapping';
@@ -82,6 +82,11 @@ export function Inspector({ controller }: { controller: EditorController }) {
   }, [project, index, selectedPerformers, controller.coordinateFormat]);
 
   const check = useTransitionAnalysis(project, index, projectEpoch);
+  // Sections are for making a selection. Once there is one they fold to a row of colors, unless the writer opens them.
+  const [sectionsOpen, setSectionsOpen] = useState(false);
+  const nothingSelected = selectedIds.length === 0;
+  useEffect(() => { if (nothingSelected) setSectionsOpen(false); }, [nothingSelected]);
+  const compactSections = !nothingSelected && !sectionsOpen;
   const where = bounds ? coordinateDescription(selectedPerformers.length === 1 ? displayPositions[selectedPerformers[0].id] : { x: bounds.centerX, y: bounds.centerY }, project.field, controller.coordinateFormat).split('; ') : [];
   // "Side 2: 4 steps outside the 40" reads better with the side as the caption.
   const side = where.length ? /^(Side [12]): (.+)$/.exec(where[0]) : null;
@@ -124,8 +129,11 @@ export function Inspector({ controller }: { controller: EditorController }) {
           ? <HelpButton command="selection.clear" title="Clear selection" className="button small" onClick={() => setSelectedIds([])}>Clear</HelpButton>
           : <HelpButton command="selection.all" title="Select all for editing" className="button small" disabled={!project.performers.length} disabledReason="Add performers to the cast first." onClick={() => setSelectedIds(project.performers.map(p => p.id))}>Select all</HelpButton>}
       </div>
-      {!previewing && project.sections.length > 0 && <div className="field-legend section-chips" role="group" aria-label="Select a section">
-        {project.sections.map(section => <SectionSelectionButton section={section} controller={controller} key={section.id} />)}
+      {!previewing && project.sections.length > 0 && <div className={`section-legend${compactSections ? ' section-legend--compact' : ''}`}>
+        <div className="field-legend section-chips" role="group" aria-label="Select a section">
+          {project.sections.map(section => <SectionSelectionButton section={section} controller={controller} key={section.id} />)}
+        </div>
+        {selectedIds.length > 0 && <HelpButton pointerPassThrough title={compactSections ? 'Show section names' : 'Hide section names'} description="With a selection, the sections fold to their colors so the selection and the set have the panel. Each color still selects its section; Shift adds." className="icon-button section-legend-toggle" aria-expanded={!compactSections} onClick={() => setSectionsOpen(!sectionsOpen)}>{compactSections ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</HelpButton>}
       </div>}
     </div>
 

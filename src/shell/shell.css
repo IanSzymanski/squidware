@@ -61,9 +61,9 @@
   font-size: var(--text-sm); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .problem-count-badge:hover { background: var(--hover-bg); color: var(--text); }
-.problem-count-badge[data-state=clear] > svg { color: var(--success); }
-.problem-count-badge[data-state=found], .problem-count-badge[data-state=failed] { background: var(--warning-bg); color: var(--warning); font-weight: 600; }
-.problem-count-number:not(.sr-only) + .problem-count-words { margin-left: -2px; }
+.problem-count-badge[data-display=clear] > svg { color: var(--success); }
+.problem-count-badge[data-display=found], .problem-count-badge[data-display=failed] { background: var(--warning-bg); color: var(--warning); font-weight: 600; }
+.problem-count-shown + .problem-count-words { margin-left: -2px; }
 .recovery-indicator { appearance: none; display: inline-flex; align-items: center; gap: 5px; height: var(--control-sm); padding: 0 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
 .recovery-indicator:hover { color: var(--text); background: var(--hover-bg); }
 .recovery-indicator[data-state=routine] .recovery-indicator-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -184,6 +184,10 @@
   position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(50% - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--field-chip-muted); font-size: var(--text-xs); pointer-events: none; text-shadow: 0 1px 2px #000a;
 }
+/* While paths are shown, their legend takes the hint's place at the field's lower left, off the chart. */
+.field-container .neighbor-legend { top: auto; right: auto; left: 10px; bottom: 6px; max-width: calc(50% - 84px); }
+.field-container:has(.neighbor-legend) .canvas-hint { display: none; }
+.field-container:has(.neighbor-legend) .field-readout { bottom: 36px; }
 /* Coordinates under the pointer read in one fixed place, like a status line, instead of covering the dots. */
 .field-container .field-readout {
   left: 2px !important; top: auto !important; bottom: -2px; flex-direction: row; align-items: center; gap: 8px; height: 26px; padding: 0 9px;
@@ -241,6 +245,17 @@
 .section-chips button i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px #00000040; }
 .section-chips button span { margin-left: auto; padding-left: 4px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-weight: 400; }
 .section-chips button:hover { background: var(--hover-bg); color: var(--text); }
+.section-chips button.partial { color: var(--text); }
+.section-chips button.partial i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent-line); }
+/* With a selection the sections fold to one row of colors; each still selects its section. */
+.section-legend { display: flex; align-items: flex-start; gap: 4px; }
+.section-legend > .section-chips { flex: 1; min-width: 0; }
+.section-legend-toggle { flex: none; min-width: 22px; height: 22px; margin-right: -4px; }
+.section-legend--compact > .section-chips { display: flex; flex-wrap: wrap; gap: 2px 1px; margin: 0 -3px; }
+.section-legend--compact .section-chips button { flex: none; width: 16px; padding: 0 3.5px; gap: 12px; overflow: hidden; }
+.section-legend--compact .section-chips button.selected { background: transparent; }
+.section-legend--compact .section-chips button:is(.selected, .partial) i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent); }
+.section-legend--compact .section-chips button.partial i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent-line); }
 .section-chips button.selected { background: var(--accent-soft-strong); color: var(--text); }
 .section-chips button.selected span { color: var(--accent-text); }
 .selection-bounds { display: flex; flex-direction: column; gap: 10px; }
@@ -255,6 +270,14 @@
 .selection-stats:has(> div:nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .selection-stats:has(> div:only-child) { grid-template-columns: 1fr; }
 .inspector-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+/* More below: the last lines fade until the panel is scrolled to its end. */
+@supports (animation-timeline: scroll()) {
+  .inspector-scroll { animation: inspector-more linear both; animation-timeline: scroll(self); }
+  @keyframes inspector-more {
+    0%, 97% { mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), #0000); }
+    100% { mask-image: linear-gradient(to bottom, #000 100%, #0000); }
+  }
+}
 .inspector-section { border-bottom: 1px solid var(--hairline); }
 .inspector-section > summary { min-height: 38px; padding: 0 14px; gap: 6px; color: var(--text); }
 .inspector-section > summary h3 { flex: 1; font-size: var(--text-sm); font-weight: 600; }
@@ -364,6 +387,11 @@
 .transport-speed select:hover { background-color: var(--hover-bg); border-color: transparent; color: var(--text); }
 [data-transport=compact] .score-mark-chip, [data-transport=narrow] .readout--score, [data-transport=narrow] .show-count, [data-transport=narrow] .timeline-edge-set { display: none; }
 [data-transport=narrow] .transport { gap: var(--space-2); }
+/* Loop and Metronome are named where the transport has the room. */
+@container strip (min-width: 1380px) {
+  .transport-options > .transport-labelled { gap: 6px; padding: 0 8px; }
+  .transport-options > .transport-labelled > .overflow-option-label { display: inline; font-size: var(--text-xs); font-weight: 500; }
+}
 @container strip (max-width: 1300px) { .score-mark-chip { display: none; } }
 @container strip (max-width: 1140px) { .show-count { display: none; } }
 @container strip (max-width: 980px) { .readout--score { display: none; } }
@@ -388,13 +416,16 @@
 .set-track { position: relative; height: 16px; border-radius: 4px; overflow: hidden; background: var(--control); }
 .set-track > button {
   appearance: none; position: absolute; top: 0; height: 16px; min-width: 0; padding: 0; border: 0; border-left: 1px solid var(--surface); border-radius: 0; background: transparent;
-  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
   color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -.2px;
   transition: background var(--fast) var(--ease);
 }
 .set-track > button:nth-child(even) { background: var(--hover-bg); }
 .set-track > button:hover { background: var(--border-strong); color: var(--text); }
 .set-track > button.active { background: var(--accent); color: var(--on-accent); z-index: 2; }
+/* A number may be wider than its segment; it centers on it and never takes the pointer. */
+.set-track-number { position: relative; z-index: 1; padding: 0 2px; pointer-events: none; white-space: nowrap; }
+.set-track > button.active .set-track-number { height: 100%; display: inline-flex; align-items: center; padding: 0 3px; border-radius: 3px; background: var(--accent); }
 .set-track > .timeline-opening { left: 0; width: 3px; border-left: 0; }
 .set-track > button:focus-visible { outline-offset: -2px; }
 /* Problem markers sit on the track, at the count where each problem happens. */
@@ -452,10 +483,18 @@
 .set-strip { display: flex; align-items: stretch; gap: var(--space-2); padding: 0 12px 6px; min-width: 0; }
 .set-list { flex: 1; min-width: 0; display: flex; align-items: stretch; gap: 2px; overflow-x: auto; overflow-y: hidden; padding: 2px; scroll-padding: 0 40px; scrollbar-width: none; }
 .set-list::-webkit-scrollbar { display: none; }
+/* More sets to the right: the strip fades at its edge until it is scrolled to the end. */
+@supports (animation-timeline: scroll()) {
+  .set-list { animation: strip-more linear both; animation-timeline: scroll(self inline); }
+  @keyframes strip-more {
+    0%, 98% { mask-image: linear-gradient(to right, #000 calc(100% - 40px), #0000); }
+    100% { mask-image: linear-gradient(to right, #000 100%, #0000); }
+  }
+}
 .set-card {
   appearance: none; position: relative; flex: none; display: flex; flex-direction: column; gap: 2px; width: 88px; padding: 3px 3px 2px;
   border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text-secondary); text-align: left;
-  content-visibility: auto; contain-intrinsic-size: 88px 66px;
+  content-visibility: auto; contain-intrinsic-size: 88px 62px;
   transition: background var(--fast) var(--ease);
 }
 .set-card:hover { background: var(--hover-bg); color: var(--text); }

@@ -9,6 +9,7 @@ import { currentTransformResult } from './transformSession';
 import type { EditorState } from './state';
 import { drillPlan, isDrillPhrase } from './drillCommands';
 import { openingMoveNote } from './setList';
+import { splitTransitionError } from './splitTransition';
 
 export type CommandInvocation = { [I in CommandId]: { id: I; args: CommandArguments[I] } }[CommandId];
 export interface PaletteEntry { key: string; name: string; description: string; keywords: string; invocation: CommandInvocation; disabledReason: string | null }
@@ -41,7 +42,10 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'path.open' || id === 'path.draw-open' || id === 'schedule.open') return 'Pause at an arrival set and select exactly one performer. Finish other input first.';
   if (id === 'set.split-open') {
     if (state.project.present.sets.length >= PROJECT_LIMITS.sets) return 'The production has reached its set limit.';
-    return 'Choose a transition with at least two counts.';
+    // Say what actually stops this move from being split, not a guess at it.
+    const move = state.project.present.moves[Math.max(0, state.selection.activeIndex - 1)];
+    const error = move ? splitTransitionError(state.project.present, move.id, 1) : null;
+    return error ?? 'Choose a transition with at least two counts.';
   }
   if (id === 'set.previous') return 'This is the first set.';
   if (id === 'set.next') return 'This is the last set.';

@@ -3,6 +3,7 @@ import { selectionMembership } from '../selection';
 import type { Point, Project } from '../types';
 import { STRIDE_COLORS, type NeighborOverlay, type NeighborPath } from '../neighborPaths';
 import type { SelectionReview } from '../selectionTools';
+import { labelLeader } from './fieldPresentation';
 import type { FieldPresentation } from './fieldPresentation';
 import { fieldViewPoint, type FieldOrientation } from './fieldOrientation';
 import { fieldCanvasSize, fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from './fieldScene';
@@ -112,7 +113,9 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
         context.drawImage(sprite, p.x - pad, p.y - pad, sprite.width / size.ratio, sprite.height / size.ratio);
         const label = labels.get(person.id);
         if (label) {
-          context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'miter';
+          context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'round';
+          const line = labelLeader(p, label, display.dotRadiusPx);
+          if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = '#c3d0c4'; context.globalAlpha = .75; context.lineWidth = 1; context.stroke(); context.globalAlpha = 1; }
           context.strokeStyle = '#1c3026'; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
           context.fillStyle = isSelected ? '#fff' : '#c3d0c4'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
         }

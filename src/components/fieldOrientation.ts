@@ -19,8 +19,14 @@ export function fieldDirection(key: string, step: number, orientation: FieldOrie
  */
 export const FIELD_FIT_MARGIN = { x: 4, y: 4 } as const;
 /** The 2D viewBox for a zoom (clamped by the caller) and a pan offset in field yards. */
+/** The apron for a surface of any size: a football field's margin, in proportion for a smaller floor or stage. */
+export function fieldFitMargin(field: Pick<Project['field'], 'width' | 'height'>) {
+  const share = (size: number, full: number) => Math.min(1, Math.max(.3, size / full));
+  return { x: FIELD_FIT_MARGIN.x * share(field.width, 100), y: FIELD_FIT_MARGIN.y * share(field.height, 160 / 3) };
+}
 export function fieldViewBox(field: Pick<Project['field'], 'width' | 'height'>, zoom: number, pan: Point) {
-  const width = (field.width + FIELD_FIT_MARGIN.x * 2) / zoom;
-  const height = (field.height + FIELD_FIT_MARGIN.y * 2) / zoom;
+  const margin = fieldFitMargin(field);
+  const width = (field.width + margin.x * 2) / zoom;
+  const height = (field.height + margin.y * 2) / zoom;
   return { x: field.width / 2 + pan.x - width / 2, y: field.height / 2 + pan.y - height / 2, width, height };
 }

@@ -21,6 +21,8 @@ import { Menu, type MenuEntry } from '../ui/Menu';
 import type { ShellLayout } from './useShellLayout';
 
 const pad = (n: number) => String(n).padStart(2, '0');
+/** On a thumbnail card, a name written as "movement · title" shows its title; the card's number and tooltip carry the rest. */
+const cardName = (name: string) => { const at = name.lastIndexOf(' · '); return at > 0 && at < name.length - 3 ? name.slice(at + 3) : name; };
 
 function MoveOperationTrack({ editor, percent }: { editor: PathOperationsSession; percent: (count: number) => number }) {
   const { preview } = editor;
@@ -160,14 +162,14 @@ function SetStrip({ controller: c }: { controller: EditorController }) {
               select(event.key === 'Home' ? 0 : event.key === 'End' ? project.sets.length - 1 : Math.max(0, Math.min(project.sets.length - 1, i + (forward ? 1 : -1))), true);
             }
           }}>
-          {thumbnails && <span className="set-card-thumb"><MiniField positions={set.positions} dots={thumbnailDots} />
+          {thumbnails && <span className="set-card-thumb"><MiniField positions={set.positions} dots={thumbnailDots} field={project.field} />
             <span className="set-number">{pad(i + 1)}</span>
             {i > 0 && <span className="set-row-counts">{timing.counts}</span>}
             {flags[i] > 0 && <span className={`set-card-flag${danger[i] ? ' danger' : ''}`}><TriangleAlert size={10} aria-hidden="true" />{flags[i]}</span>}
           </span>}
           <span className="set-card-caption">
             {!thumbnails && <span className="set-number">{pad(i + 1)}</span>}
-            <span className="set-row-name">{set.name}</span>
+            <span className="set-row-name">{thumbnails ? cardName(set.name) : set.name}</span>
             {!thumbnails && flags[i] > 0 && <span className={`set-card-flag${danger[i] ? ' danger' : ''}`}><TriangleAlert size={10} aria-hidden="true" />{flags[i]}</span>}
             {!thumbnails && i > 0 && <span className="set-row-counts">{timing.counts}</span>}
           </span>
@@ -215,6 +217,23 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
   useEffect(() => {
     if (follow && (count < view.start || count > view.start + span * (playing ? .9 : 1))) setStart(timelineWindow(duration, width, zoom, count - span * .15).start);
   }, [count, duration, width, zoom, follow, playing, span, view.start]);
+  // Set numbers read as a scale: every set when there is room, otherwise every second, fifth or tenth, plus the current one.
+  const perSet = width / Math.max(1, project.sets.length * span / Math.max(1, duration));
+  const numberStride = [1, 5, 10, 20].find(stride => perSet * stride >= 34) ?? 50;
+  // A segment whose move has problems shows its marker instead of its number.
+  const showChecks = useShowChecks();
+  const flagged = useMemo(() => new Set(showChecks.moves.flatMap((move, i) => move.issues.length ? [i + 1] : [])), [showChecks.moves]);
+  const starts = useMemo(() => project.sets.map((_, i) => setStartCount(project, i)), [project]);
+  // The current set is always numbered; the others take their turn where a number has room.
+  const numbered = useMemo(() => {
+    const at = (i: number) => ((starts[Math.max(0, i - 1)] + starts[i]) / 2 - view.start) / span * width;
+    const shown = new Set<number>([index]), taken = [at(index)];
+    for (let i = 1; i < starts.length; i++) {
+      if (i === index || (i + 1) % numberStride || flagged.has(i)) continue;
+      if (taken.every(x => Math.abs(x - at(i)) >= 22)) { shown.add(i); taken.push(at(i)); }
+    }
+    return shown;
+  }, [starts, index, numberStride, flagged, view.start, span, width]);
   const arrivals = useMemo(() => project.sets.map((set, i) => ({ set, index: i, count: setStartCount(project, i), from: setStartCount(project, Math.max(0, i - 1)), counts: setTiming(project, i).counts })), [project]);
   const labels = musicalRuler ? scoreTicks(score, view.start, savedEnd, width) : timelineLabels(project, view.start, span, width).map(value => ({ count: value, label: fmt(value) }));
   const markGroups = new Map<number, typeof score.marks>();
@@ -247,8 +266,8 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
 
   const rehearsal = <HelpButton command="rehearsal.open" title="Rehearsal passages" className="icon-button" active={!!passage} onClick={() => controller.dispatch('rehearsal.open')}><Bookmark size={16} /><span className="overflow-option-label">Rehearsal passages</span></HelpButton>;
   const audio = <HelpButton title={audioName ? 'Replace audio' : 'Attach audio'} description="Choose a local audio file to accompany rehearsal playback." disabledReason="Wait for the audio file to finish loading." className={`audio-attach ${audioName ? 'attached' : ''}`} onClick={() => void controller.chooseAudio()} disabled={audioLoading || !!controller.fileOperation}>{audioLoading ? <LoaderCircle size={14} className="spin" /> : <AudioLines size={14} />}<span className="audio-file-label">{audioName || 'Add audio'}</span></HelpButton>;
-  const loopButton = <HelpButton title={resolved?.end ? 'Loop range' : 'Loop show'} description={resolved?.end ? 'Repeat the active count range using the shared audio clock.' : 'Restart from the opening set when playback reaches the end.'} className="icon-button" active={loop} onClick={() => setLoop(!loop)}><Repeat2 size={16} /><span className="overflow-option-label">{resolved?.end ? 'Loop range' : 'Loop show'}</span></HelpButton>;
-  const metronomeButton = <HelpButton title="Metronome" command="metronome.toggle" description="Toggle meter-aware clicks. Configure meter and count-in from the timeline menu." className="icon-button" active={metronome} onClick={() => controller.dispatch('metronome.toggle')}><Timer size={16} /><span className="overflow-option-label">Metronome</span></HelpButton>;
+  const loopButton = <HelpButton title={resolved?.end ? 'Loop range' : 'Loop show'} description={resolved?.end ? 'Repeat the active count range using the shared audio clock.' : 'Restart from the opening set when playback reaches the end.'} className="icon-button transport-labelled" active={loop} onClick={() => setLoop(!loop)}><Repeat2 size={16} /><span className="overflow-option-label">{resolved?.end ? 'Loop range' : 'Loop show'}</span></HelpButton>;
+  const metronomeButton = <HelpButton title="Metronome" command="metronome.toggle" description="Toggle meter-aware clicks. Configure meter and count-in from the timeline menu." className="icon-button transport-labelled" active={metronome} onClick={() => controller.dispatch('metronome.toggle')}><Timer size={16} /><span className="overflow-option-label">Metronome</span></HelpButton>;
   const speedSelect = <label className="transport-speed"><span className="overflow-option-label">Speed</span><Tooltip name="Playback speed" description="Change rehearsal speed without changing the written move tempos." state={`${speed}×`}><select aria-label="Playback speed" value={speed} onChange={event => setSpeed(Number(event.target.value))}><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></Tooltip></label>;
   // Stable keys: a tier change never turns one folded control's node into another.
   const folded = (transport === 'full' ? [] : transport === 'compact' ? ['loop', 'metronome', 'speed'] : ['rehearsal', 'audio', 'loop', 'metronome', 'speed']).map(key => <Fragment key={key}>{{ rehearsal, audio, loop: loopButton, metronome: metronomeButton, speed: speedSelect }[key]}</Fragment>);
@@ -316,7 +335,7 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
             {arrivals.filter(a => a.index > 0 && a.count > view.start && a.from < view.start + span).map(a => {
               const left = Math.max(0, percent(a.from)), right = Math.min(100, percent(a.count));
               return <HelpButton key={a.set.id} pointerPassThrough command="set.select" showShortcut={false} title={`Set ${a.index + 1}: ${a.set.name}`} description={`Arrive at show count ${a.count}; ${a.counts} move counts. Stop playback and edit this set.`} state={index === a.index ? 'Current set' : 'Available'} aria-current={index === a.index ? 'step' : undefined} className={index === a.index ? 'active' : ''} style={{ left: `${left}%`, width: `${right - left}%` }} onClick={() => selectSet(a.index)}>
-                <span className={(right - left) / 100 * width >= 22 ? 'set-track-number' : 'sr-only'}>{pad(a.index + 1)}</span>
+                <span className={numbered.has(a.index) ? 'set-track-number' : 'sr-only'}>{pad(a.index + 1)}</span>
               </HelpButton>;
             })}
           </div>
