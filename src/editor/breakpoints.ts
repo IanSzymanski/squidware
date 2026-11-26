@@ -10,9 +10,9 @@ export const BREAKPOINTS = {
   /** Header: below this width the workspace tabs and Save also become icon-only. */
   headerNarrow: 800,
   /** Transport (main workspace width): below this, loop, metronome and speed move into More playback options. */
-  transportCompact: 800,
+  transportCompact: 1000,
   /** Transport: below this, rehearsal passages and audio also move into that menu; play, set navigation and the show count stay. */
-  transportNarrow: 520,
+  transportNarrow: 700,
   /** Height: below this, editor chrome tightens its spacing so the field keeps its share. */
   short: 620,
 } as const;

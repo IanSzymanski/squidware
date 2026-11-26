@@ -20,7 +20,21 @@
 .topbar {
   flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-4);
   height: var(--topbar-height); padding: 0 10px 0 8px; background: var(--surface); border-bottom: 1px solid var(--hairline);
-  position: relative; z-index: 20;
+  position: relative; z-index: 20; container-type: inline-size; container-name: topbar;
+}
+/* The smallest windows: search and Export are their icons, and the modes sit closer. */
+@container topbar (max-width: 680px) {
+  .topbar { gap: var(--space-2); }
+  .command-search { width: auto; padding: 0 8px; }
+  .command-search .shortcut-keycaps, .topbar-export > span { display: none; }
+  .mode-switch > button { min-width: 0; padding: 0 8px; }
+  .topbar-end .divider-vertical { margin: 12px 2px; }
+}
+@container topbar (max-width: 570px) {
+  .topbar { gap: 4px; padding: 0 6px; }
+  .mode-switch { padding: 2px; }
+  .mode-switch > button { padding: 0 6px; }
+  .problem-count-badge { padding: 0 6px; margin-right: 0; }
 }
 .topbar-start { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .app-menu {
@@ -125,7 +139,9 @@
 .toolbar-commit .button { min-height: var(--control-md); padding: 0 8px 0 10px; }
 .toolbar-commit .button.primary:not([aria-disabled=true]) kbd { background: #00000022; border-color: #00000026; color: inherit; }
 .toolbar .stage-three__controls { position: static; padding: 0; border: 0; background: none; backdrop-filter: none; }
-@container toolbar (max-width: 1040px) { .toolbar-arrange { display: none; } .toolbar-arrange-menu { display: inline-flex; } .toolbar-arrange + .toolbar-arrange-menu + .divider-vertical { display: inline-block; } }
+/* First the tools sit a little closer and Props drops its word; only then do groups fold into menus. */
+@container toolbar (max-width: 1136px) { .toolbar .tool { padding: 0 5px; gap: 5px; } .toolbar-optional .tool-label { display: none; } .toolbar .divider-vertical { margin: 12px 4px; } }
+@container toolbar (max-width: 1056px) { .toolbar-arrange { display: none; } .toolbar-arrange-menu { display: inline-flex; } .toolbar-arrange + .toolbar-arrange-menu + .divider-vertical { display: inline-block; } }
 @container toolbar (max-width: 860px) { .toolbar-shapes { display: none; } .toolbar-shape-menu { display: inline-flex; } .toolbar-optional .tool-label { display: none; } }
 @container toolbar (max-width: 640px) {
   .toolbar .tool--labelled > .tool-label, .toolbar-commit kbd, .toolbar-preview > span:last-child, .toolbar-optional { display: none; }
@@ -236,7 +252,9 @@
   background: var(--surface); border-left: 1px solid var(--hairline);
 }
 .side-panel--overlay {
-  position: absolute; z-index: 30; top: 8px; right: 8px; bottom: 8px; max-width: calc(100% - 16px);
+  /* Over the field, never over the tool strip: a preview's Cancel and Apply stay in reach. In the smallest windows it
+     keeps to under half the width so the middle of the field stays visible. */
+  position: absolute; z-index: 30; top: calc(var(--toolbar-height) + 8px); right: 8px; bottom: 8px; max-width: min(calc(100% - 16px), max(236px, 46%));
   border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden;
   animation: pop-in var(--normal) var(--ease);
 }
@@ -404,7 +422,14 @@
 .transport-speed select { width: 46px; min-height: var(--control-md); padding: 0 16px 0 7px; border-color: transparent; background-color: transparent; color: var(--text-secondary); font-weight: 500; background-position: right 4px center; background-size: 10px; }
 .transport-speed select:hover { background-color: var(--hover-bg); border-color: transparent; color: var(--text); }
 [data-transport=compact] .score-mark-chip, [data-transport=narrow] .readout--score, [data-transport=narrow] .show-count, [data-transport=narrow] .timeline-edge-set { display: none; }
-[data-transport=narrow] .transport { gap: var(--space-2); }
+[data-transport=narrow] .transport { gap: 6px; padding: 0 8px; }
+/* In a narrower transport the audio control is its icon, and the narrowest gives the room to playback itself. */
+:is([data-transport=compact], [data-transport=narrow]) .audio-file-label { display: none; }
+:is([data-transport=compact], [data-transport=narrow]) .audio-attach { padding: 0 7px; margin-right: 0; }
+[data-transport=compact] .transport { gap: var(--space-2); }
+[data-transport=narrow] :is(.strip-toggle, .play-controls .divider-vertical, .transport-options .divider-vertical, .set-jump > svg) { display: none; }
+[data-transport=narrow] .play-button { margin: 0 2px; }
+[data-transport=narrow] .count-display { gap: var(--space-2); }
 /* Loop and Metronome are named where the transport has the room. */
 @container strip (min-width: 1380px) {
   .transport-options > .transport-labelled { gap: 6px; padding: 0 8px; }
