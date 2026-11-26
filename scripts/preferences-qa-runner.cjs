@@ -251,6 +251,8 @@ app.whenReady().then(async () => {
       await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
       assert.equal(expected.showHints, true); assert.equal(await fieldHint(), NO_SELECTION_HINT);
       assert.ok(await evaluate("document.querySelector('.studio').classList.contains('studio--compact')"));
+      // The audit reads settled colors: a dialog still fading in is not what the writer reads.
+      await uiWait("document.getAnimations().every(animation => animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity)", 'animations settled before the text audit');
       const audit = await evaluate('(' + auditText.toString() + ')()'); assert.deepEqual(audit.failures, []); assert.ok(audit.checked > 100);
       const [width, height] = window.getSize(); window.setSize(width + 1, height); await pause(150);
       await fs.writeFile(path.join(output, 'preferences.png'), (await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true })).toPNG()); await done();
