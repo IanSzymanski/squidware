@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AudioLines, Bookmark, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Images, LoaderCircle, LocateFixed, Maximize2, Music, PanelBottomClose, PanelBottomOpen, Pause, Play, Plus, Repeat2, Ruler, Search, SkipBack, SkipForward, SlidersHorizontal, Timer, TriangleAlert, Volume2, VolumeX, Waves, ZoomIn, ZoomOut } from 'lucide-react';
+import { AudioLines, Bookmark, ChevronDown, ChevronsLeft, ChevronsRight, Images, LoaderCircle, LocateFixed, Maximize2, Music, PanelBottomClose, PanelBottomOpen, Pause, Play, Plus, Repeat2, Ruler, Search, SkipBack, SkipForward, SlidersHorizontal, Timer, TriangleAlert, Volume2, VolumeX, Waves, ZoomIn, ZoomOut } from 'lucide-react';
 import { compileScore, scoreLabel, scorePosition, scoreTicks } from '../score';
 import { countToSeconds, PROJECT_LIMITS, secondsToCount, setStartCount, setTiming } from '../domain';
 import { activePassage, resolvePassage } from '../rehearsal';
@@ -97,7 +97,7 @@ function SetFinder({ controller: c, locked }: { controller: EditorController; lo
           return <button key={project.sets[i].id} type="button" role="option" aria-selected={i === index} data-active={at === current} className="menu-item" tabIndex={-1} onMouseMove={() => setActive(at)} onClick={() => go(i)}>
             <span className="set-finder-number">{pad(i + 1)}</span>
             <span className="menu-item-label">{project.sets[i].name}</span>
-            <span className="menu-item-hint">{i === 0 ? 'Opening' : `${timing.counts} cts · ${timing.tempo}`}</span>
+            <span className="menu-item-hint">{i === 0 ? 'Opening' : `${timing.counts} counts · ${timing.tempo} BPM`}</span>
           </button>;
         })}
         {!rows.length && <p className="empty-state" role="status">No matching sets. Enter a number from 1 to {project.sets.length}, or part of a name.</p>}
@@ -262,9 +262,11 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
       <div className="play-controls">
         <HelpButton command="set.select" showShortcut={false} title="First set" className="icon-button timeline-edge-set" description="Stop playback and return to the opening set." onClick={() => selectSet(0)}><ChevronsLeft size={16} /></HelpButton>
         <HelpButton command="set.select" shortcutVariant={0} title="Previous set" className="icon-button" disabled={index === 0} disabledReason="This is already the first set." onClick={() => selectSet(index - 1)}><SkipBack size={16} /></HelpButton>
-        <HelpButton command="playback.count-previous" title="Previous count" className="icon-button" disabled={count <= 0} disabledReason="The opening set is count zero." onClick={() => controller.dispatch('playback.count-previous')}><ChevronLeft size={16} /></HelpButton>
+        <span className="divider-vertical" />
+        <HelpButton command="playback.count-previous" title="Previous count" className="icon-button count-step" disabled={count <= 0} disabledReason="The opening set is count zero." onClick={() => controller.dispatch('playback.count-previous')}>−1</HelpButton>
         <HelpButton command="playback.toggle" title={playing ? 'Pause playback' : 'Play show'} state={playing ? 'Playing' : 'Paused'} disabled={!duration} disabledReason="Add a second set with move counts to rehearse a transition." className="play-button" aria-label={playing ? 'Pause playback' : 'Play show'} onClick={togglePlay}>{playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}</HelpButton>
-        <HelpButton command="playback.count-next" title="Next count" className="icon-button" disabled={count >= duration} disabledReason="This is the final show count." onClick={() => controller.dispatch('playback.count-next')}><ChevronRight size={16} /></HelpButton>
+        <HelpButton command="playback.count-next" title="Next count" className="icon-button count-step" disabled={count >= duration} disabledReason="This is the final show count." onClick={() => controller.dispatch('playback.count-next')}>+1</HelpButton>
+        <span className="divider-vertical" />
         <HelpButton command="set.select" shortcutVariant={1} title="Next set" className="icon-button" disabled={index === project.sets.length - 1} disabledReason="This is already the last set." onClick={() => selectSet(index + 1)}><SkipForward size={16} /></HelpButton>
         <HelpButton command="set.select" showShortcut={false} title="Last set" className="icon-button timeline-edge-set" description="Stop playback and arrive at the final set." onClick={() => selectSet(project.sets.length - 1)}><ChevronsRight size={16} /></HelpButton>
       </div>
@@ -314,7 +316,7 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
             {arrivals.filter(a => a.index > 0 && a.count > view.start && a.from < view.start + span).map(a => {
               const left = Math.max(0, percent(a.from)), right = Math.min(100, percent(a.count));
               return <HelpButton key={a.set.id} pointerPassThrough command="set.select" showShortcut={false} title={`Set ${a.index + 1}: ${a.set.name}`} description={`Arrive at show count ${a.count}; ${a.counts} move counts. Stop playback and edit this set.`} state={index === a.index ? 'Current set' : 'Available'} aria-current={index === a.index ? 'step' : undefined} className={index === a.index ? 'active' : ''} style={{ left: `${left}%`, width: `${right - left}%` }} onClick={() => selectSet(a.index)}>
-                <span className="sr-only">{pad(a.index + 1)}</span>
+                <span className={(right - left) / 100 * width >= 19 ? 'set-track-number' : 'sr-only'}>{pad(a.index + 1)}</span>
               </HelpButton>;
             })}
           </div>

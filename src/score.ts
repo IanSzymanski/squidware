@@ -84,15 +84,25 @@ export function scoreAccent(count: number, spans: ScoreSpan[]): 'bar' | 'group' 
   return clickAccent(count - s.barStart,s.meter);
 }
 /** Bounded labels at every zoom, even with 130,048 one-count measures. */
+/** Measure labels at one regular interval across the window, so a ruler reads as a scale rather than a list of events. */
 export function scoreTicks(map: CompiledScore, start: number, end: number, width: number) {
-  const ticks: {count:number;label:string}[] = [];
-  const spacing = Math.max(1,(end-start)/Math.max(1,Math.floor(width/85)));
-  map.spans.forEach((span,i)=>{
-    const high = Math.min(end,map.spans[i+1]?.count ?? map.total), low = Math.max(start,span.count);
-    const stride = Math.max(1,Math.ceil(spacing/span.meter.numerator));
-    let bar = Math.ceil((low-span.barStart)/span.meter.numerator/stride)*stride;
-    for(let count=span.barStart+bar*span.meter.numerator;count<=high;bar+=stride,count=span.barStart+bar*span.meter.numerator) {
-      if(count>=span.count && count>=start && (i===map.spans.length-1 || count<map.spans[i+1].count) && (!ticks.length || count-ticks.at(-1)!.count>=spacing*.75)) ticks.push({count,label:`M${span.measure+bar}`});
+  const visible = map.spans.reduce((bars, span, i) => {
+    const low = Math.max(start, span.count), high = Math.min(end, map.spans[i + 1]?.count ?? map.total);
+    return bars + Math.max(0, high - low) / span.meter.numerator;
+  }, 0);
+  const perBar = width / Math.max(1, visible);
+  const stride = [1, 2, 4, 5, 10, 20, 25, 50, 100, 200, 500].find(step => step * perBar >= 64) ?? 1000;
+  const ticks: { count: number; label: string }[] = [];
+  map.spans.forEach((span, i) => {
+    const low = Math.max(start, span.count), high = Math.min(end, map.spans[i + 1]?.count ?? map.total), last = i === map.spans.length - 1;
+    for (let bar = Math.max(0, Math.ceil((low - span.barStart) / span.meter.numerator)); ; bar++) {
+      const count = span.barStart + bar * span.meter.numerator, measure = span.measure + bar;
+      if (count > high || (!last && count >= high)) break;
+      // The opening measure is always named; after it, only multiples of the interval.
+      if (!(count === 0 && start === 0) && measure % stride) continue;
+      const previous = ticks.at(-1);
+      if (previous && (count - previous.count) / Math.max(1e-9, end - start) * width < 40) continue;
+      ticks.push({ count, label: `M${measure}` });
     }
   });
   return ticks;

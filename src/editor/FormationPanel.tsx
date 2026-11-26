@@ -2,6 +2,9 @@ import { ScatterFormationFields } from './ScatterFormationFields';
 import { BezierFormationFields } from './BezierFormationFields';
 import { useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_SNAPPING } from '../snapping';
+import { coordinateDescription } from '../domain';
+import { isCustomSurface } from '../surfaces';
+import { previewStrides } from './formationStride';
 import { BezierIcon, BezierWaveIcon, ScatterIcon } from '../ui/icons';
 import { NumberField } from '../components/NumberField';
 import type { FormationOptions } from '../types';
@@ -37,7 +40,10 @@ export function FormationPanel({ controller: c }: { controller: EditorController
   const options = session?.options;
   const display = (value: number) => Number(value.toFixed(2));
   const plain = !!session && !session.scatter && !session.bezier;
-  const stepYards = 5 / (c.project.snapping ?? DEFAULT_SNAPPING).steps, stepLabel = 'steps';
+  // Lengths read in the production's steps on a football field, and in yards on any other surface.
+  const custom = isCustomSurface(c.project.field);
+  const lengthYards = custom ? 1 : 5 / (c.project.snapping ?? DEFAULT_SNAPPING).steps, lengthUnit = custom ? 'yd' : 'steps';
+  const display1 = (value: number) => value.toFixed(value >= 100 ? 0 : 1);
   // The typical gap between neighbors in the preview, which is how a drill writer specifies a form.
   const previewPoints = c.formationResult?.updates;
   const spacing = useMemo(() => {
@@ -47,6 +53,11 @@ export function FormationPanel({ controller: c }: { controller: EditorController
     for (const a of points) { let nearest = Infinity; for (const b of points) if (a !== b) nearest = Math.min(nearest, Math.hypot(a.x - b.x, a.y - b.y)); total += nearest; }
     return total / points.length;
   }, [previewPoints]);
+  const interval = plain && spacing !== null && spacing > 1e-6 ? spacing / lengthYards : null;
+  const center = options ? coordinateDescription(options.center, c.project.field, c.coordinateFormat).split('; ') : [];
+  const centerSide = center.length ? /^(Side [12]): (.+)$/.exec(center[0]) : null;
+  const resultPositions = c.formationResult?.error ? undefined : c.formationResult?.positions;
+  const strides = useMemo(() => session && resultPositions ? previewStrides(c.project, c.index, session.ids, resultPositions) : null, [c.project, c.index, session, resultPositions]);
   const update = (patch: Partial<FormationOptions>) => { if (options) c.dispatch('formation.update', { options: { ...options, ...patch } }); };
   const mode = session ? sessionAssignmentMode(session) : undefined, stale = !!session && shortestOrderStale(session);
   const assign = (assignmentMode: FormationAssignmentMode) => { if (options) c.dispatch('formation.update', { options: { ...options, assignment: assignmentMode === 'roster' ? 'roster' : 'position' }, assignmentMode }); };
@@ -87,21 +98,31 @@ export function FormationPanel({ controller: c }: { controller: EditorController
     {session && options && <div key={session.kind} className="formation-parameters">
       {session.scatter ? <ScatterFormationFields controller={c} /> : session.bezier ? <BezierFormationFields controller={c} /> : <>
         <div className="form-row">
-          {session.kind === 'line' && session.ids.length > 1
-            ? <NumberField label={`Interval · ${stepLabel}`} description="Distance between neighbors along the line. Changing it changes the line’s length." value={display(options.width / (session.ids.length - 1) / stepYards)} min={.1} max={64} step={.25} onDraftChange={c.setPendingDraft} onChange={interval => update({ width: interval * (session.ids.length - 1) * stepYards })} />
-            : <NumberField label={session.kind === 'arc' ? 'Bulge · yd' : session.kind === 'line' ? 'Depth · yd' : 'Depth · yd'} value={display(options.height)} min={0} max={200} step={.1} disabled={session.kind === 'line'} onDraftChange={c.setPendingDraft} onChange={height => update({ height })} />}
-          <NumberField label={session.kind === 'line' ? 'Length · yd' : 'Width · yd'} value={display(options.width)} min={.1} max={200} step={.1} onDraftChange={c.setPendingDraft} onChange={width => update({ width })} />
+          {interval !== null
+            ? <NumberField label={`Interval · ${lengthUnit}`} description="The distance between neighbors. Changing it resizes the whole shape and keeps its proportions." value={display(interval)} min={.1} max={64} step={.25} onDraftChange={c.setPendingDraft} onChange={next => update({ width: options.width * next / interval, height: options.height * next / interval })} />
+            : <NumberField label={`Depth · ${lengthUnit}`} value={display(options.height / lengthYards)} min={0} max={320} step={.5} disabled={session.kind === 'line'} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
+          <NumberField label={`${session.kind === 'line' ? 'Length' : 'Width'} · ${lengthUnit}`} value={display(options.width / lengthYards)} min={.1} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={width => update({ width: width * lengthYards })} />
         </div>
-        <div className="form-row"><NumberField label="Rotation · °" value={display(options.rotation)} min={-3600} max={3600} step={1} onDraftChange={c.setPendingDraft} onChange={rotation => update({ rotation })} />
-          {session.kind === 'block' && <NumberField label="Columns" value={options.columns} min={1} max={500} integer onDraftChange={c.setPendingDraft} onChange={columns => update({ columns })} />}</div>
-        <div className="form-row"><NumberField label="Center X · yd" value={display(options.center.x)} min={0} max={c.project.field.width} step={.1} onDraftChange={c.setPendingDraft} onChange={x => update({ center: { ...options.center, x } })} />
-          <NumberField label="Center Y · yd" value={Math.min(c.project.field.height, display(options.center.y))} min={0} max={c.project.field.height} step={.1} onDraftChange={c.setPendingDraft} onChange={y => update({ center: { ...options.center, y } })} /></div></>}
+        <div className="form-row">
+          {session.kind !== 'line' && interval !== null && <NumberField label={`${session.kind === 'arc' ? 'Bulge' : 'Depth'} · ${lengthUnit}`} value={display(options.height / lengthYards)} min={0} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
+          <NumberField label="Rotation · °" value={display(options.rotation)} min={-3600} max={3600} step={1} onDraftChange={c.setPendingDraft} onChange={rotation => update({ rotation })} />
+          {session.kind === 'block' && <NumberField label="Columns" value={options.columns} min={1} max={500} integer onDraftChange={c.setPendingDraft} onChange={columns => update({ columns })} />}
+        </div>
+        <div className="formation-center">
+          <span className="selection-coordinate-label">Center{centerSide ? ` · ${centerSide[1]}` : ''}</span>
+          {(centerSide ? [centerSide[2], ...center.slice(1)] : center).map((line, i) => <span key={i}>{line.charAt(0).toUpperCase() + line.slice(1)}</span>)}
+          <details className="performer-facing"><summary>Exact center</summary>
+            <div className="form-row exact-position"><NumberField label="Center X · yd" value={display(options.center.x)} min={0} max={c.project.field.width} step={.1} onDraftChange={c.setPendingDraft} onChange={x => update({ center: { ...options.center, x } })} />
+              <NumberField label="Center Y · yd" value={Math.min(c.project.field.height, display(options.center.y))} min={0} max={c.project.field.height} step={.1} onDraftChange={c.setPendingDraft} onChange={y => update({ center: { ...options.center, y } })} /></div>
+          </details>
+        </div></>}
       {c.formationResult?.error
         ? <p className="transform-result transform-result--error" role="status">{c.formationResult.error}</p>
         : <dl className="selection-stats formation-stats" role="status">
-          {spacing !== null && <div><dt>Interval</dt><dd>{(spacing / stepYards).toFixed(spacing / stepYards >= 10 ? 0 : 1)}<small>{stepLabel}</small></dd></div>}
-          {c.formationResult?.travel && <div><dt>Longest</dt><dd>{c.formationResult.travel.maximum.toFixed(1)}<small>yd</small></dd></div>}
-          {c.formationResult?.travel && <div><dt>Total</dt><dd>{c.formationResult.travel.total.toFixed(0)}<small>yd</small></dd></div>}
+          {c.formationResult?.travel && <div><dt>Farthest moved</dt><dd>{display1(c.formationResult.travel.maximum / lengthYards)}<small>{lengthUnit}</small></dd></div>}
+          {strides
+            ? <div data-level={strides.level}><dt>Biggest step from set {c.index}</dt><dd>{strides.stride > 1e-6 ? `${(5 / strides.stride).toFixed(1)}-to-5` : 'Hold'}{strides.level !== 'ok' && <small>{strides.level === 'over' ? 'over the limit' : 'near the limit'}</small>}</dd></div>
+            : c.formationResult?.travel && <div><dt>Total moved</dt><dd>{display1(c.formationResult.travel.total / lengthYards)}<small>{lengthUnit}</small></dd></div>}
         </dl>}
       {c.formationResult?.travel && !c.formationResult.error && <p className="formation-travel sr-only" role="status">Total travel {c.formationResult.travel.total.toFixed(2)} yd · Longest {c.formationResult.travel.maximum.toFixed(2)} yd</p>}
       <div className="form-label"><span>{session.assignmentReviewed || session.assignmentConstraints ? 'Who goes where · reviewed' : 'Who goes where'}</span><div className="segmented fill formation-assignment" role="group" aria-label="Formation assignment">

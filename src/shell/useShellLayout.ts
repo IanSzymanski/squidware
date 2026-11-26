@@ -53,8 +53,9 @@ export function useShellLayout(controller: EditorController) {
   useLayoutEffect(measure, [controller.preferences.value.uiScale]);
 
   // The field is height-limited in a landscape window, so the panel can afford a comfortable minimum.
-  const [min, max] = [Math.max(PANEL_MIN, paneLimits[tab][0]), paneLimits[tab][1]];
-  const saved = tab === 'cast' ? layout.castWidth : layout.inspectorWidth;
+  // One panel, one width: switching tabs never moves the field.
+  const [min, max] = [Math.max(PANEL_MIN, paneLimits.inspector[0]), paneLimits.inspector[1]];
+  const saved = layout.inspectorWidth;
   const width = Math.round(Math.max(min, Math.min(max, draftWidth ?? saved)));
   // A preview needs its parameters: it shows a panel the writer collapsed for as long as it runs.
   const collapsed = (tab === 'cast' ? layout.castCollapsed : layout.inspectorCollapsed) && !preview;
@@ -92,7 +93,7 @@ export function useShellLayout(controller: EditorController) {
     const next = Math.round(Math.max(min, Math.min(max, Math.min(value, viewport.width - FIELD_RESERVE))));
     if (!commit) { setDraftWidth(next); return; }
     setDraftWidth(null);
-    controller.dispatch('layout.update', { update: { [tab === 'cast' ? 'castWidth' : 'inspectorWidth']: next } });
+    controller.dispatch('layout.update', { update: { inspectorWidth: next, castWidth: next } });
   }
   const toggleFocus = () => { controller.dispatch('layout.focus'); };
 

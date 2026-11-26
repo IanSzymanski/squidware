@@ -9,18 +9,20 @@ A drill writer does five things, over and over: go to a set, select performers, 
 | Region | Holds | Why it is there |
 | --- | --- | --- |
 | Top bar | Project menu, title and save state, **Write · Plan · Rehearse**, undo/redo, problems, command search, Export | The things that are true in every mode. |
-| Tool strip | Pointer tools, **Shape** (line, arc, circle, block, wave), **Arrange** (align, rotate, mirror, place), Motion, Props, paths, View, 2D/3D/Split | The verbs of drill writing as first-class buttons. Tools stay where they are; they enable and disable with context. |
-| Field | The field, with section chips and zoom floating over its margin | The field is the product. Nothing permanent sits on it. |
-| Side panel | **Properties** of the selection and the set, or the **Cast** list | One panel beside the field. It shows what applies to the current work and nothing else. |
-| Show strip | Transport and position, a count scrubber, and every set as a thumbnail | Sets read as a storyboard. The field is wide, so navigation uses the height the field cannot. |
-| Status line | One hint on the left, production facts on the right | One place for guidance instead of helper text in every panel. |
+| Tool strip | Pointer tools, **Shape** (line, arc, circle, block, wave), **Arrange** (align, rotate, mirror, place), Motion, Props | The verbs of drill writing as first-class buttons. Tools stay where they are; they enable and disable with context. |
+| Field | The field, edge to edge, with paths, View, 2D/3D/Split and zoom floating in its apron | The field is the product. The canvas is turf; nothing permanent sits on the playing surface. |
+| Side panel | The **Inspector** for the selection and the set, or the **Cast** list | One panel beside the field, one width for both tabs. It shows what applies to the current work and nothing else. |
+| Show strip | Transport and position, a count-proportional timeline, and every set as a thumbnail | Sets read as a storyboard. The dock stays short because every pixel of its height comes out of the field. |
 
 Rules that follow from this:
 
-- **The field gets the width.** A football field is about 1.9:1. Do not add a second side panel or a permanent left column.
+- **The field gets the window.** A football field is about 1.9:1, and at Fit it is limited by width in a laptop window and by height on a large display. Do not add a second side panel or a permanent left column, and treat every pixel of chrome height as taken from the field. The apron around the turf at Fit (`FIELD_FIT_MARGIN`) holds the sideline captions and the floating controls; nothing else may claim it.
+- **Direct manipulation first.** A multiple selection is framed on the field with its size in steps and handles that rotate and scale it; dragging a dot moves the selection. The Inspector holds the same edits as numbers, each control named with the size of its step.
+- **Drill vocabulary, one unit system.** Positions read as side, yard line and hash. Lengths read in steps, travel as a step size (`6.2-to-5`), time in counts. Yards appear only where a writer asks for an exact coordinate.
+- **One severity model.** A *problem* breaks a rule of the production and is counted in the top bar, on the timeline and on the set's card. A step *near the stride limit* is advice: it is colored on the field and named as such, and it never changes the problem count.
 - **A preview owns the tool strip.** While a shape, transform, spacing or coordinate preview is open, the strip shows what is being previewed and Cancel / Apply. Parameters are in the side panel with the same two actions.
 - **Depth lives in named menus and the palette.** Motion, More shapes, View, Set actions and the Project menu group deeper features by what the writer is trying to do. Every command is also in the command palette (`Ctrl/⌘ K`).
-- **No filler.** A panel does not explain itself in paragraphs. Put the explanation in the control's tooltip, the status line, or Help. A line of text in a panel must be something the writer needs to read to do the work.
+- **No filler.** A panel does not explain itself in paragraphs. Put the explanation in the control's tooltip, the hint line on the field's margin, or Help. A line of text in a panel must be something the writer needs to read to do the work.
 - **Modes are stages of work, not arrangements of panels.** Write is the field and its tools. Plan is the production sheet. Rehearse is playback, cameras and review.
 
 ## Tokens
@@ -78,5 +80,5 @@ Lucide for general actions, at 15–16 px. Formation tools use Squidware's own g
 | Path | Responsibility |
 | --- | --- |
 | `src/ui/` | Tokens, base styles, shared controls, dialogs, print styles, the menu and icons. |
-| `src/shell/` | The application shell: top bar, tool strip, side panel, show strip, status line, welcome. |
+| `src/shell/` | The application shell: top bar, tool strip, side panel, show strip, field hint, welcome. |
 | `src/editor/*.css`, `src/components/stages.css` | Feature styles, written against the tokens. |

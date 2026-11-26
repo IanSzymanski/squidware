@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AlignHorizontalJustifyCenter, ArrowRight, Bookmark, Check, ChevronDown, Clapperboard, Clock3, Eye, FlipHorizontal2, Focus, Grid3X3, Hand, Lasso, LayoutPanelLeft, ListFilter, Magnet, MapPin, MoreHorizontal, MousePointer2, Package, PanelRight, Pencil, RotateCw, Route, Scissors, Shapes, SlidersHorizontal, Sparkles, Tags, TriangleAlert, Users, Waypoints, X } from 'lucide-react';
+import { AlignHorizontalJustifyCenter, ArrowRight, Bookmark, Check, ChevronDown, Clapperboard, Clock3, Eye, FlipHorizontal2, Focus, Grid3X3, Hand, Lasso, LayoutPanelLeft, ListFilter, Magnet, Blend, Footprints, Spline, SquareDashedMousePointer, MapPin, MoreHorizontal, MousePointer2, Package, PanelRight, Pencil, RotateCw, Route, Scissors, Shapes, SlidersHorizontal, Sparkles, Tags, TriangleAlert, Users, X } from 'lucide-react';
 import { HelpButton } from '../editor/ControlHelp';
 import { commandRegistry, type CommandArguments, type CommandId } from '../editor/commands';
 import { fieldAction, type FieldAction } from '../editor/fieldToolbarModel';
@@ -8,13 +8,32 @@ import type { EditorController } from '../editor/useEditorController';
 import { fieldViews } from '../workspaces';
 import { Menu, type MenuEntry } from '../ui/Menu';
 import { ArcIcon, BezierIcon, BlockIcon, CircleIcon, LineIcon, PathsFromIcon, PathsToIcon, ScatterIcon, WaveIcon } from '../ui/icons';
-import { formatTransportCount, timelineReadout } from '../editor/timelineNavigation';
+import { timelineReadout } from '../editor/timelineNavigation';
+import { useEditorSelector } from '../editor/react';
 import type { ShellLayout } from './useShellLayout';
 
 const PREVIEW_NAMES = { selection: 'Selection', transform: 'Transform', formation: 'Formation', spacing: 'Align and space', coordinates: 'Coordinates' } as const;
 type PreviewKind = keyof typeof PREVIEW_NAMES;
 
 /** The one tool strip above the field. Its tools stay where they are; they enable and disable with context. */
+/** Where playback is, kept live: the transport counts, this names the move and offers the way back to editing. */
+function PlaybackStatus({ controller: c }: { controller: EditorController }) {
+  const rehearsal = useEditorSelector(state => !!state.playback.rehearsalId);
+  // Re-render when the playhead crosses a set, not on every frame.
+  const at = useEditorSelector(state => { const p = timelineReadout(c.project, state.playback.count); return `${p.setIndex}:${p.setIndex > 0 && !p.arrived ? 1 : 0}`; });
+  const [setIndex, moving] = at.split(':').map(Number), name = c.project.sets[setIndex]?.name ?? '';
+  return <>
+    <div className="toolbar-preview" role="status" id="field-lock-message">
+      <span className={`toolbar-preview-dot${c.playing ? ' is-playing' : ' is-locked'}`} />
+      <strong>{c.playing ? 'Playing' : rehearsal ? 'Rehearsal passage' : 'Between sets'}</strong>
+      <span>{moving ? `Move ${setIndex} → ${setIndex + 1}` : `Set ${setIndex + 1} · ${name}`}</span>
+    </div>
+    <div className="toolbar-commit">
+      <HelpButton command="set.select" showShortcut={false} title={`Go to set ${setIndex + 1} to edit`} description="Stop at this set so its positions can be edited." className="button" onClick={() => c.selectSet(setIndex)}>Edit set {setIndex + 1}<ArrowRight size={14} /></HelpButton>
+    </div>
+  </>;
+}
+
 export function Toolbar({ controller: c, layout }: { controller: EditorController; layout: ShellLayout }) {
   const state = c.store.getState();
   const action = <I extends CommandId>(id: I, args: CommandArguments[I], label?: string, title?: string, active?: boolean) => fieldAction(state, id, args, '', label, title, active);
@@ -62,18 +81,9 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   }
 
   // Playing or between sets: say so here, and offer the way back to editing. The field stays clear.
-  const position = timelineReadout(c.project, state.playback.count);
   if (c.readOnly && !three && !rehearse) {
-    const moving = position.setIndex > 0 && !position.arrived;
     return bar(c.playing ? 'playback' : 'scrub', <>
-      <div className="toolbar-preview" role="status" id="field-lock-message">
-        <span className={`toolbar-preview-dot${c.playing ? ' is-playing' : ' is-locked'}`} />
-        <strong>{c.playing ? 'Playing' : state.playback.rehearsalId ? 'Rehearsal passage' : 'Between sets'}</strong>
-        <span>{moving ? `Move ${position.setIndex} → ${position.setIndex + 1} · count ${formatTransportCount(position.localCount, c.playing)} of ${position.counts}` : `Set ${position.setIndex + 1} · ${position.name}`} · positions are a preview</span>
-      </div>
-      <div className="toolbar-commit">
-        <HelpButton command="set.select" showShortcut={false} title={`Go to set ${position.setIndex + 1} to edit`} description="Stop at this set so its positions can be edited." className="button" onClick={() => c.selectSet(position.setIndex)}>Edit set {position.setIndex + 1}<ArrowRight size={14} /></HelpButton>
-      </div>
+      <PlaybackStatus controller={c} />
       {end()}
     </>);
   }
@@ -141,20 +151,22 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
       return { key: live.id, label: live.name, icon: <Sparkles size={15} />, hint: `${live.members.length}`, disabled: !!a.disabledReason, disabledReason: a.disabledReason ?? undefined, onSelect: () => run(a) };
     })] : []),
   ];
+  // One short reason for the three single-performer tools, instead of the registry's catch-all sentence three times.
+  const one = (a: FieldAction) => a.disabledReason && count !== 1 ? { ...a, disabledReason: 'Select exactly one performer' } : a;
   const motionMenu: MenuEntry[] = [
     { type: 'heading', label: 'One performer' },
-    item(action('path.open', undefined), <Waypoints size={15} />, { label: 'Edit performer path', description: 'Curve one performer’s travel into this set with handles on the field.' }),
-    item(action('path.draw-open', undefined), <Pencil size={15} />, { label: 'Draw performer path', description: 'Sketch one performer’s travel into this set on the field.' }),
-    item(action('schedule.open', undefined), <Clock3 size={15} />, { label: 'Edit movement timing', description: 'Give one performer holds and timed stages within the move.' }),
+    item(one(action('path.open', undefined)), <Spline size={15} />, { label: 'Edit performer path', detail: 'Bend one performer’s path with handles on the field', description: 'Curve one performer’s travel into this set with handles on the field.' }),
+    item(one(action('path.draw-open', undefined)), <Pencil size={15} />, { label: 'Draw performer path', detail: 'Sketch one performer’s path freehand', description: 'Sketch one performer’s travel into this set on the field.' }),
+    item(one(action('schedule.open', undefined)), <Clock3 size={15} />, { label: 'Edit movement timing', detail: 'Holds and timed stages inside the move', description: 'Give one performer holds and timed stages within the move.' }),
     { type: 'heading', label: 'Groups' },
-    item(action('group.open', {}), <Users size={15} />, { label: 'Group route movement', description: 'Follow the leader, counter-march or conveyor along a shared route.' }),
-    ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, label: `Edit group ${group.name}` })),
-    item(action('transition.open', undefined), <Waypoints size={15} />, { label: 'Formation transition', description: 'Morph one live formation into another with shared timing and checks.' }),
-    item(action('routes.open', undefined), <Route size={15} />, { label: 'Shared routes', description: 'Draw reusable routes that group movements travel along.' }),
+    item(action('group.open', {}), <Footprints size={15} />, { label: 'Group route movement', detail: 'Follow-the-leader, counter-march or conveyor', description: 'Follow the leader, counter-march or conveyor along a shared route.' }),
+    ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, name: `Edit group ${group.name}`, label: `“${group.name}”`, detail: 'Edit this group movement' })),
+    item(action('transition.open', undefined), <Blend size={15} />, { label: 'Formation transition', detail: 'Morph one live formation into another', description: 'Morph one live formation into another with shared timing and checks.' }),
+    item(action('routes.open', undefined), <Route size={15} />, { label: 'Shared routes', detail: 'Reusable routes that group movements follow', description: 'Draw reusable routes that group movements travel along.' }),
     { type: 'heading', label: 'This move' },
-    item(action('path.operations-open', undefined), <SlidersHorizontal size={15} />, { label: 'Move operations', description: 'Resize the move’s counts, reverse it, or copy its intervals.' }),
-    item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition' }),
-    item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues' }),
+    item(action('path.operations-open', undefined), <SlidersHorizontal size={15} />, { label: 'Move operations', detail: 'Resize, reverse or copy this move', description: 'Resize the move’s counts, reverse it, or copy its intervals.' }),
+    item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition', detail: 'Add a set partway through this move' }),
+    item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues', detail: 'Body and equipment cues by count' }),
   ];
   const shapeMenu: MenuEntry[] = [...shapes.map(shape => item(shape.action, shape.icon, { key: shape.action.key })), ...moreShapes];
   const arrangeMenu: MenuEntry[] = [
@@ -168,7 +180,7 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
       {tool(select, <MousePointer2 size={16} />, { description: 'Click a dot or drag a box. Shift adds to the selection.' })}
       {tool(lasso, <Lasso size={16} />, { description: 'Draw around performers to select an irregular group.' })}
       {tool(pan, <Hand size={16} />, { description: 'Drag to move around a zoomed field.' })}
-      <Menu label="Select menu" description="Select all, a section, a saved group, or by rank and file." className="tool tool--menu" items={selectMenu}><ListFilter size={16} /><ChevronDown size={11} /></Menu>
+      <Menu label="Select menu" description="Select all, a section, a saved group, or by rank and file." className="tool tool--menu" items={selectMenu}><SquareDashedMousePointer size={16} /><ChevronDown size={11} /></Menu>
     </div>
     <span className="divider-vertical" />
     <div className="toolbar-group toolbar-shapes" role="group" aria-label="Shape the selection">
@@ -224,7 +236,7 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
     { type: 'heading', label: 'Grid' },
     item(action('display.grid', undefined), <Grid3X3 size={15} />, { label: 'Show field grid', checked: c.showGrid, keepOpen: true }),
     item(action('display.snap', undefined), <Magnet size={15} />, { label: 'Snap to grid', checked: c.snap, keepOpen: true }),
-    item(action('dialog.open', { dialog: 'snapping' }), <SlidersHorizontal size={15} />, { label: 'Grid and snapping', command: undefined, description: 'Choose the step grid and what direct edits snap to.' }),
+    item(action('dialog.open', { dialog: 'snapping' }), <SlidersHorizontal size={15} />, { name: 'Grid and snapping', label: 'Grid and snapping…', command: undefined, description: 'Choose the step grid and what direct edits snap to.' }),
     { type: 'heading', label: 'Window' },
     item(action('layout.focus', undefined), <Focus size={15} />, { label: layout.focusMode ? 'Exit focus' : 'Focus field', checked: layout.focusMode }),
     { label: 'Workspaces…', icon: <LayoutPanelLeft size={15} />, description: 'Switch, save, rename or reset arrangements of the window on this device.', onSelect: onWorkspaces },

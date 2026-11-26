@@ -13,7 +13,7 @@ const icons = { new: FilePlus2, duplicate: Copy, 'insert-before': ListStart, hol
 const summaries = {
   new: 'Everyone in a staging grid, ready to shape.',
   duplicate: 'A copy of this picture and its notes.',
-  'insert-before': 'The previous picture, placed before this set.',
+  'insert-before': 'Add a set ahead of this one, starting from the picture before it.',
   hold: 'Everyone stays in place for the counts.',
 };
 const descriptions = {

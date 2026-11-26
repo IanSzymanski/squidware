@@ -63,7 +63,6 @@ export function Inspector({ controller }: { controller: EditorController }) {
     for (const performer of selectedPerformers) counts.set(performer.sectionId, (counts.get(performer.sectionId) ?? 0) + 1);
     return project.sections.filter(section => counts.has(section.id)).map(section => ({ ...section, count: counts.get(section.id)! }));
   }, [selectedPerformers, project.sections]);
-  const format = (n: number) => Number(toUnit(n).toFixed(2));
   const stepYards = 5 / (project.snapping ?? DEFAULT_SNAPPING).steps;
   /** A length in the production's steps on a football field, or in the surface's own unit. */
   const inSteps = (yards: number) => Number((isCustomSurface(project.field) ? toUnit(yards) : yards / stepYards).toFixed(1));
@@ -82,6 +81,9 @@ export function Inspector({ controller }: { controller: EditorController }) {
   }, [project, index, selectedPerformers, controller.coordinateFormat]);
 
   const check = useTransitionAnalysis(project, index, projectEpoch);
+  const where = bounds ? coordinateDescription(selectedPerformers.length === 1 ? displayPositions[selectedPerformers[0].id] : { x: bounds.centerX, y: bounds.centerY }, project.field, controller.coordinateFormat).split('; ') : [];
+  // "Side 2: 4 steps outside the 40" reads better with the side as the caption.
+  const side = where.length ? /^(Side [12]): (.+)$/.exec(where[0]) : null;
 
   if (controller.pathOperations) return <PathOperationsPanel editor={controller.pathOperations} />;
   if (controller.routeEditor) return <SharedRoutesPanel editor={controller.routeEditor} />;
@@ -115,7 +117,7 @@ export function Inspector({ controller }: { controller: EditorController }) {
       <div className="selection-bar-heading">
         <div className="selection-summary">
           <strong className="selection-count" role="status">{selectedIds.length} selected</strong>
-          <span className="selection-sections">{!selectedIds.length ? 'Click a dot, drag a box, or pick a section' : single ? `${single.label}${single.name ? ` · ${single.name}` : ''}` : sections.slice(0, 3).map(section => section.name).join(', ')}{!single && sections.length > 3 ? ` +${sections.length - 3}` : ''}</span>
+          <span className="selection-sections">{!selectedIds.length ? `${project.performers.length} ${project.performers.length === 1 ? 'performer' : 'performers'} in the cast` : single ? `${single.label}${single.name ? ` · ${single.name}` : ''}` : sections.slice(0, 3).map(section => section.name).join(', ')}{!single && sections.length > 3 ? ` +${sections.length - 3}` : ''}</span>
         </div>
         {selectedIds.length > 0
           ? <HelpButton command="selection.clear" title="Clear selection" className="button small" onClick={() => setSelectedIds([])}>Clear</HelpButton>
@@ -132,34 +134,44 @@ export function Inspector({ controller }: { controller: EditorController }) {
       {controller.spacingPreview && <div className="inspector-tool"><SpacingPanel controller={controller} /></div>}
       {controller.coordinatePreview && <div className="inspector-tool"><CoordinatePanel controller={controller} /></div>}
 
+      {!previewing && <div key={`${projectEpoch}-${activeSet.id}-timing`} className="set-timing" role="group" aria-label={`Set ${index + 1} timing`}>
+        <span className="set-timing-title">Set {index + 1}</span>
+        <span className="set-timing-field" data-unit="counts"><NumberField onDraftChange={setPendingDraft} label="Counts" description="Set the number of counts in the move into this set." disabledReason="The opening set has no incoming move and always has zero counts." value={timing.counts} min={setCountLimits(index).min} max={setCountLimits(index).max} integer disabled={index === 0} onChange={value => { setPlaying(false); updateSet({ counts: Math.round(value) }); }} /></span>
+        <span className="set-timing-field" data-unit="BPM"><NumberField onDraftChange={setPendingDraft} label={project.tempoMap ? 'Base tempo · BPM' : 'Tempo · BPM'} description="Set the base tempo for the move into this set. Tempo-map ranges override it." disabledReason="The opening set has no incoming move; select a later set to edit tempo." value={timing.tempo} min={PROJECT_LIMITS.tempo.min} max={PROJECT_LIMITS.tempo.max} step={0.1} disabled={index === 0} onChange={value => updateSet({ tempo: value })} /></span>
+      </div>}
+
       {points.length > 0 && bounds && !previewing && <div hidden={planning || three}>
         <Section title={single ? 'Position' : 'Selection'} preference="inspectorSelectionOpen" className="selection-section" controller={controller}>
           <div className="selection-bounds">
             <p className="selection-coordinate">
-              {!single && <span className="selection-coordinate-label">Center</span>}
-              {coordinateDescription(single ? displayPositions[single.id] : { x: bounds.centerX, y: bounds.centerY }, project.field, controller.coordinateFormat).split('; ').map((line, i) => <span key={i}>{line}</span>)}
+              {(!single || side) && <span className="selection-coordinate-label">{[!single && 'Center', side?.[1]].filter(Boolean).join(' · ')}</span>}
+              {(side ? [side[2].charAt(0).toUpperCase() + side[2].slice(1), ...where.slice(1).map(line => line.charAt(0).toUpperCase() + line.slice(1))] : where).map((line, i) => <span key={i}>{line}</span>)}
             </p>
             <dl className="selection-stats">
               {!single && <div><dt>Size</dt><dd>{inSteps(bounds.width)} × {inSteps(bounds.height)}<small>{custom ? unit : 'steps'}</small></dd></div>}
               {travel && <>
                 <div><dt>Move in</dt><dd>{travel.counts}<small>counts</small></dd></div>
-                <div><dt>{single ? 'Travel' : 'Longest'}</dt><dd>{format(travel.distance)}<small>{unit}</small></dd></div>
-                {travel.step !== null && <div><dt>{single ? 'Step size' : 'Biggest step'}</dt><dd>{travel.step.toFixed(1)}<small>to 5</small></dd></div>}
+                <div><dt>{single ? 'Travel' : 'Longest path'}</dt><dd>{inSteps(travel.distance)}<small>{custom ? unit : 'steps'}</small></dd></div>
+                {travel.step !== null && <div><dt>{single ? 'Step size' : 'Biggest step'}</dt><dd>{travel.step.toFixed(1)}-to-5</dd></div>}
               </>}
               {!travel && index === 0 && <div><dt>Move in</dt><dd className="selection-stat-text">Opening set</dd></div>}
             </dl>
           </div>
-          <div className="nudge-row">
-            <span className="nudge-label">Nudge</span>
+          <div className="adjust-row">
+            <div className="adjust-group"><span className="adjust-label">Move<small>{nudgeLabel(controller.preferences.value, project)}</small></span>
             <div className="transform-buttons move-buttons" role="group" aria-label={`Move ${selectedIds.length === 1 ? 'performer' : 'group'}`}>
               {([{ label: 'left', icon: ArrowLeft, key: 'ArrowLeft' }, { label: 'back', icon: ArrowUp, key: 'ArrowUp' }, { label: 'front', icon: ArrowDown, key: 'ArrowDown' }, { label: 'right', icon: ArrowRight, key: 'ArrowRight' }] as const).map(({ label, icon: Icon, key }) =>
                 <HelpButton key={label} command="selection.nudge" className={`icon-button move-selection-${label}`} title={`Move selection ${label}`} description={`Request ${nudgeLabel(controller.preferences.value, project)} toward field ${label}; arrow icons follow the displayed orientation. ${controller.snap ? snapDescription(project.snapping ?? DEFAULT_SNAPPING) : 'Snapping is off'}. Targets and field boundaries determine the accepted distance. Shift-click requests ${nudgeLabel(controller.preferences.value, project, true)}.`} disabled={readOnly || controller.pendingDraft} disabledReason={unavailable} onClick={event => controller.dispatch('selection.nudge', { key, fast: event.shiftKey, fieldRelative: true })}><Icon size={14} style={{ transform: controller.preferences.value.fieldOrientation === 'audience-top' ? 'rotate(180deg)' : undefined }} /></HelpButton>)}
-            </div>
-            {points.length > 1 && <div className="transform-buttons" role="group" aria-label="Rotate and scale in steps">
+            </div></div>
+            {points.length > 1 && <div className="adjust-pair" role="group" aria-label="Rotate and scale in steps">
+              <div className="adjust-group"><span className="adjust-label">Rotate<small>{controller.preferences.value.rotationStep}°</small></span><div className="transform-buttons">
               <HelpButton command="selection.increment" className="icon-button" title={`Rotate selection ${controller.preferences.value.rotationStep}° counterclockwise`} description={`Preview a ${controller.preferences.value.rotationStep}-degree counterclockwise rotation. Adjust its pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'rotate', direction: -1 })}><RotateCcw size={14} /></HelpButton>
               <HelpButton className="icon-button rotate-selection-clockwise" command="selection.increment" title={`Rotate selection ${controller.preferences.value.rotationStep}° clockwise`} description={`Preview a ${controller.preferences.value.rotationStep}-degree clockwise rotation. Adjust its pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'rotate', direction: 1 })}><RotateCw size={14} /></HelpButton>
+              </div></div>
+              <div className="adjust-group"><span className="adjust-label">Scale<small>{controller.preferences.value.scaleStep}%</small></span><div className="transform-buttons">
               <HelpButton command="selection.increment" className="icon-button" title={`Compress selection by ${controller.preferences.value.scaleStep}%`} description={`Preview ${100 - controller.preferences.value.scaleStep}% scale around the chosen pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'scale', direction: -1 })}><Minus size={14} /></HelpButton>
               <HelpButton command="selection.increment" className="icon-button" title={`Expand selection by ${controller.preferences.value.scaleStep}%`} description={`Preview ${100 + controller.preferences.value.scaleStep}% scale around the chosen pivot, then Apply or Cancel.`} disabledReason={unavailable} disabled={readOnly || controller.pendingDraft} onClick={() => controller.dispatch('selection.increment', { operation: 'scale', direction: 1 })}><Plus size={14} /></HelpButton>
+              </div></div>
             </div>}
           </div>
           {single && <details key={`${projectEpoch}:${activeSet.id}:${single.id}`} className="selected-performer performer-facing">
@@ -176,15 +188,11 @@ export function Inspector({ controller }: { controller: EditorController }) {
         </Section>
       </div>}
 
-      {!previewing && <Section title={`Set ${index + 1}`} preference="inspectorSetOpen" controller={controller} className="set-section">
+      {!previewing && <Section title={`Set ${index + 1} details`} preference="inspectorSetOpen" controller={controller} className="set-section">
         <div key={`${projectEpoch}-${activeSet.id}`} className="set-fields">
           <div className="set-name-row">
             <label className="form-label">Name<CommitInput label="Set name" description="Rename this set. Enter applies; Escape cancels." onDraftChange={setPendingDraft} value={activeSet.name} maxLength={PROJECT_LIMITS.text.setName} onCommit={name => updateSet({ name })} /></label>
             <Menu label="Set actions" description="Duplicate, hold, split, reorder or delete this set." className="icon-button" align="end" items={setMenu}><MoreHorizontal size={16} /></Menu>
-          </div>
-          <div className="form-row">
-            <NumberField onDraftChange={setPendingDraft} label="Counts" description="Set the number of counts in the move into this set." disabledReason="The opening set has no incoming move and always has zero counts." value={timing.counts} min={setCountLimits(index).min} max={setCountLimits(index).max} integer disabled={index === 0} onChange={value => { setPlaying(false); updateSet({ counts: Math.round(value) }); }} />
-            <NumberField onDraftChange={setPendingDraft} label={project.tempoMap ? 'Base tempo · BPM' : 'Tempo · BPM'} description="Set the base tempo for the move into this set. Tempo-map ranges override it." disabledReason="The opening set has no incoming move; select a later set to edit tempo." value={timing.tempo} min={PROJECT_LIMITS.tempo.min} max={PROJECT_LIMITS.tempo.max} step={0.1} disabled={index === 0} onChange={value => updateSet({ tempo: value })} />
           </div>
           <label className="form-label">Transition
             <Tooltip name="Transition" description="Choose linear timing or an eased start and finish. Curved paths use Bézier parameter timing, so speed varies." disabledReason={index === 0 ? 'The opening set has no incoming move. Select a later set.' : undefined}>

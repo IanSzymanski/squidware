@@ -26,6 +26,7 @@ import './stages.css';
 import { NeighborDrawing } from './NeighborDrawing';
 import { FormationHandles, type FieldFormationPreview } from './FormationHandles';
 import { TransformHandles, type FieldTransformPreview } from './TransformHandles';
+import { SelectionBox, type FieldSelectionBox } from './SelectionBox';
 import { SpacingGuides, type FieldSpacingPreview } from './SpacingGuides';
 import { CoordinateGuides, type FieldCoordinatePreview } from './CoordinateGuides';
 import type { NeighborOverlay } from '../neighborPaths';
@@ -110,7 +111,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
         <line x1={x} x2={x} y1={height - hashInset - 0.3} y2={height - hashInset + 0.3} />
       </g>)}
     </g>
-    <g fill="#d9e0c7" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="2.5" opacity="0.55">
+    <g className="field-yard-numbers" fill="#d9e0c7" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="2.5" opacity="0.55">
       {yardLines.filter(x => x > 0 && x < width && x % 10 === 0).map(x => {
         const label = Math.min(x, width - x);
         return <g key={`number-${x}`}>
@@ -120,8 +121,11 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
       })}
     </g>
     <g fill="#b4c5b4" opacity="0.6" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="600" fontSize="0.9" letterSpacing="0.3">
-      <text x={width / 2} y={-4.2} transform={flipped ? `rotate(180 ${width / 2} -4.2)` : undefined}>BACK SIDELINE</text>
-      <text x={width / 2} y={height + 5.2} transform={flipped ? `rotate(180 ${width / 2} ${height + 5.2})` : undefined}>FRONT SIDELINE</text>
+      <text x={width / 2} y={-2.75} transform={flipped ? `rotate(180 ${width / 2} -3.07)` : undefined}>BACK SIDELINE</text>
+      <text className="field-caption-front" x={width / 2} y={height + 3.4} transform={flipped ? `rotate(180 ${width / 2} ${height + 3.08})` : undefined}>FRONT SIDELINE</text>
+      {/* Side 1 is the left half from the audience, as every coordinate reads. */}
+      <text x={width * .28} y={-2.75} transform={flipped ? `rotate(180 ${width * .28} -3.07)` : undefined}>SIDE 1</text>
+      <text x={width * .72} y={-2.75} transform={flipped ? `rotate(180 ${width * .72} -3.07)` : undefined}>SIDE 2</text>
     </g>
   </g>;
 });
@@ -163,7 +167,7 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
         {isSelected && <circle className={screen ? "field-selection-ring" : undefined} r={screen ? (display.dotRadiusPx + 3) / scale : .96} fill={`${color}22`} stroke="#ffffff" strokeWidth={screen ? 1.5 / scale : .16} pointerEvents="none" />}
         <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth={screen ? 1 / scale : .16} />
         <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity="0.3" pointerEvents="none" />
-        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 3 / scale : .2} paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
+        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
         </g>
       </g>;
     })}
@@ -208,6 +212,8 @@ interface Field2DProps extends DrawingProps {
   travelPreview?: TravelPreview;
   moveOperationPreview?: { overlay: React.ReactNode; onCancel: () => void; onApply: () => void };
   transformPreview?: FieldTransformPreview;
+  /** Frames a multiple selection with its size and rotate/scale handles. */
+  selectionBox?: FieldSelectionBox;
   spacingPreview?: FieldSpacingPreview;
   coordinatePreview?: FieldCoordinatePreview;
   formationPreview?: FieldFormationPreview;
@@ -239,7 +245,7 @@ type Gesture =
 
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function Field2D({ project, facings, staging, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, moveOperationPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
+export function Field2D({ project, facings, staging, positions, neighbors, selectedIds, onSelect, onMove, onMovePreview, problemOverlay, travelPreview, moveOperationPreview, tool, showLabels, showGrid, snap, zoom, onZoom, readOnly, fitVersion = 0, onNudge, nudgeHelp, coordinateFormat, presentation, transformPreview, selectionBox, formationPreview, spacingPreview, coordinatePreview, selectionPreview, selectionToolsOpen, onSelectionClose, onLasso, onSelectionApply, onSelectionCancel, orientation = 'audience-bottom' }: Field2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const geometryRef = useRef<SVGGElement>(null);
   const performerNodes = useRef<SVGGElement[]>([]);
@@ -247,6 +253,8 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const readoutId = useId();
   const keyboardHelpId = useId();
   const fieldHasFocus = useRef(false);
+  // A handle drag on the selection box runs a transform preview; the Rotate tool's own handles stay out of its way.
+  const [boxDrag, setBoxDrag] = useState(false);
   const [keyboardFocus, setKeyboardFocus] = useState(false);
   // Keyboard help is drawn only after a key press inside the field; pointer focus never shows it.
   const [keyboardHelp, setKeyboardHelp] = useState(false);
@@ -566,7 +574,7 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
     }
   }
 
-  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`}>
+  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`} data-surface={project.field.preset}>
     <svg className="field-stage__background" viewBox={viewport} aria-hidden="true">
       <g transform={fieldViewTransform(project.field, orientation)}>
         <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} />
@@ -587,7 +595,9 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
       {selectionPreview && <g opacity={canvasActive ? 0 : 1} aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
       {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && (formationPreview.session.scatter ? <ScatterFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : formationPreview.session.bezier ? <BezierFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />)}
-      {transformPreview && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
+      {transformPreview && !boxDrag && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
+      {screen && selectionBox && (!readOnly || boxDrag) && tool === 'select' && selectedIds.length > 1 && !spatialPreview && !formationPreview && !spacingPreview && !coordinatePreview && !selectionPreview && (!transformPreview || boxDrag)
+        && <SelectionBox key={orientation} ids={selectedIds} positions={displayedPositions} box={selectionBox} preview={transformPreview} field={project.field} scale={screen.scale} flipped={orientation === 'audience-top'} radius={display.dotRadiusPx} onDragChange={setBoxDrag} />}
       {coordinatePreview && <CoordinateGuides preview={coordinatePreview} scale={screen?.scale ?? 1} />}
       {spacingPreview && <SpacingGuides key={orientation} preview={spacingPreview} project={project} scale={screen?.scale ?? 1} flipped={orientation === 'audience-top'} />}
       {moving && Object.keys(preview).length > 0 && <g opacity={canvasActive ? 0 : 1} data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke="#fff" strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{!canvasActive && Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}

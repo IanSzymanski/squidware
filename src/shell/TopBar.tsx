@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, CircleHelp, Download, FilePlus2, FolderOpen, History as HistoryIcon, LayoutPanelLeft, LifeBuoy, Redo2, Save, SaveAll, Search, Settings2, SlidersHorizontal, Undo2 } from 'lucide-react';
+import { BookOpen, ChevronDown, CircleHelp, Download, FilePlus2, FolderOpen, History as HistoryIcon, LayoutPanelLeft, LifeBuoy, Redo2, Save, SaveAll, Search, Settings2, ShieldAlert, ShieldCheck, SlidersHorizontal, Undo2 } from 'lucide-react';
 import { CommandKeycaps, HelpButton } from '../editor/ControlHelp';
 import { ProblemTimelineLabel } from '../editor/ProblemTimeline';
 import { canSwitchWorkspace } from '../editor/workspaceCommands';
@@ -34,6 +34,8 @@ export function TopBar({ controller: c, layout, onWorkspaces }: { controller: Ed
     { label: 'Help and shortcuts', name: 'Help', icon: <CircleHelp size={15} />, command: 'help.open', onSelect: () => setDialog('help') },
   ];
 
+  // Routine recovery states stay an icon; only copies to review or a failure ask for words.
+  const recoveryState = /available|unavailable/i.test(c.recovery.status) ? 'attention' : 'routine';
   return <header className="app-header topbar">
     <div className="topbar-start">
       <Menu label="Project menu" description="File actions, templates, recovery, production settings, preferences and Help." className="app-menu" menuClassName="dropdown" items={menu}>
@@ -47,7 +49,7 @@ export function TopBar({ controller: c, layout, onWorkspaces }: { controller: Ed
           <span className={`status-dot ${dirty ? 'unsaved' : c.savedRevision === null ? 'idle' : ''}`} />
           <span className="save-state-text">{c.fileStatus}</span>
         </span>
-        <HelpButton title="Recovery copies" description="Squidware keeps automatic local recovery copies of your work. Review them here." className="recovery-indicator" onClick={() => { setDialog('recovery'); void c.recovery.refresh(); }}>{c.recovery.status}</HelpButton>
+        <HelpButton title="Recovery copies" description="Squidware keeps automatic local recovery copies of your work. Review them here." className="recovery-indicator" state={c.recovery.status} data-state={recoveryState} onClick={() => { setDialog('recovery'); void c.recovery.refresh(); }}>{recoveryState === 'attention' ? <ShieldAlert size={13} aria-hidden="true" /> : <ShieldCheck size={13} aria-hidden="true" />}<span className="recovery-indicator-text">{c.recovery.status}</span></HelpButton>
         {dirty && <HelpButton command="file.save" title="Save" state="Unsaved changes" disabled={busy} disabledReason="Wait for the current file operation to finish." className="button small header-save" onClick={() => void c.saveProject()}>Save</HelpButton>}
       </div>
     </div>

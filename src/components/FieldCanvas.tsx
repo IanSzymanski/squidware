@@ -113,8 +113,8 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
         const label = labels.get(person.id);
         if (label) {
           context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'miter';
-          context.strokeStyle = '#1c3026'; context.lineWidth = 3; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
-          context.fillStyle = isSelected ? '#fff' : '#e0e9de'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          context.strokeStyle = '#1c3026'; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          context.fillStyle = isSelected ? '#fff' : '#c3d0c4'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
         }
       }
       if (selectionPreview) {

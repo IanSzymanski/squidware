@@ -1,7 +1,8 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, FolderOpen, LifeBuoy, Play, Plus } from 'lucide-react';
+import { ArrowRight, FolderOpen, LifeBuoy, Play, Plus, Square } from 'lucide-react';
 import { createBlankProject, uid, validateProject } from '../domain';
 import type { Point, Project } from '../types';
+import type { CustomSurface } from '../surfaces';
 import { CommandKeycaps } from '../editor/ControlHelp';
 import type { EditorController } from '../editor/useEditorController';
 import { SquidMark } from '../ui/icons';
@@ -34,6 +35,24 @@ function stagingBlock(count: number, width: number, height: number): Point[] {
 
 function starterSections(counts: readonly number[]) {
   return SECTIONS.map((section, i) => ({ ...section, count: counts[i] })).filter(section => section.count > 0);
+}
+
+/** A basketball-court floor, as winter guard and indoor percussion rehearse on: 84 by 50 feet with marks every 6 feet. */
+const INDOOR_FLOOR: CustomSurface = { preset: 'indoor', width: 28, height: 16 + 2 / 3, unit: 'ft', referenceInterval: 6 };
+const INDOOR_SECTIONS = [{ name: 'Flags', color: '#ffa8cf', prefix: 'F', count: 12 }, { name: 'Rifles', color: '#f0bf62', prefix: 'R', count: 5 }, { name: 'Sabres', color: '#85c9dd', prefix: 'S', count: 3 }] as const;
+
+/** Twenty performers in a block at the middle of an indoor floor. */
+function indoorProject(): Project {
+  const blank = createBlankProject();
+  const sections = INDOOR_SECTIONS.map(section => ({ ...section, id: uid() }));
+  const performers = sections.flatMap(section => Array.from({ length: section.count }, (_, i) => ({ id: uid(), sectionId: section.id, label: `${section.prefix}${i + 1}`, name: '' })));
+  // Two-yard intervals, five across.
+  const columns = 5, interval = 2, rows = Math.ceil(performers.length / columns);
+  const x0 = INDOOR_FLOOR.width / 2 - (columns - 1) * interval / 2, y0 = INDOOR_FLOOR.height / 2 - (rows - 1) * interval / 2;
+  return validateProject({
+    ...blank, field: INDOOR_FLOOR, sections: sections.map(({ id, name, color }) => ({ id, name, color })), performers,
+    sets: [{ ...blank.sets[0], positions: Object.fromEntries(performers.map((performer, i) => [performer.id, { x: x0 + i % columns * interval, y: y0 + Math.floor(i / columns) * interval }])) }],
+  });
 }
 
 function starterProject(counts: readonly number[]): Project {
@@ -92,7 +111,10 @@ export function Welcome({ controller: c, onClose }: { controller: EditorControll
             <span className="welcome-start-text"><strong>{start.name}</strong><span>{totals[i]} performers</span></span>
           </button>)}
         </div>
-        <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(createBlankProject(), true)}><Plus size={14} />Empty field, add my own cast</button>
+        <div className="welcome-links">
+          <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(indoorProject())}><Square size={14} />Indoor floor · winter guard, 20</button>
+          <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(createBlankProject(), true)}><Plus size={14} />Empty field, add my own cast</button>
+        </div>
       </section>
       <section aria-labelledby="welcome-continue" className="welcome-actions">
         <h2 id="welcome-continue">Continue</h2>

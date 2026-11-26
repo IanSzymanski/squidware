@@ -10,6 +10,8 @@ export type MenuEntry =
   | { type: 'heading'; label: string }
   | {
     type?: 'item'; key?: string; label: string; icon?: ReactNode; description?: string;
+    /** A second, quieter line under the label. A disabled item shows why it is unavailable here instead. */
+    detail?: string;
     /** The action's name for assistive technology and Help, when the visible label is a shorter or longer form. */
     name?: string;
     /** Shows this command's shortcut and Help text beside the label. */
@@ -112,14 +114,16 @@ export function Menu({ label, description, items, children, className = 'icon-bu
         return <HelpButton key={entry.key ?? `${entry.label}-${index}`} pointerPassThrough role={role} aria-checked={entry.checked} tabIndex={-1}
           title={entry.name ?? entry.label.replace(/…$/, '')} description={entry.description} command={entry.command} showShortcut={false}
           disabled={entry.disabled} disabledReason={entry.disabledReason}
-          className={`menu-item${entry.danger ? ' danger' : ''}`}
+          className={`menu-item${entry.danger ? ' danger' : ''}${entry.detail ? ' menu-item--detailed' : ''}`}
           onClick={() => {
             // Focus returns to the stable trigger first, so a dialog this opens gives focus back to it on close.
             if (!entry.keepOpen) close();
             entry.onSelect();
           }}>
           {entry.icon}
-          <span className="menu-item-label">{entry.label}</span>
+          {entry.detail
+            ? <span className="menu-item-text"><span className="menu-item-label">{entry.label}</span><span className="menu-item-detail">{entry.disabled && entry.disabledReason ? entry.disabledReason : entry.detail}</span></span>
+            : <span className="menu-item-label">{entry.label}</span>}
           {entry.hint && <span className="menu-item-hint">{entry.hint}</span>}
           {entry.command && <CommandKeycaps command={entry.command} />}
           {entry.checked !== undefined && <span className="menu-item-check">{entry.checked && <Check size={14} />}</span>}

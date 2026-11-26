@@ -67,8 +67,8 @@
 
   /* The field keeps one look in every theme. */
   --field-accent: #ffffff;
-  --field-well: #0b0d0f;
-  --field-well-glow: #141a17;
+  --field-well: #1b2924;
+  --field-well-glow: #22332c;
   --field-chip: #10151af0;
   --field-chip-line: #ffffff24;
   --field-chip-text: #eef2f6;
@@ -180,9 +180,6 @@
   --shadow-lg: 0 24px 64px #10172038, 0 2px 8px #1017201f;
   --backdrop: #10172066;
 
-  /* A slate well keeps the field's own captions readable without a hard black edge against light chrome. */
-  --field-well: #262c33;
-  --field-well-glow: #323941;
 }
 
 :root[data-theme=high-contrast] {

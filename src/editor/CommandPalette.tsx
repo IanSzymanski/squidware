@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { Keycaps } from '../components/Tooltip';
@@ -10,11 +10,31 @@ import { commandKeycaps } from './shortcutDisplay';
 import { useEditorSelector, useEditorStore } from './react';
 import './commands.css';
 
+const GROUPS = ['Selection', 'Shape and arrange', 'Motion', 'Sets', 'Playback and music', 'Checks', 'View', 'Production'] as const;
+/** Where a command belongs when the palette is browsed rather than searched. */
+function paletteGroup(entry: PaletteEntry): typeof GROUPS[number] {
+  const id = entry.invocation.id;
+  if (/^(set|sheet)\./.test(id)) return 'Sets';
+  if (/^(selection|tool)\./.test(id) || id === 'group.select' || id === 'group.create') return 'Selection';
+  if (/^(formation|transform|spacing|coordinates|live|assignment|drill|positions)\./.test(id)) return 'Shape and arrange';
+  if (/^(path|schedule|routes|group|transition|choreography|staging)\./.test(id)) return 'Motion';
+  if (/^(playback|metronome|rehearsal|audio|tempo|score)\./.test(id)) return 'Playback and music';
+  if (/^analysis\./.test(id)) return 'Checks';
+  if (/^(view|display|field|workspace|layout|cast)\./.test(id)) return 'View';
+  return 'Production';
+}
+
 export function CommandPalette() {
   const store = useEditorStore(); const state = useEditorSelector(state => state);
   const [query, setQuery] = useState(''); const [active, setActive] = useState(0); const [error, setError] = useState('');
   const input = useRef<HTMLInputElement>(null); const list = useId(); const help = useId(); const detail = useId();
-  const { phrase, resolved, entries } = paletteQuery(state, query);
+  const { phrase, resolved, entries: matches } = paletteQuery(state, query);
+  // With nothing typed, the list is a map of the app: commands grouped by what the writer is doing.
+  const browsing = !query.trim();
+  // One row per set or section would bury the commands; typing a number or a name still finds them.
+  const entries = useMemo(() => browsing ? matches.filter(entry => !(entry.invocation.id === 'set.select' || entry.invocation.id === 'selection.section' || entry.invocation.id === 'group.select'))
+    // Within a group, what can run now leads.
+    .sort((a, b) => GROUPS.indexOf(paletteGroup(a)) - GROUPS.indexOf(paletteGroup(b)) || Number(!!a.disabledReason) - Number(!!b.disabledReason) || a.name.localeCompare(b.name)) : matches, [matches, browsing]);
   const current = Math.min(active, Math.max(0, entries.length - 1)), selected = entries[current];
   useEffect(() => { input.current?.focus(); }, []);
   useEffect(() => { document.getElementById(`${list}-${current}`)?.scrollIntoView({ block: 'nearest' }); }, [current, list]);
@@ -48,14 +68,14 @@ export function CommandPalette() {
       <p className="microcopy">Bare distances mean production steps ({(state.project.present.snapping ?? DEFAULT_SNAPPING).steps}-to-5). Forward is toward the front sideline; right is toward Side 2. Interval defaults to a center anchor. Exact moves bypass snapping and reject field crossings.</p>
       <button className="button primary" disabled={!resolved?.plan} onClick={preview}>Preview on field</button>
     </div> : <div className="palette-results"><div role="listbox" aria-label="Commands" id={list} className="palette-list">
-      {entries.map((entry, index) => <button key={entry.key} id={`${list}-${index}`} role="option" aria-selected={index === current} aria-disabled={!!entry.disabledReason} aria-describedby={index === current ? detail : undefined} className={`palette-result${index === current ? ' palette-result--active' : ''}`} onMouseMove={() => setActive(index)} type="button" tabIndex={index === current ? 0 : -1} aria-label={entry.name} onFocus={() => setActive(index)} onClick={() => run(entry)} onKeyDown={event => {
+      {entries.map((entry, index) => <Fragment key={entry.key}>{browsing && (index === 0 || paletteGroup(entries[index - 1]) !== paletteGroup(entry)) && <div className="palette-group" role="presentation">{paletteGroup(entry)}</div>}<button id={`${list}-${index}`} role="option" aria-selected={index === current} aria-disabled={!!entry.disabledReason} aria-describedby={index === current ? detail : undefined} className={`palette-result${index === current ? ' palette-result--active' : ''}`} onMouseMove={() => setActive(index)} type="button" tabIndex={index === current ? 0 : -1} aria-label={entry.name} onFocus={() => setActive(index)} onClick={() => run(entry)} onKeyDown={event => {
           if (!['ArrowUp', 'ArrowDown'].includes(event.key)) return;
           event.preventDefault(); const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + entries.length) % entries.length; setActive(next);
           document.getElementById(`${list}-${next}`)?.focus();
         }}>
           <strong className="palette-name">{entry.name}</strong>
           <Keycaps groups={commandKeycaps(entry.invocation.id, undefined, undefined, undefined, state.preferences.value.shortcutBindings)} />
-      </button>)}
+      </button></Fragment>)}
       {!entries.length && <p className="empty-state" role="status">No matching commands. Try an action name or a drill phrase below.</p>}
     </div>
       {/* One fixed-height detail region for the active result: rows never expand, so hover cannot shift the list. */}

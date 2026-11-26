@@ -11,7 +11,7 @@ export interface FieldPresentation {
   labelMode: 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
-  colorMode: 'section', customColor: '#b9ed85', dotRadiusPx: 3, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 12, labelMode: 'all',
+  colorMode: 'section', customColor: '#b9ed85', dotRadiusPx: 3.5, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 11, labelMode: 'all',
 };
 export interface ScreenDot extends Point { id: string }
 export interface ScreenBox { left: number; top: number; right: number; bottom: number }
