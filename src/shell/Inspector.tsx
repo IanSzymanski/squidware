@@ -45,6 +45,12 @@ function Section({ title, preference, controller, children, className = '', asid
   </details>;
 }
 
+/** The move check's result beside its heading. It subscribes on its own, so a worker reply redraws the badge and not the Inspector's fields. */
+function MoveCheckBadge({ controller }: { controller: EditorController }) {
+  const check = useTransitionAnalysis(controller.project, controller.index, controller.projectEpoch);
+  return check.status === 'pending' ? <span className="badge">…</span> : check.status === 'error' ? <span className="badge warning">!</span> : check.issues.length ? <span className="badge warning">{check.issues.length}</span> : <span className="badge ok"><Check size={11} /></span>;
+}
+
 /** Properties of whatever the writer is working on: the selection when there is one, and always the set. */
 export function Inspector({ controller }: { controller: EditorController }) {
   const { project, projectEpoch, activeSet, selectedIds, selectedPerformers, index, readOnly, setPendingDraft, updateSet, setPlaying, setDialog, reorderSet, setSelectedIds } = controller;
@@ -82,7 +88,6 @@ export function Inspector({ controller }: { controller: EditorController }) {
     return counts ? { counts, distance, step } : null;
   }, [project, index, selectedPerformers, controller.coordinateFormat]);
 
-  const check = useTransitionAnalysis(project, index, projectEpoch);
   const scroller = useRef<HTMLDivElement>(null);
   useScrollCue(scroller, 'y');
   // Sections are for making a selection. Once there is one they fold to a row of colors, unless the writer opens them.
@@ -217,7 +222,7 @@ export function Inspector({ controller }: { controller: EditorController }) {
       </Section>}
 
       {!planning && !previewing && <Section title="Move check" preference="inspectorChecksOpen" className="transition-check" controller={controller}
-        aside={index === 0 ? undefined : check.status === 'pending' ? <span className="badge">…</span> : check.status === 'error' ? <span className="badge warning">!</span> : check.issues.length ? <span className="badge warning">{check.issues.length}</span> : <span className="badge ok"><Check size={11} /></span>}><TransitionCheck controller={controller} /></Section>}
+        aside={index === 0 ? undefined : <MoveCheckBadge controller={controller} />}><TransitionCheck controller={controller} /></Section>}
     </div>
 
   </aside>;
