@@ -146,6 +146,9 @@
 @container toolbar (max-width: 640px) {
   .toolbar .tool--labelled > .tool-label, .toolbar-commit kbd, .toolbar-preview > span:last-child, .toolbar-optional { display: none; }
 }
+/* The camera strip keeps its four views by name. In a narrow window its caption and the review tools' words give way
+   first, so the side panel's button stays in reach. */
+@container toolbar (max-width: 740px) { .toolbar:is([data-context="3d"], [data-context=rehearsal]) :is(.toolbar-caption, .tool--labelled > .tool-label) { display: none; } }
 /* A collapsed group leaves one divider, not two. */
 .toolbar-shapes + .toolbar-shape-menu + .divider-vertical, .toolbar-pointers + .divider-vertical { display: inline-block; }
 
