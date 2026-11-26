@@ -137,8 +137,19 @@ module.exports = async function ({ project, geometry, editor, state, evaluate, w
   for (const [theme, width, scale] of [['dark', 1366, 1], ['light', 1366, 1], ['high-contrast', 1366, 1], ['dark', 900, 1.25], ['dark', 1024, 1.5]]) {
     window.setContentSize(width, 768); await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)},uiScale:${scale}})`); await settleNativeViewport(window, 'route layout'); await open();
     await evaluate("document.querySelector('.shared-routes-panel .path-fields').scrollTop=0");
-    const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),panel:rect('.shared-routes-panel'),apply:rect('[aria-label=\"Apply shared route\"]'),cancel:rect('[aria-label=\"Cancel shared routes\"]'),canvas:rect('[aria-label=\"Editable shared route field\"]')}})()");
-    for (const r of [metrics.panel, metrics.apply, metrics.cancel, metrics.canvas]) assert.ok(r.left >= 0 && r.right <= metrics.viewport.width + .5 && r.top >= 0 && r.bottom <= metrics.viewport.height + .5, JSON.stringify(metrics));
+    // The route field's hit area reaches past the 4 yd Fit apron and is clipped by the stage, so measure what is on screen:
+    // the stage, the whole playing surface inside it, and a point of that surface the side panel leaves free for input.
+    const metrics = await evaluate(`(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+      const canvas=document.querySelector('[aria-label="Editable shared route field"]'),matrix=canvas.getScreenCTM(),field=${JSON.stringify({ width: project.field.width, height: project.field.height })};
+      const at=(x,y)=>new DOMPoint(x,y).matrixTransform(matrix),corners=[at(0,0),at(field.width,field.height)],free=at(field.width/4,field.height/2);
+      const surface={left:Math.min(...corners.map(p=>p.x)),right:Math.max(...corners.map(p=>p.x)),top:Math.min(...corners.map(p=>p.y)),bottom:Math.max(...corners.map(p=>p.y))};
+      const hit=s=>{const n=document.querySelector(s),r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));};
+      return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),panel:rect('.shared-routes-panel'),apply:rect('[aria-label="Apply shared route"]'),cancel:rect('[aria-label="Cancel shared routes"]'),canvas:rect('[aria-label="Editable shared route field"]'),stage:rect('.field-stage__svg'),surface,
+        freeFieldHit:canvas.contains(document.elementFromPoint(free.x,free.y)),applyHit:hit('[aria-label="Apply shared route"]'),cancelHit:hit('[aria-label="Cancel shared routes"]')}})()`);
+    for (const r of [metrics.panel, metrics.apply, metrics.cancel, metrics.stage]) assert.ok(r.left >= 0 && r.right <= metrics.viewport.width + .5 && r.top >= 0 && r.bottom <= metrics.viewport.height + .5, JSON.stringify(metrics));
+    assert.ok(metrics.canvas.left <= metrics.stage.left + .5 && metrics.canvas.right >= metrics.stage.right - .5 || metrics.canvas.top <= metrics.stage.top + .5 && metrics.canvas.bottom >= metrics.stage.bottom - .5, JSON.stringify(metrics));
+    assert.ok(metrics.surface.left >= metrics.stage.left - .5 && metrics.surface.right <= metrics.stage.right + .5 && metrics.surface.top >= metrics.stage.top - .5 && metrics.surface.bottom <= metrics.stage.bottom + .5, JSON.stringify(metrics));
+    assert.deepEqual([metrics.freeFieldHit, metrics.applyHit, metrics.cancelHit], [true, true, true], JSON.stringify(metrics));
     if (width === 1366) assert.ok(metrics.field.height >= 470, JSON.stringify(metrics));
     layouts.push({ theme, width, scale, ...metrics }); await capture(`route-${theme}-${width}-${scale}.png`); await click('Cancel shared routes');
   }

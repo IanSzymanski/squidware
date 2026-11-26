@@ -19,13 +19,21 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   };
   const number=label=>`[...document.querySelectorAll('label.form-label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)}).querySelector('input')`;
   const edit=async(label,value)=>{await evaluate(`(()=>{const n=${number(label)};n.focus();n.select()})()`);await window.webContents.debugger.sendCommand('Input.insertText',{text:String(value)});await key('Return');await wait(`!${state}.ui.pendingDraft`,'committed '+label);};
+  // Formation lengths are entered in the production's steps (8 to 5 yards unless the project says otherwise).
+  const steps=yards=>yards/(5/(project.snapping?.steps??8));
+  // Detach and copy live in each live formation's More menu in the Inspector.
+  const moreItem=(name,item)=>`[role=menu][aria-label=${JSON.stringify('More for '+name)}] [aria-label=${JSON.stringify(item)}]`;
+  const chooseWithKeys=async selector=>{const focused=`document.activeElement===document.querySelector(${JSON.stringify(selector)})`;await revealFieldTool(window,selector);
+    for(let i=0;i<50&&!await evaluate(focused);i++)await key('Down');
+    assert.equal(await evaluate(focused),true,'arrow keys reach '+selector);await key('Return');};
   const menu=label=>{function find(m){for(const item of m?.items??[]){if(item.label===label)return item;const child=find(item.submenu);if(child)return child;}}const item=find(Menu.getApplicationMenu());assert.ok(item?.click);item.click(item,window,{});};
   window.setContentSize(1366,768);window.webContents.setZoomFactor(1);await settleNativeViewport(window,'live baseline');
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('selection','selectedIds',${JSON.stringify(ids)});${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom',inspectorFormationOpen:true});`);
   await revealFieldTool(window,'[aria-label="Line formation"]');
   await wait("!!document.querySelector('[aria-label=\"Line formation\"]')",'formation panel');
   await capture('live-before.png');
-  await control('[aria-label="Line formation"]');await edit('Width · yd',24);await edit('Center X · yd',50);await edit('Center Y · yd',25);
+  await control('[aria-label="Line formation"]');await edit('Length · steps',steps(24));assert.equal(await evaluate(`${state}.ui.formationPreview.options.width`),24);
+  await control('.formation-center summary');await wait("document.querySelector('.formation-center details').open",'exact center fields');await edit('Center X · yd',50);await edit('Center Y · yd',25);
   await control('.live-keep input');
   await wait(`!!${state}.ui.formationPreview.live`,'keep editable');
   await evaluate("document.querySelector('[aria-label=\"Formation name\"]').focus();document.querySelector('[aria-label=\"Formation name\"]').select()");
@@ -49,7 +57,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   for(const kind of ['arc','block']) {
     const name=applied.sets[0].liveFormations[0].name;
     await control(`[aria-label="Edit ${name}"]`);await control(`[aria-label="${kind==='arc'?'Arc':'Block'} formation"]`);
-    if(kind==='arc') await edit('Bulge · yd',8); else {await edit('Depth · yd',10);await edit('Block columns',2);}
+    if(kind==='arc') await edit('Bulge · steps',steps(8)); else {await edit('Depth · steps',steps(10));await edit('Columns',2);}
     await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'saved '+kind);
     applied=await evaluate(`${state}.project.present`);assert.equal(applied.sets[0].liveFormations[0].kind,kind);
     menu('Undo drill edit');await wait(`${state}.project.future.length===1`,'live geometry undo');menu('Redo drill edit');await wait(`${state}.project.future.length===0`,'live geometry redo');assert.deepEqual(await evaluate(`${state}.project.present`),applied);
@@ -68,8 +76,9 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   assert.equal(await evaluate(`${state}.ui.formationPreview.live.slotCount`),2);
   await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'redistribution applied');
   applied=await evaluate(`${state}.project.present`);assert.deepEqual(applied.sets[0].positions[member],{x:5,y:5});
-  // Copy control uses native keyboard selection; source remains unchanged.
-  await selectNativeOption(window,'.live-formation select',project.sets[1].id,{accepted:()=>evaluate(`!!${state}.ui.formationPreview && ${state}.ui.formationPreview.setId===${JSON.stringify(project.sets[1].id)} && ${state}.selection.activeIndex===1`)});
+  // Copy uses native keyboard selection in the formation's More menu; source remains unchanged.
+  await chooseWithKeys(moreItem('Front line',project.sets[1].name));
+  await wait(`!!${state}.ui.formationPreview && ${state}.ui.formationPreview.setId===${JSON.stringify(project.sets[1].id)}`,'copy preview targets the chosen set');
   await wait(`!!${state}.ui.formationPreview && ${state}.selection.activeIndex===1`,'copy to next set');
   assert.deepEqual(await evaluate(`${state}.project.present`),applied);await control('[aria-label="Apply formation"]');await wait(`!${state}.ui.formationPreview`,'copy applied');
   let copied=await evaluate(`${state}.project.present`);assert.deepEqual(copied.sets[0],applied.sets[0]);assert.notEqual(copied.sets[1].liveFormations[0].id,id);
@@ -77,7 +86,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await wait("document.querySelector('.transform-result--error')?.textContent.includes('another live formation')",'copy conflict message');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply formation\"]').getAttribute('aria-disabled')"),'true');await capture('live-conflict.png');
   await control('[aria-label="Cancel formation"]');
-  await control('[aria-label="Detach Front line"]');await wait(`!${state}.project.present.sets[1].liveFormations`,'detach all');
+  await control(moreItem('Front line','Detach all'));await wait(`!${state}.project.present.sets[1].liveFormations`,'detach all');
   menu('Undo drill edit');await wait(`!!${state}.project.present.sets[1].liveFormations`,'undo detach');
   assert.deepEqual(await evaluate(`${state}.project.present`),copied);
   pass('moving one dot detaches it without moving others; explicit redistribution preserves detached dots; copy previews, conflicts block Apply, and detach has undo');

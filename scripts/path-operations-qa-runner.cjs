@@ -99,7 +99,7 @@ app.whenReady().then(async()=>{try{
  assert.match(await evaluate("document.querySelector('[aria-label=\"Move operation summary\"]').textContent"),/16 to 32/);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),null);assert.deepEqual(await present(),p);await type(button('New move counts'),0);assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');await capture('operations-invalid.png');
  await evaluate("document.querySelector('[aria-label=\"New move counts\"]').focus()");
  await key(window,'Escape');await wait(`${state}.ui.dialog===null`,'cancel invalid resize');
- assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"),'More field tools');
+ assert.equal(await evaluate("document.activeElement?.getAttribute('aria-label')"),'Motion');
  assert.deepEqual(await present(),p);
  await open();await type(button('New move counts'),32);await applyPlan();const resized=await present();assert.equal(resized.moves[0].counts,32);assert.deepEqual(resized.moves[0].paths.a.segments.map(s=>[s.startCount,s.endCount]),[[4,12],[12,16],[16,24]]);assert.deepEqual(resized.sets,p.sets);assert.equal(await evaluate(state+'.project.past.length'),1);await evaluate(`${editor}.dispatch('history.undo')`);assert.deepEqual(await present(),p);
  await open();await choose('reverse');
