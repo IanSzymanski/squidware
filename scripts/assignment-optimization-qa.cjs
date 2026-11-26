@@ -24,6 +24,8 @@ module.exports=async function({largeFixtures,project,editor,state,evaluate,wait,
  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1});${editor}.setValue('selection','selectedIds',${JSON.stringify(ids)});${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom',inspectorFormationOpen:true});`);
  await capture('assignment-before.png');const fieldHeight=await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");assert.ok(fieldHeight>=470);
  await click('Line formation');await evaluate(`${editor}.dispatch('formation.update',{options:{center:{x:50,y:25},width:60,height:0,columns:4,rotation:0,assignment:'roster'}})`);
+ const assignmentHeading=()=>evaluate("document.querySelector('.formation-panel [aria-label=\"Formation assignment\"]').previousElementSibling.textContent");
+ assert.equal(await assignmentHeading(),'Who goes where');
  const draft=await evaluate(`${state}.ui.formationPreview`);await review();await compute();let options=await cards();
  assert.equal(options.length,3);assert.match(options[0].text,/Total 320.00 yd/);assert.match(options[1].text,/Total 0.00 yd/);assert.match(options[1].text,/flags: 0/);
  await click('Current mapping');await number('Assignment preview count',4);
@@ -46,7 +48,10 @@ module.exports=async function({largeFixtures,project,editor,state,evaluate,wait,
  assert.deepEqual(await evaluate(`${state}.project.present`),project);
  pass('native role-unknown policy, infeasible prohibited pin, explicit ordered section group, pin movement, section rules and exact role restrictions');
  await evaluate("document.querySelector('[aria-label=\"Use assignment proposal\"]').focus()");await key('Return');await wait(`!${state}.ui.dialog`,'reviewed mapping returned to formation preview');assert.equal(await evaluate(`${state}.project.past.length`),0);assert.deepEqual(await evaluate(`${state}.project.present`),project);
- assert.equal(await evaluate(`${state}.ui.formationPreview.assignmentReviewed`),true);assert.match(await evaluate("document.querySelector('.formation-panel .section-description')?.textContent ?? document.querySelector('.formation-section .section-description')?.textContent ?? [...document.querySelectorAll('.section-description')].find(n=>n.textContent.includes('reviewed mapping'))?.textContent ?? ''"),/reviewed mapping/);
+ assert.equal(await evaluate(`${state}.ui.formationPreview.assignmentReviewed`),true);
+ // The formation panel marks the mapping as reviewed on its assignment heading and says the constraints are saved.
+ assert.equal(await assignmentHeading(),'Who goes where · reviewed');
+ assert.match(await evaluate("[...document.querySelectorAll('.formation-panel .microcopy')].map(n=>n.textContent).join(' ')"),/Assignment constraints are saved\. Review or clear them in Optimize assignment/);
  await click('Apply formation');await wait(`!${state}.ui.formationPreview`,'assignment committed');const accepted=await evaluate(`${state}.project.present`),shape=accepted.sets[1].liveFormations[0];
  assert.equal(await evaluate(`${state}.project.past.length`),1);assert.deepEqual(accepted.performers,project.performers);assert.deepEqual(accepted.moves,project.moves);assert.deepEqual(accepted.sets[0],project.sets[0]);assert.deepEqual(accepted.sets[2],project.sets[2]);
  for(const p of project.performers.slice(4))assert.deepEqual(accepted.sets[1].positions[p.id],project.sets[1].positions[p.id]);
