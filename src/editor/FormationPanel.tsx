@@ -99,7 +99,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
       {session.scatter ? <ScatterFormationFields controller={c} /> : session.bezier ? <BezierFormationFields controller={c} /> : <>
         <div className="form-row">
           {interval !== null
-            ? <NumberField label={`Interval · ${lengthUnit}`} description="The distance between neighbors. Changing it resizes the whole shape and keeps its proportions." value={display(interval)} min={.1} max={64} step={.25} onDraftChange={c.setPendingDraft} onChange={next => update({ width: options.width * next / interval, height: options.height * next / interval })} />
+            ? <NumberField label={`Interval · ${lengthUnit}`} description="The distance between neighbors. Changing it resizes the whole shape and keeps its proportions." value={display(interval)} min={.1} max={320} step={.25} onDraftChange={c.setPendingDraft} onChange={next => update({ width: options.width * next / interval, height: options.height * next / interval })} />
             : <NumberField label={`Depth · ${lengthUnit}`} value={display(options.height / lengthYards)} min={0} max={320} step={.5} disabled={session.kind === 'line'} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
           <NumberField label={`${session.kind === 'line' ? 'Length' : 'Width'} · ${lengthUnit}`} value={display(options.width / lengthYards)} min={.1} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={width => update({ width: width * lengthYards })} />
         </div>

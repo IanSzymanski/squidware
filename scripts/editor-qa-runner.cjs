@@ -50,12 +50,36 @@ async function clickText(text, scope = 'body', allowDisabled = false) {
   await evaluate(`(() => { const button = [...document.querySelector(${JSON.stringify(scope)}).querySelectorAll('button')].find(node => node.textContent.trim() === ${JSON.stringify(text)}); if (!button || ((button.disabled || button.getAttribute('aria-disabled') === 'true') && !${allowDisabled})) throw new Error('Button unavailable: ' + ${JSON.stringify(text)}); if (!button.disabled && button.getAttribute('aria-disabled') !== 'true') button.click(); })()`);
   await pause(30);
 }
+// Several controls share a name between a bar and a menu, and a menu's actions stay mounted while it is closed. Resolve
+// the one a writer can use: the control on screen, else the action in a menu whose button is on screen (opened first).
+async function locate(selector) {
+  const found = await evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('[data-qa-target]').forEach(node => node.removeAttribute('data-qa-target'));
+    const nodes = [...document.querySelectorAll(${JSON.stringify(selector)})], shown = node => !!node.getClientRects().length;
+    const visible = nodes.find(shown);
+    const item = visible ? null : nodes.find(node => { const menu = node.closest('[role=menu][hidden]'); return menu && [...document.querySelectorAll('[aria-controls]')].some(trigger => trigger.getAttribute('aria-controls') === menu.id && shown(trigger)); });
+    (visible ?? item ?? nodes[0])?.setAttribute('data-qa-target', '');
+    resolve(visible ? 'visible' : item ? 'menu' : nodes.length ? 'hidden' : null);
+  })))`);
+  if (!found) throw new Error('Control unavailable: ' + selector);
+  if (found === 'menu') await revealFieldTool(window, '[data-qa-target]');
+  return '[data-qa-target]';
+}
 async function clickSelector(selector) {
-  await revealFieldTool(window,selector);
-  await evaluate(`(() => { const node = document.querySelector(${JSON.stringify(selector)}); if (!node || node.disabled || node.getAttribute('aria-disabled') === 'true') throw new Error('Control unavailable: ' + ${JSON.stringify(selector)}); node.click(); })()`);
+  const node = await locate(selector);
+  await evaluate(`(() => { const node = document.querySelector(${JSON.stringify(node)}); if (!node || node.disabled || node.getAttribute('aria-disabled') === 'true') throw new Error('Control unavailable: ' + ${JSON.stringify(selector)}); node.click(); })()`);
   await pause(30);
   if (selector.startsWith('.set-card')) await uiWait(`document.querySelector(${JSON.stringify(selector)})?.classList.contains('selected')`, 'set selection');
 }
+async function clickLabel(label, allowDisabled = false) {
+  const node = await locate(`[aria-label="${label}"]`);
+  await evaluate(`(() => { const button = document.querySelector(${JSON.stringify(node)}); const off = button.disabled || button.getAttribute('aria-disabled') === 'true'; if (off && !${allowDisabled}) throw new Error('Button unavailable: ' + ${JSON.stringify(label)}); if (!off) button.click(); })()`);
+  await pause(30);
+}
+/** An action in the Project menu, opened the way a writer opens it. */
+const fromProjectMenu = action => clickSelector(`.dropdown[role=menu] [aria-label="${action}"]`);
+/** The show count in the transport. */
+const showCount = "Number(document.querySelector('.show-count strong').textContent)";
 const numberSelector = label => `([...document.querySelectorAll('label.form-label')].find(node => node.firstChild?.textContent === ${JSON.stringify(label)})?.querySelector('input'))`;
 async function editNumber(label, value) {
   await uiWait(`!!${numberSelector(label)} && !${numberSelector(label)}.disabled`, `${label} numeric input ready`);
@@ -103,8 +127,9 @@ const capture = name => capturePage(window, output, name);
 async function focusFieldPerformer(selector) {
   const index = await evaluate(`[...document.querySelectorAll('.field-performer')].findIndex(node => node.matches(${JSON.stringify(selector)}))`);
   assert.ok(index >= 0, `Performer exists: ${selector}`);
-  await evaluate("document.querySelector('[aria-label=\"More field tools\"]').focus()");
-  await sendKey(window, 'Tab'); await sendKey(window, 'Home');
+  await evaluate("document.querySelector('.field-command-toolbar button[tabindex=\"0\"]').focus()");
+  await uiWait("!!document.activeElement?.closest('.field-command-toolbar')", 'tool strip focus before the field');
+  await sendKey(window, 'Tab'); await uiWait("document.activeElement?.matches('.field-performer')", 'Tab enters the field'); await sendKey(window, 'Home');
   for (let step = 0; step < index; step++) await sendKey(window, 'PageDown');
   await uiWait(`document.activeElement?.matches(${JSON.stringify(selector)})`, 'keyboard performer focus');
 }
@@ -140,25 +165,30 @@ async function checkActionClarity() {
   await settleNativeViewport(window, 'action clarity viewport');
   await uiWait("document.querySelector('.studio').dataset.header === 'full' && document.querySelector('.studio').dataset.transport === 'full'", 'full header and transport at 1366 × 768');
   await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
-  const inventory = await evaluate("[...document.querySelectorAll('button')].map(n=>({name:n.getAttribute('aria-label'),text:n.textContent.trim(),icon:n.querySelector('svg')?.getAttribute('class')}))");
+  // A custom glyph has no class name, so its drawing identifies it.
+  const inventory = await evaluate("[...document.querySelectorAll('button')].map(n=>({name:n.getAttribute('aria-label'),text:n.textContent.trim(),icon:n.querySelector('svg')?.getAttribute('class')||n.querySelector('svg')?.innerHTML,shown:!!n.getClientRects().length,menu:n.closest('[role=menu]')?.getAttribute('aria-label')??null}))");
   await fs.writeFile(path.join(output, 'control-inventory.json'), JSON.stringify(inventory, null, 2));
   assert.equal(inventory.filter(n => n.name === 'Add set').length, 1);
   assert.equal(inventory.filter(n => n.name === 'Help').length, 1);
   const icon = name => inventory.find(n => n.name === name)?.icon;
-  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all performers', 'Show performer labels', 'Attach audio', 'Metronome', 'First set', 'Previous set', 'Previous count', 'Next count', 'Next set', 'Last set'].map(icon);
-  assert.ok(distinct.every(Boolean)); assert.equal(new Set(distinct).size, distinct.length);
-  // History is a clock-arrow glyph, distinct from the Undo/Redo arrows beside it; Recovery copies keeps RotateCcw.
-  assert.match(icon('History'), /lucide-history/); assert.equal(new Set(['History', 'Undo', 'Redo'].map(icon)).size, 3);
+  const distinct = ['Show paths from previous set', 'Show paths to next set', 'Select all', 'Show labels', 'Attach audio', 'Metronome', 'First set', 'Previous set', 'Next set', 'Last set'].map(icon);
+  assert.ok(distinct.every(Boolean), JSON.stringify(distinct)); assert.equal(new Set(distinct).size, distinct.length);
+  // The count steps beside Play read as what they do, not as a fifth and sixth arrow.
+  assert.deepEqual(['Previous count', 'Next count'].map(name => inventory.find(n => n.name === name)?.text), ['−1', '+1']);
+  // History is a clock-arrow glyph, distinct from the Undo/Redo arrows in the top bar; Recovery copies keeps its own.
+  assert.match(icon('History'), /lucide-history/); assert.equal(new Set(['History', 'Undo', 'Redo', 'Recovery copies'].map(icon)).size, 4);
   await capture('action-clarity-design.png');
+  const projectMenu = '.dropdown[role=menu]:not([hidden])';
   for (const [action, heading] of [['New production', 'New production'], ['Production settings', 'Production settings'], ['Preferences', 'Preferences']]) {
-    await evaluate('document.querySelector(\'[aria-label="Project menu"]\').focus()');
-    await sendKey(window, 'Return'); await uiWait("!!document.querySelector('.dropdown')", 'project menu');
-    await evaluate(`document.querySelector('[aria-label="${action}"]').focus()`);
+    await evaluate('document.querySelector(\'button[aria-label="Project menu"]\').focus()');
+    await sendKey(window, 'Return'); await uiWait(`!!document.querySelector('${projectMenu}')?.contains(document.activeElement)`, 'project menu');
+    await evaluate(`document.querySelector('${projectMenu} [aria-label="${action}"]').focus()`);
     await sendKey(window, 'Return');
     await uiWait(`document.querySelector('.modal h2')?.textContent === '${heading}'`, heading);
     await clickSelector('.modal [aria-label="Close dialog"]');
+    await uiWait("!document.querySelector('dialog[open]')", `${heading} closed`);
   }
-  await evaluate('document.querySelector(\'[aria-label="Export"]\').focus()'); await sendKey(window, 'Return');
+  await evaluate('document.querySelector(\'.topbar [aria-label="Export"]\').focus()'); await sendKey(window, 'Return');
   await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
   await clickSelector('.modal [aria-label="Close dialog"]');
   await clickSelector('[aria-label="Help"]');
@@ -169,25 +199,30 @@ async function checkActionClarity() {
   menuAction('Squidware Help'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'native help');
   await clickSelector('.modal [aria-label="Close dialog"]');
   pass('one Add set and Help control; distinct audited icons; keyboard menu, settings, preferences, export and native Help remain reachable');
-  const point = await evaluate("(() => {const r=document.querySelector('.field-legend button').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+  // The section chips in the Inspector's header are the field's color key and its fastest selection.
+  const point = await evaluate("(() => {const r=document.querySelector('.inspector .field-legend button').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
   for (const type of ['mouseDown', 'mouseUp']) window.webContents.sendInputEvent({ type, ...point, button: 'left', clickCount: 1 });
   await uiWait("document.querySelector('.field-legend button').getAttribute('aria-pressed') === 'true'", 'pointer section selection');
   assert.equal(await evaluate("document.querySelector('.selection-count').textContent"), '24 selected');
   await evaluate("document.querySelectorAll('.field-legend button')[0].focus()"); await sendKey(window, 'Tab'); await sendKey(window, 'Return');
   await uiWait("document.querySelectorAll('.field-legend button')[1].getAttribute('aria-pressed') === 'true'", 'keyboard section selection');
   assert.equal(await evaluate("document.querySelectorAll('.field-legend button')[0].getAttribute('aria-pressed')"), 'false');
-  await clickSelector('[aria-label="Clear selection"]');
+  await clickSelector('.inspector [aria-label="Clear selection"]');
   await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'selection cleared');
-  assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
-  await clickSelector('[aria-label="Select all performers"]');
-  await uiWait("!!document.querySelector('.canvas-toolbar [aria-label=\"Clear selection\"]')", 'select-all becomes clear');
-  await revealFieldTool(window,'.canvas-toolbar [aria-label="Clear selection"]');
-  await evaluate('document.querySelector(\'.canvas-toolbar [aria-label="Clear selection"]\').focus()'); await sendKey(window, 'Return');
-  await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'toolbar clear selection');
+  // The one hint line on the field's margin replaced the status bar.
+  assert.equal(await evaluate("document.querySelectorAll('.canvas-hint[data-hint]').length"), 1);
+  assert.doesNotMatch(await evaluate("document.querySelector('.canvas-hint').textContent"), /Shift \+ click/);
+  await clickSelector('.inspector [aria-label="Select all for editing"]');
+  await uiWait("!!document.querySelector('.inspector [aria-label=\"Clear selection\"]') && document.querySelector('.selection-count').textContent === '64 selected'", 'select-all becomes clear');
+  // The Select menu in the tool strip clears it from the keyboard.
+  const clear = await locate('[role=menu][aria-label="Select menu"] [aria-label="Clear selection"]');
+  await evaluate(`document.querySelector(${JSON.stringify(clear)}).focus()`); await sendKey(window, 'Return');
+  await uiWait("document.querySelector('.selection-count').textContent === '0 selected' && document.activeElement === document.querySelector('button[aria-label=\"Select menu\"]')", 'toolbar clear selection');
   // Selection is not an edit: the untouched demo still has nothing to save.
   assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'No changes');
-  await showRightPanel(window,'cast'); await uiWait("!!document.querySelector('.cast-dock h2') && !!document.querySelector('.field-stage__svg')", 'Cast beside field');
-  await activateWorkspace(window,'production'); await uiWait("document.querySelector('h1').textContent.startsWith('Production sheet')", 'sheet heading');
+  // Cast and the production sheet are named by their tab and mode, and by their landmarks.
+  await showRightPanel(window,'cast'); await uiWait("!!document.querySelector('aside.cast-dock[aria-label=\"Cast panel\"]')?.getClientRects().length && document.querySelector('#panel-tab-cast').getAttribute('aria-selected') === 'true' && document.querySelector('#panel-tab-cast').textContent.startsWith('Cast') && !!document.querySelector('.field-stage__svg')", 'Cast beside field');
+  await activateWorkspace(window,'production'); await uiWait("!!document.querySelector('table[aria-label=\"Production sheet cells\"]')?.getClientRects().length && document.querySelector('[aria-label=\"Plan mode\"]').getAttribute('aria-pressed') === 'true'", 'sheet heading');
   await activateWorkspace(window,'design');
   pass('native pointer and Tab/Enter select sections with pressed state; hint stays retired after clearing; Cast and Production sheet have direct headings');
 }
@@ -197,47 +232,48 @@ async function checkCompactChrome() {
   for (const [width, scale] of [[1366, 1], [1366, 1.25], [1120, 1], [1120, 1.25]]) {
     window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
     await settleNativeViewport(window, 'compact viewport scale applied');
-    await clickSelector('[aria-label="Project menu"]'); await clickSelector('[aria-label="New production"]');
+    await fromProjectMenu('New production');
     await clickSelector('.new-options button:nth-child(2)');
     await uiWait("document.querySelectorAll('.field-performer').length === 64", 'compact demo creation');
     if (await evaluate("!!document.querySelector('[aria-label=\"Dismiss notification\"]')")) await clickSelector('[aria-label="Dismiss notification"]');
+    // A control is clipped when no button of that name is on screen, inside the window and on top at its center.
+    const clippedControls = names => evaluate(`${JSON.stringify(names)}.filter(name => ![...document.querySelectorAll('button[aria-label="'+name+'"]')].some(node => { const r=node.getBoundingClientRect(); return r.width>0 && r.left>=0 && r.right<=innerWidth+.5 && r.top>=0 && r.bottom<=innerHeight+.5 && node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); }))`);
+    // Help lives in the Project menu at every width; the top bar keeps the three modes and command search. Save joins it once there is something to save.
+    const required = ['Undo','Redo','Export','Write mode','Plan mode','Rehearse mode','Project menu','Command palette','Play show','First set','Last set','Select performers','Motion','Collapse Inspector','2D field','3D preview','Add set'];
     const measure = await evaluate(`(() => {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
-      // #178: below the compact header breakpoint Help moves into Menu; a set list tucked by a narrow window keeps its Show button.
-      const compactHeader = document.querySelector('.studio').dataset.header !== 'full', setsTucked = document.querySelector('#workspace-pane-sets').hidden;
-      const required = ['Save','Undo','Redo','Export','Switch workspace','Project menu','Play show','First set','Last set','More field tools','2D field','3D preview', compactHeader ? 'Command palette' : 'Help', setsTucked ? 'Show Set list' : 'Add set'];
-      const clipped = required.filter(name => { const node = document.querySelector('[aria-label="'+name+'"]'); if (!node) return true; const r=node.getBoundingClientRect(); const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2); return r.width===0 || r.left<0 || r.right>innerWidth+.5 || r.top<0 || r.bottom>innerHeight+.5 || !node.contains(top); });
-      return { viewport:{width:innerWidth,height:innerHeight}, compactHeader, setsTucked, header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), statusbar:rect('.statusbar'), clipped, emptyAudioLane:!!document.querySelector('.audio-track'), legendInField:!!document.querySelector('.field-container .field-legend') };
+      return { viewport:{width:innerWidth,height:innerHeight}, compactHeader:document.querySelector('.studio').dataset.header !== 'full', header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), transport:rect('.transport'), tracks:rect('.timeline-tracks'), emptyAudioLane:!!document.querySelector('.audio-track'), legendInInspector:!!document.querySelector('.inspector .field-legend')?.getClientRects().length, legendInField:!!document.querySelector('.field-container .field-legend') };
     })()`);
+    measure.clipped = await clippedControls(required);
     measurements.push({ width, scale, ...measure });
     assert.deepEqual(measure.clipped, [], `Required controls at ${width}px / ${scale}×`);
-    assert.equal(measure.emptyAudioLane, false); assert.equal(measure.legendInField, true);
-    // The header stays one row at every width and browser zoom; effective widths below 1200 px fold Help into Menu.
+    // The section key is in the Inspector's header; nothing permanent sits on the field.
+    assert.equal(measure.emptyAudioLane, false); assert.deepEqual([measure.legendInInspector, measure.legendInField], [true, false]);
+    // The header stays one row at every width and browser zoom; effective widths below 1200 px drop its labels.
     assert.ok(measure.header.height <= 50, JSON.stringify(measure.header)); assert.equal(measure.compactHeader, !(width === 1366 && scale === 1));
-    if (measure.compactHeader) {
-      await clickSelector('[aria-label="Project menu"]'); await uiWait("!!document.querySelector('.dropdown [aria-label=\"Help\"]')", 'Help in compact Menu');
-      await clickSelector('.dropdown [aria-label="Help"]'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'Help from compact Menu');
-      await clickSelector('.modal [aria-label="Close dialog"]');
-    }
+    await fromProjectMenu('Help'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Help'", 'Help from the Project menu');
+    await clickSelector('.modal [aria-label="Close dialog"]');
     if (width === 1366 && scale === 1) {
-      assert.ok(measure.header.height <= 50); assert.ok(measure.field.height >= 470); assert.ok(measure.timeline.height <= 125);
+      // The transport and the count timeline keep the old timeline's budget; the set cards below them are the set list.
+      assert.ok(measure.header.height <= 50); assert.ok(measure.field.height >= 470); assert.ok(measure.transport.height + measure.tracks.height <= 125, JSON.stringify(measure));
     }
     await capture(`compact-${width}-${scale}.png`);
     // Exercise native input at both scales, including a narrow enlarged window.
-    if (measure.setsTucked) { await clickSelector('[aria-label="Show Set list"]'); await uiWait("!!document.querySelector('.workspace-pane--overlay [aria-label=\"Add set\"]')", 'tucked set list opens over the field'); }
     await clickSelector('[aria-label="Add set"]');
     await clickSelector('[aria-label="Apply set creation"]');
     const name = `Compact ${width} ${scale}`;
     await typeText('.inspector input[aria-label="Set name"]', name); await fieldKey('.inspector input[aria-label="Set name"]', 'Enter');
     await editNumber('Counts', 12);
-    await uiWait(`document.querySelector('.canvas-set-title').textContent.includes(${JSON.stringify(name)})`, 'canvas set name');
+    // The transport names the current set, as does its card.
+    await uiWait(`document.querySelector('.set-jump-name').textContent === ${JSON.stringify(name)} && !!document.querySelector('.set-jump-name').getClientRects().length && document.querySelector('.set-card.selected .set-row-name').textContent === ${JSON.stringify(name)}`, 'canvas set name');
     await evaluate('document.querySelector(\'[aria-label="Play show"]\').focus()'); await sendKey(window, 'Return');
-    await uiWait("!!document.querySelector('[aria-label=\"Pause playback\"]') && Number(document.querySelector('.count-display strong').textContent)>0", 'compact playback advances');
+    await uiWait(`!!document.querySelector('[aria-label="Pause playback"]') && ${showCount}>0`, 'compact playback advances');
     await evaluate('document.querySelector(\'[aria-label="Pause playback"]\').focus()'); await sendKey(window, 'Return');
     await uiWait("!!document.querySelector('[aria-label=\"Play show\"]')", 'compact playback paused');
     await clickSelector('.set-card:nth-child(2)');
     destination = path.join(output, `compact-${width}-${scale}-${process.pid}.squid`);
-    await evaluate('document.querySelector(\'[aria-label="Save"]\').focus()'); await sendKey(window, 'Return');
+    assert.deepEqual(await clippedControls(['Save']), [], `Save is offered in the top bar at ${width}px / ${scale}×`);
+    await evaluate('document.querySelector(\'.topbar [aria-label="Save"]\').focus()'); await sendKey(window, 'Return');
     const saved = await savedProject(p => p.sets.some(set => set.name === name), destination);
     assert.equal(saved.moves.find(move => move.toSetId === saved.sets.find(set => set.name === name).id).counts, 12);
     await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'compact saved status');
@@ -268,6 +304,14 @@ async function checkSelectionInspector() {
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1);
   await settleNativeViewport(window, 'selection Inspector viewport');
   const fixture = JSON.parse(await fs.readFile(openPath, 'utf8'));
+  const { coordinateDescription } = require(path.join(output, 'boundary-fixture.cjs'));
+  // The Inspector reads a position as its side caption, then yard line and hash, one phrase to a line.
+  const capital = text => text.charAt(0).toUpperCase() + text.slice(1);
+  function coordinateText(point, single) {
+    const where = coordinateDescription(point, fixture.field).split('; '), side = /^(Side [12]): (.+)$/.exec(where[0]);
+    return [!single && 'Center', side?.[1]].filter(Boolean).join(' · ') + (side ? [capital(side[2]), ...where.slice(1).map(capital)] : where).join('');
+  }
+  const strip = "document.querySelector('.field-command-toolbar')";
   async function selectionCapture(name) {
     await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
     await evaluate('document.querySelector(\'.toast [aria-label="Dismiss notification"]\')?.click(); document.activeElement?.blur()');
@@ -285,17 +329,18 @@ async function checkSelectionInspector() {
     return saved;
   }
   async function pointer(selector) {
-    await revealFieldTool(window,selector);
-    const point = await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}; })()`);
+    const node = await locate(selector);
+    const point = await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(node)}).getBoundingClientRect(); return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}; })()`);
     for (const type of ['mouseDown', 'mouseUp']) window.webContents.sendInputEvent({ type, ...point, button: 'left', clickCount: 1 });
   }
-  async function keyboard(selector) { await revealFieldTool(window,selector);
-    await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window, 'Return');
+  async function keyboard(selector) {
+    const node = await locate(selector);
+    await evaluate(`document.querySelector(${JSON.stringify(node)}).focus()`); await sendKey(window, 'Return');
   }
+  const tool = name => `.field-command-toolbar [aria-label="${name}"], [role=menu][aria-label="Shape"] [aria-label="${name}"], [role=menu][aria-label="Arrange"] [aria-label="${name}"]`;
   const section = name => `summary[aria-label="${name} section"]`;
-  async function cancelNumberDraft(label, sectionName) {
+  async function cancelNumberDraft(label) {
     const input = numberSelector(label);
-    if (!await evaluate(`${input}.closest('details').open`)) await keyboard(section(sectionName));
     await uiWait(`${input}.getBoundingClientRect().height > 0`, 'number draft visible for cancellation');
     await evaluate(`${input}.focus()`);
     await uiWait(`document.activeElement === ${input}`, 'number draft focused for cancellation');
@@ -303,30 +348,36 @@ async function checkSelectionInspector() {
     await uiWait(`${input}.getAttribute('aria-invalid') === 'false'`, 'number draft canceled');
   }
 
-  // Inspect collapsed sections without discarding their mounted drafts.
-  if (await evaluate("document.querySelector('.formation-section')?.open")) await keyboard(section('Formation tools'));
-  if (!await evaluate("document.querySelector('[data-inspector-section=inspectorSetOpen]').open")) await keyboard(section('Set properties'));
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Shape selection\"]').getAttribute('aria-disabled')"), 'true');
-  await keyboard('[aria-label="Shape selection"]');
+  // The set's details stay open beside the selection. With nothing selected every shape tool is unavailable and says why.
+  if (!await evaluate("document.querySelector('[data-inspector-section=inspectorSetOpen]').open")) await keyboard(section('Set 1 details'));
+  assert.deepEqual(await evaluate(`[...${strip}.querySelectorAll('[data-command="formation.preview"]')].map(node => node.getAttribute('aria-disabled'))`), ['true', 'true', 'true', 'true', 'true']);
+  await keyboard(tool('Line formation'));
+  assert.equal(await evaluate("!!document.querySelector('.formation-parameters')"), false);
   await sendKey(window,'Escape');
   assert.deepEqual(await snapshot(), fixture, 'empty selection does not reshape the ensemble');
   await selectionCapture('selection-empty.png');
 
-  await pointer(`[data-performer-id="${fixture.performers[0].id}"]`);
+  await pointer(`.field-stage__svg [data-performer-id="${fixture.performers[0].id}"]`);
   await uiWait("document.querySelector('.selection-count').textContent === '1 selected'", 'single selection');
-  assert.match(await evaluate("document.querySelector('.selection-bounds').textContent"), /X 30 · Y 20 yd/);
+  // One performer: where they stand in drill vocabulary, and the exact yards one step away.
+  assert.equal(await evaluate("document.querySelector('.selection-bounds .selection-coordinate').textContent"), coordinateText({ x: 30, y: 20 }, true));
   assert.equal(await evaluate("!!document.querySelector('.exact-position')"), true);
-  assert.equal(await evaluate("document.querySelector('[aria-label=\"Rotate selection\"]').getAttribute('aria-disabled')"), null);
+  assert.deepEqual(await evaluate(`[${numberSelector('X · yards from left')}.value, ${numberSelector('Y · yards from back')}.value]`), ['30', '20']);
+  assert.equal(await evaluate(`${strip}.querySelector('[aria-label="Rotate selection"]').getAttribute('aria-disabled')`), null);
   await selectionCapture('selection-single.png');
 
-  await pointer('.field-legend button:first-child');
+  await pointer('.inspector .field-legend button:first-child');
   await uiWait("document.querySelector('.selection-count').textContent === '2 selected'", 'group selection');
-  assert.match(await evaluate("document.querySelector('.selection-bounds').textContent"), /Center 33, 20 ydBounds 6 × 0 yd/);
+  // A group: its center the same way, and its size in steps (6 yards is 9.6 eight-to-five steps).
+  assert.equal(await evaluate("document.querySelector('.selection-bounds .selection-coordinate').textContent"), coordinateText({ x: 33, y: 20 }, false));
+  assert.equal(await evaluate("(([dt, dd]) => dt.textContent + ' ' + dd.textContent)(document.querySelector('.selection-stats > div').children)"), 'Size 9.6 × 0steps');
   assert.equal(await evaluate("!!document.querySelector('.exact-position')"), false);
-  await keyboard('[aria-label="Move selection"]');
+  // The move buttons are in the Inspector, in reading order: left, back, front, right.
+  await evaluate("document.querySelector('.inspector .move-selection-left').focus()");
   await uiWait("document.activeElement.getAttribute('aria-label') === 'Move selection left'", 'move action focus');
-  await sendKey(window, 'Tab');
-  assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Move selection right');
+  const reached = [];
+  for (let step = 0; step < 3; step++) { await sendKey(window, 'Tab'); reached.push(await evaluate("document.activeElement.getAttribute('aria-label')")); }
+  assert.deepEqual(reached, ['Move selection back', 'Move selection front', 'Move selection right']);
   await sendKey(window, 'Return');
   const moved = await snapshot();
   for (const [i, performer] of fixture.performers.entries()) {
@@ -336,7 +387,7 @@ async function checkSelectionInspector() {
   const moveHistory = await openHistory(); assert.equal(moveHistory.length, 1); assert.match(moveHistory[0], /Nudge 2 performers/);
   await clickSelector('.modal [aria-label="Close dialog"]');
   menuAction('Undo drill edit'); assert.deepEqual(await snapshot(), fixture);
-  await keyboard('[aria-label="Rotate selection"]');
+  await keyboard(tool('Rotate selection'));
   await uiWait("!!document.querySelector('.transform-panel')", 'rotate preview panel');
   await uiWait("document.activeElement.getAttribute('aria-label') === 'Transform operation'", 'transform panel focus');
   await editNumber('Angle · degrees', 15);
@@ -349,34 +400,47 @@ async function checkSelectionInspector() {
   menuAction('Undo drill edit'); assert.deepEqual(await snapshot(), fixture);
   pass('selection bar reports single coordinates and group bounds; native pointer/keyboard moves and rotates only the selection with one undo');
 
-  await keyboard('[aria-label="Shape selection"]');
-  await uiWait("document.activeElement?.matches('.formation-grid button')", 'formation reveal settled before unrelated text draft');
-  await typeText('input[aria-label="Set name"]', 'Unrelated set draft');
-  await uiWait("document.activeElement?.matches('input[aria-label=\"Set name\"]') && document.activeElement.value==='Unrelated set draft'", 'unrelated text draft focused');
-  await sendKey(window, 'Escape');
-  // A contextual formation draft survives collapse until canceled; selection changes discard the preview.
-  await editNumber('Width · yd', 0);
-  await keyboard(section('Formation tools'));
-  await keyboard(section('Formation tools'));
-  assert.equal(await evaluate(`${numberSelector('Width · yd')}.value`), '0');
-  assert.equal(await evaluate(`${numberSelector('Width · yd')}.getAttribute('aria-invalid')`), 'true');
-  await cancelNumberDraft('Width · yd', 'Formation tools');
-  await pointer('.field-legend button:nth-child(2)');
-  await uiWait("!document.querySelector('.formation-parameters')", 'selection change discards contextual preview');
+  await keyboard(tool('Line formation'));
+  await uiWait("document.activeElement?.matches('.formation-grid button')", 'formation reveal settled');
+  // A preview shows its own parameters and nothing else in the panel: the set's fields return when it ends.
+  assert.deepEqual(await evaluate("[!!document.querySelector('.inspector .inspector-tool .formation-parameters'), !!document.querySelector('.inspector input[aria-label=\"Set name\"]'), !!document.querySelector('.inspector .set-timing')]"), [true, false, false]);
+  // An invalid formation draft stays until canceled; selection changes discard the preview.
+  await editNumber('Length · steps', 0);
+  assert.equal(await evaluate(`${numberSelector('Length · steps')}.value`), '0');
+  assert.equal(await evaluate(`${numberSelector('Length · steps')}.getAttribute('aria-invalid')`), 'true');
+  assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply formation\"]').getAttribute('aria-disabled')"), 'true');
+  await cancelNumberDraft('Length · steps');
+  // The section chips give way to the preview's parameters, so the selection changes from the keyboard or the Edit menu.
+  menuAction('Select all');
+  await uiWait("!document.querySelector('.formation-parameters') && document.querySelector('.selection-count').textContent === '4 selected'", 'selection change discards contextual preview');
   assert.deepEqual(await snapshot(), fixture);
-  // Set properties are unrelated to selection and must also retain incomplete input.
+  // Set timing is unrelated to selection and must also retain incomplete input.
   await clickSelector('.set-card:nth-child(2)');
   await editNumber('Counts', 0);
-  await pointer('.field-legend button:first-child');
-  await keyboard(section('Set properties')); await keyboard(section('Set properties'));
+  await pointer('.inspector .field-legend button:first-child');
+  await uiWait("document.querySelector('.selection-count').textContent === '2 selected'", 'selection changed beside a set draft');
   assert.equal(await evaluate(`${numberSelector('Counts')}.value`), '0');
   assert.equal(await evaluate(`${numberSelector('Counts')}.getAttribute('aria-invalid')`), 'true');
-  await cancelNumberDraft('Counts', 'Set properties');
-  pass('collapsed formation drafts survive until cancellation; changed selection cancels contextual previews and preserves unrelated invalid set drafts');
+  await cancelNumberDraft('Counts');
+  // A collapsed section keeps the drafts mounted inside it: an out-of-range exact position survives closing and reopening Position.
+  await clickSelector('.inspector [aria-label="Clear selection"]'); await uiWait("document.querySelector('.selection-count').textContent === '0 selected'", 'selection cleared before the position draft');
+  await pointer(`.field-stage__svg [data-performer-id="${fixture.performers[0].id}"]`);
+  await uiWait("document.querySelector('.selection-count').textContent === '1 selected' && !!document.querySelector('.exact-position')", 'single selection for the position draft');
+  if (!await evaluate("document.querySelector('.selected-performer').open")) await keyboard('.selected-performer > summary');
+  await editNumber('X · yards from left', 999);
+  await keyboard(section('Position')); await uiWait("!document.querySelector('.selection-section').open", 'Position collapsed');
+  await keyboard(section('Position')); await uiWait("document.querySelector('.selection-section').open", 'Position reopened');
+  assert.equal(await evaluate(`${numberSelector('X · yards from left')}.value`), '999');
+  assert.equal(await evaluate(`${numberSelector('X · yards from left')}.getAttribute('aria-invalid')`), 'true');
+  await cancelNumberDraft('X · yards from left');
+  assert.deepEqual(await snapshot(), fixture);
+  await pointer('.inspector .field-legend button:first-child');
+  await uiWait("document.querySelector('.selection-count').textContent === '2 selected'", 'group selection restored');
+  pass('invalid formation drafts stay until cancellation and collapsed sections keep theirs; changed selection cancels contextual previews and preserves unrelated invalid set drafts');
 
-  await keyboard('[aria-label="Shape selection"]');
-  await keyboard('[aria-label="Line formation"]'); await editNumber('Width · yd', 10);
-  await uiWait("document.querySelector('[aria-label=\"Line formation\"]').getAttribute('aria-pressed') === 'true'", 'line chosen');
+  await keyboard(tool('Line formation')); await uiWait("!!document.querySelector('.formation-parameters')", 'line preview');
+  await editNumber('Length · steps', 16);
+  await uiWait("document.querySelector('.formation-grid [aria-label=\"Line formation\"]').getAttribute('aria-pressed') === 'true'", 'line chosen');
   await keyboard('[aria-label="Apply formation"]');
   const shaped = await snapshot();
   assert.deepEqual(shaped.sets[0], fixture.sets[0]);
@@ -393,15 +457,22 @@ async function checkSelectionInspector() {
     window.setContentSize(width, 768); window.webContents.setZoomFactor(scale);
     await settleNativeViewport(window, 'selection viewport');
     await evaluate('document.activeElement?.blur()');
-    // Contextual tools are reachable either in the row or its keyboard More menu.
+    // The five operations on a selection are on screen: in the Inspector, on the tool strip, or in the strip's Shape and
+    // Arrange menus once a narrow strip folds its groups away. A folded tool keeps its action under the menu's own label.
     const clipped=[];
-    for(const name of ['Move selection','Rotate selection','Shape selection','Mirror selection','Align selection']){
-      await revealFieldTool(window,`[aria-label="${name}"]`);
-      const visible=await evaluate(`(()=>{const n=document.querySelector('[aria-label="${name}"]');n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return r.width>0&&r.left>=0&&r.right<=innerWidth+.5&&r.top>=0&&r.bottom<=innerHeight+.5;})()`);
-      if(!visible)clipped.push(name);
+    for(const names of [['Move selection left'],['Rotate selection'],['Line formation','Line'],['Mirror selection','Mirror across the 50'],['Align selection']]){
+      let visible=false;
+      for(const name of names){
+        const selector=name.startsWith('Move')?`.inspector [aria-label="${name}"]`:tool(name);
+        if(!await evaluate(`[...document.querySelectorAll(${JSON.stringify(selector)})].some(n=>n.getClientRects().length||(m=>m&&[...document.querySelectorAll('[aria-controls]')].some(t=>t.getAttribute('aria-controls')===m.id&&t.getClientRects().length))(n.closest('[role=menu]')))`))continue;
+        const node=await locate(selector);
+        visible=await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const n=document.querySelector(${JSON.stringify(node)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();resolve(r.width>0&&r.left>=0&&r.right<=innerWidth+.5&&r.top>=0&&r.bottom<=innerHeight+.5&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)));})))`);
+        if(await evaluate("!!document.querySelector('[role=menu][data-escape-scope]')")){await sendKey(window,'Escape');await uiWait("!document.querySelector('[role=menu][data-escape-scope]')",'menu closed after reaching '+name);}
+        if(visible)break;
+      }
+      if(!visible)clipped.push(names[0]);
     }
-    if(await evaluate("!!document.querySelector('.field-tools-menu:not([hidden])')"))await sendKey(window,'Escape');
-    assert.deepEqual(clipped, []);
+    assert.deepEqual(clipped, [], `selection operations at ${width}px / ${scale}×`);
     const fieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
     if (width===1366 && scale===1) assert.ok(fieldHeight>=470);
     measurements.push({width,scale,fieldHeight,clipped});
@@ -409,20 +480,21 @@ async function checkSelectionInspector() {
   }
   window.webContents.setZoomFactor(1); window.setContentSize(1366,768);
   await settleNativeViewport(window, 'restored selection viewport');
-  await keyboard('[aria-label="Mirror selection"]');
+  await keyboard(tool('Mirror selection') + ', [role=menu][aria-label="Arrange"] [aria-label="Mirror across the 50"]');
   await uiWait("!!document.querySelector('.transform-panel')", 'mirror preview open');
-  assert.equal(await evaluate("document.querySelector('.field-command-toolbar').dataset.context"),'preview');
-  assert.equal(await evaluate("document.querySelector('.field-command-toolbar [data-command=\"spacing.preview\"]')"),null);
+  assert.equal(await evaluate(`${strip}.dataset.context`),'preview');
+  assert.equal(await evaluate(`${strip}.querySelector('[data-command="spacing.preview"]')`),null);
   assert.deepEqual(await snapshot(), fixture);
   await keyboard('[aria-label="Cancel transform"]');
   await uiWait("!document.querySelector('.transform-panel')", 'mirror preview canceled');
   await scrubCount(1);
-  await uiWait("document.querySelector('.selection-bar .return-to-set') !== null", 'preview selection recovery');
-  assert.equal(await evaluate("document.querySelector('.field-command-toolbar').dataset.context"),'scrub');
-  assert.equal(await evaluate("document.querySelector('.field-command-toolbar [data-command=\"formation.preview\"]')"),null);
+  // Between sets the strip names the move and offers the way back; the selection is kept.
+  await uiWait(`${strip}.dataset.context === 'scrub' && !!${strip}.querySelector('.toolbar-commit button')?.getClientRects().length`, 'preview selection recovery');
+  assert.equal(await evaluate("document.querySelector('.selection-count').textContent"), '2 selected');
+  assert.equal(await evaluate(`${strip}.querySelector('[data-command="formation.preview"]')`),null);
   await selectionCapture('selection-preview.png');
-  await keyboard('.selection-bar .return-to-set');
-  await uiWait("!document.querySelector('.field-preview-banner')", 'selection return to set');
+  await keyboard('.field-command-toolbar .toolbar-commit button');
+  await uiWait(`!document.querySelector('.field-preview-banner') && !document.querySelector('#field-lock-message') && ${strip}.dataset.context === 'group'`, 'selection return to set');
   await fs.writeFile(path.join(output,'selection-measurements.json'),JSON.stringify(measurements,null,2));
   pass('selection actions remain unclipped at 1366/1120 px and 100/125%; preview locks edits and offers keyboard recovery; mirrors preview and future alignment explains availability');
 }
@@ -435,7 +507,9 @@ async function checkExactTransforms() {
   await settleNativeViewport(window, 'exact transform viewport');
   const fixture=JSON.parse(await fs.readFile(openPath,'utf8')); const ids=fixture.performers.slice(0,2).map(p=>p.id);
   let sequence=0;
-  async function keyboard(selector) { await revealFieldTool(window,selector); await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`); await sendKey(window,'Return'); }
+  async function keyboard(selector) { const node=await locate(selector); await evaluate(`document.querySelector(${JSON.stringify(node)}).focus()`); await sendKey(window,'Return'); }
+  // Rotate and Mirror are tools on the strip, or actions in its Arrange menu once a narrow strip folds the group away.
+  const launcher={'Rotate selection':'.field-command-toolbar [aria-label="Rotate selection"], [role=menu][aria-label="Arrange"] [aria-label="Rotate selection"]','Mirror selection':'.field-command-toolbar [aria-label="Mirror selection"], [role=menu][aria-label="Arrange"] [aria-label="Mirror across the 50"]'};
   async function savedSnapshot() {
     destination=path.join(output,`transform-${process.pid}-${sequence++}.squid`); menuAction('Save As…');
     const project=await savedProject(p=>p.title===fixture.title,destination);
@@ -446,7 +520,7 @@ async function checkExactTransforms() {
     await uiWait(`document.querySelector('select[aria-label="${label}"]').value === ${JSON.stringify(value)}`,'transform choice');
   }
   async function open(operation='Rotate selection') {
-    await keyboard(`[aria-label="${operation}"]`); await uiWait("!!document.querySelector('.transform-panel')",'exact preview open');
+    await keyboard(launcher[operation]); await uiWait("!!document.querySelector('.transform-panel')",'exact preview open');
     await uiWait("document.activeElement.getAttribute('aria-label')==='Transform operation'",'exact panel keyboard focus');
   }
   async function cancel() { await keyboard('[aria-label="Cancel transform"]'); await uiWait("!document.querySelector('.transform-panel')",'exact preview canceled'); }
@@ -465,7 +539,7 @@ async function checkExactTransforms() {
     await evaluate('document.querySelector(\'.toast [aria-label="Dismiss notification"]\')?.click(); document.activeElement?.blur(); document.querySelector(\'.inspector-scroll\').scrollTop=0');
     await uiWait("!document.querySelector('[role=tooltip]') && !document.querySelector('.toast')",'clean transform evidence'); await capture(name);
   }
-  await keyboard('.field-legend button:first-child'); await uiWait("document.querySelector('.selection-count').textContent==='2 selected'",'exact selection');
+  await keyboard('.inspector .field-legend button:first-child'); await uiWait("document.querySelector('.selection-count').textContent==='2 selected'",'exact selection');
   assert.deepEqual(await savedSnapshot(),fixture);
   await open(); await editNumber('Angle · degrees',90);
   const typed=await displayed(); near(typed,{[ids[0]]:{x:33,y:17},[ids[1]]:{x:33,y:23}});
@@ -475,8 +549,10 @@ async function checkExactTransforms() {
   for(const [width,zoom] of [[1366,1],[1366,1.25],[1120,1],[1120,1.25]]) {
     window.setContentSize(width,768); window.webContents.setZoomFactor(zoom);
     await settleNativeViewport(window, 'transform viewport');
-    const clipped=await evaluate(`['Apply transform','Cancel transform','Save','Undo','Export'].filter(name=>{const n=document.querySelector('[aria-label="'+name+'"]');const r=n.getBoundingClientRect();return r.width===0||r.left<0||r.right>innerWidth+.5||r.top<0||r.bottom>innerHeight+.5||!n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})`);
-    assert.deepEqual(clipped,[]); layout.push({width,zoom,clipped}); await captureExact(`transform-${width}-${zoom}.png`);
+    const clipped=await evaluate(`['Apply transform','Cancel transform','Undo','Export','Project menu'].filter(name=>![...document.querySelectorAll('button[aria-label="'+name+'"]')].some(n=>{const r=n.getBoundingClientRect();return r.width>0&&r.left>=0&&r.right<=innerWidth+.5&&r.top>=0&&r.bottom<=innerHeight+.5&&n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}))`);
+    assert.deepEqual(clipped,[]);
+    // A preview leaves the saved file clean, so the top bar does not offer Save; the parameters sit in the docked panel.
+    assert.deepEqual(await evaluate("[!!document.querySelector('.topbar .header-save'),!!document.querySelector('.side-panel:not(.side-panel--overlay) .transform-panel')?.getClientRects().length]"),[false,true]); layout.push({width,zoom,clipped}); await captureExact(`transform-${width}-${zoom}.png`);
   }
   window.setContentSize(1366,768); window.webContents.setZoomFactor(1); await settleNativeViewport(window, 'restored transform viewport'); await cancel();
   near(await displayed(),fixture.sets[0].positions); assert.deepEqual(await savedSnapshot(),fixture);
@@ -501,10 +577,11 @@ async function checkExactTransforms() {
   assert.ok(await evaluate("!!document.querySelector('.transform-panel')")); await cancel();
   pass('scale handle at 160% field zoom matches typed percentage; Escape cancels an active handle gesture without applying or leaving the preview');
 
-  await open(); await clickSelector('[aria-label="Pan field"]');
+  await open(); await evaluate('document.activeElement.blur()'); await sendKey(window,'H');
+  await uiWait("document.querySelector('.field-stage').classList.contains('field-stage--pan')",'pan tool from its shortcut during a preview');
   const panStart=await screenPoint(80,40);
   for(const event of [{type:'mouseMoved',...panStart},{type:'mousePressed',...panStart,button:'left',buttons:1,clickCount:1},{type:'mouseMoved',x:panStart.x+24,y:panStart.y+12,button:'left',buttons:1},{type:'mouseReleased',x:panStart.x+24,y:panStart.y+12,button:'left',buttons:0,clickCount:1}]) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',event);
-  await clickSelector('[aria-label="Select performers"]'); await nativeDrag('pivot',()=>({x:40,y:25}));
+  await sendKey(window,'V'); await uiWait("!document.querySelector('.field-stage').classList.contains('field-stage--pan')",'select tool from its shortcut during a preview'); await nativeDrag('pivot',()=>({x:40,y:25}));
   await uiWait("document.querySelector('select[aria-label=\"Transform pivot\"]').value==='custom'",'dragged custom pivot');
   assert.ok(Math.abs(Number(await evaluate(`${numberSelector('Pivot X · yards')}.value`))-40)<.0001);
   await editNumber('Angle · degrees',180); near(await displayed(),{[ids[0]]:{x:50,y:30},[ids[1]]:{x:44,y:30}});
@@ -523,9 +600,9 @@ async function checkExactTransforms() {
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply transform\"]').getAttribute('aria-disabled')"),'true');
   await keyboard('[aria-label="Apply transform"]'); assert.deepEqual(await savedSnapshot(),fixture); await captureExact('transform-boundary.png'); await cancel();
   await open(); await editNumber('Scale · percent',0); await keyboard('[aria-label="Apply transform"]'); assert.ok(await evaluate("!!document.querySelector('.transform-panel [aria-invalid=true]')")); await cancel();
-  await open(); await editNumber('Angle · degrees',15); await keyboard('.field-legend button:nth-child(2)');
-  await uiWait("!document.querySelector('.transform-panel')",'selection change invalidates transform'); assert.deepEqual(await savedSnapshot(),fixture);
-  const first=fixture.performers[0].id; await keyboard('.field-legend button:first-child');
+  await open(); await editNumber('Angle · degrees',15); menuAction('Select all');
+  await uiWait("!document.querySelector('.transform-panel')&&document.querySelector('.selection-count').textContent==='4 selected'",'selection change invalidates transform'); assert.deepEqual(await savedSnapshot(),fixture);
+  const first=fixture.performers[0].id; await keyboard('.inspector .field-legend button:first-child');
   await evaluate(`document.querySelector('[data-performer-id="${first}"]').focus()`); await sendKey(window,'Return');
   await open(); await choose('Transform pivot','field'); await editNumber('Angle · degrees',180);
   near(await displayed(),{[ids[0]]:{x:70,y:fixture.field.height-20},[ids[1]]:fixture.sets[0].positions[ids[1]]}); await cancel();
@@ -546,7 +623,8 @@ app.whenReady().then(async () => {
     // The untouched startup demo is clean but never saved: neutral status, no Save marker and no close prompt.
     assert.equal(await evaluate("document.querySelector('.save-state').textContent"), 'No changes');
     assert.equal(await evaluate("document.querySelector('.save-state .status-dot').classList.contains('idle')"), true);
-    assert.equal(await evaluate('document.querySelector(\'[aria-label="Save"]\').textContent'), 'Save');
+    // The top bar offers Save only while there is something to save.
+    assert.equal(await evaluate("document.querySelector('.topbar .header-save, .topbar button[aria-label=\"Save\"]')"), null);
     const startupMessages = messages.length; let startupClosePrevented = false;
     window.emit('close', { preventDefault() { startupClosePrevented = true; } });
     await pause(60);
@@ -558,7 +636,15 @@ app.whenReady().then(async () => {
     await uiWait("document.querySelector('.project-title')?.textContent.includes('Editor boundary QA')", 'boundary import');
     assert.equal(await evaluate(`${numberSelector('Counts')}.disabled`), true);
     assert.equal(await evaluate(`${numberSelector('Tempo · BPM')}.disabled`), true);
-    assert.equal(await evaluate("document.querySelector('.inspector').textContent.includes('stored tempo does not affect playback')"), true);
+    // An unavailable control says why in its tooltip rather than in a paragraph in the panel. Tab reaches a disabled
+    // field so the reason can be read from the keyboard.
+    await evaluate("[...document.querySelectorAll('.inspector .field-legend button')].at(-1).focus()");
+    for (const [label, reason] of [['Counts', 'The opening set has no incoming move and always has zero counts.'], ['Tempo · BPM', 'The opening set has no incoming move; select a later set to edit tempo.']]) {
+      await sendKey(window, 'Tab');
+      await uiWait(`document.activeElement?.matches('.tooltip-disabled-field[aria-disabled=true]') && document.activeElement.getAttribute('aria-label') === ${JSON.stringify(label)} && document.activeElement.contains(${numberSelector(label)})`, `Tab reaches the unavailable ${label} field`);
+      await uiWait(`document.querySelector('[role=tooltip]')?.textContent === ${JSON.stringify(label)} + document.querySelector('[role=tooltip] p').textContent + ${JSON.stringify('Unavailable: ' + reason)}`, `${label} explains why it is unavailable`);
+    }
+    await evaluate('document.activeElement.blur()');
     pass('opening-set timing is disabled and explained');
 
     await clickSelector('.set-card:nth-child(2)');
@@ -615,17 +701,18 @@ app.whenReady().then(async () => {
     menuAction('Save');
     saved = await savedProject(p => p.moves[0].counts === 1024);
     const beforeFormation = JSON.stringify(saved.sets[1].positions);
-    await clickSelector('[aria-label="Shape selection"]');
-    await editNumber('Width · yd', 0);
+    await clickSelector('.field-command-toolbar [aria-label="Line formation"]');
+    await uiWait("!!document.querySelector('.formation-parameters')", 'line formation preview');
+    await editNumber('Length · steps', 0);
     assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply formation\"]').getAttribute('aria-disabled')"), 'true');
-    await clickText('Apply formation', 'body', true);
-    await keyOnNumber('Width · yd', 'Escape');
+    await clickLabel('Apply formation', true);
+    await keyOnNumber('Length · steps', 'Escape');
     menuAction('Save');
     await pause(150);
     saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(JSON.stringify(saved.sets[1].positions), beforeFormation);
     pass('an invalid formation draft cannot apply the previous dimensions');
-    await clickText('Apply formation');
+    await clickLabel('Apply formation');
     menuAction('Save');
     saved = await savedProject(p => JSON.stringify(p.sets[1].positions) !== beforeFormation);
     assert.equal(saved.performers.length, 64);
@@ -635,10 +722,10 @@ app.whenReady().then(async () => {
     assert.equal(saved.moves[0].toSetId, saved.sets[1].id);
     pass('formation application mutates only the intended set and keeps a valid roster');
 
-    const initialCount = await evaluate("Number(document.querySelector('.count-display strong').textContent)");
+    const initialCount = await evaluate(showCount);
     await clickSelector('[aria-label="Play show"]');
     await uiWait("document.querySelector('[aria-label=\"Pause playback\"]') !== null", 'playback start');
-    await uiWait(`Number(document.querySelector('.count-display strong').textContent) > ${initialCount}`, 'playhead progression');
+    await uiWait(`${showCount} > ${initialCount}`, 'playhead progression');
     await clickSelector('[aria-label="Pause playback"]');
     await clickSelector('.set-card:nth-child(2)');
     pass('playback advances and returns to an editable set');
@@ -709,10 +796,16 @@ app.whenReady().then(async () => {
 
     await evaluate(`document.querySelector(${JSON.stringify(dotSelector)}).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))`);
     await scrubCount(512);
-    await uiWait("!!document.querySelector('.field-preview-banner')", 'visible between-set banner');
-    assert.match(await evaluate("document.querySelector('.field-preview-banner').textContent"), /Move 1 → 2.*Count 512.*512 \/ 1024/);
+    // Between sets the tool strip says so in place of its tools, and the transport reads the count within the move.
+    const strip = "document.querySelector('.field-command-toolbar')", lock = "document.querySelector('#field-lock-message')";
+    await uiWait(`${strip}.dataset.context === 'scrub' && !!${lock}?.getClientRects().length`, 'visible between-set banner');
+    assert.match(await evaluate(`${lock}.textContent`), /^Between setsMove 1 → 2$/);
+    assert.match(await evaluate("document.querySelector('.move-count .readout-value').textContent"), /^512\/ 1024$/);
+    assert.equal(await evaluate("!!document.querySelector('.move-count').getClientRects().length"), true);
+    // The same message describes the field to assistive technology.
+    assert.match(await evaluate("document.querySelector('#field-preview-message').textContent"), /Move 1 → 2.*Count 512.*512 \/ 1024/);
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled && ${numberSelector('Y · yards from back')}.disabled`), true);
-    assert.equal(await evaluate("document.querySelector('.preview-formation') === null"), true);
+    assert.deepEqual(await evaluate(`[...${strip}.querySelectorAll('[data-command]')].map(node => node.dataset.command)`), [], 'no editing tool is offered between sets');
     assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(dotSelector)})).cursor`), 'default');
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby').split(/\\s+/).includes('field-preview-message')"), true);
     const beforePreview = JSON.stringify(saved.sets[1].positions);
@@ -726,16 +819,18 @@ app.whenReady().then(async () => {
     saved = await savedProject(p => p.moves[0].counts === 1024);
     assert.equal(JSON.stringify(saved.sets[1].positions), beforePreview);
     await capture('field-preview.png');
-    await clickSelector('.field-preview-banner button');
-    await uiWait("!document.querySelector('.field-preview-banner')", 'one-click editing recovery');
+    assert.equal(await evaluate(`${strip}.querySelector('.toolbar-commit button').getAttribute('aria-label')`), 'Go to set 2 to edit');
+    await clickSelector('.field-command-toolbar .toolbar-commit button');
+    await uiWait(`!document.querySelector('.field-preview-banner') && !${lock} && ${strip}.dataset.context === 'performer'`, 'one-click editing recovery');
     assert.equal(await evaluate("document.querySelector('.timeline-scrubber').value"), '1024');
     assert.equal(await evaluate(`${numberSelector('X · yards from left')}.disabled`), false);
-    assert.equal(await evaluate("document.querySelector('.preview-formation').getAttribute('aria-disabled') === 'true'"), false);
+    assert.equal(await evaluate(`${strip}.querySelector('[data-command="formation.preview"]').getAttribute('aria-disabled') === 'true'`), false);
     pass('between-set preview blocks drag, nudge, formation and Inspector edits and recovers at the named arrival');
 
     await clickSelector('[aria-label="Play show"]');
-    await uiWait("!!document.querySelector('.field-preview-banner')", 'playback lock');
-    await clickSelector('.field-preview-banner button');
+    await uiWait(`${strip}.dataset.context === 'playback' && ${lock}?.textContent.startsWith('Playing')`, 'playback lock');
+    await clickSelector('.field-command-toolbar .toolbar-commit button');
+    await uiWait(`!${lock} && !['playback', 'scrub'].includes(${strip}.dataset.context)`, 'playback lock removed');
     assert.equal(await evaluate("!!document.querySelector('[aria-label=\"Play show\"]')"), true);
     assert.equal(await evaluate("!!document.querySelector('.field-preview-banner')"), false);
     pass('preview recovery stops running playback and removes the edit lock');
@@ -785,12 +880,14 @@ app.whenReady().then(async () => {
     assert.match(actions[0], /^Edit notes — Set 1/);
     assert.deepEqual(await evaluate("[...document.querySelectorAll('.history-actions button')].map(b => [b.textContent.split(' ')[0], b.getAttribute('aria-disabled')])"), [['Undo', null], ['Redo', 'true']]);
     await clickSelector('.history-actions button:first-child');
-    // The emptied list is a sentence, not a bare bordered list; the now-unavailable Undo looks and reads unavailable.
+    // The emptied list is a sentence, not a bare bordered list; the now-unavailable Undo looks (dimmed) and reads unavailable.
     await uiWait("!!document.querySelector('.history-empty')", 'history empty state after undo');
-    assert.deepEqual(await evaluate("({ list: !!document.querySelector('.history-list:not(.future)'), empty: document.querySelector('.history-empty')?.textContent, undo: [document.querySelector('.history-actions button:first-child').getAttribute('aria-disabled'), getComputedStyle(document.querySelector('.history-actions button:first-child')).borderTopStyle], redo: document.querySelector('.history-actions button:nth-child(2)').getAttribute('aria-label') })"), { list: false, empty: 'No actions to undo.', undo: ['true', 'dashed'], redo: `Redo ${actions[0]}` });
-    assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), true);
+    assert.deepEqual(await evaluate("({ list: !!document.querySelector('.history-list:not(.future)'), empty: document.querySelector('.history-empty')?.textContent, undo: [document.querySelector('.history-actions button:first-child').getAttribute('aria-disabled'), getComputedStyle(document.querySelector('.history-actions button:first-child')).opacity], redo: document.querySelector('.history-actions button:nth-child(2)').getAttribute('aria-label') })"), { list: false, empty: 'No actions to undo.', undo: ['true', '0.48'], redo: `Redo ${actions[0]}` });
+    // Undoing past the saved revision brings Save into the top bar, with the unsaved dot beside the title; redo takes both away.
+    const unsaved = "[!!document.querySelector('.topbar .header-save')?.getClientRects().length, document.querySelector('.save-state').classList.contains('save-state--unsaved'), document.querySelector('.save-state .status-dot').classList.contains('unsaved')]";
+    assert.deepEqual(await evaluate(unsaved), [true, true, true]);
     await clickSelector('.history-actions button:nth-child(2)');
-    assert.equal(await evaluate("[...document.querySelectorAll('.header-actions button')].find(button => button.textContent.startsWith('Save')).textContent.includes('•')"), false);
+    assert.deepEqual(await evaluate(unsaved), [false, false, false]);
     await clickSelector('.modal [aria-label="Close dialog"]');
     pass('40-character note drafts commit as one named action; undo and redo restore saved revision status');
 
@@ -869,6 +966,8 @@ app.whenReady().then(async () => {
     for (const width of [1120, 1250]) {
       window.setSize(width, 800); await settleNativeViewport(window, 'draft-status viewport');
       assert.equal(await evaluate("getComputedStyle(document.querySelector('.save-state')).display !== 'none' && document.querySelector('.save-state').getBoundingClientRect().right <= document.querySelector('.header-actions').getBoundingClientRect().left"), true);
+      // The full header spells the status out. Below 1200 px it keeps the amber unsaved dot beside the title.
+      assert.deepEqual(await evaluate("[document.querySelector('.studio').dataset.header, !!document.querySelector('.save-state .status-dot.unsaved')?.getClientRects().length, !!document.querySelector('.save-state-text').getClientRects().length]"), [width < 1200 ? 'compact' : 'full', true, width >= 1200]);
     }
     await capture('file-draft-status.png');
     messageResponse = 0;
@@ -960,7 +1059,7 @@ app.whenReady().then(async () => {
     await confirmOpen('Replace this production?', 'accepted replace confirmation');
     await clickSelector('.confirm-dialog__confirm');
     await uiWait("!document.querySelector('dialog[open]') && document.querySelector('.save-state').textContent === 'No changes'", 'new production has no changes');
-    assert.equal(await evaluate("document.querySelector('.set-panel .count-badge').textContent"), '1');
+    assert.equal(await evaluate("document.querySelectorAll('.set-strip .set-card').length"), 1);
     assert.equal(await evaluate("document.querySelector('.save-state .status-dot').classList.contains('idle')"), true);
     assert.equal(await evaluate('window.__qaConfirmations.length'), confirmations + 4);
     await evaluate('window.__qaConfirmResponse = true');
@@ -983,7 +1082,7 @@ app.whenReady().then(async () => {
     await checkExactTransforms();
     openPath = path.join(output, 'selection.squid'); menuAction('Open project…');
     await uiWait("document.querySelector('.project-title').textContent.includes('Selection Inspector QA') && document.querySelector('.set-card:first-child').classList.contains('selected')", 'formation fixture');
-    await require('./formation-preview-qa.cjs')({ window, output, evaluate, uiWait, clickSelector, editNumber, numberSelector, capture, pass, menuAction, openHistory,
+    await require('./formation-preview-qa.cjs')({ window, output, evaluate, uiWait, clickSelector, resolve: locate, editNumber, numberSelector, capture, pass, menuAction, openHistory,
       fixture: JSON.parse(await fs.readFile(openPath, 'utf8')),
       snapshot: async filename => { destination = filename; menuAction('Save As…'); const project = await savedProject(p => p.title === 'Selection Inspector QA', filename); await uiWait("document.querySelector('.save-state').textContent === 'Project file saved'", 'formation snapshot'); return project; } });
     await capture('editor.png');
@@ -994,7 +1093,7 @@ app.whenReady().then(async () => {
      console.error(error);
     if (window && !window.isDestroyed()) {
       await capture('failure.png').catch(() => {});
-      try { console.error('Renderer diagnostic:', await evaluate("JSON.stringify({ toast: document.querySelector('.toast')?.textContent, fields: [...document.querySelectorAll('input[type=number]')].map(input => ({ label: input.parentElement?.firstChild?.textContent, value: input.value, invalid: input.getAttribute('aria-invalid'), disabled: input.disabled })) })")); } catch {}
+      try { console.error('Renderer diagnostic:', await evaluate("JSON.stringify({ toast: document.querySelector('.toast')?.textContent, active: document.activeElement?.outerHTML.slice(0, 240), dialogs: [...document.querySelectorAll('dialog[open] h2')].map(node => node.textContent), fields: [...document.querySelectorAll('input[type=number]')].map(input => ({ label: input.parentElement?.firstChild?.textContent, value: input.value, invalid: input.getAttribute('aria-invalid'), disabled: input.disabled })) })")); } catch {}
     }
     app.exit(1);
   }

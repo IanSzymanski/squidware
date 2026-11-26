@@ -27,7 +27,7 @@ function useRovingFocus() {
     const shown = controls(), active = document.activeElement as HTMLElement | null;
     const stop = active && shown.includes(active) ? active : last.current && shown.includes(last.current) ? last.current : shown[0] ?? null;
     last.current = stop;
-    for (const control of node.querySelectorAll<HTMLElement>('button')) { const tabIndex = control === stop ? 0 : -1; if (control.tabIndex !== tabIndex) control.tabIndex = tabIndex; }
+    for (const control of node.querySelectorAll<HTMLElement>('button')) { const tabIndex = control === stop ? '0' : '-1'; if (control.getAttribute('tabindex') !== tabIndex) control.setAttribute('tabindex', tabIndex); }
   };
   useLayoutEffect(() => {
     const node = bar.current; if (!node) return;
