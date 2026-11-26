@@ -57,7 +57,8 @@ async function text(selector, value) {
   await wait(`document.querySelector(${JSON.stringify(selector)}).value === ${JSON.stringify(value)}`, 'native text entry ' + selector);
 }
 const selected = () => evaluate(`${state}.selection.selectedIds`);
-const open = () => control('.canvas-toolbar [aria-label="Selection tools and groups"]');
+// Selection tools open from the tool strip's Select menu, and from More Cast actions in the docked Cast panel.
+const open = () => control('[role=menu][aria-label="Select menu"] [aria-label="Selection tools and groups"]');
 const close = () => control('[aria-label="Close selection tools"]');
 async function viewport(width, height, zoom = 1) { window.setContentSize(width, height); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window, 'selection viewport'); assert.deepEqual(await evaluate('[innerWidth,innerHeight]'), [Math.round(width / zoom), Math.round(height / zoom)]); }
 async function group(name) { await text('[aria-label="New selection group name"]', name); await control('[aria-label="Save selection group"]'); await wait(`${state}.project.present.selectionGroups?.some(g=>g.name===${JSON.stringify(name)})`, 'saved group ' + name); }
@@ -84,7 +85,8 @@ app.whenReady().then(async () => {
       await wait(`${state}.selection.selectedIds.length===5`, 'native Shift-Enter additive section'); assert.deepEqual(await selected(), ids);
       await capture('selection-sections.png');
       await showRightPanel(window,'cast'); await text('[aria-label="Find a performer"]', 'A');
-      await control('#workspace-pane-cast [aria-label="Selection tools and groups"]'); await control('[aria-label="Invert visible selection"]');
+      assert.equal(await evaluate("document.querySelector('#workspace-pane-cast [aria-label=\"More Cast actions\"]').getAttribute('aria-controls')===document.querySelector('[role=menu][aria-label=\"More Cast actions\"]').id"), true);
+      await control('[role=menu][aria-label="More Cast actions"] [aria-label="Selection tools and groups"]'); await control('[aria-label="Invert visible selection"]');
       assert.deepEqual(await selected(), ids.slice(3)); assert.equal(await evaluate("document.querySelectorAll('.cast-list li.selected').length"), 0);
       assert.ok(await evaluate("document.querySelector('.cast-filter-notice').textContent.includes('2 selected')"));
       assert.deepEqual(await evaluate(`${state}.project`), before); pass('native additive section selection and filtered invert share field/Cast state without project edits and preserve hidden selections');
