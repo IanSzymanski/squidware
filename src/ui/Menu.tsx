@@ -12,6 +12,8 @@ export type MenuEntry =
     type?: 'item'; key?: string; label: string; icon?: ReactNode; description?: string;
     /** A second, quieter line under the label. A disabled item shows why it is unavailable here instead. */
     detail?: string;
+    /** Keep the detail even when disabled, where a heading above already gives the one reason for its whole group. */
+    keepDetail?: boolean;
     /** The action's name for assistive technology and Help, when the visible label is a shorter or longer form. */
     name?: string;
     /** Shows this command's shortcut and Help text beside the label. */
@@ -125,7 +127,7 @@ export function Menu({ label, description, items, children, className = 'icon-bu
           }}>
           {entry.icon}
           {entry.detail
-            ? <span className="menu-item-text"><span className="menu-item-label">{entry.label}</span><span className="menu-item-detail">{entry.disabled && entry.disabledReason ? entry.disabledReason : entry.detail}</span></span>
+            ? <span className="menu-item-text"><span className="menu-item-label">{entry.label}</span><span className="menu-item-detail">{entry.disabled && entry.disabledReason && !entry.keepDetail ? entry.disabledReason : entry.detail}</span></span>
             : <span className="menu-item-label">{entry.label}</span>}
           {entry.hint && <span className="menu-item-hint">{entry.hint}</span>}
           {entry.command && <CommandKeycaps command={entry.command} />}

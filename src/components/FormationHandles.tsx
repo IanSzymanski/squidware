@@ -54,8 +54,11 @@ export function FormationHandles({ preview, field, scale }: { preview: FieldForm
     }} onPointerUp={event => finish(event)} onPointerCancel={event => finish(event,true)} onLostPointerCapture={event => { if (drag.current) finish(event,true); }}>
     <title>{label} · drag to preview; Inspector numbers provide keyboard entry</title>
     <circle r={13/scale} fill="transparent" stroke="none" />
-    <circle r={kind === 'center' ? 7/scale : 6/scale} fill={kind === 'center' ? '#d4e6ff' : '#fff'} strokeWidth={2/scale} />
-    {kind === 'center' && <path d={`M${-10/scale},0h${20/scale}M0,${-10/scale}v${20/scale}`} strokeWidth={1.5/scale} />}
+    {/* Each handle looks like what it does: square ends resize, a diamond bends or deepens, a ringed dot turns, a crosshair moves. */}
+    {kind === 'center' ? <><circle r={7/scale} fill="#d4e6ff" strokeWidth={2/scale} /><path d={`M${-10/scale},0h${20/scale}M0,${-10/scale}v${20/scale}`} strokeWidth={1.5/scale} /></>
+      : kind === 'rotate' ? <><circle r={6.5/scale} fill="#fff" strokeWidth={2/scale} /><circle r={2/scale} fill="currentColor" stroke="none" style={{ color: '#3d82c4' }} /></>
+      : kind === 'bulge' || kind === 'depth' ? <rect x={-5/scale} y={-5/scale} width={10/scale} height={10/scale} rx={1/scale} transform="rotate(45)" fill="#fff" strokeWidth={2/scale} />
+      : <rect x={-5.5/scale} y={-5.5/scale} width={11/scale} height={11/scale} rx={1.5/scale} fill="#fff" strokeWidth={2/scale} />}
   </g>;
   const endpoints = session.kind === 'line' || session.kind === 'arc';
   const baseline = session.kind === 'arc' ? -options.height/2 : 0;

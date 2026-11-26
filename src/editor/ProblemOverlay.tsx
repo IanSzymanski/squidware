@@ -57,9 +57,9 @@ export function ProblemFieldStatus() {
     const draft = checks.draft;
     // Plain words for what the check of this unapplied picture found; the attribute carries the state for automation.
     const found = draft.state.result?.issues.length ?? 0, when = scatter ? 'if applied' : 'if dropped here';
-    return <div className="problem-field-status" data-draft-analysis-status={draft.state.status} role="status">{draft.state.status === 'pending' ? 'Checking this move…'
-      : draft.state.status === 'error' ? 'This move cannot be checked until it is applied'
-      : found ? `${found} ${found === 1 ? 'problem' : 'problems'} ${when}` : `No problems ${when}`}</div>;
+    return <div className="problem-field-status" data-draft-analysis-status={draft.state.status} role="status">{draft.state.status === 'pending' ? 'Preview · checking…'
+      : draft.state.status === 'error' ? 'Preview · cannot be checked until it is applied'
+      : found ? `Preview · ${found} ${found === 1 ? 'problem' : 'problems'} ${when}` : `Preview · no problems ${when}`}</div>;
   }
   if (!checks.selected || playing || Math.abs(count-(checks.selected.issue.atCount ?? 0)) > 1e-6) return null;
   const { issue, index } = checks.selected;

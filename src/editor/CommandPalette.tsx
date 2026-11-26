@@ -41,7 +41,9 @@ export function CommandPalette() {
   // typing still finds all of them, with the reason beside any that are unavailable.
   const entries = useMemo(() => {
     if (!browsing) return matches;
-    const open = matches.filter(entry => !entry.disabledReason && !['set.select', 'selection.section', 'group.select'].includes(entry.invocation.id));
+    // A command about one named thing (a set, a section, a saved group, a live formation) waits to be typed for.
+    const named = (entry: PaletteEntry) => { const args = entry.invocation.args as unknown; return !!args && typeof args === 'object' && 'id' in args; };
+    const open = matches.filter(entry => !entry.disabledReason && !named(entry) && entry.invocation.id !== 'set.select');
     const suggested = suggestions(state.selection.selectedIds.length).flatMap(id => open.filter(entry => entry.invocation.id === id)).slice(0, 7);
     const lead = new Set(suggested);
     return [...suggested, ...open.filter(entry => !lead.has(entry))

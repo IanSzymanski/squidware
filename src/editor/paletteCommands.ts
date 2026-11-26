@@ -94,7 +94,15 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   for (const [preset,name] of [['perspective','Perspective camera'],['front','Front camera'],['press-box','Press box camera'],['top','Overhead camera']] as const) add('view.camera',{preset},name,`camera-${preset}`);
   for (const w of state.preferences.value.workspaces.entries.filter(w => w.id.startsWith('custom-'))) add('workspace.select', { id: w.id }, `${w.name} workspace`, `workspace-${w.id}`);
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
-  for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);
+  // Each shape says what it does, so moving through them changes the description beside the list.
+  const shapes = {
+    line: 'Arrange the selection in a straight line at one interval. Preview, adjust, then apply.',
+    arc: 'Bend the selection along an arc between two ends. Preview, adjust, then apply.',
+    circle: 'Space the selection evenly around a circle or oval. Preview, adjust, then apply.',
+    block: 'Arrange the selection in rows and columns. Preview, adjust, then apply.',
+    curve: 'Run the selection along a wave. Preview, adjust, then apply.',
+  } as const;
+  for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`, shapes[kind]);
   add('formation.bezier',{wave:false},'Preview Bézier curve formation','formation-bezier-curve');
   add('formation.bezier',{wave:true},'Preview Bézier wave formation','formation-bezier-wave');
   for (const shape of state.project.present.sets[state.selection.activeIndex].liveFormations ?? []) {

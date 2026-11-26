@@ -119,6 +119,9 @@
 @keyframes pulse { 50% { box-shadow: 0 0 0 7px transparent; } }
 .toolbar-preview-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft-strong); flex-shrink: 0; margin: 0 4px; }
 .toolbar-commit { display: flex; align-items: center; gap: var(--space-2); margin-left: var(--space-3); }
+/* The way out of a preview sits at the strip's right end, beside the panel whose values it commits. */
+.toolbar:has(> .toolbar-commit) > .toolbar-commit { margin-left: auto; }
+.toolbar:has(> .toolbar-commit) > .toolbar-end { margin-left: var(--space-2); }
 .toolbar-commit .button { min-height: var(--control-md); padding: 0 8px 0 10px; }
 .toolbar-commit .button.primary:not([aria-disabled=true]) kbd { background: #00000022; border-color: #00000026; color: inherit; }
 .toolbar .stage-three__controls { position: static; padding: 0; border: 0; background: none; backdrop-filter: none; }
@@ -257,7 +260,8 @@
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .section-chips button i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px #00000040; }
-.section-chips button span { margin-left: auto; padding-left: 4px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-weight: 400; }
+.section-chips button .section-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.section-chips button .section-count { margin-left: auto; padding-left: 4px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-weight: 400; }
 .section-chips button:hover { background: var(--hover-bg); color: var(--text); }
 .section-chips button.partial { color: var(--text); }
 .section-chips button.partial i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent-line); }
@@ -265,13 +269,17 @@
 .section-legend { display: flex; align-items: flex-start; gap: 4px; }
 .section-legend > .section-chips { flex: 1; min-width: 0; }
 .section-legend-toggle { flex: none; min-width: 22px; height: 22px; margin-right: -4px; }
-.section-legend--compact > .section-chips { display: flex; flex-wrap: wrap; gap: 2px 1px; margin: 0 -3px; }
-.section-legend--compact .section-chips button { flex: none; width: 16px; padding: 0 3.5px; gap: 12px; overflow: hidden; }
+.section-legend--compact > .section-chips { display: flex; flex-wrap: wrap; gap: 2px 2px; margin: 0 -4px; }
+/* Folded, a section is its color and the letters its labels start with; the full name is in its tooltip. */
+.section-legend--compact .section-chips button { position: relative; flex: none; width: auto; max-width: none; padding: 0 5px 0 4px; gap: 4px; }
+.section-legend--compact .section-chips button :is(.section-name, .section-count) { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.section-legend--compact .section-chips button::after { content: attr(data-prefix); color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; letter-spacing: .02em; }
+.section-legend--compact .section-chips button:is(.selected, .partial)::after { color: var(--text); }
 .section-legend--compact .section-chips button.selected { background: transparent; }
 .section-legend--compact .section-chips button:is(.selected, .partial) i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent); }
 .section-legend--compact .section-chips button.partial i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent-line); }
 .section-chips button.selected { background: var(--accent-soft-strong); color: var(--text); }
-.section-chips button.selected span { color: var(--accent-text); }
+.section-chips button.selected .section-count { color: var(--accent-text); }
 .selection-bounds { display: flex; flex-direction: column; gap: 10px; }
 .selection-coordinate { display: flex; flex-direction: column; gap: 1px; color: var(--text); font-size: var(--text-md); font-weight: 500; line-height: 1.4; text-wrap: balance; }
 .selection-coordinate-label { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
@@ -386,7 +394,7 @@
 .score-mark-chip { margin-left: 2px; padding: 0 5px; border-radius: 4px; background: var(--control); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; }
 .audio-attach {
   appearance: none; display: inline-flex; align-items: center; gap: 6px; max-width: 180px; height: var(--control-md); padding: 0 9px; margin-right: 4px;
-  border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: var(--text-sm); font-weight: 500;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: var(--text-sm); font-weight: 500;
 }
 .audio-attach:hover { background: var(--hover-bg); color: var(--text); }
 .audio-attach.attached { border-style: solid; border-color: var(--border); color: var(--text); }
@@ -526,7 +534,7 @@
 .set-strip:not(.set-strip--thumbnails) .set-card-flag { padding: 0 4px; border-radius: 3px; font-size: var(--text-2xs); font-weight: 600; line-height: 14px; }
 .add-set {
   appearance: none; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 72px; margin: 2px 0;
-  border: 1px dashed var(--border-strong); border-radius: var(--radius-md); background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: transparent; color: var(--text-secondary);
   font-size: var(--text-xs); font-weight: 600;
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }

@@ -111,7 +111,7 @@ function ExportPreview({ controller, mode }: { controller: EditorController; mod
         </g>)}
       </>}
     </svg>
-    <figcaption>Page 1 of {mode === 'charts' ? project.sets.length : project.performers.length || 1}{mode === 'charts' ? '' : ', before the appendix'}</figcaption>
+    <figcaption>First page</figcaption>
   </figure>;
 }
 
@@ -136,10 +136,9 @@ function ExportPanel({ controller }: { controller: EditorController }) {
         <div className="export-result-facts">
           {/* What the file will hold, as a sentence; only the paper is a choice. */}
           <p className="export-summary" data-export-scope="">{printMode === 'charts'
-            ? <><strong>{sets === 1 ? '1 page' : `${sets} pages`}</strong>, one landscape chart for {sets === 1 ? 'the set' : `each of the ${sets} sets`}.</>
-            : <><strong>{performers === 1 ? '1 sheet' : `${performers} sheets`}</strong>, one for each performer, {coordinates}.</>}
-            {appendix.length > 0 && <> Then {appendix.join(' and ').replace(/^Tempo map/, 'the tempo map')}.</>}</p>
-          <p className="microcopy">The PDF holds one of the two. Export again for the other.</p>
+            ? <><strong>{sets === 1 ? '1 chart' : `${sets} charts`}</strong>, one landscape page for each set</>
+            : <><strong>{performers === 1 ? '1 sheet' : `${performers} sheets`}</strong>, one for each performer, {coordinates}</>}
+            {appendix.length > 0 ? <>, followed by {appendix.join(' and ').replace(/^Tempo map/, 'the tempo map')}.</> : '.'}</p>
           <div className="export-paper-row"><span id="export-paper-title">Paper</span><span className="export-paper" role="radiogroup" aria-labelledby="export-paper-title">{papers.map(([value, name]) => <label key={value}><input type="radio" name="paper" checked={preferences.value.paperSize === value} onChange={() => preferences.update({ paperSize: value })} />{name}</label>)}</span></div>
         </div>
       </div>
