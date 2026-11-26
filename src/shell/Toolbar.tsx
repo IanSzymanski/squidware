@@ -184,7 +184,7 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     </div>
     <span className="divider-vertical" />
     <div className="toolbar-group toolbar-shapes" role="group" aria-label="Shape the selection">
-      {shapes.map(shape => tool({ ...shape.action, active: !!session && !session.scatter && !session.bezier && session.kind === shape.kind }, shape.icon, { label: true, description: shapeHelp ?? `Arrange the ${count} selected performers in ${shape.kind === 'arc' ? 'an' : 'a'} ${shape.action.label.toLowerCase()}. Adjust on the field, then Apply.` }))}
+      {shapes.map(shape => tool({ ...shape.action, active: !!session && !session.scatter && !session.bezier && session.kind === shape.kind }, shape.icon, { label: true, description: shapeHelp ?? `Arrange the ${count} selected performer${count === 1 ? '' : 's'} in ${shape.kind === 'arc' ? 'an' : 'a'} ${shape.action.label.toLowerCase()}. Adjust on the field, then Apply.` }))}
       <Menu label="More shapes" description="Bézier curves, scatter and your saved formations." className="tool tool--menu" items={moreShapes}><MoreHorizontal size={16} /></Menu>
     </div>
     <span className="toolbar-shape-menu">
