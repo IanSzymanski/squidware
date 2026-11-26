@@ -235,12 +235,12 @@ Use the flags as a ground-plane rehearsal aid. Check instrument extensions, perf
 
 ## Export a rehearsal packet
 
-Open **Export**. Its **PDF drill book** section chooses one of two PDF layouts, then **Save PDF** saves it:
+Open **Export** in the top bar. Its **PDF drill book** section chooses one of two PDF contents. The dialog previews the first page, states what the file will hold (for example, one landscape chart for each set) and offers **Paper** (**Letter** or **A4**) as its one setting. **Save PDF** saves it:
 
 - **Field charts:** a drawing for each set, with counts, cumulative arrival count, tempo, cast size, and rehearsal notes.
 - **Performer coordinate sheets:** an individual sheet for each performer listing their position in every set in 8-to-5 steps.
 
-The desktop app saves the chosen packet directly as a landscape Letter PDF. Browser preview uses Print / Save PDF. Long performer tables can span more than one page. Inspect a sample page before making rehearsal copies, particularly for long productions or unusually long labels and notes.
+The desktop app saves the chosen packet directly as a landscape PDF on the chosen paper. Browser preview uses Print / Save PDF. Long performer tables can span more than one page. Inspect a sample page before making rehearsal copies, particularly for long productions or unusually long labels and notes.
 
 **Other formats** lists the remaining exports, one per row; hover or focus a row for its contents:
 
@@ -286,7 +286,7 @@ In the 2D field, Tab enters at the remembered performer and the next Tab leaves 
 
 ## Acceptance walkthrough for a new build
 
-1. Start the desktop app and open the demo. Confirm the title (Tether), 165 performers, 67 sets, and both field presets render, and that show-wide analysis reports only the counter-march teaching finding explained in set TE 5.
+1. Start the desktop app and select **Explore the demo** on the welcome dialog. Confirm the title (Tether), 165 performers, 67 sets, and both field presets render, and that show-wide analysis reports only the counter-march teaching finding explained in set TE 5.
 2. Select several performers, drag them, nudge once and with Shift, then Undo and Redo. Check that one keypress causes one move and that dragging a group to the edge keeps it together.
 3. Pan at 100% zoom, choose Fit field, then scroll to zoom and fit again. Inspect paths and label visibility.
 4. Add a set, apply a formation, change counts/tempo, reorder it, and delete it. Confirm playback arrives at the edited pictures.
@@ -307,25 +307,25 @@ The [verification record](VERIFICATION.md) distinguishes checks completed for th
 
 ## History and field drafts
 
-Open **History** beside Undo/Redo to review named actions and available redo actions. A drag, committed note, performer name, title or color session produces one action. Text and colors apply on blur or Enter; Escape cancels the draft. Notes use Shift+Enter for a new line. Undo/Redo restores the saved-state indicator when returning to or leaving the saved revision. Native text undo remains available while an input has focus. See the [history contract](history.md) for retention and transaction details.
+Open **Project menu → History…** to review named actions and available redo actions. A drag, committed note, performer name, title or color session produces one action. Text and colors apply on blur or Enter; Escape cancels the draft. Notes use Shift+Enter for a new line. Undo/Redo restores the saved-state indicator when returning to or leaving the saved revision. Native text undo remains available while an input has focus. See the [history contract](history.md) for retention and transaction details.
 
 
 ## Edit performer travel
 
-Pause at an arrival set after the opening, select one performer, and choose **Edit performer path** in the Inspector or Command palette. Choose Cubic Bézier and enter two control coordinates in field yards. The preview shows the saved path dashed, proposed path solid, and the sampled performer with a ring. Scrub Preview local count to inspect the move. Apply records one undo action; Cancel or Escape keeps the saved production. Reopen the editor to revise controls or choose Straight line to remove the curve.
+Pause at an arrival set after the opening, select one performer, and choose **Edit performer path** in the tool strip's **Motion** menu or the Command palette. Choose Cubic Bézier and enter two control coordinates in field yards. The preview shows the saved path dashed, proposed path solid, and the sampled performer with a ring. Scrub Preview local count to inspect the move. Apply records one undo action; Cancel or Escape keeps the saved production. Reopen the editor to revise controls or choose Straight line to remove the curve.
 
 Curves use Bézier parameter timing: speed can vary even with Linear timing selected. Show-wide problems reports conservative spacing and peak-stride bounds for curves, holds and submoves. Confirmed findings have a violating witness; possible findings need review. Select a finding to seek to its count and highlight the sampled paths. See [detailed check policy](detailed-path-analysis.md). Set positions remain the path endpoints. Curves save as format v5; older Squidware versions ask for an update. See [curve behavior and current operations](movement-paths.md).
 
 
 ## Independent performer timing
 
-Select one performer at an arrival and choose **Edit movement timing**. Set departure/arrival counts for straight or cubic travel, or choose Hold position with start/end counts. Add intervals in count order; intermediate travel arrivals expose X/Y destinations. The last travel always arrives at the next set's dot. Before departure, in gaps and after the last arrival, hold the preceding position. Musical fermatas remain separate and stop the shared show count; performer holds leave other performers and the recording moving.
+Select one performer at an arrival and choose **Motion → Edit movement timing**. Set departure/arrival counts for straight or cubic travel, or choose Hold position with start/end counts. Add intervals in count order; intermediate travel arrivals expose X/Y destinations. The last travel always arrives at the next set's dot. Before departure, in gaps and after the last arrival, hold the preceding position. Musical fermatas remain separate and stop the shared show count; performer holds leave other performers and the recording moving.
 
-Timing parameters open in the docked Inspector, with the preview on the main field at its current zoom and orientation. Preview local count to compare the selected performer with the rest of the cast. Apply and Cancel remain above the scrolling parameters. Apply commits one named undo action; Cancel or Escape keeps the production. Enter activates the focused Apply button. A saved schedule opens in this editor through Edit performer path as well. Timed intervals use format v6. Choose **Move operations…** to rescale move counts, reverse selected performers or copy/paste contiguous interval ranges with an explicit destination and coordinate frame. Review the preview before Apply; accepted edits are one undo action. [Detailed spacing/stride checks](detailed-path-analysis.md) run in the background; transition splitting and predecessor rewiring remain guarded for custom paths. See [operation policies](path-operations.md) and [the interval contract and limits](movement-schedules.md).
+Timing parameters open in the side panel, with the preview on the main field at its current zoom and orientation. While the editor is open the tool strip names it (**Performer movement**). Preview local count to compare the selected performer with the rest of the cast. Apply and Cancel remain above the scrolling parameters in the side panel. Apply commits one named undo action; Cancel or Escape keeps the production. Enter activates the focused Apply button. A saved schedule opens in this editor through Edit performer path as well. Timed intervals use format v6. Choose **Motion → Move operations** to rescale move counts, reverse selected performers or copy/paste contiguous interval ranges with an explicit destination and coordinate frame. Review the preview before Apply; accepted edits are one undo action. [Detailed spacing/stride checks](detailed-path-analysis.md) run in the background; transition splitting and predecessor rewiring remain guarded for custom paths. See [operation policies](path-operations.md) and [the interval contract and limits](movement-schedules.md).
 
 ### Draw and refine individual travel
 
-At an arrival picture, pause and select one performer. Use **Draw performer path** to draw a stroke or place numeric anchors for one selected interval on the main field, with its parameters docked beside it. Scroll to zoom and Alt-drag or middle-drag to pan. Fit the stroke, refine field handles or numeric controls, and Apply as one undo action. **Edit performer path** also exposes field handles and playback count ticks. See [individual path authoring](path-authoring.md) for fitting tolerances, fixed endpoints, keyboard controls, holds and shared-route scope.
+At an arrival picture, pause and select one performer. Use **Motion → Draw performer path** to draw a stroke or place numeric anchors for one selected interval on the main field, with its parameters docked beside it. Scroll to zoom and Alt-drag or middle-drag to pan. Fit the stroke, refine field handles or numeric controls, and Apply as one undo action. **Edit performer path** also exposes field handles and playback count ticks. See [individual path authoring](path-authoring.md) for fitting tolerances, fixed endpoints, keyboard controls, holds and shared-route scope.
 
 
 ## Compare constrained formation assignments
@@ -334,15 +334,15 @@ Start or Edit a formation preview with 2–500 selected performers and choose **
 
 ## Control transitions between reusable formations
 
-Select 2–500 performers at an arrival set in 2D, then choose **Formation transition…** in Formation tools. Choose editable formations on both adjacent sets and review the fixed member-to-slot mapping. Set straight/curved travel, bend, departure/arrival and member stagger; existing authored paths stay protected until explicitly replaced. **Mapping and overrides** edits one member’s intervals independently. Scrub fractional counts and compare selected travel/peak demand and all-cast spacing/stride findings. **Apply transition** commits only selected paths on the incoming move as one undo action; Cancel keeps the production unchanged. Endpoints, identities, constraints, counts and other moves remain intact through save/reopen. See [transition controls, preservation policies and limits](formation-transitions.md).
+Select 2–500 performers at an arrival set in 2D, then choose **Motion → Formation transition** in the tool strip. Choose editable formations on both adjacent sets and review the fixed member-to-slot mapping. Set straight/curved travel, bend, departure/arrival and member stagger; existing authored paths stay protected until explicitly replaced. **Mapping and overrides** edits one member’s intervals independently. Scrub fractional counts and compare selected travel/peak demand and all-cast spacing/stride findings. **Apply transition** commits only selected paths on the incoming move as one undo action; Cancel keeps the production unchanged. Endpoints, identities, constraints, counts and other moves remain intact through save/reopen. See [transition controls, preservation policies and limits](formation-transitions.md).
 
 ## Shared routes
 
-Open **Shared routes** in the field toolbar’s More menu or Commands while paused at a set. No performer selection is required. Draw or place numeric anchors on the main field, refine handles and distance ticks, then Apply as one undo action. Parameters use the Inspector with pinned Apply/Cancel; the current field zoom, pan and orientation remain available. Cancel leaves saved geometry unchanged. Starting playback, seeking a count or selecting a set discards the draft. See [shared route authoring](shared-routes.md).
+Open **Motion → Shared routes** in the tool strip, or the Command palette, while paused at a set. No performer selection is required. Draw or place numeric anchors on the main field, refine handles and distance ticks, then Apply as one undo action. Parameters use the side panel with pinned Apply and Cancel, and the tool strip names the editor; the current field zoom, pan and orientation remain available. Cancel leaves saved geometry unchanged. Starting playback, seeking a count or selecting a set discards the draft. See [shared route authoring](shared-routes.md).
 
 ## Follow, counter-march and conveyor groups
 
-Pause at an arrival set in 2D, select 2–500 performers and choose **Group route movement…** in Formation tools or Commands. Choose a shared route and ordered members; member 1 is the leader/reference. Follow the leader uses count delays, Counter-march requires explicit forward/reverse cues, and Conveyor uses fixed yard offsets along the route. Add direction/stop cues explicitly; mode selection preserves the program. Review entry/exit connectors, count ticks, travel and full-cast spacing/stride findings before **Apply group · one undo**. Saved individual paths remain dormant and return when a member leaves. Closed loops validate the last-to-first gap, wrap through multiple laps and can space members evenly. Save/reopen retains the v12 program. See [group movement controls, operations and limits](group-movement.md).
+Pause at an arrival set in 2D, select 2–500 performers and choose **Motion → Group route movement** in the tool strip or the Command palette. Choose a shared route and ordered members; member 1 is the leader/reference. Follow the leader uses count delays, Counter-march requires explicit forward/reverse cues, and Conveyor uses fixed yard offsets along the route. Add direction/stop cues explicitly; mode selection preserves the program. Review entry/exit connectors, count ticks, travel and full-cast spacing/stride findings before **Apply group · one undo**. Saved individual paths remain dormant and return when a member leaves. Closed loops validate the last-to-first gap, wrap through multiple laps and can space members evenly. Save/reopen retains the v12 program. See [group movement controls, operations and limits](group-movement.md).
 
 
 ## Indoor floors and custom stages

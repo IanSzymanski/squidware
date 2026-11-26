@@ -1,3 +1,4 @@
+import { stadiumPlan } from './3d/stadium';
 import { isCustomSurface, surfaceReferences, type Surface } from '../surfaces';
 import { compileChoreography, neutralCuePose, sampleChoreography, type ChoreographySample } from '../choreography';
 import { resolveEquipment, type CarriedEquipment } from '../equipment';
@@ -303,12 +304,7 @@ function ovalPath(context: CanvasRenderingContext2D, halfLength: number, halfDep
  * The home side stays low and open at the 50; a stand the camera drops behind fades out (see the cutaway in the scene).
  */
 function buildStadium(width: number, depth: number, owner: Document, anisotropy: number) {
-  const halfWidth = width / 2, halfDepth = depth / 2;
-  const sideline = 6, lanes = 6, lane = 1.2, track = lanes * lane, endZone = 10, curb = .45;
-  const innerDepth = halfDepth + sideline;
-  const innerLength = halfWidth + endZone - Math.sqrt(innerDepth ** 2 - halfDepth ** 2) + 1.6 + innerDepth;
-  const outerDepth = innerDepth + track, outerLength = innerLength + track;
-  const planLength = outerLength + curb, planDepth = outerDepth + curb;
+  const { halfWidth, halfDepth, lanes, lane, endZone, innerDepth, innerLength, outerDepth, outerLength, planLength, planDepth, standZ } = stadiumPlan(width, depth);
 
   const canvas = owner.createElement('canvas');
   const resolution = 2048 / (planLength * 2);
@@ -376,7 +372,7 @@ function buildStadium(width: number, depth: number, owner: Document, anisotropy:
 
   let parts: THREE.BufferGeometry[] = [];
   const riser = '#272e36', seat = '#566370', rail = '#74828f', shell = '#1e242a';
-  const standZ = planDepth + 2.2, tread = .95, rise = .52, wall = 1.1;
+  const tread = .95, rise = .52, wall = 1.1;
   /** Stepped seating that rises away from the field: solid risers, lighter seat planks, aisles between sections. */
   const stand = (center: number, span: number, direction: number, tiers: number, sections: number) => {
     const aisle = 1.5, section = (span - aisle * (sections - 1)) / sections;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Box3, Color, InstancedMesh, Matrix4, Scene, Vector3 } from 'three';
 import { AssetBatches, AssetResources } from './components/3d/assetBatches';
 import { carriedModels, frontEnsembleModels, type AssetPart } from './components/3d/assetModels';
-import { stadiumParts } from './components/3d/stadium';
+import { stadiumPlan } from './components/3d/stadium';
 import { createDemoProject, parseProject, sampleProject, serializeProject } from './domain';
 import { equipmentKey, guardCatalog, instrumentCatalog, resolveEquipment } from './equipment';
 import { frontEnsembleCatalog, type FrontEnsembleModel } from './frontEnsemble';
@@ -54,9 +54,15 @@ describe('carried equipment', () => {
       expect(part.size.every(size => Number.isFinite(size) && size > 0)).toBe(true);
     }
     const field = { width: 100, height: 160 / 3 };
-    for (const { at, size } of stadiumParts(field.width, field.height)) {
-      expect(Math.abs(at[0]) - size[0] / 2 > field.width / 2 || Math.abs(at[2]) - size[2] / 2 > field.height / 2).toBe(true);
-    }
+    // The stadium is built from this plan: apron, track and curb lie between the field and the first stand wall.
+    const plan = stadiumPlan(field.width, field.height);
+    expect(Object.values(plan).every(value => Number.isFinite(value) && value > 0)).toBe(true);
+    expect(plan.innerDepth).toBeGreaterThan(field.height / 2);
+    expect(plan.planDepth).toBeGreaterThan(plan.outerDepth);
+    // A stand's front wall is about a third of a yard thick, centered just inside standZ.
+    expect(plan.standZ - .5).toBeGreaterThan(plan.planDepth);
+    expect(plan.standZ - .5).toBeGreaterThan(field.height / 2 + plan.sideline);
+    expect(plan.innerLength).toBeGreaterThan(field.width / 2);
   });
 
   it('encloses every model in its default planning dimensions around the same ground origin', () => {
