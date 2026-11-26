@@ -151,13 +151,13 @@ A production can contain up to 128 sets. Set names, production titles, and secti
 
 ## Tempo maps and fermatas
 
-Open **Sheet → Tempo map**, **Timeline view → Tempo map** or the Command palette. Enter numeric CSV/TSV ranges as From count, To count, Start BPM, End BPM; equal BPMs make a fixed range and different BPMs make a linear ramp over counts. Enter fermatas as Count, Seconds. Preview the plot, exact intervals and duration before one undoable Apply. Cancel retains the original timing.
+Open **Tempo map** in the Plan sheet's toolbar, **Timeline options → Tempo map…** in the transport, or the Command palette. Enter numeric CSV/TSV ranges as From count, To count, Start BPM, End BPM; equal BPMs make a fixed range and different BPMs make a linear ramp over counts. Enter fermatas as Count, Seconds. Preview the plot, exact intervals and duration before one undoable Apply. Cancel retains the original timing.
 
 Ranges override base move tempos only within their intervals; musical anchors remain at absolute show counts through structural edits. Fermatas freeze positions after that count’s click while recording time continues; the metronome waits. Pause/resume preserves progress. Seeking to a held count begins its pause, and count stepping can skip it. Mapped shows save as schema v3; ordinary projects keep v2 saving. CSV and PDF exports include mapped timing. See [tempo semantics, limits and compatibility](tempo-map.md).
 
 ## Playback and audio
 
-Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome. On narrow windows or at large UI scales, speed, loop and metronome are under **More playback options** (⋯) in the transport, and Layout, Focus field, Help and History are in **Menu**.
+Use Play or Space to rehearse. Scrub the count timeline to inspect any point in a transition. First/previous/next/last controls jump to set arrivals. Playback speed ranges from 0.5× to 1.5×, with optional looping and a metronome. On narrow windows or at large UI scales, speed, loop and metronome are under **More playback options** (⋯) in the transport. **Timeline options** in the transport zooms the timeline, switches the ruler between measures and counts, and shows or hides set thumbnails. In **Rehearse** mode a large readout over the 3D view shows the set and the count within the move.
 
 The displayed count is the cumulative show count. Written tempo can differ between moves; the total runtime accounts for those changes. The metronome accents every fourth cumulative count.
 
@@ -165,7 +165,7 @@ The displayed count is the cumulative show count. Written tempo can differ betwe
 
 Choose **Attach audio** and select WAV, MP3, OGG, M4A or FLAC audio the system can decode. The timeline displays a waveform preview. Use the speaker control to mute or unmute the attached track.
 
-Use **Align recording** in the Sheet, Timeline view tools or Command palette for variable-tempo recordings. Enter Count/Recording-seconds rows, review drift, then Apply as one undo action. Expand waveform assistance to preview the recording, select set arrivals and tap anchors with Enter/Space. Cancel leaves the saved timing unchanged. See [recording alignment](audio-alignment.md).
+Use **Align recording** in the Plan sheet's toolbar, **Timeline options** or the Command palette for variable-tempo recordings. Enter Count/Recording-seconds rows, review drift, then Apply as one undo action. Expand waveform assistance to preview the recording, select set arrivals and tap anchors with Enter/Space. Cancel leaves the saved timing unchanged. See [recording alignment](audio-alignment.md).
 
 Set **Audio sync offset** in Production settings:
 
@@ -176,17 +176,17 @@ The audio follows the show timeline and playback-speed setting. Recordings are l
 
 ## 3D rehearsal
 
-Switch from **2D field** to **3D preview** to see the same positions and playback on a textured field. Drag to orbit, right-drag to pan, and scroll to zoom. The **Perspective**, **Front**, and **Overhead** buttons reset the camera to useful views. The small podium identifies the front sideline.
+Select **3D** in the view control over the field, or switch to **Rehearse** mode, to see the same positions and playback on a textured field. Select **Split** to edit the 2D chart beside a live 3D preview; the chart starts with the larger share and the divider changes it. Drag to orbit, right-drag to pan, and scroll to zoom. In 3D the tool strip shows the **Camera** buttons (**Perspective**, **Front**, **Press box** and **Overhead**), which reset the camera to views that frame the field, with **Passages**, **Problems** and **Record video** beside them. The small podium identifies the front sideline.
 
 Click a performer to select them; Shift-click modifies the selection. Selection appears as a ground ring. Use the 2D field or Inspector to edit positions.
 
 In **3D preview** or **Split review**, position the camera and choose **Saved views → Save current angle**. Give the view a name to keep it with the production. To restore a view, choose it in **Saved views** and select **Use view**. The same dialog lets you rename or delete views. Saving, renaming, and deleting a view can be undone.
 
-The 3D performers are section-colored rehearsal markers by default. Select performers and use **Performer facing** in the Inspector to author a heading at a set. Select one performer in Cast and expand **Appearance** to add an instrument or guard marker or a costume color. These are simple visual cues. If 3D cannot initialize, switch to 2D to keep editing. [Performer facing and appearance](performer-facing.md)
+The 3D performers are section-colored rehearsal markers by default. Select performers and expand **Facing** in the Inspector's **Selection** section to author a heading at a set. Select one performer in Cast and expand **Appearance** to add an instrument or guard marker or a costume color. These are simple visual cues. If 3D cannot initialize, switch to 2D to keep editing. [Performer facing and appearance](performer-facing.md)
 
 ### Choreography cues
 
-Select performers on the field or in Cast. Open **Choreography cues** in **Set properties** or from the Command palette. Choose the move, then choose **Add cue**, a preset, a start count, an end count, and the duration of each transition. Counts are measured from the start of the selected move. The time between the transitions holds the pose. **Flag up** requires flag equipment for everyone in the cue.
+Select performers on the field or in Cast. Open **Choreography cues** from the tool strip's **Motion** menu, the Inspector's **Set actions** menu or the Command palette. Choose the move, then choose **Add cue**, a preset, a start count, an end count, and the duration of each transition. Counts are measured from the start of the selected move. The time between the transitions holds the pose. **Flag up** requires flag equipment for everyone in the cue.
 
 Lower-body cues share one track. Flag cues share a second track and can overlap a lower-body cue. Use **Review** on a cue to see its peak in 3D. Choose **Detailed** 3D quality to see the poses and flag animation. Add, edit, and remove are undoable project edits. A cue keeps its explicit performers even when the selection changes. Remove or adjust cues before editing a move's count below a cue's end or changing its endpoints.
 
@@ -194,7 +194,7 @@ In second position and plié, the right foot stays on the drill dot and the left
 
 ### 3D window
 
-In the desktop app, choose **Open 3D window** (the arrow-out-of-a-box button beside **3D preview**), its command palette entry, or `Shift+T` to show the 3D preview in a separate window, for example on a second display. It follows the editor's set, count, playback, selection highlighting, previews and any 2D drag in progress, and its top bar shows the set, count and mode. The window is read-only: its camera buttons, quality choice and orbit/pan/zoom work, but clicking a performer does not change the selection. Edit positions in the main window.
+In the desktop app, choose **Open 3D window** (the arrow-out-of-a-box button beside the 2D / 3D / Split control), its command palette entry, or `Shift+T` to show the 3D preview in a separate window, for example on a second display. It follows the editor's set, count, playback, selection highlighting, previews and any 2D drag in progress, and its top bar shows the set, count and mode. The window is read-only: its camera buttons, quality choice and orbit/pan/zoom work, but clicking a performer does not change the selection. Edit positions in the main window.
 
 Only one 3D window exists. Choosing the command again brings it to the front. While it is open, the field area shows a placeholder instead of a second 3D view: **Show 3D window** brings it forward and **Return 3D here** closes it. Opening the window from the inline 3D view switches the field back to 2D. Closing the window releases its graphics resources and returns the 3D option to the field.
 
@@ -202,7 +202,7 @@ The window remembers its size, position and display on this device. It reopens o
 
 ### Staging props
 
-In **2D field** or **Split review**, pause at a set and choose **Props** from the field toolbar or its **More** menu. You can also search for **Staging props** in Commands. Choose **Add prop**, then click the footprint preview or enter the center coordinates. Enter its width, depth, height and orientation. The preview stripe points toward the front of the prop and a dashed footprint marks a hidden prop during editing.
+In **2D field** or **Split review**, pause at a set and select **Props** in the tool strip. You can also search for **Staging props** in the Command palette. Choose **Add prop**, then click the footprint preview or enter the center coordinates. Enter its width, depth, height and orientation. The preview stripe points toward the front of the prop and a dashed footprint marks a hidden prop during editing.
 
 A new prop starts with the same pose in every set. At another set, choose the prop and use **Edit prop** to move, resize, rotate or hide it there. Use **Start count** and **End count** to set when a move into that set travels. The prop holds before and after that window. Visibility changes at set arrival. **Apply prop** records one undo action, and **Remove prop** removes its placement from every set in one undoable edit.
 
@@ -212,9 +212,9 @@ Use **Prop type** before **Add prop** to choose a marimba, vibraphone, xylophone
 
 ## Transition checks
 
-The Inspector analyzes the move into the selected set. Click a flag to review it at its show count. Spacing and stride flags highlight the performers and their paths. Clearance flags outline the affected footprints.
+The Inspector's **Move check** section analyzes the move into the selected set. Click a flag to review it at its show count. Spacing and stride flags highlight the performers and their paths. Clearance flags outline the affected footprints.
 
-For the whole show, use the timeline’s problem row. Each marker names the problem type, participants and count, such as “Spacing 1.13 yd · B4, B5 · count 6”. Nearby findings share a numbered marker. Arrow keys move along the row, and Enter goes to a finding or opens a group. The ⚠ count beside the row opens **Show-wide problems**, which lists findings and opens **Analysis rules**.
+For the whole show, use the problem markers on the timeline. Each marker names the problem type, participants and count, such as “Spacing 1.13 yd · B4, B5 · count 6”. Nearby findings share a numbered marker. Arrow keys move along the markers, and Enter goes to a finding or opens a group. The problems badge in the top bar opens **Show-wide problems**, which lists findings and opens **Analysis rules**. Each set card also shows how many problems are in the move into that set.
 
 The current checks are:
 
