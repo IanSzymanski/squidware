@@ -205,8 +205,9 @@ details > summary:hover { color: var(--text); }
 @media print { .tooltip-panel { display: none; } }
 
 /* ---------- Toast ---------- */
+/* Centered with `translate`, which the entrance animation's `transform` leaves alone: the toast appears where it stays. */
 .toast {
-  position: fixed; z-index: 90; left: 50%; bottom: 24px; transform: translateX(-50%);
+  position: fixed; z-index: 90; left: 50%; bottom: 24px; translate: -50% 0;
   display: flex; align-items: center; gap: 10px; max-width: min(560px, calc(var(--viewport-width) - 32px));
   padding: 8px 8px 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-full);
   background: var(--overlay); box-shadow: var(--shadow-lg); color: var(--text); font-size: var(--text-sm);

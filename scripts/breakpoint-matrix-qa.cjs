@@ -21,7 +21,8 @@ const EDGE_SETS = ['First set', 'Last set'];
  * instance each, never a hidden duplicate in the bar, behind a trigger that stays reachable. */
 const MENU_HOMES = { 'Focus field': 'View options', Help: 'Project menu', History: 'Project menu' };
 const HEADER_FOLDED = Object.keys(MENU_HOMES);
-const TRANSPORT_FOLDED = { full: [], compact: ['Loop show', 'Metronome', 'Playback speed'], narrow: ['Rehearsal passages', 'Attach audio', 'Loop show', 'Metronome', 'Playback speed'] };
+/** What More playback options holds in each transport tier, in the order the full transport shows them. */
+const TRANSPORT_FOLDED = { full: [], compact: ['Loop show', 'Metronome', 'Playback speed'], narrow: ['Attach audio', 'Rehearsal passages', 'Loop show', 'Metronome', 'Playback speed'] };
 /** Where the whole-show count must be on screen. In a narrower strip it gives way to the move count, which always stays. */
 const SHOW_COUNT = new Set(['1366x768@1', '1920x1080@1', '1920x1080@1.25', '1920x1080@1.5']);
 
@@ -51,7 +52,8 @@ const probe = `(() => {
     documentOverflow: document.documentElement.scrollWidth > innerWidth + 1, bodyScroll: body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1 };
 })()`;
 
-/** `reachability` also opens every overflow menu and tucked panel natively and walks keyboard focus through them;
+/** `reachability` also opens, natively, every menu that holds a folded control, the side panel where it opens over the
+ * field and the list of sets, and walks keyboard focus through the top bar, those menus and the transport;
  * `panels` shows Cast and runs previews where the field reserve alone would tuck their panel. */
 module.exports = async function checkBreakpointMatrix({ window, evaluate, editor, state, capture, pass, reachability = false, panels = !reachability }) {
   const wait = (source, label) => waitFor(() => evaluate(source), label, { timeoutMs: 20000 });
@@ -62,14 +64,43 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
   const key = async (code, modifiers = []) => { await sendKey(window, code, modifiers, 20); await wake(); };
   const active = () => evaluate("document.activeElement?.getAttribute('aria-label')");
   // CDP mouse input takes viewport CSS px, the space getBoundingClientRect reports under the UI scale's CSS zoom.
-  async function nativeClick(selector) {
-    const point = await evaluate(`(() => { const n = ${selector}; n.scrollIntoView({ block: 'nearest' }); const r = n.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+  async function nativeClickAt(point) {
     await wake();
     for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type, ...point, button: type === 'mouseMoved' ? 'none' : 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
     await wake();
   }
+  const nativeClick = async selector => nativeClickAt(await evaluate(`(() => { const n = ${selector}; n.scrollIntoView({ block: 'nearest' }); const r = n.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`));
+  /** A native press on the page: on plain text or bare chrome that takes no focus and is not under an open menu. The
+   * move count's caption, which every size shows, or where a menu covers it, the bare top bar between the title and the modes. */
+  async function pressPage() {
+    const point = await evaluate(`(() => { const caption = document.querySelector('.move-count .readout-label').getBoundingClientRect(), header = document.querySelector('.app-header').getBoundingClientRect();
+      const start = Math.max(...[...document.querySelectorAll('.app-header .topbar-start button, .app-header .save-state')].filter(n => n.getClientRects().length).map(n => n.getBoundingClientRect().right)), modes = document.querySelector('.app-header .mode-switch').getBoundingClientRect();
+      const bare = at => { const hit = document.elementFromPoint(at.x, at.y); return !!hit?.closest('.app-header, .transport') && !hit.closest('button, a[href], input, select, textarea, [tabindex], [role=menu], .overflow-menu-panel'); };
+      return [{ x: caption.left + caption.width / 2, y: caption.top + caption.height / 2 }, { x: (start + modes.left) / 2, y: header.top + header.height / 2 }].find(bare) ?? null; })()`);
+    assert.ok(point, 'plain text or bare chrome is in reach of the pointer');
+    await nativeClickAt(point);
+  }
   const byName = (name, scope = 'document') => `[...${scope}.querySelectorAll('[aria-label]')].find(n => n.getAttribute('aria-label') === ${JSON.stringify(name)})`;
   const reachableIn = (names, scope) => evaluate(`(${JSON.stringify(names)}).filter(name => { const n = [...${scope}.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===name&&n.getClientRects().length); if (!n) return true; n.scrollIntoView({ block: 'nearest' }); const r = n.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(r.width > 0 && r.left >= 0 && r.right <= innerWidth + .5 && r.top >= 0 && r.bottom <= innerHeight + .5 && hit && n.contains(hit)); })`);
+  // A menu's panel stays mounted while it is closed (hidden and inert): open and closed are read from the panel and
+  // its button together, never from the panel being in the document.
+  const menuButton = name => `document.querySelector('button[aria-haspopup=menu][aria-label=${JSON.stringify(name)}]')`;
+  const menuPanel = name => `document.querySelector('[role=menu][aria-label=${JSON.stringify(name)}]')`;
+  const menuOpen = name => `(panel => !panel.hidden && !panel.inert && ${menuButton(name)}.getAttribute('aria-expanded') === 'true')(${menuPanel(name)})`;
+  const menuClosed = name => `(panel => panel.hidden && panel.inert && ${menuButton(name)}.getAttribute('aria-expanded') === 'false')(${menuPanel(name)})`;
+  // As axe's aria-valid-attr-value rule: aria-controls must name an element unless the control reports
+  // aria-expanded=false. A menu button's panel stays mounted, so its reference must hold while it is closed too.
+  const danglingControls = "[...document.querySelectorAll('[aria-controls]')].filter(n => (n.getAttribute('aria-expanded') !== 'false' || n.matches('[data-menu-trigger]')) && n.getAttribute('aria-controls').split(/\\s+/).some(id => !document.getElementById(id))).map(n => n.getAttribute('aria-label') ?? n.outerHTML.slice(0, 80))";
+  /** The transport's foldable options that are in the transport now, in document order. */
+  const transportOrder = `[...document.querySelectorAll('.transport-options [aria-label]')].filter(n => !n.closest('.overflow-menu-panel')).map(n => n.getAttribute('aria-label')).filter(name => ${JSON.stringify(TRANSPORT_FOLDED.narrow)}.includes(name))`;
+  /** Presses a key that must move focus, waits for focus to move, and names the control it reached. */
+  async function step(code, modifiers = []) {
+    const from = await active();
+    await evaluate('void (window.__qaFocusBefore = document.activeElement)');
+    await key(code, modifiers);
+    await wait('document.activeElement !== window.__qaFocusBefore', `${[...modifiers, code].join('+')} moves focus from ${from}`);
+    return active();
+  }
   /** `keepFocus` resizes the window as a writer would, leaving focus where it is. */
   async function applySize(width, height, scale, keepFocus = false) {
     window.setContentSize(width, height); window.webContents.setZoomFactor(1);
@@ -89,6 +120,8 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
   const layoutBefore = await evaluate(`JSON.stringify({ layout: ${state}.preferences.value.workspaceLayout, cast: ${state}.preferences.value.castPanelOpen })`);
   const project = await evaluate(`${state}.project.revision`);
   const metrics = [];
+  /** The order the foldable transport options have in the full transport, read at the first matrix point that shows it. */
+  let unfolded;
   /** `matrix` points must fit without scrolling and keep the drawn-field floor; the smallest supported window at 150%
    * may scroll the workspace, but keeps the header, the pinned transport and every folded control reachable. */
   async function verify(width, height, scale, matrix = true) {
@@ -122,34 +155,61 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
       assert.ok(m.drawn.width >= minimum.width && m.drawn.height >= minimum.height, `drawn field at least ${minimum.width} × ${minimum.height}: ${context}`);
     }
     if (reachability) {
-      if (headerFolded.length) {
-        await nativeClick(byName('Project menu')); await wait("!!document.querySelector('.dropdown')", `${label} Menu open`);
-        assert.deepEqual(await reachableIn(HEADER_FOLDED, "document.querySelector('.dropdown')"), [], `${label} folded header controls are reachable in Menu`);
-        // As axe's aria-valid-attr-value rule: aria-controls must name an element unless the control reports aria-expanded=false.
-        assert.deepEqual(await evaluate("[...document.querySelectorAll('.app-header [aria-controls]')].filter(n => n.getAttribute('aria-expanded') !== 'false' && n.getAttribute('aria-controls').split(/\\s+/).some(id => !document.getElementById(id))).map(n => n.getAttribute('aria-label'))"), [], `${label} header and Menu controls reference elements that exist`);
-        await nativeClick("document.querySelector('.menu-dismiss')"); await wait("!document.querySelector('.dropdown')", `${label} Menu closed`);
+      if (tiers.transport === 'full') unfolded ??= await evaluate(transportOrder);
+      // The actions the old header folded into its Menu: each one's menu (the Project menu in the top bar, View options
+      // over the field) opens from its button with the pointer, shows the action in view and unobstructed, and closes on
+      // a press outside it.
+      for (const home of new Set(Object.values(MENU_HOMES))) {
+        const actions = headerFolded.filter(name => MENU_HOMES[name] === home);
+        await nativeClick(menuButton(home)); await wait(menuOpen(home), `${label} ${home} open`);
+        assert.deepEqual(await reachableIn(actions, menuPanel(home)), [], `${label} ${actions.join(' and ')} reachable in ${home}`);
+        assert.deepEqual(await evaluate(danglingControls), [], `${label} with ${home} open, every aria-controls names an element that exists`);
+        await pressPage(); await wait(menuClosed(home), `${label} a press outside ${home} closes it`);
       }
       if (transportFolded.length) {
-        // A notification toast (bottom center, above the transport) must not cover the open menu's options.
+        // A notification toast (bottom center, over the show strip) must not cover More playback options, from the
+        // moment it appears, or the open menu's options.
         await evaluate(`${editor}.setValue('ui','toast','Notification over More playback options')`); await wait("!!document.querySelector('.toast')", `${label} toast shown`);
         await nativeClick(byName('More playback options')); await wait("!!document.querySelector('.overflow-menu-panel')", `${label} More playback options open`);
         assert.deepEqual(await reachableIn(transportFolded, "document.querySelector('.overflow-menu-panel')"), [], `${label} folded transport controls are reachable, also under a notification toast`);
         await evaluate(`${editor}.setValue('ui','toast','')`); await key('Escape'); await wait("!document.querySelector('.overflow-menu-panel') && document.activeElement?.getAttribute('aria-label')==='More playback options'", `${label} Escape closes More and restores focus`);
       }
-      for (const [pane, name, inside] of [['sets', 'Set list', 'Add set'], ['side', 'Inspector', 'Close Inspector']]) {
-        if (!m.panes[pane]) continue;
-        const closed = `!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(`Show ${name}`)}`;
-        await nativeClick(byName(`Show ${name}`)); await wait("!!document.querySelector('.workspace-pane--overlay')", `${label} ${name} overlay`);
-        assert.deepEqual(await reachableIn([inside], "document.querySelector('.workspace-pane--overlay')"), [], `${label} ${inside} is reachable in the ${name} overlay`);
-        await key('Escape'); await wait(closed, `${label} Escape closes the ${name} overlay`);
-        // The overlay's heading button closes a tucked pane without collapsing it: the saved layout and preset stay.
+      // The one side panel, where the window cannot dock it beside the field: its button in the tool strip opens it over
+      // the field with focus on its Close button, and Escape or that button closes it with focus back on Show Inspector.
+      if (m.panes.side) {
+        const toggle = "document.querySelector('[data-panel-toggle]')", over = "document.querySelector('.side-panel--overlay')", close = "document.querySelector('.side-panel--overlay .side-panel-header > .icon-button')";
+        const opened = `!!${over} && !${over}.hidden && document.activeElement === ${close}`;
+        const closed = `!${over} && document.querySelector('.side-panel').hidden && document.activeElement === ${toggle} && ${toggle}.getAttribute('aria-label') === 'Show Inspector'`;
+        await nativeClick(byName('Show Inspector')); await wait(opened, `${label} Show Inspector opens the Inspector over the field with focus on its Close button`);
+        assert.deepEqual(await reachableIn(['Close Inspector'], over), [], `${label} Close Inspector is reachable in the Inspector over the field`);
+        await key('Escape'); await wait(closed, `${label} Escape closes the Inspector over the field with focus on Show Inspector`);
+        // The panel's Close button closes it without collapsing it: the saved layout and preset stay.
         const saved = await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`);
-        await nativeClick(byName(`Show ${name}`)); await wait("!!document.querySelector('.workspace-pane--overlay')", `${label} ${name} overlay again`);
-        assert.equal(await evaluate("document.querySelector('.workspace-pane--overlay .workspace-pane-heading .icon-button').getAttribute('aria-label')"), `Close ${name}`);
-        await nativeClick("document.querySelector('.workspace-pane--overlay .workspace-pane-heading .icon-button')"); await wait(closed, `${label} the heading button closes the ${name} overlay`);
-        assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), saved, `${label} closing the tucked ${name} leaves the saved layout unchanged`);
-        assert.equal(await evaluate(`document.querySelector('#workspace-pane-${pane === 'sets' ? 'sets' : 'inspector'}').hidden`), true, `${label} ${name} stays tucked`);
+        await nativeClick(byName('Show Inspector')); await wait(opened, `${label} Show Inspector opens the Inspector over the field again`);
+        assert.equal(await evaluate(`${close}.getAttribute('aria-label')`), 'Close Inspector');
+        await nativeClick(close); await wait(closed, `${label} its Close button closes the Inspector over the field with focus on Show Inspector`);
+        assert.equal(await evaluate(`JSON.stringify(${state}.preferences.value.workspaceLayout)`), saved, `${label} closing the Inspector over the field leaves the saved layout unchanged`);
+        assert.equal(await evaluate("document.querySelector('#workspace-pane-inspector').hidden"), true, `${label} the Inspector stays hidden behind its button`);
       }
+      // Sets are no longer a pane that tucks away. They are a strip of cards under the transport, which a short window
+      // does not draw, and the narrowest transport gives up First set and Last set. In place of the old set-list overlay:
+      // Add set stays one control, in the strip or else in the transport, in view with the current set's card; and
+      // Find set lists every set over the field at every size, with focus in its search and the current set's row in
+      // view. Escape closes the list with focus back on Find set, and none of it moves the current set or the saved layout.
+      const sets = await evaluate(`(() => { const shown = n => !!n && n.getClientRects().length > 0, strip = document.querySelector('.set-strip');
+        return { strip: shown(strip), card: strip?.querySelector('.set-card[aria-current=step]')?.getAttribute('aria-label') ?? 'the current set card',
+          add: [...document.querySelectorAll('[aria-label="Add set"]')].filter(shown).map(n => n.closest('.set-strip') ? 'strip' : n.closest('.transport') ? 'transport' : 'elsewhere'),
+          count: ${state}.project.present.sets.length, kept: JSON.stringify([${state}.selection.activeIndex, ${state}.preferences.value.workspaceLayout]) }; })()`);
+      assert.deepEqual(sets.add, [sets.strip ? 'strip' : 'transport'], `${label} Add set is one control, in the ${sets.strip ? 'set strip' : 'transport of a window too short for the set strip'}`);
+      assert.deepEqual(await reachableIn(sets.strip ? ['Add set', sets.card] : ['Add set'], `document.querySelector('${sets.strip ? '.set-strip' : '.transport'}')`), [], `${label} Add set${sets.strip ? ' and the current set card are' : ' is'} reachable`);
+      const finder = "document.querySelector('.set-finder')", findSet = "document.querySelector('.transport .set-jump')";
+      await nativeClick(findSet); await wait(`!!${finder} && document.activeElement === ${finder}.querySelector('input[aria-label="Find set"]')`, `${label} Find set opens the list of sets with focus in its search`);
+      assert.deepEqual(await reachableIn(['Find set'], finder), [], `${label} the Find set search is reachable`);
+      await wait(`(() => { const rows = [...${finder}.querySelectorAll('[role=option]')], row = rows.find(n => n.getAttribute('aria-selected') === 'true'); if (rows.length !== ${sets.count} || !row) return false;
+        const r = row.getBoundingClientRect(), list = row.closest('[role=listbox]').getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return r.height > 0 && r.top >= Math.max(0, list.top) - .5 && r.bottom <= Math.min(innerHeight, list.bottom) + .5 && !!hit && row.contains(hit); })()`, `${label} Find set lists all ${sets.count} sets with the current set's row in view`);
+      await key('Escape'); await wait(`!${finder} && document.activeElement === ${findSet}`, `${label} Escape closes Find set with focus back on it`);
+      assert.equal(await evaluate(`JSON.stringify([${state}.selection.activeIndex, ${state}.preferences.value.workspaceLayout])`), sets.kept, `${label} Find set and Add set in reach leave the current set and the saved layout unchanged`);
     }
     await capture(`breakpoints-${label}.png`);
   }
@@ -415,38 +475,85 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
   for (const [width, height] of SIZES) for (const scale of SCALES) await verify(width, height, scale);
   pass('UI-scale matrix 900–1920 px × 100–150%: one-row header and transport, unobstructed Save/Undo/Redo/Export/modes/play/set navigation, the move count always and the show count in wide windows, no scrolling, and a drawn field ≥ 480 × 260 at 1366 × 768 @150% and 900 × 650 @100%');
   await verify(...MINIMUM, false);
-  // Without a set-list pane beside it, the transport of the smallest supported window folds only loop, metronome and speed.
-  assert.equal(metrics.at(-1).tiers.transport, 'compact', 'the smallest supported window exercises a folded transport');
+  // The smallest supported window is in the transport's narrowest tier: rehearsal passages, audio, loop, metronome and
+  // speed fold into More playback options, and First set and Last set give way to Find set.
+  assert.equal(metrics.at(-1).tiers.transport, 'narrow', 'the smallest supported window exercises the narrow transport');
   pass('the smallest supported window (800 × 600 @150%) keeps a one-row header, a pinned one-row transport and every folded control reachable');
   if (panels) await checkDemandedPanels();
-  // The accessibility suite's reachability walks below (and the one inside verify) still address the old header Menu,
-  // workspace switcher and set-list pane; they are ported with that suite.
+  // The reachability walks, here and inside verify, address the rebuilt shell: the top bar with its Project menu and
+  // three modes, View options over the field, the Workspaces dialog, the one side panel, the set strip with Find set,
+  // and the transport's More playback options.
   if (reachability) {
-    // Keyboard order at 1366 × 768 @150%: folded controls appear in Menu and More in their original order.
+    // Keyboard order at 1366 × 768 @150%, where the top bar is compact and the transport is in its narrowest tier.
     await applySize(1366, 768, 1.5);
-    assert.deepEqual(await evaluate("[document.querySelector('.studio').dataset.header, document.querySelector('.studio').dataset.transport]"), ['compact', 'compact']);
-    await evaluate(`${byName('Command palette')}.focus()`);
-    const order = [];
-    for (let i = 0; i < 5; i++) { await key('Tab'); order.push(await active()); }
-    assert.deepEqual(order, ['Undo', 'Redo', 'Save', 'Export', 'Project menu']);
-    await key('Return'); await wait("!!document.querySelector('.dropdown')", 'keyboard Menu');
-    const menu = [];
-    for (let i = 0; i < 4; i++) { await key('Tab'); menu.push(await active()); }
-    assert.deepEqual(menu, [...HEADER_FOLDED, 'Command palette']);
-    await key('Escape');
-    await evaluate(`${byName('Switch workspace')}.focus()`); await key('Return');
-    await wait("!!document.querySelector('#workspace-options') && document.activeElement?.classList.contains('workspace-choice')", 'workspace options take focus');
-    await key('Escape'); await wait("!document.querySelector('#workspace-options') && document.activeElement?.getAttribute('aria-label')==='Switch workspace'", 'Escape returns focus to workspace switcher');
-    await evaluate(`${byName('Attach audio')}.focus()`); await key('Tab'); assert.equal(await active(), 'More playback options');
+    const studioTiers = "[document.querySelector('.studio').dataset.header, document.querySelector('.studio').dataset.transport]";
+    assert.deepEqual(await evaluate(studioTiers), ['compact', 'narrow']);
+    // The top bar reads left to right: the Project menu, the title, Save while there are unsaved changes, the three
+    // modes, Undo, Redo, the problem count, the Command palette and Export. Tab follows it, one stop per control.
+    const brief = name => name?.startsWith('Show-wide problems') ? 'Show-wide problems' : name;
+    await evaluate(`${menuButton('Project menu')}.focus()`);
+    const order = [await active()];
+    for (let i = 0; i < 12 && order.at(-1) !== 'Export'; i++) order.push(brief(await step('Tab')));
+    const unsaved = await evaluate("!!document.querySelector('.app-header .header-save')");
+    assert.deepEqual(order, ['Project menu', 'Production settings', ...(unsaved ? ['Save'] : []), 'Write mode', 'Plan mode', 'Rehearse mode', 'Undo', 'Redo', 'Show-wide problems', 'Command palette', 'Export']);
+    assert.deepEqual(order, (await evaluate("[...document.querySelectorAll('.app-header button')].filter(n => n.getClientRects().length).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map(n => n.getAttribute('aria-label'))")).map(brief), 'the top bar keeps its on-screen order under Tab');
+    // A menu is one Tab stop. Enter on its button opens it with focus on its first action; the arrow keys visit every
+    // action once, in the order shown, and wrap; Escape closes it with focus back on its button.
+    const menuActions = async home => {
+      await evaluate(`${menuButton(home)}.focus()`); await key('Return');
+      await wait(`${menuOpen(home)} && document.activeElement === ${menuPanel(home)}.querySelector('[role^=menuitem]')`, `Enter opens ${home} with focus on its first action`);
+      const shown = await evaluate(`[...${menuPanel(home)}.querySelectorAll('[role^=menuitem]')].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top).map(n => n.getAttribute('aria-label'))`);
+      const walked = [await active()];
+      for (let i = 1; i < shown.length; i++) walked.push(await step('Down'));
+      assert.deepEqual(walked, shown, `the arrow keys visit every ${home} action in the order shown`);
+      assert.equal(await step('Down'), shown[0], `${home} wraps to its first action`);
+      await key('Escape'); await wait(`${menuClosed(home)} && document.activeElement === ${menuButton(home)}`, `Escape closes ${home} with focus back on its button`);
+      return walked;
+    };
+    // The actions the old header folded into Menu keep one place and one order in the menus that hold them now:
+    // History before Help in the Project menu, Focus field in View options.
+    const projectActions = await menuActions('Project menu');
+    assert.deepEqual(projectActions.filter(name => MENU_HOMES[name] === 'Project menu'), ['History', 'Help']);
+    assert.deepEqual((await menuActions('View options')).filter(name => MENU_HOMES[name] === 'View options'), ['Focus field']);
+    // Tab leaves an open menu by closing it onto its button, so the next Tab goes on to the top bar's next control.
+    const projectMenuByArrow = async label => { await evaluate(`${menuButton('Project menu')}.focus()`); await key('Down'); await wait(`${menuOpen('Project menu')} && document.activeElement === ${menuPanel('Project menu')}.querySelector('[role^=menuitem]')`, label); };
+    await projectMenuByArrow('Down opens the Project menu with focus on its first action');
+    await key('Tab'); await wait(`${menuClosed('Project menu')} && document.activeElement === ${menuButton('Project menu')}`, 'Tab closes the Project menu with focus on its button');
+    assert.equal(await step('Tab'), 'Production settings', 'the Project menu is one Tab stop');
+    // The workspace switcher's list of arrangements is now the Workspaces dialog, opened from the Project menu. It
+    // takes focus, Tab reaches its workspace choices with the active one marked and in view, and Escape returns focus
+    // to the Project menu, as Escape returned it to the switcher.
+    await projectMenuByArrow('the Project menu for Workspaces');
+    assert.ok(projectActions.includes('Workspaces'), 'the Project menu offers Workspaces');
+    for (let i = 0; i < projectActions.indexOf('Workspaces'); i++) await step('Down');
+    assert.equal(await active(), 'Workspaces'); await key('Return');
+    const workspaces = "[...document.querySelectorAll('dialog[open]')].find(d => d.querySelector('h2')?.textContent === 'Workspaces')";
+    await wait(`!!${workspaces}?.contains(document.activeElement)`, 'the Workspaces dialog takes focus');
+    for (let i = 0; i < 4 && !await evaluate("document.activeElement.classList.contains('workspace-choice')"); i++) await step('Tab');
+    const choices = await evaluate(`({ focused: document.activeElement.classList.contains('workspace-choice') && ${workspaces}.contains(document.activeElement), active: [...${workspaces}.querySelectorAll('.workspace-choice[aria-pressed=true]')].map(n => n.getAttribute('aria-label')) })`);
+    assert.equal(choices.focused, true, 'Tab reaches the workspace choices'); assert.equal(choices.active.length, 1, 'one workspace is marked active');
+    assert.deepEqual(await reachableIn(choices.active, workspaces), [], 'the active workspace is in view in the Workspaces dialog');
+    await key('Escape'); await wait(`!document.querySelector('dialog[open]') && document.activeElement === ${menuButton('Project menu')}`, 'Escape closes the Workspaces dialog with focus back on the Project menu');
+    // Its choices of workspace are the three modes of the top bar, plain buttons in Tab order (above): Enter or Space
+    // on one switches mode and keeps focus on it, and Space never reaches Play.
+    const inMode = (id, name) => `document.querySelector('.studio').dataset.mode === '${id}' && (b => b.getAttribute('aria-pressed') === 'true' && document.activeElement === b)(${byName(name)})`;
+    await evaluate(`${byName('Plan mode')}.focus()`); await key('Return'); await wait(inMode('plan', 'Plan mode'), 'Enter on Plan mode switches to it with focus kept on the button');
+    assert.equal(await step('Tab', ['shift']), 'Write mode'); await key('Space');
+    await wait(`${inMode('write', 'Write mode')} && !${state}.playback.playing`, 'Space on Write mode switches back with focus kept on the button, without starting playback');
+    // More playback options follows the last option the transport keeps in Tab order, and its panel follows it: the
+    // folded options come next, in the order they have in the full transport, before the control after More.
+    assert.ok(unfolded, 'a matrix point shows the full transport');
+    assert.deepEqual([...unfolded].sort(), [...TRANSPORT_FOLDED.narrow].sort(), 'the full transport shows every foldable option');
+    await evaluate(`${byName('Mute audio')}.focus()`); assert.equal(await step('Tab'), 'More playback options');
     await key('Return'); await wait("!!document.querySelector('.overflow-menu-panel')", 'keyboard More playback options');
     const transport = [];
-    for (let i = 0; i < 4; i++) { await key('Tab'); transport.push(await active()); }
-    assert.deepEqual(transport, [...TRANSPORT_FOLDED.compact, 'First set']);
+    for (let i = 0; i <= unfolded.length; i++) transport.push(await step('Tab'));
+    assert.deepEqual(transport, [...unfolded, 'Add set'], 'the folded options keep the order they have in the transport');
     await wait("!document.querySelector('.overflow-menu-panel')", 'focus leaving More closes it');
-    await key('Tab', ['shift']); assert.equal(await active(), 'More playback options');
-    await key('Return'); await key('Tab'); assert.equal(await active(), 'Loop show');
+    assert.equal(await step('Tab', ['shift']), 'More playback options');
+    await key('Return'); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options again'); assert.equal(await step('Tab'), unfolded[0]);
     await key('Escape'); await wait("!document.querySelector('.overflow-menu-panel') && document.activeElement?.getAttribute('aria-label')==='More playback options'", 'Escape closes More');
-    pass('folded controls keep their order: header Tab order, Menu (layout, focus, Help, History first), layout options focus/return, and More playback options open, close and return focus by keyboard');
+    pass('keyboard order at 1366 × 768 @150%: the top bar under Tab in its on-screen order; the Project menu and View options as one Tab stop each, with arrow keys through every action in the order shown, History, Help and Focus field among them, and Escape or Tab back to the button; the Workspaces dialog from the Project menu taking focus and returning it; Plan and Write mode by Enter and Space with focus kept; and More playback options opening, listing the folded options in their transport order, closing and returning focus by keyboard');
     // A dialog opened from a folded control returns focus to it: More stays open underneath while the dialog is open.
     await applySize(...MINIMUM);
     await evaluate(`${byName('More playback options')}.focus()`); await key('Return'); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options at the smallest window');
@@ -474,40 +581,43 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     pass('a dialog opened from More playback options returns focus to its opener inside More, Escape then returns to the More trigger, and focus follows the opener, or a focused folded control, when a UI scale change moves it to the transport');
     // Focus that left an option for the page (a press on plain text) stays there: a later tier change, a dialog opened and
     // closed from the page, or a preview's Enter-apply never pulls it back into the transport, where Space would open More.
-    const plain = "document.querySelector('.show-count small')", onPage = "document.activeElement===document.body", mod = process.platform === 'darwin' ? 'meta' : 'control';
+    const onPage = "document.activeElement===document.body", mod = process.platform === 'darwin' ? 'meta' : 'control', transportTier = "document.querySelector('.studio').dataset.transport";
     const stays = async label => assert.equal(await evaluate(onPage), true, `${label}: ${await active()}`), set = await evaluate(`${state}.selection.activeIndex`);
-    await applySize(1366, 768, 1);
+    await applySize(1366, 768, 1); assert.equal(await evaluate(transportTier), 'full');
     await nativeClick(byName('Loop show')); await wait(`${state}.playback.loop && document.activeElement?.getAttribute('aria-label')==='Loop show'`, 'Loop show by pointer');
-    await nativeClick(plain); await wait(onPage, 'a press on plain text leaves focus on the page');
-    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1.5}))`); await wait("document.querySelector('.studio').dataset.transport==='compact'", 'Loop show folds into More');
+    await pressPage(); await wait(onPage, 'a press on plain text leaves focus on the page');
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1.5}))`); await wait(`${transportTier}==='narrow'`, 'Loop show folds into More');
     await stays('a tier change after focus left Loop show keeps focus on the page');
     await key('Space'); await wait(`${state}.playback.playing`, 'Space plays after the tier change'); await key('Space'); await wait(`!${state}.playback.playing`, 'Space pauses');
     await nativeClick(byName('More playback options')); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options by pointer');
     await nativeClick(byName('Loop show', "document.querySelector('.overflow-menu-panel')")); await wait(`!${state}.playback.loop && document.activeElement?.getAttribute('aria-label')==='Loop show'`, 'Loop show in More by pointer');
-    await nativeClick(plain); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text closes More and leaves focus on the page');
+    await pressPage(); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text closes More and leaves focus on the page');
     await key('K', [mod]); await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", 'palette from the page');
     await key('Escape'); await wait(`!${state}.ui.paletteOpen && !document.querySelector('dialog[open]')`, 'palette closed'); await stays('closing a dialog opened from the page keeps focus there');
-    // A preview in the band docks the Inspector and folds rehearsal passages and audio away until Enter applies it
+    // A preview shows the Inspector the writer collapsed for as long as it runs, docked where it fits (900 × 650 @100%).
+    // The transport beside it narrows, folding rehearsal passages and audio away until Enter applies the preview
     // (at a set again: playback paused between sets, where positions are read-only).
-    const revision = await evaluate(`${state}.project.revision`);
-    await applySize(1024, 700, 1.5);
+    const revision = await evaluate(`${state}.project.revision`), openLayout = await evaluate(`${state}.preferences.value.workspaceLayout`);
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:{...p.workspaceLayout,inspectorCollapsed:true}}))`);
+    await applySize(900, 650, 1); assert.equal(await evaluate(transportTier), 'compact');
     await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.setValue('selection','selectedIds',${state}.project.present.performers.slice(0,4).map(p=>p.id)); ${editor}.dispatch('transform.mirror')`);
-    await wait(`!!${state}.ui.transformPreview && document.querySelector('.studio').dataset.transport==='narrow'`, 'a preview narrows the transport');
+    await wait(`!!${state}.ui.transformPreview && ${transportTier}==='narrow' && !document.querySelector('.side-panel').hidden && !document.querySelector('.side-panel--overlay')`, 'a preview docks the collapsed Inspector and narrows the transport');
     await nativeClick(byName('More playback options')); await wait("!!document.querySelector('.overflow-menu-panel')", 'More playback options during the preview');
     await evaluate(`${byName('Rehearsal passages', "document.querySelector('.overflow-menu-panel')")}.focus()`);
-    await nativeClick(plain); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text leaves More for the page');
-    await key('Return'); await wait(`!${state}.ui.transformPreview && document.querySelector('.studio').dataset.transport==='compact'`, 'Enter applies the preview');
+    await pressPage(); await wait(`!document.querySelector('.overflow-menu-panel') && ${onPage}`, 'a press on plain text leaves More for the page');
+    await key('Return'); await wait(`!${state}.ui.transformPreview && ${transportTier}==='compact' && document.querySelector('.side-panel').hidden`, 'Enter applies the preview and the Inspector collapses again');
     assert.equal(await evaluate("!!document.activeElement?.closest('.transport-options')"), false, `Enter-apply keeps focus out of the transport: ${await active()}`);
     await stays('a preview applied with Enter from the page keeps focus on the page');
     await key('Space'); await wait(`${state}.playback.playing`, 'Space plays after Enter-apply'); await key('Space'); await wait(`!${state}.playback.playing`, 'Space pauses after Enter-apply');
-    if (await evaluate("!!document.querySelector('.workspace-pane--overlay')")) { await key('Escape'); await wait("!document.querySelector('.workspace-pane--overlay')", 'Inspector overlay closed after the preview'); }
-    await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the applied preview undone');
+    await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[]); ${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:${JSON.stringify(openLayout)}}))`); await wait(`${state}.project.revision===${revision}`, 'the applied preview undone');
     pass('focus that left a transport option for the page stays there through a tier change, a dialog opened from the page and a preview applied with Enter, so Space plays and pauses');
     // Focus a preview's Apply or Cancel held when it ended moves where Space plays and pauses, the selection stays and no
-    // performer readout appears: to the Inspector's Selection actions where the Inspector stays docked (1366 × 768 @100%),
-    // to the field area where it tucks again (1024 × 700 @150%); the focus outline shows only after a key. Enter on the
-    // page applies the preview and leaves focus there.
+    // performer readout appears: to the Inspector's selection header where the Inspector stays docked (1366 × 768 @100%),
+    // to the field area where it hides again (1024 × 700 @150%); the focus outline shows only after a key. Enter on the
+    // page applies the preview and leaves focus there. Apply and Cancel are in the tool strip, which is one Tab stop:
+    // Shift+Tab reaches it from the preview's controls, and the arrow keys move from Cancel to Apply.
     const all = await evaluate(`JSON.stringify(${state}.project.present.performers.map(p => p.id))`), count = JSON.parse(all).length;
+    const commit = name => byName(name, "document.querySelector('.toolbar .toolbar-commit')");
     for (const [width, height, scale, spot] of [[1366, 768, 1, '.selection-bar'], [1024, 700, 1.5, '.main-workspace .field-container']]) {
       await applySize(width, height, scale);
       for (const end of ['pointer Apply', 'keyboard Apply', 'pointer Cancel', 'Enter on the page']) {
@@ -515,9 +625,14 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
         await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.setValue('selection','selectedIds',${all}); ${editor}.dispatch('transform.mirror')`);
         await wait(`!!${state}.ui.transformPreview && document.activeElement?.getAttribute('aria-label')==='Transform operation'`, `${label} preview`);
         const page = end === 'Enter on the page';
-        if (end === 'keyboard Apply') { await key('Tab', ['shift']); await key('Tab', ['shift']); assert.equal(await active(), 'Apply transform'); await key('Return'); }
-        else if (page) { await nativeClick(plain); await wait(onPage, `${label} focus on the page`); await key('Return'); }
-        else await nativeClick(byName(end === 'pointer Apply' ? 'Apply transform' : 'Cancel transform', "document.querySelector('.selection-bar')"));
+        if (end === 'keyboard Apply') {
+          for (let i = 0; i < 60 && !await evaluate("!!document.activeElement?.closest('.toolbar')"); i++) await step('Tab', ['shift']);
+          assert.equal(await evaluate("!!document.activeElement?.closest('.toolbar .toolbar-commit')"), true, `${label} Shift+Tab reaches the preview's Cancel and Apply: ${await active()}`);
+          await key('Home'); await wait(`document.activeElement === ${commit('Cancel transform')}`, `${label} Home reaches Cancel`);
+          assert.equal(await step('Right'), 'Apply transform'); await key('Return');
+        }
+        else if (page) { await pressPage(); await wait(onPage, `${label} focus on the page`); await key('Return'); }
+        else await nativeClick(commit(end === 'pointer Apply' ? 'Apply transform' : 'Cancel transform'));
         await wait(`!${state}.ui.transformPreview && ${page ? onPage : `document.activeElement === document.querySelector(${JSON.stringify(spot)})`}`, `${label} ${page ? 'keeps focus on the page' : `moves focus to ${spot}`}`);
         assert.equal(await evaluate("document.activeElement.matches(':focus-visible')"), end === 'keyboard Apply', `${label} shows the focus outline only after a key`);
         await key('Space'); await wait(`${state}.playback.playing`, `${label} Space plays`); await key('Space'); await wait(`!${state}.playback.playing`, `${label} Space pauses`);
@@ -528,53 +643,55 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     // A formation preview started from the Command palette with focus on the page leaves it there, so Enter applies it.
     await applySize(1366, 768, 1);
     await evaluate(`${editor}.dispatch('set.select',{index:${set}}); ${editor}.setValue('selection','selectedIds',${state}.project.present.performers.slice(0,4).map(p=>p.id))`);
-    await nativeClick(plain); await wait(onPage, 'focus on the page for a palette preview'); await key('K', [mod]);
+    await pressPage(); await wait(onPage, 'focus on the page for a palette preview'); await key('K', [mod]);
     await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", 'palette for a formation preview');
     await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Preview scatter formation' }); await key('Return');
     await wait(`!!${state}.ui.formationPreview && !document.querySelector('dialog[open]') && ${onPage}`, 'a palette formation preview keeps focus on the page');
     await key('Return'); await wait(`!${state}.ui.formationPreview && ${state}.project.revision!==${revision}`, 'Enter applies the palette formation preview');
     await evaluate(`${editor}.dispatch('history.undo'); ${editor}.setValue('selection','selectedIds',[])`); await wait(`${state}.project.revision===${revision}`, 'the palette formation undone');
-    pass('when a preview ends by a pointer or keyboard Apply or by Cancel, focus moves to the Inspector\'s Selection actions at 1366 × 768 @100% and to the field area at 1024 × 700 @150%, with the outline only after a key, and Enter on the page applies it with focus kept there; Space then plays and pauses with the selection kept and no performer readout; a formation preview started from the Command palette keeps focus on the page, so Enter applies it');
+    pass('when a preview ends by a pointer or keyboard Apply or by Cancel in the tool strip, focus moves to the Inspector\'s selection header at 1366 × 768 @100% and to the field area at 1024 × 700 @150%, with the outline only after a key, and Enter on the page applies it with focus kept there; Space then plays and pauses with the selection kept and no performer readout; a formation preview started from the Command palette keeps focus on the page, so Enter applies it');
     // A wider tier that removes ⋯ while it has focus, or under a dialog opened while it had focus, moves focus to the first
-    // option that left the menu, now in ⋯'s place, instead of the page (where Space would play): by a resize, focus mode
-    // and a UI scale change under Preferences.
+    // option that left the menu instead of the page (where Space would play): by a resize, focus mode and a UI scale
+    // change under Preferences. From the narrowest tier that is the transport's first foldable option; from the compact
+    // tier, which keeps audio and rehearsal passages in the transport, it is the first of loop, metronome and speed.
+    const firstFrom = { narrow: unfolded[0], compact: unfolded.find(name => TRANSPORT_FOLDED.compact.includes(name)) };
     const onMore = async label => { await evaluate(`${byName('More playback options')}.focus()`); await wait("document.activeElement?.getAttribute('aria-label')==='More playback options'", label); };
-    const lands = (name, label) => wait(`document.querySelector('.studio').dataset.transport==='full' && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(name)} && !!document.activeElement.closest('.transport-options')`, label);
-    // Keep UI scale and panel choices fixed during this native resize. Changing
-    // scale at the same time can pass through compact, whose first folded
-    // option is Loop. Tucked panels let this one resize span narrow and full.
+    const lands = (name, label) => wait(`${transportTier}==='full' && document.activeElement?.getAttribute('aria-label')===${JSON.stringify(name)} && !!document.activeElement.closest('.transport-options')`, `${label} ${name}`);
+    // Keep UI scale and the panel choice fixed during this native resize. Changing scale at the same time can pass
+    // through compact, whose first folded option is Loop. With the Inspector collapsed, this one resize spans narrow and full.
     const resizeLayout = await evaluate(`${state}.preferences.value.workspaceLayout`);
-    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:{...p.workspaceLayout,setsCollapsed:true,inspectorCollapsed:true}}))`);
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:{...p.workspaceLayout,inspectorCollapsed:true}}))`);
     await applySize(...MINIMUM);
-    await wait("document.querySelector('.studio').dataset.transport==='narrow'", 'narrow transport before the resize');
+    await wait(`${transportTier}==='narrow'`, 'narrow transport before the resize');
     await onMore('More playback options in the narrow transport');
-    await applySize(1920, 1080, 1.5, true); await lands('Rehearsal passages', 'a resize to the full transport moves focus from More to Rehearsal passages');
+    await applySize(1920, 1080, 1.5, true); await lands(firstFrom.narrow, 'a resize to the full transport moves focus from More to');
     await evaluate(`${editor}.setValue('preferences','value',p=>({...p,workspaceLayout:${JSON.stringify(resizeLayout)}}))`);
-    await applySize(1024, 700, 1); assert.equal(await evaluate("document.querySelector('.studio').dataset.transport"), 'compact'); await onMore('More playback options before focus mode');
-    await evaluate(`${editor}.dispatch('layout.focus')`); await lands('Loop show', 'focus mode moves focus from More to Loop show');
+    await applySize(1024, 700, 1); assert.equal(await evaluate(transportTier), 'compact'); await onMore('More playback options before focus mode');
+    await evaluate(`${editor}.dispatch('layout.focus')`); await lands(firstFrom.compact, 'focus mode moves focus from More to');
     await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode ends');
-    await applySize(1366, 768, 1.5); await onMore('More playback options before Preferences');
+    await applySize(1366, 768, 1.5); assert.equal(await evaluate(transportTier), 'narrow'); await onMore('More playback options before Preferences');
     await evaluate(`${editor}.dispatch('preferences.open')`); await wait(`${state}.ui.dialog==='preferences' && !!document.querySelector('dialog[open]')?.contains(document.activeElement)`, 'Preferences from More');
-    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1}))`); await wait("document.querySelector('.studio').dataset.transport==='full'", 'the transport widens under Preferences');
-    await key('Escape'); await lands('Loop show', 'closing Preferences opened from More moves focus to Loop show');
+    await evaluate(`${editor}.setValue('preferences','value',p=>({...p,uiScale:1}))`); await wait(`${transportTier}==='full'`, 'the transport widens under Preferences');
+    await key('Escape'); await lands(firstFrom.narrow, 'closing Preferences opened from More moves focus to');
     // A confirmation is a dialog too: opened through the palette from Rehearsal passages, which folds away under it, it
     // returns focus to ⋯. (The suite's confirmation shim leaves it to real input meanwhile.)
     const titled = await evaluate(`${state}.project.revision`);
-    await evaluate(`window.__qaConfirmBefore=window.__qaConfirmResponse; window.__qaConfirmResponse='manual'; ${editor}.dispatch('project.update',{title:'Unsaved title'})`); await applySize(1024, 700, 1.5);
+    await evaluate(`window.__qaConfirmBefore=window.__qaConfirmResponse; window.__qaConfirmResponse='manual'; ${editor}.dispatch('project.update',{title:'Unsaved title'})`);
+    await applySize(1024, 700, 1.25); assert.equal(await evaluate(transportTier), 'compact');
     await evaluate(`${byName('Rehearsal passages', "document.querySelector('.transport-options')")}.focus()`); await key('K', [mod]);
     await wait("document.activeElement?.getAttribute('aria-label')==='Search commands or drill phrases'", 'palette from Rehearsal passages');
     await window.webContents.debugger.sendCommand('Input.insertText', { text: 'Open production' }); await wait("document.querySelector('.palette-result--active')?.getAttribute('aria-label')==='Open production'", 'Open production in the palette');
     await key('Return'); await wait(`!!${state}.ui.confirmation && !!document.querySelector('dialog.confirm-dialog[open]')?.contains(document.activeElement)`, 'the open confirmation');
-    await applySize(...MINIMUM, true); await wait("document.querySelector('.studio').dataset.transport==='narrow'", 'Rehearsal passages folds away under the confirmation');
+    await applySize(...MINIMUM, true); await wait(`${transportTier}==='narrow'`, 'Rehearsal passages folds away under the confirmation');
     await key('Escape'); await wait(`!${state}.ui.confirmation && !document.querySelector('dialog[open]') && document.activeElement?.getAttribute('aria-label')==='More playback options'`, 'the confirmation returns focus to More');
     await evaluate(`window.__qaConfirmResponse=window.__qaConfirmBefore; ${editor}.dispatch('history.undo')`); await wait(`${state}.project.revision===${titled}`, 'the title edit undone');
     pass('focus on More playback options, or a dialog opened while it has focus, moves to the first option that left the menu when a resize, focus mode or a UI scale change removes ⋯; a confirmation over a tier change returns focus to ⋯ like other dialogs');
   }
-  // Auto-tucking and overlays are temporary: the saved layout and production are unchanged.
+  // Hiding a panel that does not fit and opening it over the field are temporary: the saved layout and production are unchanged.
   assert.equal(await evaluate(`JSON.stringify({ layout: ${state}.preferences.value.workspaceLayout, cast: ${state}.preferences.value.castPanelOpen })`), layoutBefore);
   assert.equal(await evaluate(`${state}.project.revision`), project);
   await applySize(1366, 768, 1);
   await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: false });
-  pass('resizing through every breakpoint and opening tucked panels leaves the saved layout preference and production unchanged');
+  pass('resizing through every breakpoint and opening panels over the field leaves the saved layout preference and production unchanged');
   return metrics;
 };

@@ -29,7 +29,9 @@ export function FormationPanel({ controller: c }: { controller: EditorController
         // this initial focus callback was waiting for the section to open.
         if(region.current?.contains(document.activeElement))return;
         region.current?.scrollIntoView({ block: 'nearest' });
-        region.current?.querySelector<HTMLElement>('.formation-grid button[aria-pressed="true"]')?.focus();
+        // Curve and Scatter are shaped on the field and leave focus where it is, so Enter on the page still applies
+        // a preview started from the Command palette. Their tiles joined this grid; only the other shapes take focus.
+        if (!session.scatter && !session.bezier) region.current?.querySelector<HTMLElement>('.formation-grid button[aria-pressed="true"]')?.focus();
       });
     } else if (!session && previous?.live) {
       const saved = region.current?.querySelector<HTMLElement>(`[data-live-id="${previous.live.id}"]`);
