@@ -113,8 +113,12 @@ app.whenReady().then(async () => {
     await type(finderInput, '040'); rows = await finderRows();
     assert.deepEqual(rows.map(r => [r.number, r.name]), [['40', 'Ballad arrival']]);
     // The row carries what the old list's counts and BPM columns did.
-    assert.equal(rows[0].hint, `${setTiming(maximum, 39).counts} counts · ${setTiming(maximum, 39).tempo} BPM`);
+    // It also says where the set falls in the music: the measure it arrives on, then its counts and tempo.
+    const hint = new RegExp(`^(M\\d+) · ${setTiming(maximum, 39).counts} counts · ${setTiming(maximum, 39).tempo} BPM$`).exec(rows[0].hint);
+    assert.ok(hint, rows[0].hint);
     await key(window, 'Return'); await wait(`${state}.selection.activeIndex===39`, 'number jump'); await finderClosed('number jump returns focus to Find set'); await visibleCurrent();
+    // The measure in the row is the one the transport shows on arrival.
+    assert.equal((await evaluate("document.querySelector('.transport .score-readout strong').textContent")).split(' · ')[0], hint[1]);
     assert.equal(await evaluate("document.querySelectorAll('.set-strip .set-card').length"), 128);
     // A name filters the rows. Arrow keys move through the matches only; Enter goes to the active one.
     await openFinder(); await type(finderInput, 'ballad'); rows = await finderRows();

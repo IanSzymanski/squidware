@@ -285,13 +285,7 @@
 .selection-stats:has(> div:only-child) { grid-template-columns: 1fr; }
 .inspector-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 /* More below: the last lines fade until the panel is scrolled to its end. */
-@supports (animation-timeline: scroll()) {
-  .inspector-scroll { animation: inspector-more linear both; animation-timeline: scroll(self); }
-  @keyframes inspector-more {
-    0%, 97% { mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), #0000); }
-    100% { mask-image: linear-gradient(to bottom, #000 100%, #0000); }
-  }
-}
+.inspector-scroll[data-more=true] { mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), #0000); }
 .inspector-section { border-bottom: 1px solid var(--hairline); }
 .inspector-section > summary { min-height: 38px; padding: 0 14px; gap: 6px; color: var(--text); }
 .inspector-section > summary h3 { flex: 1; font-size: var(--text-sm); font-weight: 600; }
@@ -498,13 +492,7 @@
 .set-list { flex: 1; min-width: 0; display: flex; align-items: stretch; gap: 2px; overflow-x: auto; overflow-y: hidden; padding: 2px; scroll-padding: 0 40px; scrollbar-width: none; }
 .set-list::-webkit-scrollbar { display: none; }
 /* More sets to the right: the strip fades at its edge until it is scrolled to the end. */
-@supports (animation-timeline: scroll()) {
-  .set-list { animation: strip-more linear both; animation-timeline: scroll(self inline); }
-  @keyframes strip-more {
-    0%, 98% { mask-image: linear-gradient(to right, #000 calc(100% - 40px), #0000); }
-    100% { mask-image: linear-gradient(to right, #000 100%, #0000); }
-  }
-}
+.set-list[data-more=true] { mask-image: linear-gradient(to right, #000 calc(100% - 40px), #0000); }
 .set-card {
   appearance: none; position: relative; flex: none; display: flex; flex-direction: column; gap: 2px; width: 88px; padding: 3px 3px 2px;
   border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text-secondary); text-align: left;

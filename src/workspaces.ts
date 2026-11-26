@@ -63,8 +63,8 @@ export function validateWorkspaces(input: unknown): Workspaces {
     }
     if (!entries.has(source.active) || !ids.has(source.active)) recovered = true;
     if (recovered) entries.set('design', builtInWorkspace('design'));
-    return { active: recovered ? 'design' : source.active, entries: [...entries.values()], notice: recovered ? 'A saved workspace could not be read. Design was restored; other personal preferences were kept.' : typeof source.notice === 'string' ? source.notice.slice(0,240) : '' };
-  } catch { return { ...defaults, notice: 'Saved workspaces could not be read. Design was restored; other personal preferences were kept.' }; }
+    return { active: recovered ? 'design' : source.active, entries: [...entries.values()], notice: recovered ? 'A saved workspace could not be read. Write was restored; other personal preferences were kept.' : typeof source.notice === 'string' ? source.notice.slice(0,240) : '' };
+  } catch { return { ...defaults, notice: 'Saved workspaces could not be read. Write was restored; other personal preferences were kept.' }; }
 }
 export function migrateWorkspaces(layout: WorkspaceLayout, castPanelOpen: boolean, view: FieldView): Workspaces {
   const result = defaultWorkspaces();

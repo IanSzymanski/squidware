@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronUp, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2 } from 'lucide-react';
 import { isCustomSurface, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import { nudgeLabel } from '../editIncrements';
@@ -26,6 +26,7 @@ import { commandUnavailable } from '../editor/paletteCommands';
 import type { EditorController } from '../editor/useEditorController';
 import { Menu, type MenuEntry } from '../ui/Menu';
 import { nudgeText } from './units';
+import { useScrollCue } from './useScrollCue';
 import '../editor/tools.css';
 
 type SectionPreference = Extract<keyof Preferences, `inspector${string}Open`>;
@@ -82,6 +83,8 @@ export function Inspector({ controller }: { controller: EditorController }) {
   }, [project, index, selectedPerformers, controller.coordinateFormat]);
 
   const check = useTransitionAnalysis(project, index, projectEpoch);
+  const scroller = useRef<HTMLDivElement>(null);
+  useScrollCue(scroller, 'y');
   // Sections are for making a selection. Once there is one they fold to a row of colors, unless the writer opens them.
   const [sectionsOpen, setSectionsOpen] = useState(false);
   const nothingSelected = selectedIds.length === 0;
@@ -137,7 +140,7 @@ export function Inspector({ controller }: { controller: EditorController }) {
       </div>}
     </div>
 
-    <div className="inspector-scroll">
+    <div className="inspector-scroll" ref={scroller}>
       {controller.formationPreview && <div className="inspector-tool"><FormationPanel controller={controller} /></div>}
       {controller.transformPreview && <div className="inspector-tool"><TransformPanel controller={controller} /></div>}
       {controller.spacingPreview && <div className="inspector-tool"><SpacingPanel controller={controller} /></div>}

@@ -170,7 +170,7 @@ app.whenReady().then(async () => {
       assert.equal(await fieldHint(), NO_SELECTION_HINT);
       await evaluate('document.activeElement?.blur()'); native('Select all');
       await uiWait("window.__preferencesQA.editor.getState().preferences.value.selectionHintDismissed", 'first selection recorded');
-      await uiWait("/^Drag to move · Alt\\+arrows nudge .+ · choose a shape to arrange the selection$/.test(document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent)", 'hint follows the selection');
+      await uiWait("/^Drag to move · handles scale and rotate · Alt\\+arrows nudge .+$/.test(document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent)", 'hint follows the selection');
       await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
       await uiWait(`document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent === ${JSON.stringify(NO_SELECTION_HINT)}`, 'hint returns with an empty selection');
       assert.equal((await state()).project.revision, revision);

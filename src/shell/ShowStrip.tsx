@@ -19,6 +19,7 @@ import type { PathOperationsSession } from '../editor/usePathOperations';
 import type { EditorController } from '../editor/useEditorController';
 import { Menu, type MenuEntry } from '../ui/Menu';
 import type { ShellLayout } from './useShellLayout';
+import { useScrollCue } from './useScrollCue';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 /** On a thumbnail card, a name written as "movement · title" shows its title; the card's number and tooltip carry the rest. */
@@ -119,6 +120,7 @@ function SetStrip({ controller: c, addButton }: { controller: EditorController; 
   const thumbnails = preferences.value.setThumbnails;
   const [over, setOver] = useState<number | null>(null), [dragId, setDragId] = useState<string | null>(null);
   const drag = useRef<{ id: string; revision: number; epoch: number } | null>(null), list = useRef<HTMLDivElement>(null);
+  useScrollCue(list, 'x');
   const activeId = project.sets[index].id;
   const resetDrag = () => { drag.current = null; setDragId(null); setOver(null); };
   const card = (id: string) => Array.from(list.current?.querySelectorAll<HTMLButtonElement>('.set-card') ?? []).find(node => node.dataset.setId === id);
