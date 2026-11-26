@@ -6,7 +6,8 @@ import type { ShellLayout } from './useShellLayout';
 
 /** What to do next, for the state the editor is in. */
 function hint(c: EditorController): string {
-  if (c.pathOperations || c.routeEditor || c.movementEditor) return 'Adjust the preview on the field, then Apply or Cancel in the side panel';
+  // A docked editor says what to do in the tool strip; the field's margin stays clear for its own guides.
+  if (c.pathOperations || c.routeEditor || c.movementEditor) return '';
   if (c.formationPreview) return 'Drag the handles on the field or type exact values · Enter applies · Esc cancels';
   if (c.transformPreview || c.spacingPreview || c.coordinatePreview || c.selectionPreview) return 'Review the preview on the field · Enter applies · Esc cancels';
   if (c.playing) return 'Space pauses · positions are a preview while the show plays';
@@ -23,7 +24,8 @@ function hint(c: EditorController): string {
 /** One quiet line on the field's margin that says what to do next. Hidden with the Show hints preference. */
 export function FieldHint({ controller }: { controller: EditorController; layout?: ShellLayout }) {
   const showHints = useShowHints();
-  return showHints ? <p className="canvas-hint" data-hint="">{hint(controller)}</p> : null;
+  const text = showHints ? hint(controller) : '';
+  return text ? <p className="canvas-hint" data-hint="">{text}</p> : null;
 }
 
 /** The grid the field snaps to, and the way to change it. */

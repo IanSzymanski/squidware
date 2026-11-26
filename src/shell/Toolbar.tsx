@@ -80,6 +80,18 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     </>);
   }
 
+  // A docked editor owns the field: name it and point to its panel, rather than reading as "between sets".
+  if (layout.dockedEditor) {
+    return bar('editor', <>
+      <div className="toolbar-preview" role="status">
+        <span className="toolbar-preview-dot" />
+        <strong>{c.pathOperations ? 'Move operations' : c.routeEditor ? 'Shared routes' : 'Performer movement'}</strong>
+        <span>Adjust on the field · Apply or Cancel in the side panel</span>
+      </div>
+      {end()}
+    </>);
+  }
+
   // Playing or between sets: say so here, and offer the way back to editing. The field stays clear.
   if (c.readOnly && !three && !rehearse) {
     return bar(c.playing ? 'playback' : 'scrub', <>
