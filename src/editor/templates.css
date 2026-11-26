@@ -15,6 +15,8 @@ dialog.modal.templates-modal { width: min(1040px, calc(var(--viewport-width) - 3
 .template-review-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 220px); gap: var(--space-4); align-items: start; }
 .template-review-grid .template-parameters { grid-template-columns: minmax(0, 1fr); }
 .template-apply { position: sticky; bottom: calc(-1 * var(--space-5)); z-index: 1; padding: var(--space-2) 0; background: var(--surface-raised); }
+/* Keyboard focus and scroll-into-view stop above the sticky Apply bar instead of under it. */
+dialog.modal.templates-modal .modal-body { scroll-padding-bottom: calc(var(--control-md) + 3 * var(--space-2)); }
 .template-detail h3 { font-size: var(--text-lg); }
 .template-detail p, .template-detail li { font-size: var(--text-sm); line-height: 1.5; overflow-wrap: anywhere; }
 .template-detail ul { padding-left: 20px; list-style: disc; }
