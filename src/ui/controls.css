@@ -167,6 +167,7 @@ details > summary:hover { color: var(--text); }
 .menu-item-detail { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.35; }
 .menu-item[aria-disabled=true] > svg:first-child { opacity: .5; }
 .menu-item .menu-item-check { width: 16px; display: inline-flex; justify-content: center; color: var(--accent-text); }
+.menu-item-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .menu-item.danger, .menu-item.danger > svg:first-child { color: var(--error); }
 .menu-item .shortcut-keycaps, .dropdown > button .shortcut-keycaps { margin-left: auto; padding-left: var(--space-4); }
 .menu-heading {

@@ -242,9 +242,9 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
   ];
   const viewMenu: MenuEntry[] = [
     { type: 'heading', label: 'Performer labels' },
-    { label: 'Show labels', icon: <Tags size={15} />, hint: 'where they fit', checked: labelsState === 'all', keepOpen: true, description: 'Label every performer. Labels that would overlap are left out; zoom in to see them all.', onSelect: () => setLabels('all') },
-    { label: 'Selected only', icon: <Tags size={15} />, checked: labelsState === 'selected', keepOpen: true, onSelect: () => setLabels('selected') },
-    { label: 'Hide labels', icon: <Tags size={15} />, checked: labelsState === 'hidden', keepOpen: true, onSelect: () => setLabels('hidden') },
+    { label: 'Show labels', icon: <Tags size={15} />, hint: 'where they fit', checked: labelsState === 'all', radio: true, keepOpen: true, description: 'Label every performer. Labels that would overlap are left out; zoom in to see them all.', onSelect: () => setLabels('all') },
+    { label: 'Selected only', icon: <Tags size={15} />, checked: labelsState === 'selected', radio: true, keepOpen: true, onSelect: () => setLabels('selected') },
+    { label: 'Hide labels', icon: <Tags size={15} />, checked: labelsState === 'hidden', radio: true, keepOpen: true, onSelect: () => setLabels('hidden') },
     { type: 'heading', label: 'Grid' },
     item(action('display.grid', undefined), <Grid3X3 size={15} />, { label: 'Show field grid', checked: c.showGrid, keepOpen: true }),
     item(action('display.snap', undefined), <Magnet size={15} />, { label: 'Snap to grid', checked: c.snap, keepOpen: true }),

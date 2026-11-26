@@ -137,6 +137,8 @@
 .field-container:focus-visible { outline-offset: -2px; }
 .field-container { background-color: var(--field-well); background-image: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
 .field-container .field-stage, .field-container .stage-three { height: 100%; min-height: 0; }
+/* In a short window the field is limited by height, so the controls get a little more room off the turf. */
+@container (max-height: 520px) { .field-container .field-stage { height: calc(100% - 28px); margin-block: 14px; } }
 /* Turf surrounds a football field; a floor or stage sits in a neutral well. */
 .field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background-color: var(--field-chip-well); background-image: none; }
 /* A few pixels above and below the 2D field keep the floating controls off the turf in short windows. */

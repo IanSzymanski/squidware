@@ -75,6 +75,9 @@ function SetFinder({ controller: c, locked }: { controller: EditorController; lo
     return () => document.removeEventListener('pointerdown', outside, true);
   }, [open]);
   const go = (next: number) => { close(); c.dispatch('set.select', { index: next }); };
+  // Each row says where the set falls in the music.
+  const score = useMemo(() => compileScore(project), [project]);
+  const starts = useMemo(() => project.sets.map((_, i) => setStartCount(project, i)), [project]);
   const position = timelineReadout(project, useEditorSelector(state => state.playback.count));
   return <>
     <HelpButton pointerPassThrough title="Find set" description="Search every set by number or name and jump to it." className="set-jump" aria-haspopup="dialog" aria-expanded={open}
@@ -99,7 +102,7 @@ function SetFinder({ controller: c, locked }: { controller: EditorController; lo
           return <button key={project.sets[i].id} type="button" role="option" aria-selected={i === index} data-active={at === current} className="menu-item" tabIndex={-1} onMouseMove={() => setActive(at)} onClick={() => go(i)}>
             <span className="set-finder-number">{pad(i + 1)}</span>
             <span className="menu-item-label">{project.sets[i].name}</span>
-            <span className="menu-item-hint">{i === 0 ? 'Opening' : `${timing.counts} counts · ${timing.tempo} BPM`}</span>
+            <span className="menu-item-hint">{scoreLabel(score, starts[i]).split(' · ')[0]} · {i === 0 ? 'Opening' : `${timing.counts} counts · ${timing.tempo} BPM`}</span>
           </button>;
         })}
         {!rows.length && <p className="empty-state" role="status">No matching sets. Enter a number from 1 to {project.sets.length}, or part of a name.</p>}
@@ -253,8 +256,8 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
     { label: 'Fit whole show', icon: <Maximize2 size={15} />, onSelect: () => { setZoom(1); setStart(0); } },
     { label: 'Follow playhead', icon: <LocateFixed size={15} />, checked: follow, keepOpen: true, description: 'Keep the playhead visible during playback, stepping and set navigation.', onSelect: () => setFollow(!follow) },
     { type: 'separator' },
-    { label: 'Ruler in measures', icon: <Ruler size={15} />, checked: musicalRuler, keepOpen: true, onSelect: () => setMusicalRuler(true) },
-    { label: 'Ruler in counts', icon: <Ruler size={15} />, checked: !musicalRuler, keepOpen: true, onSelect: () => setMusicalRuler(false) },
+    { label: 'Ruler in measures', icon: <Ruler size={15} />, checked: musicalRuler, radio: true, keepOpen: true, onSelect: () => setMusicalRuler(true) },
+    { label: 'Ruler in counts', icon: <Ruler size={15} />, checked: !musicalRuler, radio: true, keepOpen: true, onSelect: () => setMusicalRuler(false) },
     { type: 'separator' },
     { label: 'Set thumbnails', icon: <Images size={15} />, checked: controller.preferences.value.setThumbnails, keepOpen: true, onSelect: () => controller.preferences.update({ setThumbnails: !controller.preferences.value.setThumbnails }) },
     { type: 'heading', label: 'Music' },

@@ -17,6 +17,8 @@ export type MenuEntry =
     /** Shows this command's shortcut and Help text beside the label. */
     command?: CommandId;
     hint?: string; checked?: boolean; disabled?: boolean; disabledReason?: string; danger?: boolean;
+    /** One of several exclusive choices: marked with a dot rather than a check. */
+    radio?: boolean;
     /** Keep the menu open after choosing, for toggles the writer may flip several of. */
     keepOpen?: boolean;
     onSelect: () => void;
@@ -110,7 +112,7 @@ export function Menu({ label, description, items, children, className = 'icon-bu
       {entries.map((entry, index) => {
         if (entry.type === 'separator') return <div key={index} className="menu-separator" role="separator" />;
         if (entry.type === 'heading') return <div key={index} className="menu-heading">{entry.label}</div>;
-        const role = entry.checked === undefined ? 'menuitem' : 'menuitemcheckbox';
+        const role = entry.checked === undefined ? 'menuitem' : entry.radio ? 'menuitemradio' : 'menuitemcheckbox';
         return <HelpButton key={entry.key ?? `${entry.label}-${index}`} pointerPassThrough role={role} aria-checked={entry.checked} tabIndex={-1}
           title={entry.name ?? entry.label.replace(/…$/, '')} description={entry.description} command={entry.command} showShortcut={false}
           state={entry.checked === undefined ? undefined : entry.checked ? 'On' : 'Off'}
@@ -127,7 +129,7 @@ export function Menu({ label, description, items, children, className = 'icon-bu
             : <span className="menu-item-label">{entry.label}</span>}
           {entry.hint && <span className="menu-item-hint">{entry.hint}</span>}
           {entry.command && <CommandKeycaps command={entry.command} />}
-          {entry.checked !== undefined && <span className="menu-item-check">{entry.checked && <Check size={14} />}</span>}
+          {entry.checked !== undefined && <span className="menu-item-check">{entry.checked && (entry.radio ? <i className="menu-item-dot" /> : <Check size={14} />)}</span>}
         </HelpButton>;
       })}
     </div>, host)}
