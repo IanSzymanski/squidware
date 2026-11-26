@@ -189,6 +189,8 @@
   position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(50% - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--field-chip-muted); font-size: var(--text-xs); pointer-events: none; text-shadow: 0 1px 2px #000a;
 }
+/* Beside the chart the 3D view is a monitor: it keeps its camera and saved views; stadium and quality stay with the full 3D view. */
+.stage-three__controls--split :is(.stage-three__stadium, select[aria-label="3D quality"]) { display: none; }
 /* Rehearse: the count, readable from across the room. */
 .rehearse-readout {
   position: absolute; z-index: 3; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; align-items: baseline; gap: 14px; padding: 6px 16px 7px;

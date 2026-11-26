@@ -117,9 +117,12 @@ interface Insets { top: number; right: number; bottom: number; left: number }
 function presetAngles(preset: CameraPreset, aspect: number, open: boolean) {
   const steeper = THREE.MathUtils.clamp(1.9 - aspect, 0, 1) + (open ? .55 : 0);
   if (preset === 'top') return { azimuth: 0, elevation: Math.PI / 2 - 1e-4 };
-  if (preset === 'front') return { azimuth: 0, elevation: rad(20 + 5 * steeper) };
-  if (preset === 'press-box') return { azimuth: 0, elevation: rad(36 + 14 * steeper) };
-  return { azimuth: rad(22), elevation: rad(33 + 12 * steeper) };
+  // A wide, short pane (the strip under the chart in split view) wants a lower camera: seen from lower down the
+  // field's depth compresses, so the field fills the strip's width instead of floating small in its middle.
+  const low = (elevation: number) => aspect > 2.3 ? Math.max(rad(9), Math.min(elevation, Math.asin(THREE.MathUtils.clamp(1.6 / aspect, 0, 1)))) : elevation;
+  if (preset === 'front') return { azimuth: 0, elevation: low(rad(20 + 5 * steeper)) };
+  if (preset === 'press-box') return { azimuth: 0, elevation: low(rad(36 + 14 * steeper)) };
+  return { azimuth: rad(22), elevation: low(rad(33 + 12 * steeper)) };
 }
 
 /**

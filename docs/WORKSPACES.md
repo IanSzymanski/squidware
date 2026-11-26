@@ -43,7 +43,7 @@ Features remain available in every mode through the Command palette. Narrow wind
 
 ## Split review
 
-Select **Split** in the view control over the field, or open the **Review** workspace. Both panes share selection, the active set and the playhead. The 2D chart starts with 60% of the space. Drag the divider to resize, or focus it and use the arrow keys. The panes stack when the field area is narrow. Press Enter on the divider or select **2D** to close the 3D pane. The 3D pane offers Perspective, Press box, Front and Overhead cameras. It starts in Lightweight quality, which you can change in the pane.
+Select **Split** in the view control over the field, or open the **Review** workspace. Both panes share selection, the active set and the playhead. The chart sits above the 3D view, which runs under it as a wide strip, and starts with about 72% of the height; only a very wide, short area puts the two side by side. Drag the divider to resize, or focus it and use the arrow keys. The panes stack when the field area is narrow. Press Enter on the divider or select **2D** to close the 3D pane. The 3D pane offers Perspective, Press box, Front and Overhead cameras. It starts in Lightweight quality, which you can change in the pane.
 
 ## Older preferences
 
