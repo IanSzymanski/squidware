@@ -12,6 +12,7 @@ import { OverflowMenu } from '../editor/OverflowMenu';
 import { ProblemTimeline } from '../editor/ProblemTimeline';
 import { useShowChecks } from '../editor/ShowAnalysis';
 import { canChangeLayout } from '../editor/commands';
+import { isModalOpen } from '../editor/confirmation';
 import { useEditorSelector } from '../editor/react';
 import { matchingSets } from '../editor/setList';
 import { formatTimelineCount as fmt, formatTransportCount, timelineLabels, timelineReadout, timelineWindow, transportCount } from '../editor/timelineNavigation';
@@ -22,6 +23,8 @@ import type { ShellLayout } from './useShellLayout';
 import { useScrollCue } from './useScrollCue';
 
 const pad = (n: number) => String(n).padStart(2, '0');
+/** Transport options in order, More playback options among them when it is shown. */
+const OPTIONS = '.timeline .transport-options [aria-label]';
 /** On a thumbnail card, a name written as "movement · title" shows its title; the card's number and tooltip carry the rest. */
 const cardName = (name: string) => { const at = name.lastIndexOf(' · '); return at > 0 && at < name.length - 3 ? name.slice(at + 3) : name; };
 
@@ -274,8 +277,31 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
   const loopButton = <HelpButton title={resolved?.end ? 'Loop range' : 'Loop show'} description={resolved?.end ? 'Repeat the active count range using the shared audio clock.' : 'Restart from the opening set when playback reaches the end.'} className="icon-button transport-labelled" active={loop} onClick={() => setLoop(!loop)}><Repeat2 size={16} /><span className="overflow-option-label">{resolved?.end ? 'Loop range' : 'Loop show'}</span></HelpButton>;
   const metronomeButton = <HelpButton title="Metronome" command="metronome.toggle" description="Toggle meter-aware clicks. Configure meter and count-in from the timeline menu." className="icon-button transport-labelled" active={metronome} onClick={() => controller.dispatch('metronome.toggle')}><Timer size={16} /><span className="overflow-option-label">Metronome</span></HelpButton>;
   const speedSelect = <label className="transport-speed"><span className="overflow-option-label">Speed</span><Tooltip name="Playback speed" description="Change rehearsal speed without changing the written move tempos." state={`${speed}×`}><select aria-label="Playback speed" value={speed} onChange={event => setSpeed(Number(event.target.value))}><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></Tooltip></label>;
-  // Stable keys: a tier change never turns one folded control's node into another.
-  const folded = (transport === 'full' ? [] : transport === 'compact' ? ['loop', 'metronome', 'speed'] : ['rehearsal', 'audio', 'loop', 'metronome', 'speed']).map(key => <Fragment key={key}>{{ rehearsal, audio, loop: loopButton, metronome: metronomeButton, speed: speedSelect }[key]}</Fragment>);
+  // Stable keys: a tier change never turns one folded control's node into another. Folded options keep the order they have in the transport.
+  const folded = (transport === 'full' ? [] : transport === 'compact' ? ['loop', 'metronome', 'speed'] : ['audio', 'rehearsal', 'loop', 'metronome', 'speed']).map(key => <Fragment key={key}>{{ rehearsal, audio, loop: loopButton, metronome: metronomeButton, speed: speedSelect }[key]}</Fragment>);
+  // A tier change (a resize, a UI scale change, focus mode or the side panel docking beside the field) moves options
+  // between the transport and More playback options, also under a dialog (a confirmation included) opened from one.
+  // Focus on a moved option then follows it to where it is now, or to More when it is folded away, instead of falling
+  // to the page; focus on More itself, when a wider tier removes it, moves to the first option that left the menu.
+  // Only focus held as the change renders counts: each render while no dialog is shown notes the focused option (a tier
+  // change and an opening dialog render here before their commit), and a shown dialog keeps the option it opened from.
+  // Focus that left for the page stays there.
+  const moving = useRef<{ modal: boolean; node: Element | null; beside: string[] }>({ modal: false, node: null, beside: [] }), focused = document.activeElement;
+  if (!moving.current.modal) {
+    const node = moving.current.node = focused?.closest('.timeline .transport-options') ? focused : null;
+    // What the transport shows beside More (its open panel aside): an option that is new after More goes is one that left the menu.
+    moving.current.beside = node?.matches('.overflow-menu-trigger') ? Array.from(document.querySelectorAll(OPTIONS)).filter(option => !option.closest('.overflow-menu-panel')).map(option => option.getAttribute('aria-label') ?? '') : [];
+  }
+  const modal = useEditorSelector(state => isModalOpen(state) || state.ui.paletteOpen);
+  useLayoutEffect(() => {
+    const { node, beside } = moving.current, label = node?.getAttribute('aria-label');
+    moving.current.modal = modal;
+    if (modal || !label || node?.isConnected || document.activeElement !== document.body) return;
+    moving.current.node = null;
+    const options = [...document.querySelectorAll<HTMLElement>(OPTIONS)];
+    const named = (name: string) => options.find(option => option.getAttribute('aria-label') === name);
+    (named(label) ?? named('More playback options') ?? (beside.length ? options.find(option => !beside.includes(option.getAttribute('aria-label') ?? '')) : undefined))?.focus();
+  }, [modal, transport]);
   const status = clockStatus.startsWith('Fermata') ? `Hold · ${clockStatus.split(' · ').at(-1)?.replace(' remaining', '')}` : clockStatus.startsWith('Count-in') ? clockStatus : clockStatus.startsWith('Metronome unavailable') ? 'Click unavailable' : '';
 
   return <section className="timeline show-strip" aria-label="Show timeline" data-sets={setsVisible || undefined}>
@@ -317,7 +343,7 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
         {transport !== 'narrow' && <>{audio}{rehearsal}</>}
         {transport === 'full' && <>{loopButton}{metronomeButton}{speedSelect}</>}
         <HelpButton title={muted ? 'Unmute audio' : 'Mute audio'} description="Mute or restore the attached rehearsal audio; metronome clicks are separate." state={muted ? 'Muted' : 'Audible'} className="icon-button" active={muted} onClick={() => setMuted(!muted)}>{muted ? <VolumeX size={16} /> : <Volume2 size={16} />}</HelpButton>
-        {folded.length > 0 && <OverflowMenu title="More playback options" description={transport === 'compact' ? 'Loop, metronome and playback speed. A wider window shows them in the transport.' : 'Rehearsal passages, audio, loop, metronome and playback speed. A wider window shows them in the transport.'} placement="above">{folded}</OverflowMenu>}
+        {folded.length > 0 && <OverflowMenu title="More playback options" description={transport === 'compact' ? 'Loop, metronome and playback speed. A wider window shows them in the transport.' : 'Audio, rehearsal passages, loop, metronome and playback speed. A wider window shows them in the transport.'} placement="above">{folded}</OverflowMenu>}
         <span className="divider-vertical" />
         {/* With the strip out of sight, in a short window or when hidden, adding a set stays one click away. */}
         {layout.mode === 'write' && (!setsVisible || layout.breakpoints.short) && <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set, starting from this picture. The dialog also offers a repeat, a clean staging grid or an insert."

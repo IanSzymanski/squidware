@@ -17,8 +17,10 @@
 }
 
 /* ---------- Top bar ---------- */
+/* The modes are centered while both sides fit their half. The right side is never narrower than its controls, so a long
+   title or a large problem count moves the modes left and shortens the title instead of sliding Undo over the modes. */
 .topbar {
-  flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-4);
+  flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: var(--space-4);
   height: var(--topbar-height); padding: 0 10px 0 8px; background: var(--surface); border-bottom: 1px solid var(--hairline);
   position: relative; z-index: 20; container-type: inline-size; container-name: topbar;
 }
