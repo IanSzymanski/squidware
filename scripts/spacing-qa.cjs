@@ -16,6 +16,8 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
     for(const type of ['mouseMoved','mousePressed','mouseReleased'])await debug('Input.dispatchMouseEvent',{type,...point,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
   };
   const button=title=>'[aria-label='+JSON.stringify(title)+']';
+  // In a narrow tool strip the Arrange tools fold into the Arrange menu: address whichever instance is on offer.
+  const tool=async title=>await evaluate(`!!document.querySelector(${JSON.stringify('.toolbar '+button(title))})?.getClientRects().length`)?'.toolbar '+button(title):'[role=menu][aria-label="Arrange"] '+button(title);
   const activate=async(title,keyCode='Return')=>{
     await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
     const selector=JSON.stringify(button(title));
@@ -75,7 +77,8 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await edit('Interval · yards',3.5);await draft('Interval · yards',-2);await key('Return');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Apply spacing\"]').getAttribute('aria-disabled')"),'true');
   // While a draft locks the choices, the chosen options keep a visible outline instead of looking like the others.
-  assert.ok(await evaluate("(()=>{const locked=[...document.querySelectorAll('.spacing-panel .spacing-choices .button')].filter(n=>n.getAttribute('aria-disabled')==='true'||n.disabled);const pressed=locked.filter(n=>n.getAttribute('aria-pressed')==='true'),other=locked.filter(n=>n.getAttribute('aria-pressed')!=='true');return pressed.length>0&&other.length>0&&pressed.every(n=>{const s=getComputedStyle(n);return s.borderStyle==='solid'&&s.boxShadow!=='none'})&&other.every(n=>getComputedStyle(n).borderStyle==='dashed')})()"),'locked spacing choices keep their pressed cue');
+  const lockedCue=await evaluate("(()=>{const read=n=>{const s=getComputedStyle(n);return {name:n.getAttribute('aria-label'),className:n.className,borderStyle:s.borderStyle,borderColor:s.borderTopColor,boxShadow:s.boxShadow,color:s.color,background:s.backgroundColor}};const locked=[...document.querySelectorAll('.spacing-panel .spacing-choices .button')].filter(n=>n.getAttribute('aria-disabled')==='true'||n.disabled);const pressed=locked.filter(n=>n.getAttribute('aria-pressed')==='true').map(read),other=locked.filter(n=>n.getAttribute('aria-pressed')!=='true').map(read);return {ok:pressed.length>0&&other.length>0&&pressed.every(s=>s.borderStyle==='solid'&&s.boxShadow!=='none')&&other.every(s=>s.borderStyle==='dashed'),pressed,other}})()");
+  assert.ok(lockedCue.ok,'locked spacing choices keep their pressed cue: '+JSON.stringify(lockedCue));
   await evaluate(`${number('Interval · yards')}.focus()`);await key('Escape');await wait(`!${state}.ui.pendingDraft`,'invalid draft canceled');
   near(await positions(),expected([39.5,43,46.5]));await edit('Interval · yards',1000);
   await wait("document.querySelector('.spacing-panel [role=status]').textContent.includes('field boundary')",'visible boundary error');
@@ -87,7 +90,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
     window.setContentSize(width,768);window.webContents.setZoomFactor(zoom);await settleNativeViewport(window,'spacing layout');
     await control(button('Cancel spacing'));await wait(`!${session}`,'baseline without preview');
     const baselineHeight=await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
-    await control(button('Align selection'));await activate('Set exact interval');await activate('Use field X axis');await activate('Space each lane separately');await activate('Interval in yards');await edit('Interval · yards',3.5);
+    await control(await tool('Align selection'));await wait(`!!${session}`,'opened alignment at this size');await activate('Set exact interval');await activate('Use field X axis');await activate('Space each lane separately');await activate('Interval in yards');await edit('Interval · yards',3.5);
     await evaluate("document.querySelector('.spacing-panel').scrollIntoView({block:'start'})");
     const metrics=await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),apply:rect('[aria-label=\"Apply spacing\"]'),cancel:rect('[aria-label=\"Cancel spacing\"]'),panel:rect('.spacing-panel')}})()");
     for(const r of [metrics.apply,metrics.cancel])assert.ok(r.left>=0&&r.right<=metrics.viewport.width+.5&&r.top>=0&&r.bottom<=metrics.viewport.height+.5,JSON.stringify(metrics));

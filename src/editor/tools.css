@@ -8,6 +8,8 @@
 }
 .spacing-choices .button:hover { color: var(--text); background: transparent; border-color: transparent; }
 .spacing-choices .button.primary, .spacing-choices .button[aria-pressed=true] { background: var(--active-bg); border-color: transparent; color: var(--text); font-weight: 500; box-shadow: var(--shadow-sm); }
+/* A locked choice still reads as unavailable: the shared dashed edge and disabled label, which the quiet look above would otherwise override. The chosen one keeps its solid pressed look. */
+.spacing-choices .button[aria-disabled=true]:not([aria-pressed=true]) { border-style: dashed; border-color: var(--border-strong); color: var(--disabled-text); }
 .spacing-panel .form-row .button, .coordinate-panel .form-row .button { width: 100%; min-width: 0; padding: 0 6px; font-size: var(--text-xs); }
 .spacing-panel .form-row .button.primary, .transform-panel .form-row .button.primary { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); font-weight: 500; }
 p.form-label { margin-bottom: -6px; }
