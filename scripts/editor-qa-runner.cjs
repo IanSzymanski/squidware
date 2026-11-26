@@ -239,7 +239,10 @@ async function checkCompactChrome() {
     // A control is clipped when no button of that name is on screen, inside the window and on top at its center.
     const clippedControls = names => evaluate(`${JSON.stringify(names)}.filter(name => ![...document.querySelectorAll('button[aria-label="'+name+'"]')].some(node => { const r=node.getBoundingClientRect(); return r.width>0 && r.left>=0 && r.right<=innerWidth+.5 && r.top>=0 && r.bottom<=innerHeight+.5 && node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); }))`);
     // Help lives in the Project menu at every width; the top bar keeps the three modes and command search. Save joins it once there is something to save.
-    const required = ['Undo','Redo','Export','Write mode','Plan mode','Rehearse mode','Project menu','Command palette','Play show','First set','Last set','Select performers','Motion','Collapse Inspector','2D field','3D preview','Add set'];
+    // Only the narrowest transport (the 1120 px window at 125%) folds First set and Last set away; Find set reaches every set there.
+    const narrowTransport = await evaluate("document.querySelector('.studio').dataset.transport === 'narrow'");
+    assert.equal(narrowTransport, width === 1120 && scale === 1.25, `narrowest transport at ${width}px / ${scale}×`);
+    const required = ['Undo','Redo','Export','Write mode','Plan mode','Rehearse mode','Project menu','Command palette','Play show',...(narrowTransport ? ['Find set','Previous set','Next set'] : ['First set','Last set']),'Select performers','Motion','Collapse Inspector','2D field','3D preview','Add set'];
     const measure = await evaluate(`(() => {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
       return { viewport:{width:innerWidth,height:innerHeight}, compactHeader:document.querySelector('.studio').dataset.header !== 'full', header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), transport:rect('.transport'), tracks:rect('.timeline-tracks'), emptyAudioLane:!!document.querySelector('.audio-track'), legendInInspector:!!document.querySelector('.inspector .field-legend')?.getClientRects().length, legendInField:!!document.querySelector('.field-container .field-legend') };
