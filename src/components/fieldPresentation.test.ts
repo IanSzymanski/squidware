@@ -66,7 +66,14 @@ describe('readable field labels', () => {
     const cluster: LabelDot[] = [[0, 0], [14, 0], [-14, 0], [0, 14], [0, -14], [14, 14], [-14, -14], [14, -14], [-14, 14]].map(([dx, dy], i) => ({ id: `p${i}`, x: 600 + dx, y: 400 + dy, labelWidth: 22, selected: false, focused: false }));
     expect(layoutFieldLabels(cluster, bounds, DEFAULT_FIELD_PRESENTATION).has('p0')).toBe(false);
     const selected = layoutFieldLabels(cluster.map(dot => dot.id === 'p0' ? { ...dot, selected: true } : dot), bounds, DEFAULT_FIELD_PRESENTATION);
-    expect(selected.get('p0')).toMatchObject({ left: 600 + DEFAULT_FIELD_PRESENTATION.dotRadiusPx + 4 });
+    // It moves out past its neighbors rather than sitting on them, and a leader ties it back to its dot.
+    const forced = selected.get('p0')!;
+    for (const dot of cluster) expect(overlap(forced, { left: dot.x - 4, right: dot.x + 4, top: dot.y - 4, bottom: dot.y + 4 })).toBe(false);
+    for (const [id, box] of selected) if (id !== 'p0') expect(overlap(forced, box)).toBe(false);
+    expect(labelLeader(cluster[0], forced, DEFAULT_FIELD_PRESENTATION.dotRadiusPx)).not.toBeNull();
+    // Two selected performers in the same crowd never share a label position.
+    const pair = layoutFieldLabels(cluster.map(dot => dot.id === 'p0' || dot.id === 'p1' ? { ...dot, selected: true } : dot), bounds, DEFAULT_FIELD_PRESENTATION);
+    expect(overlap(pair.get('p0')!, pair.get('p1')!)).toBe(false);
     expect(layoutFieldLabels(cluster.map(dot => dot.id === 'p0' ? { ...dot, focused: true } : dot), bounds, DEFAULT_FIELD_PRESENTATION).has('p0')).toBe(true);
     // Even a forced label stays in view.
     expect(layoutFieldLabels([{ ...cluster[0], selected: true, labelWidth: 5000 }], bounds, DEFAULT_FIELD_PRESENTATION).size).toBe(0);
@@ -78,6 +85,10 @@ describe('readable field labels', () => {
     const above = layoutFieldLabels([{ ...dot, prefer: 'above' }], bounds, DEFAULT_FIELD_PRESENTATION).get('pit')!;
     expect(above.bottom).toBeLessThan(dot.y);
     expect(layoutFieldLabels([dot], bounds, DEFAULT_FIELD_PRESENTATION).get('pit')!.left).toBeGreaterThan(dot.x);
+    // On a curve, a label goes to the outside: here the arc bulges upward, so its top dot is labeled above.
+    const arc: LabelDot[] = Array.from({ length: 9 }, (_, i) => ({ id: `a${i}`, x: 520 + i * 20, y: 400 - Math.sqrt(120 ** 2 - (i * 20 - 80) ** 2) + 90, labelWidth: 20, selected: false, focused: false }));
+    const crown = layoutFieldLabels(arc, bounds, DEFAULT_FIELD_PRESENTATION).get('a4')!;
+    expect(crown.bottom).toBeLessThan(arc[4].y);
     // A corner kept for controls pushes the label to another side.
     const corner = { ...dot, x: bounds.right - 215, y: bounds.bottom - 12 };
     expect(layoutFieldLabels([corner], bounds, DEFAULT_FIELD_PRESENTATION).get('pit')!.left).toBeGreaterThan(corner.x);
