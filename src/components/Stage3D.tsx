@@ -300,7 +300,7 @@ function ovalPath(context: CanvasRenderingContext2D, halfLength: number, halfDep
 /**
  * A stylized stadium in two draw calls: a painted ground plan (sideline turf, end zones and track) with the
  * field's rectangle cut out of it, and one merged mesh for the stands and press box.
- * The home side stays low and open at the 50 so the front and press box cameras look over it.
+ * The home side stays low and open at the 50; a stand the camera drops behind fades out (see the cutaway in the scene).
  */
 function buildStadium(width: number, depth: number, owner: Document, anisotropy: number) {
   const halfWidth = width / 2, halfDepth = depth / 2;
@@ -428,7 +428,7 @@ function buildStadium(width: number, depth: number, owner: Document, anisotropy:
     new THREE.Vector3(side * width * .16, boxY + 3.8, boxZ),
     new THREE.Vector3(side * halfWidth, 0, planDepth),
   ]);
-  return { group, backdrop, homeStand, homeZ: standZ };
+  return { group, backdrop, standZ, stands: [{ side: -1, mesh: farStand }, { side: 1, mesh: homeStand }] };
 }
 
 function updateRoster(state: SceneState, roster: string) {
@@ -820,12 +820,15 @@ export function Stage3D({ project, positions, facings, staging, selectedIds, onS
         fog.near = reach + sceneRadius * .1;
         fog.far = reach + sceneRadius * 4.6;
         if (stadium) {
-          // Cutaway: from the audience side at a low angle the home stand would only show its back, so it fades out.
-          const { x, y, z } = camera.position, material = stadium.homeStand.material;
-          const shown = z < stadium.homeZ ? 1 : THREE.MathUtils.smoothstep(Math.atan2(y, Math.hypot(x, z)), rad(28), rad(33));
-          material.opacity = shown;
-          material.transparent = shown < 1;
-          stadium.homeStand.visible = shown > .01;
+          // Cutaway: a camera that drops low behind a stand would see only the back of it, so that stand fades out of the way.
+          const { x, y, z } = camera.position;
+          const low = THREE.MathUtils.smoothstep(Math.atan2(y, Math.hypot(x, z)), rad(28), rad(33));
+          for (const { side, mesh } of stadium.stands) {
+            const shown = side * z < stadium.standZ ? 1 : low;
+            mesh.material.opacity = shown;
+            mesh.material.transparent = shown < 1;
+            mesh.visible = shown > .01;
+          }
         }
       };
       const pane = { width: 0, height: 0 };

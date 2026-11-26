@@ -147,6 +147,9 @@
 .field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background: var(--canvas); }
 /* A few pixels above and below the 2D field keep the floating controls off the turf in short windows. */
 .field-container .field-stage { height: calc(100% - 16px); margin-block: 8px; background: none; }
+/* Captions are drawn in field units; where the field is too small for them to be read, they step aside. */
+.field-viewports[data-layout] .field-captions { display: none; }
+@container (max-width: 860px) { .field-stage .field-captions { display: none; } }
 /* Yard numbers recede so performer labels read over them. */
 .field-stage .field-yard-numbers { opacity: .36; }
 /* The tool strip and status line carry mode and snapping; the field itself stays clear. */

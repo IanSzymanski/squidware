@@ -120,7 +120,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
         </g>;
       })}
     </g>
-    <g fill="#b4c5b4" opacity="0.6" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="600" fontSize="0.9" letterSpacing="0.3">
+    <g className="field-captions" fill="#b4c5b4" opacity="0.6" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="600" fontSize="0.9" letterSpacing="0.3">
       <text x={width / 2} y={-2.75} transform={flipped ? `rotate(180 ${width / 2} -3.07)` : undefined}>BACK SIDELINE</text>
       <text className="field-caption-front" x={width / 2} y={height + 3.4} transform={flipped ? `rotate(180 ${width / 2} ${height + 3.08})` : undefined}>FRONT SIDELINE</text>
       {/* Side 1 is the left half from the audience, as every coordinate reads. */}
