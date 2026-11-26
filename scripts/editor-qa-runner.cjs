@@ -267,8 +267,8 @@ async function checkCompactChrome() {
     const name = `Compact ${width} ${scale}`;
     await typeText('.inspector input[aria-label="Set name"]', name); await fieldKey('.inspector input[aria-label="Set name"]', 'Enter');
     await editNumber('Counts', 12);
-    // The transport names the current set, as does its card.
-    await uiWait(`document.querySelector('.set-jump-name').textContent === ${JSON.stringify(name)} && !!document.querySelector('.set-jump-name').getClientRects().length && document.querySelector('.set-card.selected .set-row-name').textContent === ${JSON.stringify(name)}`, 'canvas set name');
+    // The transport names the current set, as does its card. The narrowest transport draws the set's number alone.
+    await uiWait(`document.querySelector('.set-jump-name').textContent === ${JSON.stringify(name)} && !!document.querySelector('.set-jump-number').getClientRects().length && !!document.querySelector('.set-jump-name').getClientRects().length === ${!narrowTransport} && document.querySelector('.set-card.selected .set-row-name').textContent === ${JSON.stringify(name)}`, 'canvas set name');
     await evaluate('document.querySelector(\'[aria-label="Play show"]\').focus()'); await sendKey(window, 'Return');
     await uiWait(`!!document.querySelector('[aria-label="Pause playback"]') && ${showCount}>0`, 'compact playback advances');
     await evaluate('document.querySelector(\'[aria-label="Pause playback"]\').focus()'); await sendKey(window, 'Return');
