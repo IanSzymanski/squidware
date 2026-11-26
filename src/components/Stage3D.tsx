@@ -861,7 +861,8 @@ export function Stage3D({ project, positions, facings, staging, selectedIds, onS
         const subject = [-1, 1].flatMap(x => [-1, 1].flatMap(z => [
           new THREE.Vector3(x * (halfWidth + margin), 0, z * (halfDepth + margin)), new THREE.Vector3(x * halfWidth, crown, z * halfDepth),
         ]));
-        const shot = fitView(azimuth, elevation, PRESET_FOV, camera.aspect, insets(), subject, backdrop);
+        // The field is the subject: it fills the pane, and the stands behind it are scenery that may run off the edges.
+        const shot = fitView(azimuth, elevation, PRESET_FOV, camera.aspect, insets(), subject, []);
         controls.minDistance = currentRef.current.previewCamera ? 2 : 12;
         controls.maxDistance = Math.max(175, shot.reach * 1.8);
         controls.maxPolarAngle = Math.PI / 2 - 0.025;

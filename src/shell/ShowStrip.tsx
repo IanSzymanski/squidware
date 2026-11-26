@@ -109,7 +109,7 @@ function SetFinder({ controller: c, locked }: { controller: EditorController; lo
 }
 
 /** Every set as a card, in show order: the storyboard of the show. Drag or Alt+arrows reorders. */
-function SetStrip({ controller: c }: { controller: EditorController }) {
+function SetStrip({ controller: c, addButton }: { controller: EditorController; addButton: boolean }) {
   const { project, index, projectEpoch, thumbnailDots, preferences } = c;
   const revision = useEditorSelector(state => state.project.revision);
   const locked = !useEditorSelector(canChangeLayout);
@@ -176,10 +176,10 @@ function SetStrip({ controller: c }: { controller: EditorController }) {
         </HelpButton>;
       })}
     </div>
-    <HelpButton command="set.new" title="Add set" description="Add the next set: a new picture, a copy, a hold or an insert. You choose its counts before it is created."
+    {addButton && <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set, starting from this picture. The dialog also offers a repeat, a clean staging grid or an insert, and you choose the counts before it is created."
       disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} className="add-set" onClick={c.addSet}>
       <Plus size={16} /><span>Add set</span>
-    </HelpButton>
+    </HelpButton>}
   </div>;
 }
 
@@ -314,6 +314,9 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
         <HelpButton title={muted ? 'Unmute audio' : 'Mute audio'} description="Mute or restore the attached rehearsal audio; metronome clicks are separate." state={muted ? 'Muted' : 'Audible'} className="icon-button" active={muted} onClick={() => setMuted(!muted)}>{muted ? <VolumeX size={16} /> : <Volume2 size={16} />}</HelpButton>
         {folded.length > 0 && <OverflowMenu title="More playback options" description={transport === 'compact' ? 'Loop, metronome and playback speed. A wider window shows them in the transport.' : 'Rehearsal passages, audio, loop, metronome and playback speed. A wider window shows them in the transport.'} placement="above">{folded}</OverflowMenu>}
         <span className="divider-vertical" />
+        {/* With the strip out of sight, in a short window or when hidden, adding a set stays one click away. */}
+        {layout.mode === 'write' && (!setsVisible || layout.breakpoints.short) && <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set, starting from this picture. The dialog also offers a repeat, a clean staging grid or an insert."
+          disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} className="icon-button" onClick={controller.addSet}><Plus size={16} /></HelpButton>}
         {layout.mode === 'write' && <HelpButton pointerPassThrough title={setsVisible ? 'Hide set strip' : 'Show set strip'} description="Show or hide the strip of set thumbnails to give the field more room." className="icon-button" aria-expanded={setsVisible} disabled={layout.locked} disabledReason="Finish or cancel the current input or preview first." onClick={toggleSets}>{setsVisible ? <PanelBottomClose size={16} /> : <PanelBottomOpen size={16} />}</HelpButton>}
         <Menu label="Timeline options" description="Zoom the timeline, show or hide the set strip, and open the score, tempo and recording tools." className="icon-button" align="end" side="above" items={timelineMenu}><SlidersHorizontal size={16} /></Menu>
       </div>
@@ -357,6 +360,6 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
       {view.zoom > 1 && <Tooltip name="Pan timeline" description="Move the visible count window without moving the playhead. Panning turns follow off."><input className="timeline-pan" aria-label="Pan timeline" type="range" min={0} max={Math.max(0, duration - span)} step="any" value={view.start} onChange={event => { setFollow(false); setStart(Number(event.target.value)); }} /></Tooltip>}
     </div>
 
-    {setsVisible && <SetStrip controller={controller} />}
+    {setsVisible && <SetStrip controller={controller} addButton={!layout.breakpoints.short} />}
   </section>;
 }

@@ -31,7 +31,7 @@ import { HistoryPanel } from './HistoryPanel';
 import { PreferencesPanel } from './PreferencesPanel';
 import { SnappingPanel } from './SnappingPanel';
 import { RecoveryPanel } from './RecoveryPanel';
-import { CommitInput, CommitColor } from './EditorControls';
+import { CommitInput, CommitColor, MiniField } from './EditorControls';
 
 import type { EditorController } from './useEditorController';
 import { ProblemsPanel } from './ProblemsPanel';
@@ -85,9 +85,36 @@ export function EditorDialogs({ controller }: { controller: EditorController }) 
 
 const papers = [['letter', 'Letter'], ['a4', 'A4']] as const;
 const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
-const all = (count: number, noun: string) => count === 0 ? `No ${noun}s yet` : count === 1 ? `1 ${noun}` : `All ${count} ${noun}s`;
 
 /** Export: the PDF drill book with what it covers and its paper, then the other formats with what each one holds. */
+/** The first page of the PDF, drawn small from the production itself: its opening chart, or its first performer's sheet. */
+function ExportPreview({ controller, mode }: { controller: EditorController; mode: string }) {
+  const { project, thumbnailDots } = controller;
+  const first = project.sets[0], performer = project.performers[0];
+  const section = performer && project.sections.find(candidate => candidate.id === performer.sectionId);
+  const rows = Math.min(9, project.sets.length);
+  return <figure className="export-preview">
+    <svg viewBox="0 0 110 85" role="img" aria-label={mode === 'charts' ? 'First page: the opening set’s field chart' : 'First page: the first performer’s coordinate sheet'}>
+      <rect width="110" height="85" rx="1.5" className="export-preview-paper" />
+      {mode === 'charts' ? <>
+        <text x="6" y="9" className="export-preview-title">{project.title}</text>
+        <text x="6" y="14" className="export-preview-text">Set 1 · {first.name}</text>
+        <svg x="6" y="17" width="98" height="54" viewBox="3 3 104 59"><MiniField positions={first.positions} dots={thumbnailDots} field={project.field} /></svg>
+        <path d="M6,75h70M6,79h52" className="export-preview-rule" />
+      </> : <>
+        <text x="6" y="9" className="export-preview-title">{performer ? `${performer.label}${performer.name ? ` · ${performer.name}` : ''}` : project.title}</text>
+        <text x="6" y="14" className="export-preview-text">{section?.name ?? 'Coordinate sheet'}</text>
+        <path d="M6,19h98" className="export-preview-rule strong" />
+        {Array.from({ length: rows }, (_, i) => <g key={i}>
+          <text x="6" y={25.5 + i * 6.2} className="export-preview-text">{i + 1}</text>
+          <path d={`M14,${24 + i * 6.2}h${[52, 46, 58, 40, 50, 44, 56, 48, 42][i]}M78,${24 + i * 6.2}h${[20, 24, 18, 22, 26, 20, 16, 24, 22][i]}`} className="export-preview-rule" />
+        </g>)}
+      </>}
+    </svg>
+    <figcaption>Page 1 of {mode === 'charts' ? project.sets.length : project.performers.length || 1}{mode === 'charts' ? '' : ', before the appendix'}</figcaption>
+  </figure>;
+}
+
 function ExportPanel({ controller }: { controller: EditorController }) {
   const { project, dispatch, setDialog, printMode, setPrintMode, exportText, exportPdf, preferences, coordinateFormat, index, activeSet } = controller;
   const sets = project.sets.length, performers = project.performers.length;
@@ -104,11 +131,18 @@ function ExportPanel({ controller }: { controller: EditorController }) {
       <div className="export-options" role="radiogroup" aria-label="PDF contents">{contents.map(([mode, Icon, name, summary]) => <label key={mode} className={printMode === mode ? 'selected' : ''}>
         <input type="radio" name="print" checked={printMode === mode} onChange={() => setPrintMode(mode)} /><Icon size={16} /><div><strong>{name}</strong><span>{summary}</span></div>{printMode === mode && <Check className="export-check" size={14} aria-hidden="true" />}
       </label>)}</div>
-      <dl className="export-scope">
-        <div><dt>Includes</dt><dd>{printMode === 'charts' ? all(sets, 'set') : `${all(performers, 'performer')}, ${coordinates}`}</dd></div>
-        {appendix.length > 0 && <div><dt>Appendix</dt><dd>{appendix.join(' · ')}</dd></div>}
-        <div><dt id="export-paper-title">Paper</dt><dd><span className="export-paper" role="radiogroup" aria-labelledby="export-paper-title">{papers.map(([value, name]) => <label key={value}><input type="radio" name="paper" checked={preferences.value.paperSize === value} onChange={() => preferences.update({ paperSize: value })} />{name}</label>)}</span><span className="export-scope-note">Landscape</span></dd></div>
-      </dl>
+      <div className="export-result">
+        <ExportPreview controller={controller} mode={printMode} />
+        <div className="export-result-facts">
+          {/* What the file will hold, as a sentence; only the paper is a choice. */}
+          <p className="export-summary" data-export-scope="">{printMode === 'charts'
+            ? <><strong>{sets === 1 ? '1 page' : `${sets} pages`}</strong>, one landscape chart for {sets === 1 ? 'the set' : `each of the ${sets} sets`}.</>
+            : <><strong>{performers === 1 ? '1 sheet' : `${performers} sheets`}</strong>, one for each performer, {coordinates}.</>}
+            {appendix.length > 0 && <> Then {appendix.join(' and ').replace(/^Tempo map/, 'the tempo map')}.</>}</p>
+          <p className="microcopy">The PDF holds one of the two. Export again for the other.</p>
+          <div className="export-paper-row"><span id="export-paper-title">Paper</span><span className="export-paper" role="radiogroup" aria-labelledby="export-paper-title">{papers.map(([value, name]) => <label key={value}><input type="radio" name="paper" checked={preferences.value.paperSize === value} onChange={() => preferences.update({ paperSize: value })} />{name}</label>)}</span></div>
+        </div>
+      </div>
       <button className="button primary export-pdf" onClick={() => void exportPdf()}><Download size={16} />{window.squidware ? 'Save PDF' : 'Print / save PDF'}</button>
     </section>
     <section aria-labelledby="export-other-title">

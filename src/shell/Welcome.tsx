@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, FolderOpen, LifeBuoy, Play, Plus, Square } from 'lucide-react';
+import { ArrowRight, FolderOpen, LifeBuoy, Play, Plus, Warehouse } from 'lucide-react';
 import { createBlankProject, uid, validateProject } from '../domain';
 import type { Point, Project } from '../types';
 import type { CustomSurface } from '../surfaces';
@@ -112,7 +112,7 @@ export function Welcome({ controller: c, onClose }: { controller: EditorControll
           </button>)}
         </div>
         <div className="welcome-links">
-          <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(indoorProject())}><Square size={14} />Indoor floor · winter guard, 20</button>
+          <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(indoorProject())}><Warehouse size={14} />Indoor floor · winter guard, 20</button>
           <button type="button" className="welcome-link" disabled={busy} onClick={() => void create(createBlankProject(), true)}><Plus size={14} />Empty field, add my own cast</button>
         </div>
       </section>

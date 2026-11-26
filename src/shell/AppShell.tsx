@@ -12,6 +12,7 @@ import { useEditorSelector } from '../editor/react';
 import { useEditorController } from '../editor/useEditorController';
 import { ShowStrip } from './ShowStrip';
 import { SidePanel } from './SidePanel';
+import { RehearseReadout } from './RehearseReadout';
 import { FieldHint, SnapStatus } from './StatusBar';
 import { Toolbar, ViewControls } from './Toolbar';
 import { TopBar } from './TopBar';
@@ -45,6 +46,7 @@ export function AppShell() {
             <EditorField controller={controller}>
               <ViewControls controller={controller} layout={layout} onWorkspaces={openWorkspaces} />
               <FieldHint controller={controller} layout={layout} />
+              {layout.mode === 'rehearse' && <RehearseReadout controller={controller} />}
               <div className="canvas-zoom-row">
                 <SnapStatus controller={controller} />
                 <div className="canvas-zoom" role="group" aria-label="Field zoom">

@@ -184,6 +184,18 @@
   position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(50% - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--field-chip-muted); font-size: var(--text-xs); pointer-events: none; text-shadow: 0 1px 2px #000a;
 }
+/* Rehearse: the count, readable from across the room. */
+.rehearse-readout {
+  position: absolute; z-index: 3; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; align-items: baseline; gap: 14px; padding: 6px 16px 7px;
+  border: 1px solid var(--field-chip-line); border-radius: var(--radius-lg); background: var(--field-chip); color: var(--field-chip-text); backdrop-filter: blur(10px);
+  font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none;
+}
+.rehearse-readout-set { color: var(--field-chip-muted); font-size: var(--text-md); font-weight: 500; }
+.rehearse-readout-set strong { color: var(--field-chip-text); font-size: var(--text-xl); font-weight: 600; }
+.rehearse-readout-count { font-size: var(--text-3xl); font-weight: 700; line-height: 1; letter-spacing: -.5px; }
+.rehearse-readout-count--word { font-size: var(--text-2xl); font-weight: 600; letter-spacing: 0; }
+.rehearse-readout-count small { margin-left: 6px; color: var(--field-chip-muted); font-size: var(--text-lg); font-weight: 500; letter-spacing: 0; }
+@container (max-height: 300px) { .rehearse-readout { display: none; } }
 /* While paths are shown, their legend takes the hint's place at the field's lower left, off the chart. */
 .field-container .neighbor-legend { top: auto; right: auto; left: 10px; bottom: 6px; max-width: calc(50% - 84px); }
 .field-container:has(.neighbor-legend) .canvas-hint { display: none; }

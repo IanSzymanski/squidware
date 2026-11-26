@@ -11,7 +11,8 @@ export function FieldViewports({ view, field, preview, closePreview }: {
   const split = view === 'split';
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: stackBelow, height: 320 });
-  const [preferred, setPreferred] = useState(50);
+  // The chart is what the writer edits, so it starts with the larger share; the divider changes it.
+  const [preferred, setPreferred] = useState(60);
   const drag = useRef<{ pointer: number; start: number } | null>(null);
 
   useLayoutEffect(() => {

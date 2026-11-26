@@ -162,7 +162,8 @@ export function useEditorController() {
   function updateSet(update: SetPropertyUpdate) { dispatch('set.update', { index, update }); }
   function movePerformers(updates: Record<string, Point>) { dispatch('positions.move', { index, updates }); }
   function transform(options: { dx?: number; dy?: number; rotation?: number; scale?: number }) { dispatch('selection.transform', { index, ids: selectedIds, options }); }
-  function addSet() { dispatch('set.new'); }
+  // The next set usually grows out of this one, so Add set starts from the current picture; the dialog offers the other ways.
+  function addSet() { dispatch('set.hold'); }
   function duplicateSet() { dispatch('set.duplicate'); }
   function removeSet() { dispatch('set.remove', { index }); }
   function reorderSet(direction: -1 | 1) { dispatch('set.reorder', { index, direction }); }

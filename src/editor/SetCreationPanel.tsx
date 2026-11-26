@@ -8,13 +8,14 @@ import { creationTiming, setCreationNames, type SetCreationKind } from './projec
 import type { EditorController } from './useEditorController';
 import './setCreation.css';
 
-const kinds = ['new', 'duplicate', 'insert-before', 'hold'] as const;
+// In the order a writer reaches for them mid-show: carry on from this picture, repeat it, start clean, or go back and insert.
+const kinds = ['hold', 'duplicate', 'new', 'insert-before'] as const;
 const icons = { new: FilePlus2, duplicate: Copy, 'insert-before': ListStart, hold: Pause };
 const summaries = {
-  new: 'Everyone in a staging grid, ready to shape.',
-  duplicate: 'A copy of this picture and its notes.',
-  'insert-before': 'Add a set ahead of this one, starting from the picture before it.',
-  hold: 'Everyone stays in place for the counts.',
+  new: 'Clear the field to a staging grid and build a new picture.',
+  duplicate: 'Repeat this set: the same picture, notes and counts.',
+  'insert-before': 'Add a set ahead of this one, from the picture before it.',
+  hold: 'Continue from this picture. Everyone stays put until you move them.',
 };
 const descriptions = {
   new: 'Fresh staging grid for the whole cast. Blank notes; constant speed.',

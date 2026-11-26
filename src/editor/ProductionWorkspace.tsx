@@ -138,7 +138,7 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
     {error && <div className="sheet-error" role="alert">{error}{draft && <><button className="button subtle" onClick={() => { const d = draftRef.current; if (d) focus(d); }}>Return to input</button><button className="button subtle" onClick={() => { setDraft(null); setPendingDraft(false, 'sheet-cell'); setError(''); }}>Cancel input</button></>}</div>}
     <div className={`production-table sheet-scroll${wrap ? '' : ' sheet-scroll--dense'}`} ref={table}>
       <table aria-label="Production sheet cells" aria-describedby="sheet-help" style={{ '--sheet-digits': Math.max(2, String(project.sets.length).length) } as CSSProperties}><thead><tr>
-        <th scope="col"><Tooltip name="Set / score" description="The set’s number and the measure it arrives on. The beat shows when a set lands off the downbeat."><span>Set / score</span></Tooltip></th>
+        <th scope="col"><Tooltip name="Set and measure" description="The set’s number and the measure it arrives on. The beat shows when a set lands off the downbeat."><span>Set · measure</span></Tooltip></th>
         {sheetLabels.map((label, column) => <th scope="col" key={label} className={numeric(column) ? 'sheet-num' : undefined}><Tooltip name={label} description={hints[column]}><span>{label}</span></Tooltip></th>)}
       </tr></thead><tbody>
         {project.sets.map((set, row) => {
