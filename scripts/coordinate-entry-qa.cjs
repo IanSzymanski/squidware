@@ -6,6 +6,8 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   const ids=project.performers.slice(0,3).map(p=>p.id);const layouts=[];const session=state+'.ui.coordinatePreview';
   const debug=(method,args)=>window.webContents.debugger.sendCommand(method,args);
   const button=title=>'[aria-label='+JSON.stringify(title)+']';
+  // In a narrow tool strip the Arrange tools fold into the Arrange menu: address whichever instance is on offer.
+  const tool=async title=>await evaluate(`!!document.querySelector(${JSON.stringify('.toolbar '+button(title))})?.getClientRects().length`)?'.toolbar '+button(title):'[role=menu][aria-label="Arrange"] '+button(title);
   const capture=async name=>{await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('.tooltip-panel')",'dismissed help before capture');await takeScreenshot(name);};
   const control=async selector=>{ await revealFieldTool(window,selector);
     await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});
@@ -55,8 +57,10 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   for(const [width,zoom] of [[1366,1],[1366,1.25],[1120,1],[1120,1.25]]){
     window.setContentSize(width,768);window.webContents.setZoomFactor(zoom);await settleNativeViewport(window,'coordinate layout');
     const baselineHeight=await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
-    await control(button('Enter coordinates'));await type('3 steps forward, 1.5 yards right');
-    const metrics=await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),apply:rect('[aria-label=\"Apply coordinates\"]'),cancel:rect('[aria-label=\"Cancel coordinate entry\"]'),input:rect('[aria-label=\"Drill phrase\"]'),actions:[...document.querySelectorAll('.selection-actions>button')].map(n=>{const r=n.getBoundingClientRect();return {name:n.getAttribute('aria-label'),left:r.left,right:r.right,top:r.top,bottom:r.bottom}})}})()");
+    await control(await tool('Enter coordinates'));await wait(`!!${session}`,'coordinate entry at this size');await type('3 steps forward, 1.5 yards right');
+    const metrics=await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),apply:rect('[aria-label=\"Apply coordinates\"]'),cancel:rect('[aria-label=\"Cancel coordinate entry\"]'),input:rect('[aria-label=\"Drill phrase\"]'),actions:[...document.querySelectorAll('.selection-bar button')].filter(n=>n.getClientRects().length).map(n=>{const r=n.getBoundingClientRect();return {name:n.getAttribute('aria-label'),left:r.left,right:r.right,top:r.top,bottom:r.bottom}})}})()");
+    // The Inspector's selection header keeps its action beside the preview's controls.
+    assert.deepEqual(metrics.actions.map(a=>a.name),['Clear selection'],JSON.stringify(metrics));
     for(const r of [metrics.apply,metrics.cancel,metrics.input,...metrics.actions])assert.ok(r.left>=0&&r.right<=metrics.viewport.width+.5&&r.top>=0&&r.bottom<=metrics.viewport.height+.5,JSON.stringify(metrics));
     assert.ok(Math.abs(metrics.field.height-baselineHeight)<.5);if(width===1366&&zoom===1)assert.ok(metrics.field.height>=470);assert.ok(metrics.field.height*zoom>=300);
     layouts.push({width,zoom,baselineHeight,...metrics});await capture('coordinate-'+width+'-'+zoom+'.png');
