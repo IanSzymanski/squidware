@@ -18,6 +18,25 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   };
   const number=label=>`[...document.querySelectorAll('label.form-label')].find(n=>n.firstChild?.textContent===${JSON.stringify(label)}).querySelector('input')`;
   const edit=async(label,value)=>{await evaluate(`(()=>{const n=${number(label)};n.focus();n.select()})()`);await window.webContents.debugger.sendCommand('Input.insertText',{text:String(value)});await key('Return');await wait(`!${state}.ui.pendingDraft`,'committed '+label);};
+  // In a narrow tool strip the shape tools fold into the Shape menu: address whichever instance is on offer.
+  const tool=async shape=>await evaluate(`!!document.querySelector('.toolbar [aria-label="${shape} formation"]')?.getClientRects().length`)?`.toolbar [aria-label="${shape} formation"]`:`[role=menu][aria-label="Shape"] [aria-label="${shape}"]`;
+  // The yard fields for the center are under the panel's Exact center disclosure; open it with native keys.
+  const exactCenter=async()=>{
+    const summary="[...document.querySelectorAll('.formation-center summary')].find(n=>n.textContent==='Exact center')";
+    if(await evaluate(`${summary}.parentElement.open`))return;
+    await evaluate(`(()=>{const n=${summary};n.scrollIntoView({block:'nearest'});n.focus()})()`);await key('Return');
+    await wait(`${summary}.parentElement.open && ${number('Center X · yd')}.getClientRects().length>0`,'Exact center opened');
+  };
+  const hover=async selector=>{const point=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',...point});};
+  // What the Shortest choice says about its order: its label, and the help it shows on hover.
+  const shortestOrder=async()=>{
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await wait("!document.querySelector('[role=tooltip]')",'help dismissed before reading Shortest');
+    await hover(modes.shortest);await wait("document.querySelector('[role=tooltip] strong')?.textContent==='Shortest-travel assignment'",'Shortest help');
+    const read=await evaluate(`({label:document.querySelector(${JSON.stringify(modes.shortest)}).textContent,help:document.querySelector('[role=tooltip] p').textContent})`);
+    // Help stays while its control holds focus, as after a click on it: leave with the pointer and with focus.
+    await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await wait("!document.querySelector('[role=tooltip]')",'Shortest help dismissed');
+    return read;
+  };
   const modes={shortest:'[aria-label="Shortest-travel assignment"]',position:'[aria-label="Positional assignment"]',roster:'[aria-label="Roster assignment"]'};
   const pressed=()=>evaluate(`Object.fromEntries(Object.entries(${JSON.stringify(modes)}).map(([m,s])=>[m,document.querySelector(s).getAttribute('aria-pressed')]))`);
   const mode=async value=>{
@@ -31,24 +50,31 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   const menu=label=>{function find(m){for(const item of m?.items??[]){if(item.label===label)return item;const child=find(item.submenu);if(child)return child;}}const item=find(Menu.getApplicationMenu());assert.ok(item?.click);item.click(item,window,{});};
   window.setContentSize(1366,768);window.webContents.setZoomFactor(1);await settleNativeViewport(window,'assignment baseline');
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('selection','selectedIds',${JSON.stringify(ids)});${editor}.setValue('ui','workspace','design');${editor}.setValue('ui','view','2d');${editor}.setValue('ui','castPanelOpen',false);${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom',inspectorFormationOpen:true});`);
-  await wait("!!document.querySelector('[aria-label=\"Shape selection\"]')",'selection controls');
+  await wait("!!document.querySelector('.toolbar [role=group][aria-label=\"Shape the selection\"]')",'selection controls');
   await capture('assignment-before.png');
-  await control('[aria-label="Line formation"]');await edit('Width · yd',24);await edit('Center X · yd',50);await edit('Center Y · yd',25);
+  // The panel states lengths in the production's steps; the exact center in yards sits under its own disclosure.
+  const stepYards=5/(project.snapping?.steps??8);
+  await control(await tool('Line'));await wait(`!!${state}.ui.formationPreview`,'line preview');await edit('Length · steps',24/stepYards);await exactCenter();await edit('Center X · yd',50);await edit('Center Y · yd',25);
   await wait("document.querySelectorAll('[data-formation-path]').length===4",'four assignment paths');
   // New previews default to shortest travel. On this reversed baseline it is the same uncrossed mapping as positional order.
   assert.deepEqual(await pressed(),{shortest:'true',position:'false',roster:'false'});assert.equal(await evaluate(`${state}.ui.formationPreview.assignmentMode`),'shortest');
-  // The width/center edits keep the order solved for the seeded line, so the panel says so; choosing Shortest travel re-solves.
-  const summary=()=>evaluate("document.querySelector('.formation-panel .section-description').textContent");
-  assert.match(await summary(),/order kept from the earlier shape · choose Shortest travel to re-solve/);
-  await control('[aria-label="Shortest-travel assignment"]');await wait(`!document.querySelector('.formation-panel .section-description').textContent.includes('kept')`,'re-solved shortest travel');
-  assert.match(await summary(),/shortest-travel order/);assert.deepEqual(await pressed(),{shortest:'true',position:'false',roster:'false'});
+  // The length/center edits keep the order solved for the seeded line, so the Shortest choice marks itself and its help says so; choosing it again re-solves.
+  const kept=await shortestOrder();
+  assert.equal(kept.label,'Shortest *');assert.match(kept.help,/order was solved for an earlier shape and is kept while you adjust it\. Choose this again to re-solve for the current shape/);
+  await control('[aria-label="Shortest-travel assignment"]');await wait(`document.querySelector(${JSON.stringify(modes.shortest)}).textContent==='Shortest'`,'re-solved shortest travel');
+  const solved=await shortestOrder();
+  assert.equal(solved.label,'Shortest');assert.match(solved.help,/^Assign destinations with the least total travel; straight paths do not cross\.$/);assert.deepEqual(await pressed(),{shortest:'true',position:'false',roster:'false'});
   const positional=Object.fromEntries(ids.map((id,i)=>[id,{x:62-i*8,y:25}]));near(await positions(),positional);
   assert.deepEqual(await evaluate(`${state}.project.present`),project);assert.equal(await evaluate(`${state}.project.past.length`),0);
   await capture('assignment-positional.png');
-  const positionalTravel=await evaluate("document.querySelector('.formation-travel').textContent");assert.match(positionalTravel,/21.86 yd/);
-  await mode('roster');near(await positions(),Object.fromEntries(ids.map((id,i)=>[id,{x:38+i*8,y:25}])));
-  const rosterTravel=await evaluate("document.querySelector('.formation-travel').textContent");assert.match(rosterTravel,/75.51 yd/);
-  await capture('assignment-roster.png');await mode('shortest');near(await positions(),positional);assert.match(await evaluate("document.querySelector('.formation-travel').textContent"),/21.86 yd/);
+  // The visible result row states the longest path in steps; the same travel is announced in yards.
+  const farthest=()=>evaluate("(()=>{const row=[...document.querySelectorAll('.formation-stats > div')].find(n=>n.querySelector('dt').textContent==='Farthest moved'),r=row?.getBoundingClientRect();return row&&r.width>1&&r.height>1?row.querySelector('dd').textContent:null})()");
+  const farthestSteps=targets=>(Math.max(...ids.map(id=>Math.hypot(targets[id].x-project.sets[0].positions[id].x,targets[id].y-project.sets[0].positions[id].y)))/stepYards).toFixed(1)+'steps';
+  const roster=Object.fromEntries(ids.map((id,i)=>[id,{x:38+i*8,y:25}]));
+  const positionalTravel=await evaluate("document.querySelector('.formation-travel').textContent");assert.match(positionalTravel,/21.86 yd/);assert.equal(await farthest(),farthestSteps(positional));
+  await mode('roster');near(await positions(),roster);
+  const rosterTravel=await evaluate("document.querySelector('.formation-travel').textContent");assert.match(rosterTravel,/75.51 yd/);assert.equal(await farthest(),farthestSteps(roster));assert.notEqual(farthestSteps(roster),farthestSteps(positional));
+  await capture('assignment-roster.png');await mode('shortest');near(await positions(),positional);assert.match(await evaluate("document.querySelector('.formation-travel').textContent"),/21.86 yd/);assert.equal(await farthest(),farthestSteps(positional));
   await mode('position');near(await positions(),positional);assert.deepEqual(await pressed(),{shortest:'false',position:'true',roster:'false'});
   assert.equal(await evaluate(`${state}.project.past.length`),0);
   pass('native keyboard assignment choice changes visible ID paths and travel; shortest travel is the default and reversed groups retain positional order; preview adds no history');
@@ -57,15 +83,17 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
     window.setContentSize(width,768);window.webContents.setZoomFactor(zoom);await settleNativeViewport(window,'assignment layout');
     await control('[aria-label="Cancel formation"]');await wait(`!${state}.ui.formationPreview`,'layout comparison without preview');
     const baselineHeight=await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
-    await control('[aria-label="Line formation"]');await edit('Center Y · yd',25);
+    await control(await tool('Line'));await wait(`!!${state}.ui.formationPreview`,'line preview at this size');await exactCenter();await edit('Center Y · yd',25);
     await evaluate("document.querySelector('[aria-label=\"Formation assignment\"]').scrollIntoView({block:'nearest'})");
     const metrics=await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},field:rect('.field-container'),assignment:rect('[aria-label=\"Formation assignment\"]'),apply:rect('[aria-label=\"Apply formation\"]'),cancel:rect('[aria-label=\"Cancel formation\"]')}})()");
     for(const r of [metrics.assignment,metrics.apply,metrics.cancel])assert.ok(r.left>=0&&r.right<=metrics.viewport.width+.5&&r.top>=0&&r.bottom<=metrics.viewport.height+.5,JSON.stringify(metrics));
     assert.ok(Math.abs(metrics.field.height-baselineHeight)<.5,JSON.stringify({baselineHeight,...metrics}));
     if(width===1366&&zoom===1)assert.ok(metrics.field.height>=470,JSON.stringify(metrics));
     assert.ok(metrics.field.height*zoom>=300,JSON.stringify(metrics));layouts.push({width,zoom,baselineHeight,...metrics});await capture('assignment-'+width+'-'+zoom+'.png');
-    await evaluate("document.querySelector('.formation-travel').scrollIntoView({block:'nearest'})");
-    await wait("(()=>{const r=document.querySelector('.formation-travel').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()",'travel remains reachable');
+    // The travel a writer reads is the visible result rows; the yard total beside them is for assistive technology.
+    await evaluate("document.querySelector('.formation-stats').scrollIntoView({block:'nearest'})");
+    await wait("(()=>{const r=document.querySelector('.formation-stats').getBoundingClientRect();return r.height>1&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth&&!!document.querySelector('.formation-travel')})()",'travel remains reachable');
+    assert.equal(await farthest(),farthestSteps(positional));
     if(width===1120&&zoom===1.25)await capture('assignment-travel-enlarged.png');
   }
   window.webContents.setZoomFactor(1);window.setContentSize(1366,768);await settleNativeViewport(window,'assignment restored');

@@ -72,6 +72,47 @@ export function useShellLayout(controller: EditorController) {
   // Playback shows the field: starting it closes a panel open over the field.
   useLayoutEffect(() => { if (controller.playing && !preview) setOverlayOpen(false); }, [controller.playing, preview]);
 
+  // Focus held by a panel that closes, or by a preview that ends, never falls to the page: it returns to the panel's
+  // button, or goes to the selection header (to the field, where the panel closed with the preview).
+  const held = useRef<'panel' | 'preview' | null>(null);
+  useEffect(() => {
+    const track = (event: FocusEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      held.current = target?.closest('.toolbar-commit') ? 'preview' : target?.closest('.side-panel') ? 'panel' : null;
+    };
+    // A press on the page gives focus up on purpose; it stays there.
+    const release = (event: PointerEvent) => { if (!(event.target instanceof Element && event.target.closest('.toolbar-commit, .side-panel'))) held.current = null; };
+    document.addEventListener('focusin', track); document.addEventListener('pointerdown', release, true);
+    return () => { document.removeEventListener('focusin', track); document.removeEventListener('pointerdown', release, true); };
+  }, []);
+  const before = useRef({ panelVisible, preview });
+  useLayoutEffect(() => {
+    const was = before.current; before.current = { panelVisible, preview };
+    const endedPreview = was.preview && !preview, closedPanel = was.panelVisible && !panelVisible;
+    if (!held.current || !(endedPreview || closedPanel)) return;
+    // The control that held focus is gone or about to be hidden; anything else keeps it.
+    const active = document.activeElement;
+    if (active && active !== document.body && active.getClientRects().length && !active.closest('[hidden], [inert]')) return;
+    held.current = null;
+    const shown = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)].find(node => node.getClientRects().length);
+    (endedPreview ? shown('.selection-bar') ?? shown('.main-workspace .field-container') : shown('.toolbar-end [aria-controls^="workspace-pane-"]'))?.focus({ preventScroll: true });
+  }, [panelVisible, preview]);
+
+  // A request to show Cast from outside the panel (the Command palette, Dock Cast) opens the panel where it cannot
+  // dock and moves focus into Cast's search. Focus already in the panel, as on its tab, stays where it is.
+  const reveal = useEditorSelector(state => state.ui.castReveal);
+  const revealed = useRef(reveal);
+  useEffect(() => {
+    if (reveal === revealed.current) return;
+    revealed.current = reveal;
+    if (!available || preview) return;
+    if (!fits) setOverlayOpen(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const pane = document.querySelector<HTMLElement>('#workspace-pane-cast:not([hidden])');
+      if (pane && !pane.contains(document.activeElement)) pane.querySelector<HTMLElement>('[aria-label="Find a performer"]')?.focus();
+    }));
+  }, [reveal]);
+
   function showPanel(next: 'inspector' | 'cast' = tab) {
     if (next !== tab) controller.dispatch('cast.show', { mode: next === 'cast' ? 'panel' : 'closed' });
     const key = next === 'cast' ? 'castCollapsed' : 'inspectorCollapsed';

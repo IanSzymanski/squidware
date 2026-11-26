@@ -97,12 +97,15 @@ async function checkNeighbors(project) {
   await input('mousePressed', dragPoint, {button:'left',clickCount:1});
   await input('mouseMoved', {x:dragPoint.x+12,y:dragPoint.y}, {button:'left',buttons:1});
   await wait("!!document.querySelector('.field-stage--moving') && !document.querySelector('[data-neighbor]')", 'drag ghosts hidden');
-  await wait("(()=>{const s=getComputedStyle(document.querySelector('.field-legend'));return Number(s.opacity)===0&&s.pointerEvents==='none'})()", 'section legend steps aside while dragging');
+  // The section legend is in the Inspector header, clear of the field. What does float over the field steps aside:
+  // the view and zoom clusters dim and the travel-path legend is not shown.
+  assert.ok(await evaluate("(()=>{const a=document.querySelector('.field-legend').getBoundingClientRect(),b=document.querySelector('.field-container').getBoundingClientRect();return a.width>0&&(a.left>=b.right||a.right<=b.left||a.top>=b.bottom||a.bottom<=b.top)})()"), 'section legend sits outside the field');
+  await wait("(()=>{const dim=['.canvas-view','.canvas-zoom-row'].map(s=>document.querySelector(s)),legend=document.querySelector('.neighbor-legend');return dim.every(n=>n&&Number(getComputedStyle(n).opacity)===.35)&&(!legend||getComputedStyle(legend).display==='none')})()", 'field overlays step aside while dragging');
   assert.equal(await evaluate(`${state}.project.revision`), before.revision);
   // Return to the anchor before release so this probe makes no production edit.
   await input('mouseMoved', dragPoint, {button:'left',buttons:1});
   await input('mouseReleased', dragPoint, {button:'left',clickCount:1});
-  await wait("!!document.querySelector('[data-neighbor]') && Number(getComputedStyle(document.querySelector('.field-legend')).opacity)===1", 'drag review and legend restored');
+  await wait("!!document.querySelector('[data-neighbor]') && ['.canvas-view','.canvas-zoom-row'].every(s=>Number(getComputedStyle(document.querySelector(s)).opacity)===1) && getComputedStyle(document.querySelector('.neighbor-legend')).display!=='none' && Number(getComputedStyle(document.querySelector('.field-legend')).opacity)===1", 'drag review, field overlays and legends restored');
   await evaluate(`${editor}.setValue('selection','selectedIds',[])`);
   pass('uncommitted drag previews suppress ghosts and restore them on release');
   window.webContents.setZoomFactor(1.25); await capture('neighbors-enlarged.png');
@@ -124,21 +127,31 @@ async function checkNeighbors(project) {
 }
 const center = id => evaluate(`(() => { const n = [...document.querySelectorAll('.field-performer')].find(n=>n.dataset.performerId===${JSON.stringify(id)}); const p = new DOMPoint(0,0).matrixTransform(n.getScreenCTM()); return {x:p.x,y:p.y}; })()`);
 async function selected(id) { await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'selected '+id); }
+// Defaults from DEFAULT_FIELD_PRESENTATION (src/components/fieldPresentation.ts): 3.5 px dot radius, 11 px labels.
+const DOT_RADIUS_PX = 3.5, LABEL_SIZE_PX = 11;
 async function assertLabels() {
-  await wait("[...document.querySelectorAll('[data-performer-label]')].every(n=>Math.abs(Number(n.getAttribute('font-size'))*n.getScreenCTM().a-12)<.1)",'label geometry after viewport update');
+  await wait(`[...document.querySelectorAll('[data-performer-label]')].every(n=>Math.abs(Number(n.getAttribute('font-size'))*n.getScreenCTM().a-${LABEL_SIZE_PX})<.1)`,'label geometry after viewport update');
   const result = await evaluate(`(() => {
     const box = n => { const r=n.getBoundingClientRect(); return {left:r.left,top:r.top,right:r.right,bottom:r.bottom}; };
-    const labels=[...document.querySelectorAll('[data-performer-label]')].map(box);
+    const selectedIds=new Set(${state}.selection.selectedIds);
+    // A selected or keyboard-focused performer is always named, even over a neighbor; every other label must be clear.
+    const forced=n=>selectedIds.has(n.getAttribute('data-performer-label'))||n.closest('.field-performer').classList.contains('field-performer--focused');
+    const nodes=[...document.querySelectorAll('[data-performer-label]')];
+    const labels=nodes.map(box), free=nodes.filter(n=>!forced(n)).map(box);
+    const labeled=new Set(nodes.map(n=>n.getAttribute('data-performer-label')));
     const dots=[...document.querySelectorAll('.field-dot')].map(box); const viewport=box(document.querySelector('.field-stage__svg'));
     const overlap=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
-    return {count:labels.length, collisions:labels.flatMap((a,i)=>labels.slice(i+1).filter(b=>overlap(a,b))).length,
-      dotCollisions:labels.flatMap(a=>dots.filter(b=>overlap(a,b))).length,
+    return {count:labels.length, freeCount:free.length, collisions:free.flatMap((a,i)=>free.slice(i+1).filter(b=>overlap(a,b))).length,
+      dotCollisions:free.flatMap(a=>dots.filter(b=>overlap(a,b))).length,
+      unlabeledSelected:[...selectedIds].filter(id=>document.querySelector('.field-performer[data-performer-id="'+id+'"]')&&!labeled.has(id)),
       clipped:labels.filter(a=>a.left<viewport.left||a.right>viewport.right||a.top<viewport.top||a.bottom>viewport.bottom).length,
-      sizes:[...document.querySelectorAll('[data-performer-label]')].map(n=>Number(n.getAttribute('font-size'))*n.getScreenCTM().a),dpr:devicePixelRatio};
+      sizes:nodes.map(n=>Number(n.getAttribute('font-size'))*n.getScreenCTM().a),dpr:devicePixelRatio};
   })()`);
-  assert.ok(result.count > 0); assert.equal(result.collisions, 0); assert.equal(result.dotCollisions, 0); assert.equal(result.clipped, 0);
+  assert.ok(result.count > 0); assert.ok(result.freeCount > 0, JSON.stringify(result.count));
+  assert.equal(result.collisions, 0); assert.equal(result.dotCollisions, 0); assert.equal(result.clipped, 0);
+  assert.deepEqual(result.unlabeledSelected, []);
   // Fractional desktop scaling can round emulated viewport dimensions subpixel-wise.
-  assert.ok(result.sizes.every(size => Math.abs(size-12)<.1), JSON.stringify({sizes:result.sizes.slice(0,4),dpr:result.dpr}));
+  assert.ok(result.sizes.every(size => Math.abs(size-LABEL_SIZE_PX)<.1), JSON.stringify({sizes:result.sizes.slice(0,4),dpr:result.dpr}));
 }
 
 app.whenReady().then(async () => {
@@ -165,9 +178,9 @@ app.whenReady().then(async () => {
       await evaluate(`${editor}.setValue('ui','zoom',${zoom}); ${editor}.setValue('ui','fitVersion',${zoom})`); await pause(80);
       for (const id of [ids[212],ids[213],ids[237],ids[238]]) { await click(await center(id)); await selected(id); }
       const radius = await evaluate("(() => {const n=document.querySelector('.field-dot');return Number(n.getAttribute('r'))*n.getScreenCTM().a})()");
-      assert.ok(Math.abs(radius-3)<.01); await assertLabels();
+      assert.ok(Math.abs(radius-DOT_RADIUS_PX)<.01, String(radius)); await assertLabels();
     }
-    pass('nearest selection, 6px dots and 12px collision-free labels work at 60%, 100% and 300% zoom');
+    pass('nearest selection, 7px dots, 11px labels that are collision-free when unselected and a label for every selected performer work at 60%, 100% and 300% zoom');
     await evaluate(`${editor}.setValue('ui','zoom',1); ${editor}.setValue('ui','fitVersion',5)`); await pause(100);
     const tied = await center(ids[0]);
     for (const id of [ids[0],ids.at(-2),ids.at(-1),ids[0]]) { await click(tied); await selected(id); }
@@ -186,17 +199,22 @@ app.whenReady().then(async () => {
     await window.webContents.debugger.sendCommand('Emulation.setTouchEmulationEnabled',{enabled:false});
     pass('Chromium touch input selects the nearest dense-field dot');
     await input('mouseMoved',await center(ids[213])); await wait("document.querySelector('.field-readout strong')?.textContent.startsWith('P214 ')", 'nearest hover readout');
-    const button = '[aria-label="Show performer labels"]';
+    // Label visibility is three checkable choices in the View options menu, chosen here with native keys.
+    const labelChoice = async name => {
+      const selector = `[role=menu][aria-label="View options"] [aria-label="${name}"]`;
+      await revealFieldTool(window,selector); await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
+      await key('Return');
+      await wait(`document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-checked')==='true'`, name+' checked');
+      assert.deepEqual(await evaluate(`[...document.querySelectorAll('[role=menu][aria-label="View options"] [role=menuitemcheckbox][aria-checked=true]')].map(n=>n.getAttribute('aria-label')).filter(n=>/labels|Selected only/.test(n))`), [name]);
+    };
     await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(ids[25])}])`);
-    await revealFieldTool(window,button);await evaluate(`document.querySelector(${JSON.stringify(button)}).focus()`);
-    await key('Return');
+    await labelChoice('Selected only');
     await wait(`${state}.ui.selectionLabelsOnly && ${state}.ui.showLabels`, 'selected label mode');
     assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-performer-label]')].map(n=>n.getAttribute('data-performer-label'))"),[ids[25]]);
-    await revealFieldTool(window,button);await evaluate(`document.querySelector(${JSON.stringify(button)}).focus()`);
-    await key('Return'); await wait("!document.querySelector('[data-performer-label]')", 'hidden labels');
-    await revealFieldTool(window,button);await evaluate(`document.querySelector(${JSON.stringify(button)}).focus()`);
-    await key('Return'); await wait(`${state}.ui.showLabels && !${state}.ui.selectionLabelsOnly`, 'all labels');
-    await assertLabels(); pass('the existing keyboard-accessible label button cycles all / selected-focus / hidden; hover uses the same nearest hit');
+    await labelChoice('Hide labels'); await wait("!document.querySelector('[data-performer-label]')", 'hidden labels');
+    await labelChoice('Show labels'); await wait(`${state}.ui.showLabels && !${state}.ui.selectionLabelsOnly`, 'all labels');
+    await key('Escape'); await wait(`document.querySelector('[role=menu][aria-label="View options"]').hidden && document.activeElement.getAttribute('aria-label')==='View options'`, 'View options closed with focus on its button');
+    await assertLabels(); pass('the keyboard-accessible View options menu chooses all / selected-focus / hidden labels; hover uses the same nearest hit');
     assert.deepEqual(await evaluate(state+'.project.present.sets[0].positions'), positions);
     assert.equal(await evaluate(state+'.project.revision'), reloadedRevision);
     pass('pointer selection, labels and zoom preserve physical coordinates and edit revision');

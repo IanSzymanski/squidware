@@ -18,6 +18,7 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   async function focusGlobal() { await evaluate('document.activeElement?.blur()'); }
   // Native input uses window (DIP) coordinates; getBoundingClientRect reports CSS pixels, which differ under page zoom.
   async function button(selector,shift=false) { await revealFieldTool(window,selector); const zoom=window.webContents.getZoomFactor(); const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); await click({x:p.x*zoom,y:p.y*zoom},shift?1:0); }
+  async function hover(selector) { const zoom=window.webContents.getZoomFactor(); const p=await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`); window.webContents.sendInputEvent({type:'mouseMove',x:Math.round(p.x*zoom),y:Math.round(p.y*zoom)}); }
   const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} vs ${b}`);
   await reset(); await capture('increments-before.png');
   for(const fast of [false,true]) {
@@ -48,7 +49,14 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   for(const steps of [6,12]) {
     const show={...fixture,snapping:{...fixture.snapping,steps,subdivision:4}};
     await reset({nudgeUnit:'steps',nudgeStep:1,fastNudgeStep:4},false,show); await focusField(); await key('Right',['alt']); near((await shape())[ids[0]].x,40.1+5/steps);
-    assert.ok(await evaluate("document.querySelector('.field-keyboard-help').textContent.includes('1 step') && document.querySelector('.selection-section').textContent.includes('4 steps')"));
+    // Field help states both amounts; the Inspector labels its Move buttons with the normal one and their help states the Shift amount.
+    assert.ok(await evaluate("(()=>{const help=document.querySelector('.field-keyboard-help').textContent;return help.includes('Alt+arrows: 1 step')&&help.includes('Shift+Alt: 4 steps')&&document.querySelector('.selection-section .move-buttons').previousElementSibling.textContent==='Move1 step'})()"));
+    // An earlier click may have left the pointer on the button; help opens when the pointer enters it.
+    // Native moves have no acknowledgement and can coalesce, so observe the pointer leaving before it returns.
+    await hover('.selection-section .selection-coordinate'); await wait("!document.querySelector('[aria-label=\"Move selection right\"]').matches(':hover')",'pointer off the move button');
+    await hover('[aria-label="Move selection right"]');
+    await wait("[...document.querySelectorAll('[role=tooltip]')].some(n=>n.querySelector('strong')?.textContent==='Move selection right'&&n.textContent.includes('Shift-click requests 4 steps'))",'Inspector move help states the fast amount');
+    await hover('.selection-section .selection-coordinate'); await wait("!document.querySelector('[role=tooltip]')",'move help dismissed');
   }
   pass('production step units use 6/12-to-5 full steps independently of quarter-grid subdivision and help shows both configured amounts');
 
@@ -76,8 +84,8 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   pass('configured 30-degree/25-percent buttons enter exact previews without editing; Apply is one reversible edit');
 
   await button('[aria-label="Project menu"]');
-  await wait("!!document.querySelector('.dropdown [aria-label=\"Preferences\"]')",'project menu available');
-  await button('.dropdown [aria-label="Preferences"]'); await wait("document.querySelector('.modal h2')?.textContent==='Preferences'",'increment preferences');
+  await wait("(()=>{const n=document.querySelector('[role=menu][aria-label=\"Project menu\"] [aria-label=\"Preferences\"]');return !!n&&!n.closest('[role=menu]').hidden&&n.getClientRects().length>0})()",'project menu available');
+  await button('[role=menu][aria-label="Project menu"] [aria-label="Preferences"]'); await wait("document.querySelector('.modal h2')?.textContent==='Preferences'",'increment preferences');
   for(const [width,zoom,name] of [[1366,1,'increments-preferences.png'],[1366,1.25,'increments-preferences-enlarged.png'],[1120,1,'increments-preferences-narrow.png']]) {
     window.setContentSize(width,768); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window,'increment preferences layout');
     // Start each size from Appearance so the Editing jump below cannot pass on the previous iteration's state.
@@ -91,10 +99,10 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   }
   await key('Escape'); window.webContents.setZoomFactor(1); window.setContentSize(1120,768); await settleNativeViewport(window,'step help layout');
   await reset({nudgeUnit:'steps',nudgeStep:1,fastNudgeStep:4});
-  // Keyboard help is drawn only after a key press in the field, and then replaces the field status line.
+  // Keyboard help is drawn only after a key press in the field, and then takes the place of the field's hint line.
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.field-keyboard-help')).clipPath"), 'inset(50%)', 'idle keyboard help is not drawn');
   await focusField(); await key('Right');
-  assert.ok(await evaluate("(()=>{const n=document.querySelector('.field-keyboard-help');const r=n.getBoundingClientRect();return getComputedStyle(n).clipPath==='none'&&r.height>10&&/4 steps/.test(n.textContent)&&getComputedStyle(document.querySelector('.field-topline')).visibility==='hidden'&&!document.querySelector('.field-snap-status')})()"),'keyboard step help replaces field information');
+  assert.ok(await evaluate("(()=>{const n=document.querySelector('.field-keyboard-help');const r=n.getBoundingClientRect();const drawn=s=>{const e=document.querySelector(s);if(!e)return false;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'};return getComputedStyle(n).clipPath==='none'&&r.height>10&&/4 steps/.test(n.textContent)&&!drawn('.field-topline')&&!drawn('.canvas-hint')&&!document.querySelector('.field-snap-status')})()"),'keyboard step help replaces field information');
   await capture('increments-field-narrow.png');
   pass('configured editing controls remain reachable at 1366/1120px and 125% UI zoom; step help stays separate from field information');
 };
