@@ -368,3 +368,5 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
     {setsVisible && <SetStrip controller={controller} addButton={!layout.breakpoints.short} />}
   </section>;
 }
+
+ShowStrip.displayName = 'ShowStrip';
