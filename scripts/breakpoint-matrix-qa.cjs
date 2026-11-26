@@ -43,7 +43,7 @@ const probe = `(() => {
     reachable: Object.fromEntries(names.map(name => [name, named(name).some(reachable)])), present: Object.fromEntries(names.map(name => [name, named(name).length])),
     // One instance of each menu action, inside the menu named for it, whose trigger is on screen and unobstructed.
     menus: Object.fromEntries(Object.entries(homes).map(([name, home]) => { const menu = named(name).length === 1 ? named(name)[0].closest('[role=menu]') : null; return [name, !!menu && menu.getAttribute('aria-label') === home && [...document.querySelectorAll('[aria-controls]')].some(n => n.getAttribute('aria-controls') === menu.id && reachable(n))]; })),
-    dirty: !!document.querySelector('.save-state--unsaved'),
+    dirty: !!document.querySelector('.save-state--unsaved'), headerSave: !!document.querySelector('.app-header .header-save'),
     moveCount: readout('.move-count'), showCount: readout('.show-count'),
     panes: { side: document.querySelector('.side-panel').hidden },
     field: { width: field.width, height: field.height, effectiveHeight: field.height / scale },
@@ -99,8 +99,9 @@ module.exports = async function checkBreakpointMatrix({ window, evaluate, editor
     assert.ok(m.header.oneRow && m.header.height <= 50 && !m.header.overflow, `header is one row: ${context}`);
     assert.ok(m.transport.oneRow, `transport is one row: ${context}`);
     assert.deepEqual(REQUIRED.filter(name => !m.reachable[name]), [], `required controls are visible and unobstructed: ${context}`);
-    // Save is offered only while there are unsaved changes, and then it is in reach like the rest.
-    assert.equal(m.dirty ? m.reachable.Save : m.present.Save === 0, true, `Save ${m.dirty ? 'is reachable with unsaved changes' : 'is absent from a saved production'}: ${context}`);
+    // The top bar offers Save only while there are unsaved changes, and then it is in reach like the rest. The Project
+    // menu always keeps its own Save.
+    assert.equal(m.dirty ? m.headerSave && m.reachable.Save : !m.headerSave, true, `Save ${m.dirty ? 'is reachable in the top bar with unsaved changes' : 'is absent from the top bar of a saved production'}: ${context}`);
     for (const name of EDGE_SETS) assert.equal(tiers.transport === 'narrow' ? !m.reachable[name] : m.reachable[name], true, `${name} in the ${tiers.transport} transport: ${context}`);
     // The move count always stays; the show count is on screen in wide windows and otherwise not drawn at all, never clipped or covered.
     assert.equal(m.moveCount.reachable, true, `move count visible: ${context}`);

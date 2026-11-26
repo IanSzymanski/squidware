@@ -93,8 +93,11 @@ export function useShellLayout(controller: EditorController) {
     return () => { document.removeEventListener('focusin', track); document.removeEventListener('pointerdown', release, true); };
   }, []);
   const before = useRef({ panelVisible, preview });
+  // A panel closed with the pointer hands focus on without the keyboard focus ring or its help.
+  const pointerClose = useRef(false);
   useLayoutEffect(() => {
     const was = before.current; before.current = { panelVisible, preview };
+    const quietly = pointerClose.current; pointerClose.current = false;
     const endedPreview = was.preview && !preview, closedPanel = was.panelVisible && !panelVisible;
     if (!heldBy.current || !(endedPreview || closedPanel)) return;
     // The control that held focus is gone or about to be hidden; anything else keeps it.
@@ -102,7 +105,8 @@ export function useShellLayout(controller: EditorController) {
     if (active && active !== document.body && active.getClientRects().length && !active.closest('[hidden], [inert]')) return;
     heldBy.current = null;
     const shown = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)].find(node => node.getClientRects().length);
-    (endedPreview ? shown('.selection-bar') ?? shown('.main-workspace .field-container') : shown('.toolbar-end [aria-controls^="workspace-pane-"]'))?.focus({ preventScroll: true });
+    (endedPreview ? shown('.selection-bar') ?? shown('.main-workspace .field-container') : shown('.toolbar-end [aria-controls^="workspace-pane-"]'))
+      ?.focus({ preventScroll: true, ...(quietly && !endedPreview ? quiet(true) : {}) });
   }, [panelVisible, preview]);
 
   // A request to show Cast from outside the panel (the Command palette, Dock Cast) opens the panel where it cannot
@@ -133,6 +137,7 @@ export function useShellLayout(controller: EditorController) {
   function hidePanel(pointer = false) {
     // A preview keeps its parameters in view: the panel stays until the preview is applied or cancelled.
     if (locked && docked || preview) return;
+    pointerClose.current = pointer;
     if (docked) controller.dispatch('layout.update', { update: { [tab === 'cast' ? 'castCollapsed' : 'inspectorCollapsed']: true } });
     setOverlayOpen(false);
     // Closing a panel returns focus to the button that shows it again.
@@ -195,7 +200,7 @@ export function useShellLayout(controller: EditorController) {
     /** Give up a resize in progress: the saved width stays as it was. */
     cancelResize: () => setDraftWidth(null),
     /** A click on the field around a panel open over it closes the panel, like Escape. */
-    closeOverlay: () => { setOverlayOpen(false); focusSoon(PANEL_TOGGLE, quiet(true)); },
+    closeOverlay: () => { pointerClose.current = true; setOverlayOpen(false); focusSoon(PANEL_TOGGLE, quiet(true)); },
   };
 }
 export type ShellLayout = ReturnType<typeof useShellLayout>;

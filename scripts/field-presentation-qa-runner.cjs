@@ -199,13 +199,13 @@ app.whenReady().then(async () => {
     await window.webContents.debugger.sendCommand('Emulation.setTouchEmulationEnabled',{enabled:false});
     pass('Chromium touch input selects the nearest dense-field dot');
     await input('mouseMoved',await center(ids[213])); await wait("document.querySelector('.field-readout strong')?.textContent.startsWith('P214 ')", 'nearest hover readout');
-    // Label visibility is three checkable choices in the View options menu, chosen here with native keys.
+    // Label visibility is one choice of three (menu radio items) in the View options menu, chosen here with native keys.
     const labelChoice = async name => {
       const selector = `[role=menu][aria-label="View options"] [aria-label="${name}"]`;
       await revealFieldTool(window,selector); await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
       await key('Return');
       await wait(`document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-checked')==='true'`, name+' checked');
-      assert.deepEqual(await evaluate(`[...document.querySelectorAll('[role=menu][aria-label="View options"] [role=menuitemcheckbox][aria-checked=true]')].map(n=>n.getAttribute('aria-label')).filter(n=>/labels|Selected only/.test(n))`), [name]);
+      assert.deepEqual(await evaluate(`[...document.querySelectorAll('[role=menu][aria-label="View options"] [role=menuitemradio][aria-checked=true]')].map(n=>n.getAttribute('aria-label')).filter(n=>/labels|Selected only/.test(n))`), [name]);
     };
     await evaluate(`${editor}.setValue('selection','selectedIds',[${JSON.stringify(ids[25])}])`);
     await labelChoice('Selected only');

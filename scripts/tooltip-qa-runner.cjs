@@ -251,7 +251,11 @@ app.whenReady().then(async () => {
         await evaluate(`if (${editor}.getState().ui.focusMode !== ${focusMode}) ${editor}.dispatch('layout.focus')`);
         await uiWait(`!!document.querySelector('.studio--focus') === ${focusMode} && document.documentElement.style.getPropertyValue('--ui-scale') === '${scale}'`, 'scaled tooltip layout'); await frames();
         if (!focusMode) assert.equal(await evaluate("document.querySelector('.studio').dataset.header === 'compact' && !document.querySelector('.topbar .recovery-indicator').getClientRects().length && !!document.querySelector('[role=menu][aria-label=\"Project menu\"] [data-tooltip-name=\"Recovery copies\"]')"), true, 'compact header keeps recovery in the Project menu');
-        for (const name of focusMode ? ['First set', 'Timeline options'] : ['First set', 'Timeline options', 'Project menu']) {
+        // The transport's leftmost control is First set, or Previous set where the narrowest tier folds the first/last pair away.
+        const first = await evaluate("[...document.querySelectorAll('.transport [data-tooltip-name]')].find(node => node.getClientRects().length)?.getAttribute('data-tooltip-name')");
+        assert.ok(['First set', 'Previous set'].includes(first), `leftmost transport control at ${scale}: ${first}`);
+        assert.equal(first === 'Previous set', await evaluate("document.querySelector('.studio').dataset.transport === 'narrow'"), `first/last set fold only in the narrowest transport at ${scale}`);
+        for (const name of focusMode ? [first, 'Timeline options'] : [first, 'Timeline options', 'Project menu']) {
           const scope = name === 'Project menu' ? '.topbar' : '.transport';
           await focus(name, scope); await frames(); const placed = await contained(name, scope);
           assert.equal(placed, true, `${name} at ${scale}${focusMode ? ' in focus mode' : ''}: ${placed}`);

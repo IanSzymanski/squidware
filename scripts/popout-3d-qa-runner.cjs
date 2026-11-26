@@ -441,6 +441,10 @@ async function restorePhase() {
     browser.webContents.setBackgroundThrottling(false);
     await browser.loadURL(pathToFileURL(path.join(root, 'dist', 'index.html')).href);
     await waitUntil(() => browser.webContents.executeJavaScript("!!document.querySelector('.set-card')"), 'renderer without desktop bridge');
+    // An ordinary launch opens the start dialog over the demo, and shortcuts are that dialog's own until it closes.
+    await waitUntil(() => browser.webContents.executeJavaScript("!!document.querySelector('dialog.welcome[open]')"), 'start dialog without desktop bridge');
+    await browser.webContents.executeJavaScript("[...document.querySelectorAll('dialog.welcome .welcome-action')].find(node => node.textContent.includes('Explore the demo')).click()");
+    await waitUntil(() => browser.webContents.executeJavaScript("!document.querySelector('dialog[open]')"), 'start dialog closed');
     const viewControls = await browser.webContents.executeJavaScript("[typeof window.squidware, !!document.querySelector('.popout-3d-button'), [...document.querySelectorAll('.view-switch button')].map(button => button.getAttribute('aria-label'))]");
     assert.deepEqual(viewControls, ['undefined', false, ['2D field', '3D preview', 'Split review']]);
     // The hidden command's Shift+T is inert there: the key is not consumed, and another command can take it.
