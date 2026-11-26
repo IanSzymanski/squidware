@@ -1,25 +1,54 @@
-# Personal workspaces
+# Modes and personal workspaces
 
-The header shows the active workspace. Open it to switch arrangements, change panels, choose a toolbar and compact/full timeline, or save the current arrangement under a name. Ctrl/Cmd+1 through Ctrl/Cmd+4 select Field, Design, Production and Rehearse; these shortcuts can be changed in Preferences. The Command palette also lists built-in and custom workspaces.
+The top bar has three modes. Each is a stage of work, and each remembers its own arrangement.
 
-| Workspace | Starting arrangement |
+| Mode | Shows | Built-in workspace |
+| --- | --- | --- |
+| **Write** | The 2D field, the tool strip, the side panel and the show strip with its set strip | Design |
+| **Plan** | The [production sheet](production-sheet.md) with the transport and timeline | Production |
+| **Rehearse** | The 3D field with camera, passage, problem and video tools, and the transport and timeline | Rehearse |
+
+Select a mode in the top bar, or press Ctrl/Cmd+2, Ctrl/Cmd+3 or Ctrl/Cmd+4. The mode in use is pressed. The mode buttons are unavailable while a preview, pointer gesture or dialog is active; their help says to finish it first. The Command palette lists **Write mode**, **Plan mode** and **Rehearse mode**, and the shortcuts can be changed in Preferences.
+
+## Workspaces
+
+A workspace remembers the mode, the 2D / 3D / Split view, the side panel (Inspector or Cast, its width and whether it is collapsed) and whether the set strip is shown. The three modes use the built-in workspaces above. Two more built-in workspaces and any you save are in **Project menu → Workspaces…**, which **View options → Workspaces…** over the field also opens.
+
+| Workspace | Arrangement |
 | --- | --- |
-| Field | Large 2D field, contextual editing toolbar, compact timeline, collapsed side panels |
-| Design | 2D field, set list, Inspector and full timeline |
-| Production | Production sheet, set list, Cast and compact timeline |
-| Rehearse | 3D field, camera/rehearsal tools and full transport, collapsed side panels |
-| Review | Editable 2D field and live 3D preview, set list and full timeline |
+| Write | The field, tools and side panel |
+| Plan | The production sheet |
+| Rehearse | 3D playback and review |
+| Review | The 2D field beside a live 3D preview |
+| Field | The field alone, with a compact timeline (no set strip) |
 
-Inspector and Cast are tabs of the right panel in every workspace. Use Left/Right or Home/End on a tab to choose the other. Cast has the same placement in blank and populated productions. In Production, Inspector shows set properties; field editing is available by opening the field or through Commands. Full Cast table opens a dialog from Cast and returns to its panel on close.
+In the **Workspaces** dialog:
 
-Changes to an arrangement are remembered. **Save as…** makes a named custom workspace; **Rename…** changes its name. **Reset to defaults** restores a built-in's starting arrangement and name. Custom arrangements offer **Delete custom workspace**, which returns to Design. Names use 1–40 characters, are unique without regard to case, and custom names cannot take a built-in's name. Up to 16 custom workspaces can be kept.
+- Select a workspace to switch to it. The active one has a check mark. Ctrl/Cmd+1 selects Field. The Command palette lists **Field workspace**, **Review workspace** and each saved workspace by name.
+- Type a name under **Save the current arrangement as** and select **Save workspace** to keep the arrangement you have now. Up to 16 saved workspaces can be kept.
+- **Rename** changes a saved workspace's name. The trash button deletes it; if it was active, Write mode opens.
+- The reset button beside a built-in workspace restores its original arrangement and name.
 
-Workspaces are personal device preferences. Switching keeps the selection, active set, playhead, production drafts and undo history. A running spatial preview or pointer gesture must finish before switching; a refused switch leaves it intact. An uncommitted text/number draft stays in its mounted panel when a workspace hides it, and can be resumed when the panel returns. Tab navigation and Enter/Escape retain the normal input behavior.
+Names use 1–40 characters and are unique without regard to case. A saved workspace cannot take a built-in workspace's name.
 
-A workspace records panel widths and collapsed states, Inspector/Cast choice, toolbar set, timeline density, field view and Production sheet visibility. A toolbar choice changes which actions are prominent. Features remain available through panels, the view controls and Commands. The full timeline retains its recording waveform; compact uses a shorter waveform while preserving count navigation and problem targets. Narrow windows still tuck panels temporarily; their Show buttons restore them without changing saved widths. [Panel resizing, focus mode and breakpoints](WORKSPACE_LAYOUT.md) retain their existing behavior.
+Field, Review and saved workspaces that edit on the field show **Write** as the pressed mode. Selecting **Write** from one of them returns to the Write workspace. A saved workspace made from Rehearse shows **Rehearse** as pressed, and one made from Plan shows **Plan**.
 
-Open **Review** from the workspace switcher or choose **Split review** in the field toolbar. Both panes share selection, the active set and playhead. Drag the divider to resize, or focus it and use the arrow keys. The panes stack when the field area is narrow. Press Enter on the divider or choose **2D field** to close the 3D pane. The 3D pane offers Perspective, Press box, Front and Overhead cameras. It starts in Lightweight quality, which you can change from its toolbar.
+Changes to an arrangement are remembered as you make them: resizing or collapsing the side panel, choosing the Inspector or Cast tab, changing the view, or hiding the set strip updates the active workspace.
 
-Older Write layouts become Design, Review becomes Field and Rehearse retains its name. A Custom layout becomes **My layout**. Migration keeps chosen widths, collapsed panels, right panel and view. Damaged workspace entries fall back to Design with a visible notice while keeping other valid custom entries and unrelated preferences. Resetting Preferences restores all workspace defaults. Workspaces are never written into `.squid` or `.squidpack` productions.
+## What switching keeps
 
-Run `pnpm test:workflows --suite=workspaces,workspace,preferences,editor,cast,accessibility` after a production build. The `workspaces` owner covers native switching, draft retention, named-arrangement management, both laptop/desktop sizes, all themes, enlarged UI and persistence across a fresh Electron process. Source tests cover migration, malformed-entry recovery and unchanged project/selection/playback state. Rendered evidence is in [evidence/workspaces](evidence/workspaces/README.md).
+Workspaces are personal device preferences. Switching keeps the selection, active set, playhead, production drafts and undo history. A running spatial preview or pointer gesture must finish before switching; a refused switch leaves it intact. An uncommitted text or number draft stays in its panel when a workspace hides it, and can be resumed when the panel returns. Switching leaves **Focus field** mode. Workspaces are never written into `.squid` or `.squidpack` productions.
+
+Features remain available in every mode through the Command palette. Narrow windows open the side panel over the field without changing its saved width. [Workspace layout](WORKSPACE_LAYOUT.md) describes panel resizing, focus mode and breakpoints.
+
+## Split review
+
+Select **Split** in the view control over the field, or open the **Review** workspace. Both panes share selection, the active set and the playhead. Drag the divider to resize, or focus it and use the arrow keys. The panes stack when the field area is narrow. Press Enter on the divider or select **2D** to close the 3D pane. The 3D pane offers Perspective, Press box, Front and Overhead cameras. It starts in Lightweight quality, which you can change in the pane.
+
+## Older preferences
+
+Older Write layouts become the Write workspace, the older Review preset becomes Field, and Rehearse keeps its name. A Custom layout becomes **My layout**. Migration keeps the chosen panel width, collapsed state, side panel tab and view. Damaged workspace entries fall back to Write with a visible notice and a **Dismiss** button, while other valid saved workspaces and unrelated preferences are kept. Resetting Preferences restores all workspace defaults.
+
+## Validation
+
+Run `pnpm test:workflows --suite=workspaces,workspace,preferences,editor,cast,accessibility` after a production build. The `workspaces` owner covers switching, draft retention, saved-workspace management, laptop and desktop sizes, all themes, enlarged UI and persistence across a fresh Electron process. Source tests cover migration, malformed-entry recovery and unchanged project, selection and playback state. Rendered evidence of the earlier workspace switcher is in [evidence/workspaces](evidence/workspaces/README.md).

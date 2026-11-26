@@ -1,14 +1,16 @@
 # Squidware user guide
 
-Squidware is a desktop workspace for designing marching ensemble drill and preparing rehearsal materials. The desktop app opens with the editable demo and offers available recovery copies. Choose a production and time to restore. Your project stays on your device.
+Squidware is a desktop workspace for designing marching ensemble drill and preparing rehearsal materials. The desktop app opens with a welcome dialog over the editable demo: start a new production from a starter ensemble, open a production, explore the demo or review recovery copies. Your project stays on your device.
+
+The window has a top bar with three modes. **Write** is the field with its tools, **Plan** is the production sheet, and **Rehearse** is 3D playback and review. In Write mode a tool strip sits above the field, a side panel with **Inspector** and **Cast** tabs sits beside it, and the transport, the timeline and a strip of set cards sit below it. The **Project menu** at the left of the top bar holds file actions, Templates, Recovery copies, History, Production settings, Preferences, Workspaces and Help. Every command is also in the Command palette (Ctrl/⌘ + K).
 
 ## A first production
 
-1. Use the project menu to choose **New project**, then **Blank production**. Use **Explore the demo** to open **Tether**, a complete 165-member drum corps show (84 brass, 24 battery, 13 front ensemble, 44 guard, 67 sets) with its tempo map, score map, routes and group movement already in place.
-2. Open **Production settings** to name the show and ensemble, select college or high-school field markings, and customize section names and colors.
-3. In **Cast**, add performers or import a roster. New performers receive a position in every set.
-4. Return to **Design**. Select performers, arrange the opening picture, and save the project.
-5. Add the next set, design its arrival picture, and set the number of counts used to move into it.
+1. On the welcome dialog, select a starter under **New production**: **Small band** (32 performers), **Marching band** (64), **Large band** (120), **Drum corps** (150) or **Indoor floor · winter guard, 20**. Each opens on the field with its performers in a staging block. **Empty field, add my own cast** opens the Cast tab and the Add performers dialog instead. Select **Explore the demo** to stay in **Tether**, a complete 165-member drum corps show (84 brass, 24 battery, 13 front ensemble, 44 guard, 67 sets) with its tempo map, score map, routes and group movement already in place. Later, **Project menu → New production…** offers **Blank production**, **Explore the demo** and your saved ensemble setups.
+2. Select the production title in the top bar (or **Project menu → Production settings…**) to name the show and ensemble, select college or high-school field markings, and customize section names and colors.
+3. On the **Cast** tab of the side panel, add performers or import a roster. New performers receive a position in every set.
+4. In **Write** mode, select performers, arrange the opening picture, and save the project.
+5. Select **Add set** at the end of the set strip, design the new set's arrival picture, and set the number of counts used to move into it.
 6. Rehearse the transition with playback and 3D preview. Review spacing and stride flags.
 7. Export field charts or individual coordinate sheets for rehearsal.
 
@@ -18,13 +20,13 @@ Alt+arrows nudges the selection; Shift+Alt uses the fast amount. Move buttons sh
 
 ## Saving and recovery
 
-Use **Grid and snapping** beside the field magnet to choose a production's step grid, subdivision, targets and group behavior. **Keep spacing** moves groups rigidly; **Individual dots** changes spacing and shows a drag preview before release. Escape cancels a drag, and Undo restores it. The active mode appears on the field. See [Grid and group snapping](GRID_SNAPPING.md) for numeric/nudge behavior, boundaries and personal defaults.
+Select the snap chip at the field's lower right, or **View options → Grid and snapping…**, to choose a production's step grid, subdivision, targets and group behavior. **Keep spacing** moves groups rigidly; **Individual dots** changes spacing and shows a drag preview before release. Escape cancels a drag, and Undo restores it. The snap chip names the active grid and mode. See [Grid and group snapping](GRID_SNAPPING.md) for numeric/nudge behavior, boundaries and personal defaults.
 
 **Save** writes an editable `.squid` file through the native desktop dialog. Later saves reuse that destination. **Save As** creates another copy. **Open** accepts supported `.squid`, JSON or portable `.squidpack` files; JSON and package imports receive a `.squid` destination when saved.
 
 A new or untouched production shows **No changes** beside its title until you edit it; its first Save still asks for a file name. **Unsaved changes** includes uncommitted field drafts. **Draft pending** disappears when you apply the edit with Enter or cancel it with Escape. Canceled or failed saves keep the unsaved status. If you edit while a save is in progress, that save keeps its earlier revision and your newer changes still need saving. Undo back to the saved revision restores the clean status. New/Open and closing the app protect unsaved work; correct or cancel invalid fields before replacing a production or leaving its dialog. See [file and draft behavior](FILE_STATE.md).
 
-After a committed change, the desktop app writes recovery in the background to its application data folder. Open **Project menu → Recovery copies**, or click the recovery status at the bottom of the editor, to choose a dated copy. Up to 20 most recent copies or 100 MiB are kept across productions; the newest valid copy is always retained. Older copies expire. Save named project files and keep your usual rehearsal backups.
+After a committed change, the desktop app writes recovery in the background to its application data folder. Open **Project menu → Recovery copies…**, or select the recovery indicator beside the save state in the top bar, to choose a dated copy. Up to 20 most recent copies or 100 MiB are kept across productions; the newest valid copy is always retained. Older copies expire. Save named project files and keep your usual rehearsal backups.
 
 Recovery has its own status. **Recovery copy saved** means the automatic copy was written; use **Save** for a portable project file. Restoring a copy starts an unsaved production and asks for a project file destination on its first save. It does not overwrite a file you had open. Browser previews use asynchronous browser storage and remain subject to the browser's quota.
 
@@ -46,9 +48,9 @@ Choose **Reset defaults** to restore the personal settings. If storage is unavai
 
 ## Cast and sections
 
-Open **Cast** to select and edit performers beside the field. Clicking a row highlights its dot; clicking a dot reveals its row. Ctrl/Command-click toggles rows and Shift-click adds a range. Arrows/Home/End navigate the list, Space toggles selection and Enter selects the focused row. Select one performer to edit their name and section. Enter or blur applies a name edit; Escape cancels it. Each accepted edit can be undone.
+Select the **Cast** tab of the side panel to select and edit performers beside the field. Clicking a row highlights its dot; clicking a dot reveals its row. Ctrl/Command-click toggles rows and Shift-click adds a range. Arrows/Home/End navigate the list, Space toggles selection and Enter selects the focused row. Select one performer to edit their name and section. Enter or blur applies a name edit; Escape cancels it. Each accepted edit can be undone.
 
-Search by label/name and filter by section. Hidden selections are kept and explained; **Show selected performers** clears the filters to reveal them. Select all visible changes only filtered rows. Use **Full Cast table** for the expanded roster, **Dock Cast beside field** to return, or **Show Inspector** for position tools. Removal affects every set and can be undone. See [Cast panel behavior](CAST_PANEL.md).
+Search by label/name and filter by section. Hidden selections are kept and explained; **Show selected performers** clears the filters to reveal them. Select all visible changes only filtered rows. **More Cast actions → Full Cast table** opens the whole roster in a dialog, and **Return to Cast panel** closes it. Select the **Inspector** tab for position tools. Removal affects every set and can be undone. See [Cast panel behavior](CAST_PANEL.md).
 
 **Add performers** takes a count, a label prefix, and an existing section. Labels are generated sequentially while avoiding labels already in the production. The editing interface supports adding up to 500 performers.
 
@@ -56,7 +58,7 @@ Section names and colors live in **Production settings**. Four sections are pres
 
 ### Import a roster
 
-Use **Import CSV** from Cast or the Add performers dialog. A typical file is:
+Use **More Cast actions → Import roster CSV** on the Cast tab, **Import CSV** in the full Cast table, or **Import CSV instead** in the Add performers dialog. A typical file is:
 
 ```csv
 label,name,section
@@ -82,45 +84,50 @@ Coordinates are stored in yards, with `(0, 0)` at the top-left corner. Coordinat
 - Click a performer to select them. Shift-click to add or remove performers from the selection.
 - Drag across empty field space to draw a selection box. Hold Shift to add the enclosed performers to the existing selection.
 - Click empty field space or press Escape to clear the selection.
-- Click a section in the legend to select all of its performers, or use **Select all**.
+- Select a section chip at the top of the Inspector, or a section in the tool strip's **Select menu**, to select all of its performers, or use **Select all**. While performers are selected the chips fold to their colors; **Show section names** expands them.
 - Drag a selected performer to move the entire selected group. The group remains together at field boundaries.
+- A multiple selection is framed on the field. Drag a corner handle to scale it about its center, or the round handle above the frame to rotate it. Shift scales in 5% steps and turns in 15° steps. Releasing applies one undoable edit; Escape cancels the drag.
 - Alt + arrow keys move the selection by the preferred nudge increment (default one step). Shift + Alt + arrow uses the fast increment (default four steps, or 2.5 yards). Set the increments in Preferences. Plain arrows on the field change performer focus without editing.
 
-Select a single performer to enter **X · yards from left** and **Y · yards from back** in the Inspector for exact placement.
+Select a single performer and expand **Exact position** in the Inspector's **Position** section to enter **X · yards from left** and **Y · yards from back** for exact placement.
 
-The snap control aligns dragging to the 8-to-5 step grid. The visual field-grid control is separate; hiding the grid does not turn snapping off. Use labels and previous-set paths as needed to inspect busy formations.
+The view controls float over the field's margin. **View options** holds **Snap to grid**, which aligns dragging to the production's step grid, and **Show field grid**; hiding the grid does not turn snapping off. It also holds the performer label choices (**Show labels**, **Selected only**, **Hide labels**). **Travel paths** shows paths from the previous set or to the next set. A path is colored amber when its step is more than two thirds of the production's stride limit and red when it is over the limit, and the path legend at the field's lower left counts both.
 
-Move edits apply to the current set. Editing is disabled during playback and between set arrivals. Choose a set from the left panel or use **Return to set to edit** to resume editing an arrival picture.
+One hint line at the field's lower left says what to do next, and the coordinates under the pointer read in the same corner. Turn the hint off with **Show hints** in Preferences.
+
+Move edits apply to the current set. Editing is disabled during playback and between set arrivals. The tool strip then names the move and offers **Edit set N**; select it, or select a set card, to resume editing an arrival picture.
 
 ### Navigate the field
 
-Choose **Place** in the selection bar for [drill-language entry](COORDINATE_ENTRY.md). For one performer, enter both axes, such as `Side 1: 4 outside the 40; 6 behind front hash`. For a selection, use a relative phrase such as `3 steps forward, 1.5 yards right`. The visible side/unit choices resolve bare numbers; steps use the production step size. Enter focuses Apply, Escape cancels, and one accepted action creates one undo. Boundary crossings reject the entire preview. Rehearsal coordinate output retains its documented 8-to-5 convention.
+Select **Place** in the tool strip for [drill-language entry](COORDINATE_ENTRY.md). For one performer, enter both axes, such as `Side 1: 4 outside the 40; 6 behind front hash`. For a selection, use a relative phrase such as `3 steps forward, 1.5 yards right`. The visible side/unit choices resolve bare numbers; steps use the production step size. Enter focuses Apply, Escape cancels, and one accepted action creates one undo. Boundary crossings reject the entire preview. Rehearsal coordinate output retains its documented 8-to-5 convention.
 
-Select the hand tool with **H** and drag to pan; return to selection with **V**. Alt-drag and middle-button drag also pan. Scroll to zoom around the pointer. Use the zoom buttons or **Fit field** to restore an overview. Double-click empty field space also fits the field.
+Select the hand tool with **H** and drag to pan; return to selection with **V**. Alt-drag and middle-button drag also pan. Scroll to zoom around the pointer. Use the zoom buttons at the field's lower right or **Fit field** (the zoom percentage) to restore an overview. Double-click empty field space also fits the field.
 
 ### Create formations
 
-Choose **Align** in the selection bar to [align coordinates, distribute evenly or set exact intervals](SPACING_ALIGNMENT.md) for at least two selected performers. Choose X, Y or a rotated axis, and an anchor. Intervals support yards or production step units; **Each rank/file** spaces block rows or columns separately using an explicit lane tolerance. Inspect the guides, then Apply or Cancel. Exact spacing bypasses snapping and rejects field crossings. Apply creates one named undo action.
+The tool strip above the field holds the pointer tools (Select, Lasso, Pan and the **Select menu**), the shapes, the arrangers (**Align**, **Rotate**, **Mirror**, **Place**), the **Motion** menu and **Props**. Tools stay in place; one that does not apply right now explains why when focused. While a preview is open, the strip shows the preview's name with **Cancel** (Escape) and **Apply** (Enter), and the preview's parameters are in the Inspector.
 
-The Inspector's selection bar keeps the selected count, coordinates or group bounds, and **Move**, **Rotate**, **Shape**, and **Mirror** actions visible. **Move** opens position controls; **Shape** opens formation parameters. Inspector sections can be collapsed by clicking their headings or using Enter/Space, and your expansion choices survive restart. Align explains its availability when focused; alignment tools are still planned.
+Select **Align** in the tool strip to [align coordinates, distribute evenly or set exact intervals](SPACING_ALIGNMENT.md) for at least two selected performers. Choose X, Y or a rotated axis, and an anchor. Intervals support yards or production step units; **Each rank/file** spaces block rows or columns separately using an explicit lane tolerance. Inspect the guides, then Apply or Cancel. Exact spacing bypasses snapping and rejects field crossings. Apply creates one named undo action.
 
-**Rotate** opens an [exact transform preview](EXACT_TRANSFORMS.md). Enter an angle and scale percentage; choose the selection center, a performer, custom coordinates or a field reference as pivot. The round field handle rotates, the square handle scales, and the crosshair moves the pivot. **Mirror** previews reflection across the 50; choose **Flip front to back** for the other field axis. Original dots have dashed outlines. Choose **Apply transform** for one undoable edit, or **Cancel** to keep original positions. Out-of-field previews cannot be applied. Selecting another set or changing the selection cancels the preview.
+The Inspector's header shows the selected count and the section chips. Below it are the current set's **Counts** and **Tempo · BPM**, then the **Selection** section (**Position** for one performer): the coordinate in drill language, the selection's size in steps, the move into the set (counts, longest path and biggest step) and **Move**, **Rotate** and **Scale** buttons, each named with the size of its step. **Set N details** and **Move check** follow. Inspector sections can be collapsed by selecting their headings or using Enter/Space, and your expansion choices survive restart.
 
-Formation tools provide **Line**, **Arc**, **Circle**, **Block**, and **Wave**. Select performers and choose a shape to open a [formation preview](FORMATION_PREVIEWS.md). Adjust width, depth/bulge, rotation, center and block columns with numbers or field handles. Each shape retains its own parameters for the session. **Apply formation**, or Enter on the field, accepts the visible positions as one undoable action. **Cancel**, or Escape outside an input, keeps the original positions. Shapes crossing a field boundary cannot apply. Choose **Select all** explicitly to reshape the ensemble.
+**Rotate** opens an [exact transform preview](EXACT_TRANSFORMS.md). Enter an angle and scale percentage; choose the selection center, a performer, custom coordinates or a field reference as pivot. The round field handle rotates, the square handle scales, and the crosshair moves the pivot. **Mirror** previews reflection across the 50; **Mirror options → Mirror front / back** uses the other field axis. Original dots have dashed outlines. Select **Apply** in the tool strip for one undoable edit, or **Cancel** to keep original positions. Out-of-field previews cannot be applied. Selecting another set or changing the selection cancels the preview.
 
-A new shape starts at the selected performers' center, sized to their extent, at least the production's minimum spacing apart and inside the field. **Shortest travel** is the default assignment, so straight paths do not cross; choose **Positional** to preserve spatial order or **Roster** to use Cast order. Review the dashed paths and total/longest travel before applying. Assignment stays fixed as you move or rotate a preview (choose a mode again to recompute it), and each accepted edit can be undone. Use **Optimize assignment…** for pins and other constraints.
+The tool strip has **Line**, **Arc**, **Circle**, **Block** and **Wave**; **More shapes** adds Bézier curves, scatter and your saved formations. Select performers and select a shape to open a [formation preview](FORMATION_PREVIEWS.md). Adjust the interval, width, depth or bulge, rotation, center and block columns with numbers in the Inspector or with field handles. Lengths read in the production's steps on a football field. Each shape retains its own parameters for the session. **Apply**, or Enter on the field, accepts the visible positions as one undoable action. **Cancel**, or Escape outside an input, keeps the original positions. Shapes crossing a field boundary cannot apply. Choose **Select all** explicitly to reshape the ensemble.
 
-Selection controls also rotate the group by 15° or compress/expand it by 10%. When a formation or transformed group extends beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
+A new shape starts at the selected performers' center, sized to their extent, at least the production's minimum spacing apart and inside the field. Under **Who goes where**, **Shortest** is the default assignment, so straight paths do not cross; choose **Positional** to preserve spatial order or **Roster** to use Cast order. Review the dashed paths, **Farthest moved** and the biggest step from the previous set before applying. Assignment stays fixed as you move or rotate a preview (choose a mode again to recompute it), and each accepted edit can be undone. Use **Optimize assignment…** for pins and other constraints.
+
+The Inspector's **Rotate** and **Scale** buttons open the same exact preview with your preset step (15° and 10% by default). Dragging the selection frame's handles rotates or scales in place instead. When a group transformed with the handles would extend beyond the field, the app moves it inside the boundaries and uniformly shrinks it if necessary to preserve its shape. Check the resulting size and placement after large transformations. **Undo** restores the previous edit; **Redo** reapplies it.
 
 ### Keep a formation editable
 
-In a formation preview, check **Keep editable on this set** and name it before **Apply**. The **Live formations** list reopens saved line, arc, circle, block and curve geometry after save/reload. **Edit** selects its members and previews changes through the same field handles and numeric inputs. **Members** adds/removes performers and redistributes the preview; **Redistribute members** closes vacant slots with the visible positional or Cast assignment. **Cancel** keeps the saved shape; Apply and Detach each have one undo action.
+In a formation preview, check **Keep as a live formation** and name it before **Apply**. The **Live formations** list, under **Set N details** in the Inspector, reopens saved line, arc, circle, block and curve geometry after save/reload. **Edit** selects its members and previews changes through the same field handles and numeric inputs. **Members** adds/removes performers and redistributes the preview; **Redistribute members** closes vacant slots with the visible positional or Cast assignment. **Cancel** keeps the saved shape; Apply and Detach each have one undo action.
 
-Moving a dot individually detaches only that member and leaves a vacant slot. Other members do not move. **Detach selected** or **Detach all** removes membership while keeping the dots. Each performer can belong to one live formation per set; a conflicting preview explains which formation owns them and blocks Apply. **Copy … to set** previews the same members and slots on another picture; duplicate set creates independent formation IDs. New/hold/inserted pictures start with plain dots. Templates remain reusable, anonymous presets. See [live formation policies and file behavior](live-formations.md).
+Moving a dot individually detaches only that member and leaves a vacant slot. Other members do not move. **Detach selected** or **Detach all**, in the formation's **More** menu, removes membership while keeping the dots. Each performer can belong to one live formation per set; a conflicting preview explains which formation owns them and blocks Apply. **Copy to set** in the same menu previews the same members and slots on another picture; duplicate set creates independent formation IDs. New/hold/inserted pictures start with plain dots. Templates remain reusable, anonymous presets. See [live formation policies and file behavior](live-formations.md).
 
 ### Reuse setups and formations
 
-Open **Project menu → Templates** (also searchable in Commands), or **Saved formations** in the formation panel. **Save new template** captures an ensemble setup, the explicitly selected dot picture, or an adaptable shape. Give it a name and review the included data. Performer names and labels are excluded; section names are generic unless you check the inclusion option.
+Open **Project menu → Templates…** (also in the Command palette), or **More shapes → Browse saved formations** in the tool strip. **Save new template** captures an ensemble setup, the explicitly selected dot picture, or an adaptable shape. Give it a name and review the included data. Performer names and labels are excluded; section names are generic unless you check the inclusion option.
 
 Choose a saved formation to preview it on the selected performers. Saved dot pictures require the same count; parametric shapes adapt to 1–500 selected performers. Adjust center/rotation, shape dimensions and positional or Cast order. Drag the preview's center handle or use its arrows; numeric fields give exact placement. Review the dashed travel paths, then **Apply saved formation** for one named undo action, or **Cancel / close** to leave positions unchanged. Parametric templates offer **Keep editable on this set** to retain their geometry and membership as a live formation; conflicting live membership must be edited or detached first. Out-of-field and stale previews cannot apply. Refresh a stale preview by choosing the template again.
 
@@ -128,19 +135,19 @@ Choose a saved formation to preview it on the selected performers. Saved dot pic
 
 ## Sets and production structure
 
-The left panel lists the production's sets with thumbnails. Click a set to pause playback and jump to its arrival count.
+The set strip under the timeline shows every set as a thumbnail card, in show order, with its number, name, counts and the number of problems in the move into it. Select a card to pause playback and jump to its arrival count. **Find set** in the transport searches every set by number or name. Drag a card onto another to reorder, or use Alt+Left and Alt+Right on a focused card. See [the set strip](set-list.md).
 
-**Add set** inserts a copy of the current picture immediately after it, with a default 32-count move. **Duplicate current set** uses the same starting behavior. The new picture can then be changed independently.
+**Add set** at the end of the set strip opens a dialog that starts from the current picture. **Hold positions** is selected first; **Duplicate set**, **New set** and **Insert before** are the other choices. Set the counts and tempo, then select **Add set**. The new picture can then be changed independently. When the set strip is hidden, **Add set** is in the transport. See [set creation](SET_CREATION.md).
 
-The Inspector lets you edit the set name, counts, tempo, transition mode, and notes. Counts describe the move from the preceding set. Tempo is beats per minute for that move. The first set remains a zero-count opening picture.
+The Inspector lets you edit the set's counts and tempo at its top, and the set name, transition mode and notes under **Set N details**. Counts describe the move from the preceding set. Tempo is beats per minute for that move. The first set remains a zero-count opening picture.
 
-Choose **Constant speed** for uniform progress along each straight path or **Ease in / out** for a smooth start and finish on the same path. Easing changes speed, not path shape. Use the order controls to move a set earlier or later. The first set always has zero counts; a set moved out of the opening position receives a move duration if needed.
+Choose **Linear timing** for uniform progress along each straight path or **Ease in / out** for a smooth start and finish on the same path. Easing changes speed, not path shape. Use **Set actions → Move earlier** or **Move later** in the Inspector, or drag the set's card, to reorder a set. The first set always has zero counts; a set moved out of the opening position receives a move duration if needed.
 
-Deleting a set connects its neighbors directly. Check the resulting transition before rehearsal. A production must retain at least one set.
+**Set actions** also holds **Duplicate set**, **Hold positions**, **Insert set before**, **Split transition…**, **Choreography cues…** and **Delete set…**. Deleting a set connects its neighbors directly. Check the resulting transition before rehearsal. A production must retain at least one set.
 
 A production can contain up to 128 sets. Set names, production titles, and section names commit when you leave the text input or press Enter; Escape cancels the current text draft.
 
-The **Production** view summarizes the cast, sets, total counts, runtime at written tempos, and rehearsal notes. Jump back to a set from its table to edit it.
+**Plan** mode shows the [production sheet](production-sheet.md): every set's name, counts, BPM, notes, meter and rehearsal mark in one table, with the number of sets, total counts and running time above it. Selecting a cell arrives at that set, and **Open on field** returns to Write mode there.
 
 ## Tempo maps and fermatas
 
