@@ -113,6 +113,7 @@ export function Menu({ label, description, items, children, className = 'icon-bu
         const role = entry.checked === undefined ? 'menuitem' : 'menuitemcheckbox';
         return <HelpButton key={entry.key ?? `${entry.label}-${index}`} pointerPassThrough role={role} aria-checked={entry.checked} tabIndex={-1}
           title={entry.name ?? entry.label.replace(/…$/, '')} description={entry.description} command={entry.command} showShortcut={false}
+          state={entry.checked === undefined ? undefined : entry.checked ? 'On' : 'Off'}
           disabled={entry.disabled} disabledReason={entry.disabledReason}
           className={`menu-item${entry.danger ? ' danger' : ''}${entry.detail ? ' menu-item--detailed' : ''}`}
           onClick={() => {

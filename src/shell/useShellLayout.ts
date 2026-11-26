@@ -103,6 +103,8 @@ export function useShellLayout(controller: EditorController) {
       if (event.key !== 'Escape' || event.isComposing) return;
       const state = controller.store.getState();
       if (state.ui.paletteOpen || state.ui.dialog || state.ui.confirmation || state.ui.selectionToolsOpen) return;
+      // A lasso being drawn takes Escape first: it cancels the gesture and leaves focus mode and the panel alone.
+      if (event.target instanceof Element && event.target.closest('.field-stage__svg')?.querySelector('[data-selection-lasso]')) return;
       if (event.target instanceof Element && event.target.closest('[data-overflow-open], [data-escape-scope], input, textarea, select')) return;
       if (document.querySelector('[data-escape-scope]')) return;
       if (state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview) return;

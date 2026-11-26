@@ -32,10 +32,12 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.setValue('ui','workspace','design');${editor}.setValue('ui','castPanelOpen',false);${editor}.setValue('ui','view','2d');${editor}.setValue('ui','zoom',1);${editor}.setValue('ui','showPaths',false);${editor}.setValue('ui','showNextPaths',false);${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-bottom'})`);
   await wait("document.querySelectorAll('.field-performer').length===500 && !document.querySelector('#panel-content-inspector').hidden",'Cast baseline field');
   const before = await evaluate(`${state}.project`);
+  // The strip's cards take their final height once their thumbnails are rendered; measure the field after that.
+  await wait("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve([...document.querySelectorAll('.set-strip .set-card-caption')].every(n=>n.checkVisibility({contentVisibilityAuto:true}))))))",'set strip rendered');
   const fieldHeight = await evaluate("document.querySelector('.field-container').getBoundingClientRect().height");
   await capture('cast-before.png');
   await showRightPanel(window,'cast');
-  await wait("document.querySelectorAll('.cast-list li').length===500 && !!document.querySelector('.field-stage__svg') && document.querySelector('#panel-content-inspector').hidden",'Cast dock beside field');
+  await wait("document.querySelectorAll('.cast-list li[data-cast-id]').length===500 && !!document.querySelector('.field-stage__svg') && document.querySelector('#panel-content-inspector').hidden",'Cast dock beside field');
   assert.equal(await evaluate("document.querySelector('.field-container').getBoundingClientRect().height"),fieldHeight);
   await control(row(ids[212])); await selected([ids[212]]);
   assert.equal(await evaluate(`document.querySelector('[data-performer-id="${ids[212]}"]').getAttribute('aria-pressed')`),'true');
@@ -49,13 +51,16 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
 
   const target = project.performers[497];
   await text('[aria-label="Find a performer"]',target.label);
-  await wait("document.querySelectorAll('.cast-list li').length===1 && !!document.querySelector('.cast-filter-notice')",'filtered selection notice');
+  await wait("document.querySelectorAll('.cast-list li[data-cast-id]').length===1 && !!document.querySelector('.cast-filter-notice')",'filtered selection notice');
   await selected([ids[237]]);
   await control('[aria-label="Select all visible performers"]'); await selected([ids[237],target.id]);
   await control('[aria-label="Select all visible performers"]'); await selected([ids[237]]);
   await control('.cast-filter-notice button');
-  await wait("document.querySelectorAll('.cast-list li').length===500 && !document.querySelector('.cast-filter-notice')",'explicit reveal clears filters');
-  await control('.field-legend button');
+  await wait("document.querySelectorAll('.cast-list li[data-cast-id]').length===500 && !document.querySelector('.cast-filter-notice')",'explicit reveal clears filters');
+  // The section chips belong to the Inspector tab. With Cast open, the tool strip's Select menu lists every section.
+  await control('.toolbar [aria-label="Select menu"]'); await wait("document.querySelector('[role=menu][aria-label=\"Select menu\"]').hidden===false",'Select menu');
+  await control(`[role=menu][aria-label="Select menu"] [aria-label=${JSON.stringify(project.sections[0].name)}]`);
+  await wait("document.querySelector('[role=menu][aria-label=\"Select menu\"]').hidden",'Select menu closed after choosing a section');
   const members = project.performers.filter(p=>p.sectionId===project.sections[0].id).map(p=>p.id); await selected(members);
   assert.equal(await evaluate("document.querySelectorAll('.cast-list .selected').length"),members.length);
   pass('search and section selection retain hidden IDs; visible bulk selection only changes filtered members and explicit reveal clears filters');
@@ -104,31 +109,34 @@ module.exports = async function checkCast({ project, editor, state, evaluate, wa
   await control('.cast-filter-notice button');
   pass('name drafts survive shared selection changes, Enter commits one named undo and Escape cancels; section reassignment preserves identity and all set geometry');
 
-  await control('[aria-label="Full Cast table"]'); await wait("document.querySelectorAll('.cast-table tbody tr').length===500",'full table');
+  // The full table is one of the docked panel's More Cast actions.
+  await control('.cast-dock [aria-label="More Cast actions"]'); await wait("document.querySelector('[role=menu][aria-label=\"More Cast actions\"]').hidden===false",'More Cast actions');
+  await control('[role=menu][aria-label="More Cast actions"] [aria-label="Full Cast table"]'); await wait("document.querySelectorAll('.cast-table tbody tr').length===500",'full table');
   await selected([ids[212]]); await capture('cast-full-table.png');
   await control('[aria-label="Return to Cast panel"]'); await wait("!document.querySelector('#panel-content-cast').hidden && !!document.querySelector('.field-stage__svg')",'redocked');
   await control('[aria-label="Remove selected performers"]'); await wait("!!document.querySelector('dialog[open]')",'remove Cast confirmation');
   // showModal focuses Close after a pointer click: no :focus-visible, so no help covers the confirmation buttons.
   await wait("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(document.activeElement.matches('dialog[open] [aria-label=\"Close dialog\"]')))))",'confirmation initial focus');
   assert.equal(await evaluate("!!document.querySelector('dialog .tooltip-panel')"),false,'pointer-opened confirmation shows no focus help');
-  await control('.modal .danger'); await wait("document.querySelectorAll('.cast-list li').length===499",'removed Cast row');
+  await control('.modal .danger'); await wait("document.querySelectorAll('.cast-list li[data-cast-id]').length===499",'removed Cast row');
   await selected([]); assert.ok(await evaluate(`${state}.project.present.sets.every(s=>!s.positions[${JSON.stringify(ids[212])}])`));
-  await evaluate(`${editor}.dispatch('history.undo')`); await wait("document.querySelectorAll('.cast-list li').length===500",'removed performer undo');
+  await evaluate(`${editor}.dispatch('history.undo')`); await wait("document.querySelectorAll('.cast-list li[data-cast-id]').length===500",'removed performer undo');
   await control(row(ids[212]));
   pass('full table and dock retain selection; confirmed removal reconciles rows, selection and every set, and undo restores the performer');
 
   for (const [width,zoom,name] of [[1366,1,'cast-docked-1366.png'],[1366,1.25,'cast-enlarged.png'],[1120,1,'cast-narrow.png']]) {
     window.setContentSize(width,768);window.webContents.setZoomFactor(zoom);await settleNativeViewport(window,'Cast layout');
     assert.deepEqual(window.getContentSize(),[width,768]);
-    const layout = await evaluate("(()=>{const r=s=>{const a=document.querySelector(s).getBoundingClientRect();return {top:a.top,bottom:a.bottom,left:a.left,right:a.right,width:a.width,height:a.height}};return {width:innerWidth,height:innerHeight,field:r('.field-container'),cast:r('.cast-dock'),edit:r('.cast-edit'),list:r('.cast-dock .table-scroll'),footer:r('.statusbar')}})()");
+    const layout = await evaluate("(()=>{const r=s=>{const a=document.querySelector(s).getBoundingClientRect();return {top:a.top,bottom:a.bottom,left:a.left,right:a.right,width:a.width,height:a.height}};return {width:innerWidth,height:innerHeight,field:r('.field-container'),cast:r('.cast-dock'),edit:r('.cast-edit'),list:r('.cast-dock .table-scroll'),strip:r('section.show-strip')}})()");
     assert.ok(layout.field.width>400 && layout.field.height*zoom>=400,JSON.stringify(layout));
-    assert.ok(layout.cast.right<=layout.width && layout.edit.bottom<=layout.footer.top && layout.list.height>=80,JSON.stringify(layout));
+    assert.ok(layout.cast.right<=layout.width && layout.cast.bottom<=layout.strip.top+.5 && layout.edit.bottom<=layout.strip.top+.5 && layout.edit.bottom<=layout.height && layout.list.height>=80,JSON.stringify(layout));
     await wait(`(()=>{const a=document.querySelector(${JSON.stringify(row(ids[212]))}).getBoundingClientRect(),b=document.querySelector('.cast-dock .table-scroll').getBoundingClientRect();return a.top>=b.top-.5 && a.bottom<=b.bottom+.5})()`,'selected row remains revealed after layout');
     layouts.push({nativeWidth:width,zoom,...layout});
     await capture(name);
   }
   window.webContents.setZoomFactor(1);window.setContentSize(1366,768);await settleNativeViewport(window,'Cast layout restore');
-  await control('[aria-label="Show Inspector"]'); await wait("!document.querySelector('#panel-content-inspector').hidden && document.querySelector('#panel-content-cast').hidden",'Inspector restored');
+  // Cast is a tab of the one side panel; choosing the Inspector tab puts it back.
+  await control('#panel-tab-inspector'); await wait("!document.querySelector('#panel-content-inspector').hidden && document.querySelector('#panel-content-cast').hidden",'Inspector restored');
   await selected([ids[212]]);
   pass('Cast, editing controls and field remain visible at 1366/1120px and 125% UI zoom; closing the dock restores Inspector without changing selection');
   return { beforeFieldHeight:fieldHeight, layouts };

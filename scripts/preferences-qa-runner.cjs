@@ -35,7 +35,8 @@ function instrument() {
 }
 async function openPreferences() {
   await click('button[aria-label="Project menu"]');
-  await evaluate("[...document.querySelectorAll('.dropdown button')].find(button => button.textContent === 'Preferences').click()");
+  await uiWait("document.querySelector('[role=menu][aria-label=\"Project menu\"]').hidden === false", 'Project menu');
+  await click('[role=menu][aria-label="Project menu"].dropdown [aria-label="Preferences"]');
   await uiWait("document.querySelector('.modal h2')?.textContent === 'Preferences'", 'Preferences modal');
 }
 async function select(label, value) {
@@ -63,6 +64,16 @@ async function pdf(paper) {
   const expected = paper === 'a4' ? [841.89, 595.28] : [792, 612]; assert.ok(Math.abs(Number(match[1]) - expected[0]) < 1.5); assert.ok(Math.abs(Number(match[2]) - expected[1]) < 1.5);
 }
 
+// The hint line on the field's margin says what to do next for the state the editor is in.
+const NO_SELECTION_HINT = 'Click a dot, drag a box or pick a section, then choose a shape';
+const fieldHint = () => evaluate("document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent ?? null");
+/** The Inspector shows a coordinate as a side caption and one line per axis; the words are those of the description. */
+function inspectorCoordinate(description) {
+  const lines = description.split('; '), side = /^(Side [12]): (.+)$/.exec(lines[0]);
+  const sentence = text => text.charAt(0).toUpperCase() + text.slice(1);
+  return side ? [side[1], sentence(side[2]), ...lines.slice(1).map(sentence)] : lines;
+}
+
 async function checkSections() {
   // One mounted fieldset holds four headed groups in this order; the former sub-heads are demoted within them.
   assert.deepEqual(await evaluate("[...document.querySelectorAll('.preferences-fields > .preferences-section')].map(s => [s.querySelector('h3').textContent, [...s.querySelectorAll('h4')].map(h => h.textContent)])"),
@@ -77,8 +88,10 @@ async function checkSections() {
     await uiWait(`${pressed} === ${JSON.stringify(title)} && document.activeElement?.textContent === ${JSON.stringify(title)} && (() => { const nav = document.querySelector('.preferences-nav').getBoundingClientRect(), heading = document.activeElement.getBoundingClientRect(); return heading.top >= nav.bottom && heading.bottom <= document.querySelector('dialog[open]').getBoundingClientRect().bottom; })()`, 'section nav: ' + title);
   }
   assert.equal(await evaluate("document.querySelector('.shortcut-preferences').open"), true, 'jumping to Shortcuts opens the shortcut list');
-  await evaluate("document.querySelector('dialog[open]').scrollTop = 1e6"); await uiWait(`${pressed} === 'Shortcuts'`, 'scrolled to the last section');
-  await evaluate("document.querySelector('dialog[open]').scrollTop = 0"); await uiWait(`${pressed} === 'Appearance'`, 'scrolled back to the first section');
+  // The dialog's body is the scroller; its header stays put.
+  assert.equal(await evaluate("(() => { const body = document.querySelector('dialog[open] .modal-body'); body.scrollTop = 1e6; return body.scrollTop > 0 && body.scrollTop + body.clientHeight >= body.scrollHeight - 2; })()"), true);
+  await uiWait(`${pressed} === 'Shortcuts'`, 'scrolled to the last section');
+  await evaluate("document.querySelector('dialog[open] .modal-body').scrollTop = 0"); await uiWait(`${pressed} === 'Appearance'`, 'scrolled back to the first section');
   pass('Preferences groups Appearance, Field display, Editing and Shortcuts in one mounted form; the pinned section nav jumps, focuses and follows scrolling');
 }
 
@@ -95,7 +108,8 @@ async function checkCoordinateOutput(project) {
     await uiWait(`document.activeElement === document.querySelector(${JSON.stringify(dot)})`, 'coordinate performer focus');
     await sendKey(window, 'Return');
     await uiWait(`window.__preferencesQA.editor.getState().selection.selectedIds.length === 1 && window.__preferencesQA.editor.getState().selection.selectedIds[0] === ${JSON.stringify(id)}`, 'native coordinate performer selection');
-    await uiWait(`document.querySelector('.selection-coordinate')?.textContent === ${JSON.stringify(expected)} && document.querySelector('.field-readout span')?.textContent === ${JSON.stringify(expected)}`, 'Inspector and field precision');
+    await uiWait(`JSON.stringify([...document.querySelectorAll('.inspector .selection-coordinate > span')].map(node => node.textContent)) === ${JSON.stringify(JSON.stringify(inspectorCoordinate(expected)))} && document.querySelector('.field-readout span')?.textContent === ${JSON.stringify(expected)}`, 'Inspector and field precision');
+    assert.equal(await evaluate("document.querySelector('.inspector .selection-coordinate-label').textContent"), inspectorCoordinate(expected)[0]);
     assert.ok(await evaluate(`document.querySelector('[data-performer-id="${id}"]').getAttribute('aria-label').includes(${JSON.stringify(expected)})`));
     if (precision === 'quarter') {
       await evaluate('document.querySelector(\'.toast [aria-label="Dismiss notification"]\')?.click()');
@@ -106,8 +120,8 @@ async function checkCoordinateOutput(project) {
       window.setContentSize(1366, 768);
     }
     await showRightPanel(window,'cast');
-    await uiWait("!!document.querySelector('[aria-label=\"Full Cast table\"]')", 'Cast dock');
-    await click('[aria-label="Full Cast table"]');
+    await uiWait("!document.querySelector('#panel-content-cast').hidden && !!document.querySelector('.cast-dock [aria-label=\"More Cast actions\"]')", 'Cast dock');
+    await click('[role=menu][aria-label="More Cast actions"] [aria-label="Full Cast table"]');
     await uiWait(`document.querySelector('.coordinate-cell')?.textContent === ${JSON.stringify(expected)}`, 'Cast coordinate precision');
     await activateWorkspace(window,'design');
     savedFile = path.join(output, `coordinates-${precision}-${process.pid}.csv`);
@@ -153,13 +167,17 @@ app.whenReady().then(async () => {
     native('Open project…'); await uiWait("window.__preferencesQA.editor.getState().fileSession.savedRevision !== null", 'opened fixture');
     const before = await state(); const original = before.project.present; const revision = before.project.revision;
     if (phase === 'write') {
-      assert.match(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
+      assert.equal(await fieldHint(), NO_SELECTION_HINT);
       await evaluate('document.activeElement?.blur()'); native('Select all');
-      await uiWait("window.__preferencesQA.editor.getState().preferences.value.selectionHintDismissed", 'selection hint retired');
+      await uiWait("window.__preferencesQA.editor.getState().preferences.value.selectionHintDismissed", 'first selection recorded');
+      await uiWait("/^Drag to move · Alt\\+arrows nudge .+ · choose a shape to arrange the selection$/.test(document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent)", 'hint follows the selection');
       await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
-      assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
-      await click('[aria-label="Show set thumbnails"]'); await uiWait("window.__preferencesQA.editor.getState().preferences.value.setThumbnails", 'optional thumbnails');
-      pass('selecting performers retires the introductory hint after clearing selection without a project edit');
+      await uiWait(`document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent === ${JSON.stringify(NO_SELECTION_HINT)}`, 'hint returns with an empty selection');
+      assert.equal((await state()).project.revision, revision);
+      // The set strip shows thumbnails by default; compact cards are the personal choice that must survive a restart.
+      await click('[role=menu][aria-label="Timeline options"] [aria-label="Set thumbnails"]'); await uiWait("window.__preferencesQA.editor.getState().preferences.value.setThumbnails === false && !document.querySelector('.set-strip .mini-field')", 'compact set cards');
+      await sendKey(window, 'Escape'); await uiWait("document.querySelector('[role=menu][aria-label=\"Timeline options\"]').hidden", 'Timeline options closed');
+      pass('the field hint follows selection, the first selection is recorded and compact set cards are chosen without a project edit');
     }
     await openPreferences();
     if (phase === 'write') {
@@ -167,15 +185,20 @@ app.whenReady().then(async () => {
       await checkSections();
       await checkCoordinateOutput(original);
       await done();
-      for (const section of ['Set properties', 'Formation tools', 'Transition check']) {
-        await evaluate(`document.querySelector('summary[aria-label="${section} section"]').focus()`);
+      // The Inspector's sections: Position (for one performer), the set's details and Move check. Each remembers its disclosure.
+      await evaluate(`window.__preferencesQA.editor.setValue('selection','selectedIds',[${JSON.stringify(original.performers[0].id)}])`);
+      await uiWait("!!document.querySelector('.inspector summary[aria-label=\"Position section\"]')?.getClientRects().length", 'Position section for one performer');
+      for (const [section, key, open] of [['Set 1 details', 'inspectorSetOpen', false], ['Position', 'inspectorSelectionOpen', false], ['Move check', 'inspectorChecksOpen', true]]) {
+        assert.equal(await evaluate(`document.querySelector('.inspector [data-inspector-section="${key}"]').open`), !open, section + ' starts at its default');
+        await evaluate(`document.querySelector('.inspector summary[aria-label="${section} section"]').focus()`);
+        await uiWait(`document.activeElement === document.querySelector('.inspector summary[aria-label="${section} section"]')`, 'disclosure focus: ' + section);
         await sendKey(window, 'Return');
-        const key = section === 'Set properties' ? 'inspectorSetOpen' : section === 'Formation tools' ? 'inspectorFormationOpen' : 'inspectorChecksOpen';
-        await uiWait(`window.__preferencesQA.editor.getState().preferences.value.${key} === ${section !== 'Set properties'}`, 'disclosure preference updated');
+        await uiWait(`window.__preferencesQA.editor.getState().preferences.value.${key} === ${open} && document.querySelector('.inspector [data-inspector-section="${key}"]').open === ${open}`, 'disclosure preference updated: ' + section);
       }
+      await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
       await saved();
       const expansion = (await state()).preferences.value;
-      assert.equal(expansion.inspectorSetOpen, false); assert.equal(expansion.inspectorFormationOpen, true); assert.equal(expansion.inspectorChecksOpen, true);
+      assert.equal(expansion.inspectorSetOpen, false); assert.equal(expansion.inspectorSelectionOpen, false); assert.equal(expansion.inspectorChecksOpen, true);
       assert.deepEqual((await state()).project.present, original);
       await openPreferences();
       await select('Panel layout', 'compact'); await select('Label visibility', 'none'); await toggle('Previous paths'); await toggle('Next paths'); await toggle('Field grid'); await toggle('Snap to grid');
@@ -210,19 +233,26 @@ app.whenReady().then(async () => {
       assert.equal((await fs.readdir(profile)).filter(name => name.startsWith('preferences-preserved-')).length, 1);
       pass('the older preferences original is preserved when the upgraded file is written');
     } else if (phase === 'restart') {
-      const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.equal(expected.setThumbnails, true); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
+      const expected = JSON.parse(await fs.readFile(path.join(output, 'expected.json'), 'utf8')); assert.equal(expected.setThumbnails, false);
+      assert.equal(await evaluate("document.querySelectorAll('.set-strip .set-card').length > 0 && !document.querySelector('.set-strip--thumbnails') && document.querySelectorAll('.set-strip .mini-field').length"), 0); assert.deepEqual((await state()).preferences.value, expected); assert.equal((await state()).ui.zoom, 1.6);
       assert.equal(expected.selectionHintDismissed, true);
       assert.equal(expected.fieldOrientation, 'audience-top'); assert.equal(expected.fieldDotRadiusPx, 5); assert.equal(expected.fieldLabelSizePx, 16);
       assert.equal(expected.selectionLabelsOnly, true); assert.equal(expected.fieldColorMode, 'custom'); assert.equal(expected.fieldCustomColor, '#ee99dd');
       assert.equal(expected.coordinatePrecision, 'half');
       assert.equal(expected.nudgeUnit,'steps'); assert.equal(expected.rotationStep,30); assert.equal(expected.scaleStep,25);
       assert.deepEqual(expected.snapDefaults, { steps:6, subdivision:2, target:'grid', group:'individual' });
-      assert.equal(expected.inspectorSetOpen, false); assert.equal(expected.inspectorFormationOpen, true); assert.equal(expected.inspectorChecksOpen, true);
-      for (const [key, open] of [['inspectorSetOpen', false], ['inspectorFormationOpen', true], ['inspectorChecksOpen', true]]) {
-        assert.equal(await evaluate(`document.querySelector('[data-inspector-section="${key}"]').open`), open);
+      assert.equal(expected.inspectorSetOpen, false); assert.equal(expected.inspectorSelectionOpen, false); assert.equal(expected.inspectorChecksOpen, true);
+      // The Position section exists while one performer is selected.
+      await evaluate(`window.__preferencesQA.editor.setValue('selection','selectedIds',[${JSON.stringify(original.performers[0].id)}])`);
+      await uiWait("!!document.querySelector('.inspector [data-inspector-section=\"inspectorSelectionOpen\"]')", 'Position section after restart');
+      for (const [key, open] of [['inspectorSetOpen', false], ['inspectorSelectionOpen', false], ['inspectorChecksOpen', true]]) {
+        assert.equal(await evaluate(`document.querySelector('.inspector [data-inspector-section="${key}"]').open`), open, key);
       }
-      assert.doesNotMatch(await evaluate("document.querySelector('.statusbar').textContent"), /Shift \+ click/);
+      await evaluate("window.__preferencesQA.editor.setValue('selection','selectedIds',[])");
+      assert.equal(expected.showHints, true); assert.equal(await fieldHint(), NO_SELECTION_HINT);
       assert.ok(await evaluate("document.querySelector('.studio').classList.contains('studio--compact')"));
+      // The audit reads settled colors: a dialog still fading in is not what the writer reads.
+      await uiWait("document.getAnimations().every(animation => animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity)", 'animations settled before the text audit');
       const audit = await evaluate('(' + auditText.toString() + ')()'); assert.deepEqual(audit.failures, []); assert.ok(audit.checked > 100);
       const [width, height] = window.getSize(); window.setSize(width + 1, height); await pause(150);
       await fs.writeFile(path.join(output, 'preferences.png'), (await window.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true })).toPNG()); await done();
