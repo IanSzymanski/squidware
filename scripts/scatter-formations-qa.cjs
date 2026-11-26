@@ -25,7 +25,7 @@ module.exports=async function({largeFixtures,project,editor,state,evaluate,wait,
   await revealFieldTool(window,'[aria-label="Line formation"]');
   await wait("!!document.querySelector('[aria-label=\"Line formation\"]')",'formation panel');
   await capture('scatter-before.png');
-  await control('[aria-label="Scatter formation"]');await wait(`!!${state}.ui.formationPreview?.scatter`,'scatter preview');
+  await control('[aria-label="Scatter"]');await wait(`!!${state}.ui.formationPreview?.scatter`,'scatter preview');
   const first=await evaluate(`${state}.ui.formationPreview.scatter`);
   await wait("document.querySelector('[data-draft-analysis-status]')?.dataset.draftAnalysisStatus==='ready'",'shared worker checks');
   assert.ok(await evaluate("document.querySelector('[data-neighbor=next] [data-neighbor-path]')?.getAttribute('d')?.includes('M')"));
@@ -95,7 +95,7 @@ module.exports=async function({largeFixtures,project,editor,state,evaluate,wait,
   const sizes=[];
   for(const fixture of JSON.parse(await fs.readFile(largeFixtures,'utf8'))) {
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(fixture)}});${editor}.setValue('selection','selectedIds',${JSON.stringify(fixture.performers.map(p=>p.id))})`);
-    const start=Date.now();await control('[aria-label="Scatter formation"]');await wait(`!!${state}.ui.formationPreview?.scatter`,'dense scatter preview');
+    const start=Date.now();await control('[aria-label="Scatter"]');await wait(`!!${state}.ui.formationPreview?.scatter`,'dense scatter preview');
     sizes.push({members:fixture.performers.length,nativeActionToPreviewMs:Date.now()-start});
     await wait("document.querySelector('[data-draft-analysis-status]')?.dataset.draftAnalysisStatus==='ready'",'dense shared checks');
     if(fixture.performers.length>=64){const before=await evaluate(`${state}.ui.formationPreview.scatter`);await control('[aria-label="Show scatter movement paths"]');await wait("document.querySelector('[data-draft-analysis-status]')?.dataset.draftAnalysisStatus==='ready'",'hidden-path checks active');assert.equal(await evaluate("document.querySelectorAll('[data-neighbor-path],.problem-preview .problem-path').length"),0);assert.deepEqual(await evaluate(`${state}.ui.formationPreview.scatter`),before);}
