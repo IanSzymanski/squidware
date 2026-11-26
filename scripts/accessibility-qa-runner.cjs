@@ -42,21 +42,26 @@ async function tabTo(selector, backwards = false) {
   }
   throw new Error(`Tab could not reach ${selector}`);
 }
+// The tool strip is one Tab stop; End reaches its last control, the panel button.
+const strip = '.field-command-toolbar';
 async function toolbarEnd() {
-  await tabTo('.field-command-toolbar [data-toolbar-item][tabindex="0"]');
+  await tabTo(strip + ' button[tabindex="0"]');
+  assert.equal(await evaluate(`document.querySelectorAll(${JSON.stringify(strip + ' button[tabindex="0"]')}).length`), 1);
   await key('End');
-  assert.equal(await evaluate('document.activeElement.dataset.toolbarItem'),'more');
+  assert.equal(await evaluate(`document.activeElement === [...document.querySelectorAll(${JSON.stringify(strip + ' button')})].filter(node => node.getClientRects().length).at(-1) && document.activeElement.getAttribute('aria-label')`), 'Collapse Inspector');
 }
-async function toolbarMenuAction(title) {
-  await toolbarEnd();await key('Down');await uiWait("!!document.activeElement?.closest('.field-tools-menu:not([hidden])')",'keyboard enters toolbar menu');
-  for(let i=0;i<50;i++){
-    if(await evaluate(`document.activeElement?.getAttribute('aria-label')===${JSON.stringify(title)}`)){await key('Return');return;}
+/** Opens a menu from its button with the keyboard and chooses the named action with the arrow keys. */
+async function menuAction(menu, title) {
+  await tabTo(`button[aria-haspopup=menu][aria-label="${menu}"]`); await key('Down');
+  await uiWait(`!!document.activeElement?.closest('[role=menu][aria-label="${menu}"]:not([hidden])')`, 'keyboard enters ' + menu);
+  for (let i = 0; i < 50; i++) {
+    if (await evaluate(`document.activeElement?.getAttribute('aria-label')===${JSON.stringify(title)}`)) { await key('Return'); return; }
     await key('Down');
   }
-  throw Error('Toolbar menu could not reach '+title);
+  throw Error(menu + ' could not reach ' + title);
 }
 async function audit(label) {
-  const result = await evaluate(`(${auditText.toString()})()`);
+  const result = await evaluate(`(${auditText.toString()})({ skipUnrendered: true })`);
   audits.push({ label, ...result });
   assert.deepEqual(result.failures, [], `Text contrast/size: ${label}`);
   assert.ok(result.checked > 100, 'Expected a populated renderer audit');
@@ -109,14 +114,18 @@ async function timelineProblemChecks() {
   };
   clean(await inspect(), 'timeline at rest');
   const label = () => evaluate("document.activeElement?.getAttribute('aria-label')");
-  await tabTo('[aria-label="Timeline view"]');
+  // The problem count is a control of the top bar, where it is true in every mode; the row of markers is in the timeline.
+  await tabTo('.topbar .problem-count-badge');
+  assert.match(await label(), /^Show-wide problems: \d+ finding/);
+  // The transport ends with Timeline options; the timeline's tracks follow it in set order.
+  await tabTo('button[aria-haspopup=menu][aria-label="Timeline options"]');
   const order = [];
   // Each Tab reaches a differently named control; wait for it so a slow focus change is never read twice.
-  for (let i = 0, previous = 'Timeline view'; i < 140 && order.at(-1) !== 'Timeline playhead'; i++) {
+  for (let i = 0, previous = 'Timeline options'; i < 140 && order.at(-1) !== 'Timeline playhead'; i++) {
     await key('Tab'); await uiWait(`document.activeElement?.getAttribute('aria-label') !== ${JSON.stringify(previous)}`, 'Tab moves focus'); order.push(previous = await label());
   }
   const sets = order.filter(name => /^(Opening set|Set \d+):/.test(name)), problemStops = order.filter((_, i) => i > order.indexOf(sets.at(-1)) && i < order.length - 1);
-  assert.match(order[0], /^Show-wide problems: \d+ finding/); assert.match(order[1], /^Opening set:/);
+  assert.match(order[0], /^Opening set:/);
   // Every set of the loaded production is a stop, in order (the expected length comes from the project, not the tab order).
   const setCount = await evaluate(`${editor}.getState().project.present.sets.length`); assert.equal(setCount, 128);
   assert.deepEqual(sets.map(name => name.startsWith('Opening') ? 1 : Number(/^Set (\d+)/.exec(name)[1])), Array.from({ length: setCount }, (_, i) => i + 1));
@@ -163,18 +172,19 @@ app.whenReady().then(async () => {
     const baseline = await revision();
     // A hidden test window has no OS focus, so focus events would never fire; emulate a focused window for this check.
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
-    await evaluate("document.querySelector('.field-legend button:last-child').focus()");
-    const legendReachable = await evaluate("(() => { const button=document.activeElement.getBoundingClientRect(); const row=document.querySelector('.field-legend-scroll').getBoundingClientRect(); return button.left>=row.left-.5 && button.right<=row.right+.5 && button.top>=row.top && button.bottom<=row.bottom; })()");
+    // The section key is the row of chips in the Inspector's header: the last one is inside the panel and on top there.
+    await evaluate("document.querySelector('.inspector .field-legend button:last-child').focus()");
+    const legendReachable = await evaluate("(() => { const chip=document.activeElement, button=chip.getBoundingClientRect(); const row=document.querySelector('.side-panel').getBoundingClientRect(); return chip.matches('.inspector .field-legend button') && button.left>=row.left-.5 && button.right<=row.right+.5 && button.top>=row.top && button.bottom<=Math.min(row.bottom, innerHeight) && chip.contains(document.elementFromPoint(button.x+button.width/2, button.y+button.height/2)); })()");
     // Keep DOM focus events enabled for the toolbar's roving keyboard stop.
     assert.equal(legendReachable, true);
     assert.equal(await revision(), baseline);
-    pass('keyboard focus reveals the last section in the floating legend without editing the production');
+    pass('keyboard focus reveals the last section in the section key without editing the production');
     assert.equal(await evaluate("document.querySelectorAll('.field-stage__svg [tabindex=" + '"0"' + "]').length"), 1);
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').tabIndex"), -1);
     await toolbarEnd(); await key('Tab'); assert.equal(await focusId(), ids[0]);
     await key('Tab'); assert.equal(await evaluate("!!document.activeElement.closest('.field-stage__svg')"), false);
     await key('Tab', ['shift']); assert.equal(await focusId(), ids[0]);
-    await key('Tab', ['shift']); assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'More field tools');
+    await key('Tab', ['shift']); assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Collapse Inspector');
     await key('Tab');
     pass('Tab and Shift+Tab enter and leave a 500-performer field in one stop');
 
@@ -197,7 +207,8 @@ app.whenReady().then(async () => {
     assert.deepEqual(moved[ids[2]], initial.sets[0].positions[ids[2]]);
     pass('spatial focus does not edit; all 500 dots including overlaps are reachable; selection and modifier nudges are distinct');
 
-    for(let i=0;i<3;i++)await toolbarMenuAction('Zoom in');
+    await tabTo('[aria-label="Zoom in"]');
+    for (let i = 1; i <= 3; i++) { const before = await evaluate(`${editor}.getState().ui.zoom`); await key('Return'); await uiWait(`${editor}.getState().ui.zoom > ${before} && document.activeElement?.getAttribute('aria-label') === 'Zoom in'`, 'keyboard zoom ' + i); }
     await tabTo('.field-performer[tabindex="0"]'); await key('End');
     await uiWait("document.querySelector('.field-readout strong')?.textContent.includes('P500')", 'focused readout');
     assert.equal(await evaluate("document.activeElement.classList.contains('field-performer--focused')"), true);
@@ -221,25 +232,33 @@ app.whenReady().then(async () => {
     await uiWait("!!document.querySelector('.production-workspace')", 'keyboard Show activation');
     assert.equal(await evaluate(`${editor}.getState().playback.playing`), false);
     await audit('production overview');
-    await showRightPanel(window,'cast'); await uiWait("document.querySelectorAll('.cast-list li').length === 500", 'docked Cast review');
-    await tabTo('[aria-label="Full Cast table"]', true); await key('Return'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'full Cast review');
+    // Plan is the sheet alone. Cast is a tab of the side panel beside the field; its full table opens from the panel's menu.
+    assert.deepEqual(await evaluate("[document.querySelector('.side-panel').hidden, document.querySelector('[aria-label=\"Plan mode\"]').getAttribute('aria-pressed')]"), [true, 'true']);
+    await activateWorkspace(window,'design');
+    await showRightPanel(window,'cast'); await uiWait("document.querySelectorAll('.cast-list li:not(.cast-section-heading)').length === 500", 'docked Cast review');
+    await menuAction('More Cast actions', 'Full Cast table'); await uiWait("document.querySelectorAll('.cast-table tbody tr').length === 500", 'full Cast review');
     await audit('cast');
     await activateWorkspace(window,'design');
     await tabTo('[aria-label="Next set"]'); await key('Return');
     await tabTo('.timeline-scrubber'); await key('Right');
-    await uiWait("!!document.querySelector('.field-preview-banner')", 'keyboard preview');
+    // Between sets the tool strip says so in place of its tools.
+    const lock = "document.querySelector('#field-lock-message')";
+    await uiWait(`document.querySelector(${JSON.stringify(strip)}).dataset.context === 'scrub' && ${lock}?.textContent.startsWith('Between sets') && !!${lock}.getClientRects().length`, 'keyboard preview');
     await tabTo('.field-performer[tabindex="0"]', true); const locked = await revision();
     await key('Right', ['alt']); assert.equal(await revision(), locked);
     await key('Right'); assert.equal(await revision(), locked);
     await audit('read-only transition');
-    await tabTo('.field-preview-banner button', true); await key('Return');
-    await uiWait("!document.querySelector('.field-preview-banner')", 'keyboard edit recovery');
+    // The strip's first control is the way back to editing.
+    await tabTo(strip + ' button[tabindex="0"]', true); await key('Home');
+    assert.match(await evaluate(`document.activeElement.matches(${JSON.stringify(strip + ' .toolbar-commit button')}) && document.activeElement.getAttribute('aria-label')`), /^Go to set \d+ to edit$/);
+    await key('Return');
+    await uiWait(`!${lock} && !document.querySelector('.field-preview-banner') && document.querySelector(${JSON.stringify(strip)}).dataset.context !== 'scrub'`, 'keyboard edit recovery');
     pass('keyboard-only note/save, Cast/Show review and preview recovery preserve edit locks and native button activation');
 
-    await tabTo('[aria-label="Project menu"]', true); await key('Return'); await uiWait("!!document.querySelector('.dropdown')", 'project menu');
-    await tabTo('[aria-label="Production settings"]'); await key('Return'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Production settings'", 'settings');
+    // A menu is one Tab stop: its button opens it, and the arrow keys move through its actions.
+    await menuAction('Project menu', 'Production settings'); await uiWait("document.querySelector('.modal h2')?.textContent === 'Production settings'", 'settings');
     await audit('settings'); await tabTo('.modal .modal-actions .button'); await key('Return');
-    await tabTo('.header-actions > .button.primary'); await key('Return');
+    await tabTo('.topbar .topbar-export'); await key('Return');
     await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'export');
     await audit('export');
     // The contents choice belongs to the PDF section; the other formats form one full-width vertical list.
@@ -250,7 +269,7 @@ app.whenReady().then(async () => {
     await uiWait("!!document.querySelector('dialog[open] .video-export-options')", 'keyboard opens rehearsal video settings');
     await key('Escape'); await uiWait("!document.querySelector('dialog[open]')", 'Escape closes rehearsal video settings');
     pass('Rehearsal video is in the Export list and opens and closes from the keyboard');
-    await tabTo('.header-actions > .button.primary'); await key('Return');
+    await tabTo('.topbar .topbar-export'); await key('Return');
     await uiWait("document.querySelector('.modal h2')?.textContent === 'Export'", 'reopen export');
     await tabTo('.export-secondary > button:first-child'); await key('Return');
     await waitFor(async () => { try { return (await fs.stat(csvFile)).size > 0; } catch { return false; } }, 'CSV export');
@@ -259,7 +278,7 @@ app.whenReady().then(async () => {
 
     window.webContents.setZoomFactor(1.25); await settleNativeViewport(window, 'enlarged accessibility viewport');
     await audit('design at 125% UI zoom');
-    await tabTo('.header-actions > .button.primary', true);
+    await tabTo('.topbar .topbar-export', true);
     assert.equal(await evaluate("(() => { const bounds = document.activeElement.getBoundingClientRect(); return bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight; })()"), true);
     await capture('enlarged-text.png');
     const accessibility = await window.webContents.debugger.sendCommand('Accessibility.getFullAXTree');

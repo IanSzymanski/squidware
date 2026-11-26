@@ -2,9 +2,9 @@
 
 /** Runs in Chromium. Checks rendered HTML text against composited solid backgrounds.
  * SVG artwork and system-drawn menu options are excluded. Disabled controls
- * are excluded unless explicitly requested.
+ * are excluded unless explicitly requested. Zero-size text can be excluded on request.
  * This is bounded computed-style evidence, not screen-reader certification. */
-function auditText({ includeDisabled = false } = {}) {
+function auditText({ includeDisabled = false, skipUnrendered = false } = {}) {
   const failures = [];
   let checked = 0;
   const rgb = value => {
@@ -21,6 +21,9 @@ function auditText({ includeDisabled = false } = {}) {
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const style = getComputedStyle(element, pseudo);
+    // Text set at zero size is not drawn: it names a control for assistive technology while a unit or generated
+    // label stands in for it on screen. Callers that opt in audit only what is rendered.
+    if (skipUnrendered && parseFloat(style.fontSize) === 0) return;
     const chain = []; for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) chain.unshift(ancestor);
     let background = [255, 255, 255];
     for (const ancestor of chain) background = blend(rgb(getComputedStyle(ancestor).backgroundColor), background);
