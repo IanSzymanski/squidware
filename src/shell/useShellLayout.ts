@@ -7,6 +7,12 @@ import { useEditorSelector } from '../editor/react';
 import type { EditorController } from '../editor/useEditorController';
 
 const PANEL_MIN = 288;
+const PANEL_TOGGLE = '[data-panel-toggle]', PANEL_CLOSE = '.side-panel--overlay .side-panel-header > .icon-button', PROJECT_MENU = 'button[aria-label="Project menu"]';
+const focusSoon = (selector: string, options?: FocusOptions) => requestAnimationFrame(() => document.querySelector<HTMLElement>(selector)?.focus(options));
+/** A pointer click moves focus without the keyboard focus ring and its help; Enter, Space and Escape keep them. */
+const quiet = (pointer: boolean) => pointer ? { focusVisible: false } as FocusOptions : undefined;
+const previewing = (ui: { transformPreview: unknown; formationPreview: unknown; spacingPreview: unknown; coordinatePreview: unknown; selectionPreview: unknown }) =>
+  !!(ui.transformPreview || ui.formationPreview || ui.spacingPreview || ui.coordinatePreview || ui.selectionPreview);
 
 /** The three stages of work. Each is a built-in workspace, so the arrangement is remembered per mode. */
 export type ShellMode = 'write' | 'plan' | 'rehearse';
@@ -67,21 +73,22 @@ export function useShellLayout(controller: EditorController) {
   const mainWidth = viewport.width - (docked ? width : 0);
   const breakpoints = workspaceBreakpoints(viewport, mainWidth);
 
-  // Changing mode, panel tab or workspace ends a panel opened over the field.
-  useLayoutEffect(() => { setOverlayOpen(false); }, [mode, focusMode, controller.preferences.value.workspaces.active]);
+  // Changing mode, panel tab or workspace ends a panel opened over the field. So does resetting the active workspace.
+  const workspaceVersion = useEditorSelector(state => state.ui.workspaceVersion);
+  useLayoutEffect(() => { setOverlayOpen(false); }, [mode, focusMode, controller.preferences.value.workspaces.active, workspaceVersion]);
   // Playback shows the field: starting it closes a panel open over the field.
   useLayoutEffect(() => { if (controller.playing && !preview) setOverlayOpen(false); }, [controller.playing, preview]);
 
   // Focus held by a panel that closes, or by a preview that ends, never falls to the page: it returns to the panel's
   // button, or goes to the selection header (to the field, where the panel closed with the preview).
-  const held = useRef<'panel' | 'preview' | null>(null);
+  const heldBy = useRef<'panel' | 'preview' | null>(null);
   useEffect(() => {
     const track = (event: FocusEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      held.current = target?.closest('.toolbar-commit') ? 'preview' : target?.closest('.side-panel') ? 'panel' : null;
+      heldBy.current = target?.closest('.toolbar-commit') ? 'preview' : target?.closest('.side-panel') ? 'panel' : null;
     };
     // A press on the page gives focus up on purpose; it stays there.
-    const release = (event: PointerEvent) => { if (!(event.target instanceof Element && event.target.closest('.toolbar-commit, .side-panel'))) held.current = null; };
+    const release = (event: PointerEvent) => { if (!(event.target instanceof Element && event.target.closest('.toolbar-commit, .side-panel'))) heldBy.current = null; };
     document.addEventListener('focusin', track); document.addEventListener('pointerdown', release, true);
     return () => { document.removeEventListener('focusin', track); document.removeEventListener('pointerdown', release, true); };
   }, []);
@@ -89,11 +96,11 @@ export function useShellLayout(controller: EditorController) {
   useLayoutEffect(() => {
     const was = before.current; before.current = { panelVisible, preview };
     const endedPreview = was.preview && !preview, closedPanel = was.panelVisible && !panelVisible;
-    if (!held.current || !(endedPreview || closedPanel)) return;
+    if (!heldBy.current || !(endedPreview || closedPanel)) return;
     // The control that held focus is gone or about to be hidden; anything else keeps it.
     const active = document.activeElement;
     if (active && active !== document.body && active.getClientRects().length && !active.closest('[hidden], [inert]')) return;
-    held.current = null;
+    heldBy.current = null;
     const shown = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)].find(node => node.getClientRects().length);
     (endedPreview ? shown('.selection-bar') ?? shown('.main-workspace .field-container') : shown('.toolbar-end [aria-controls^="workspace-pane-"]'))?.focus({ preventScroll: true });
   }, [panelVisible, preview]);
@@ -113,18 +120,25 @@ export function useShellLayout(controller: EditorController) {
     }));
   }, [reveal]);
 
-  function showPanel(next: 'inspector' | 'cast' = tab) {
+    function showPanel(next: 'inspector' | 'cast' = tab, pointer = false) {
+    const wasPreviewing = previewing(controller.store.getState().ui);
     if (next !== tab) controller.dispatch('cast.show', { mode: next === 'cast' ? 'panel' : 'closed' });
     const key = next === 'cast' ? 'castCollapsed' : 'inspectorCollapsed';
     if (layout[key]) controller.dispatch('layout.update', { update: { [key]: false } });
-    if (!fits) setOverlayOpen(true);
+    if (fits) return;
+    setOverlayOpen(true);
+    // The panel covers the button that opened it, so focus moves inside. A preview started while it opens owns focus.
+    requestAnimationFrame(() => { if (wasPreviewing || !previewing(controller.store.getState().ui)) document.querySelector<HTMLElement>(PANEL_CLOSE)?.focus(quiet(pointer)); });
   }
-  function hidePanel() {
-    if (locked && docked) return;
+  function hidePanel(pointer = false) {
+    // A preview keeps its parameters in view: the panel stays until the preview is applied or cancelled.
+    if (locked && docked || preview) return;
     if (docked) controller.dispatch('layout.update', { update: { [tab === 'cast' ? 'castCollapsed' : 'inspectorCollapsed']: true } });
     setOverlayOpen(false);
+    // Closing a panel returns focus to the button that shows it again.
+    focusSoon(PANEL_TOGGLE, quiet(pointer));
   }
-  const togglePanel = () => panelVisible ? hidePanel() : showPanel();
+  const togglePanel = (pointer = false) => panelVisible ? hidePanel(pointer) : showPanel(tab, pointer);
   function selectTab(next: 'inspector' | 'cast') {
     if (locked) return;
     controller.dispatch('cast.show', { mode: next === 'cast' ? 'panel' : 'closed' });
@@ -136,7 +150,24 @@ export function useShellLayout(controller: EditorController) {
     setDraftWidth(null);
     controller.dispatch('layout.update', { update: { inspectorWidth: next, castWidth: next } });
   }
-  const toggleFocus = () => { controller.dispatch('layout.focus'); };
+  const toggleFocus = () => { const leaving = controller.store.getState().ui.focusMode; if (controller.dispatch('layout.focus') === true && leaving) focusSoon(PROJECT_MENU); };
+
+  // A preview or playback that ends can take the focused control with it. Focus then moves to the Close button of a
+  // panel open over the field, else to the Inspector's selection actions, else to the field, never to the page.
+  const held = useRef<Element | null>(null);
+  held.current = studio.current?.contains(document.activeElement) ? document.activeElement : null;
+  const previewed = useRef(preview);
+  useLayoutEffect(() => {
+    if (previewed.current === preview) return;
+    previewed.current = preview;
+    const active = document.activeElement, was = held.current;
+    const lost = !!active?.closest('[hidden], [inert]') || active === document.body && !!was && (!was.isConnected || !!was.closest('[hidden], [inert]'));
+    if (focusMode || !lost) return;
+    for (const selector of [overlay && !preview ? PANEL_CLOSE : '', '.side-panel .selection-bar', '.main-workspace .field-container']) {
+      const node = selector ? document.querySelector<HTMLElement>(selector) : null;
+      if (node && !node.closest('[hidden], [inert]')) { node.focus(); return; }
+    }
+  }, [preview]);
 
   // Escape leaves focus mode, then closes a panel open over the field. Menus, previews and dialogs take it first.
   useEffect(() => {
@@ -149,8 +180,9 @@ export function useShellLayout(controller: EditorController) {
       if (event.target instanceof Element && event.target.closest('[data-overflow-open], [data-escape-scope], input, textarea, select')) return;
       if (document.querySelector('[data-escape-scope]')) return;
       if (state.ui.transformPreview || state.ui.formationPreview || state.ui.spacingPreview || state.ui.coordinatePreview || state.ui.selectionPreview) return;
-      if (overlayOpen && !docked) { event.preventDefault(); event.stopPropagation(); setOverlayOpen(false); return; }
-      if (state.ui.focusMode) { event.preventDefault(); event.stopPropagation(); controller.dispatch('layout.focus'); }
+      if (overlayOpen && !docked) { event.preventDefault(); event.stopPropagation(); setOverlayOpen(false); focusSoon(PANEL_TOGGLE); return; }
+      // Leaving focus mode brings the top bar back; focus returns to its first control.
+      if (state.ui.focusMode) { event.preventDefault(); event.stopPropagation(); if (controller.dispatch('layout.focus') === true) focusSoon(PROJECT_MENU); }
     }
     window.addEventListener('keydown', escape, true);
     return () => window.removeEventListener('keydown', escape, true);
@@ -159,7 +191,11 @@ export function useShellLayout(controller: EditorController) {
   return {
     studio, viewport, breakpoints, mode, arrangement, tab, preview, dockedEditor, focusMode, locked,
     width, limits: [min, max] as const, docked, overlay, panelVisible, collapsed, fits,
-    showPanel, hidePanel, togglePanel, selectTab, resize, toggleFocus, closeOverlay: () => setOverlayOpen(false),
+    showPanel, hidePanel, togglePanel, selectTab, resize, toggleFocus,
+    /** Give up a resize in progress: the saved width stays as it was. */
+    cancelResize: () => setDraftWidth(null),
+    /** A click on the field around a panel open over it closes the panel, like Escape. */
+    closeOverlay: () => { setOverlayOpen(false); focusSoon(PANEL_TOGGLE, quiet(true)); },
   };
 }
 export type ShellLayout = ReturnType<typeof useShellLayout>;

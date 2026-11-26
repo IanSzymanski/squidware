@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { AlignHorizontalJustifyCenter, ArrowRight, Bookmark, Check, ChevronDown, Clapperboard, Clock3, Eye, FlipHorizontal2, Focus, Grid3X3, Hand, Lasso, LayoutPanelLeft, ListFilter, Magnet, Blend, Footprints, Spline, SquareDashedMousePointer, MapPin, MoreHorizontal, MousePointer2, Package, PanelRight, Pencil, RotateCw, Route, Scissors, Shapes, SlidersHorizontal, Sparkles, Tags, TriangleAlert, Users, X } from 'lucide-react';
 import { HelpButton } from '../editor/ControlHelp';
 import { commandRegistry, type CommandArguments, type CommandId } from '../editor/commands';
@@ -14,6 +14,40 @@ import type { ShellLayout } from './useShellLayout';
 
 const PREVIEW_NAMES = { selection: 'Selection', transform: 'Transform', formation: 'Formation', spacing: 'Align and space', coordinates: 'Coordinates' } as const;
 type PreviewKind = keyof typeof PREVIEW_NAMES;
+
+/**
+ * A toolbar is one Tab stop. Left/Right and Home/End move between its controls, unavailable ones included so their
+ * reason can be read, and Tab comes back to the control used last. Controls a narrow strip folds away are skipped.
+ */
+function useRovingFocus() {
+  const bar = useRef<HTMLDivElement>(null), last = useRef<HTMLElement | null>(null);
+  const controls = () => [...(bar.current?.querySelectorAll<HTMLElement>('button') ?? [])].filter(control => control.getClientRects().length > 0);
+  const sync = () => {
+    const node = bar.current; if (!node) return;
+    const shown = controls(), active = document.activeElement as HTMLElement | null;
+    const stop = active && shown.includes(active) ? active : last.current && shown.includes(last.current) ? last.current : shown[0] ?? null;
+    last.current = stop;
+    for (const control of node.querySelectorAll<HTMLElement>('button')) { const tabIndex = control === stop ? '0' : '-1'; if (control.getAttribute('tabindex') !== tabIndex) control.setAttribute('tabindex', tabIndex); }
+  };
+  useLayoutEffect(() => {
+    const node = bar.current; if (!node) return;
+    // The strip folds groups into menus as it narrows, and its controls change with the context.
+    const resized = new ResizeObserver(sync), changed = new MutationObserver(sync);
+    sync(); resized.observe(node); changed.observe(node, { childList: true, subtree: true });
+    return () => { resized.disconnect(); changed.disconnect(); };
+  }, []);
+  return {
+    ref: bar,
+    onFocus: (event: FocusEvent<HTMLDivElement>) => { if (bar.current?.contains(event.target)) sync(); },
+    onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+      if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) return;
+      const shown = controls(), at = shown.indexOf(event.target as HTMLElement);
+      if (at < 0) return;
+      event.preventDefault(); event.stopPropagation();
+      shown[event.key === 'Home' ? 0 : event.key === 'End' ? shown.length - 1 : (at + (event.key === 'ArrowRight' ? 1 : -1) + shown.length) % shown.length]?.focus();
+    },
+  };
+}
 
 /** The one tool strip above the field. Its tools stay where they are; they enable and disable with context. */
 /** Where playback is, kept live: the transport counts, this names the move and offers the way back to editing. */
@@ -35,13 +69,16 @@ function PlaybackStatus({ controller: c }: { controller: EditorController }) {
 }
 
 export function Toolbar({ controller: c, layout }: { controller: EditorController; layout: ShellLayout }) {
+  const roving = useRovingFocus();
+  // The camera is not part of the controller: follow it here so the pressed camera is the one in use.
+  const camera = useEditorSelector(state => state.ui.camera);
   const state = c.store.getState();
   const action = <I extends CommandId>(id: I, args: CommandArguments[I], label?: string, title?: string, active?: boolean) => fieldAction(state, id, args, '', label, title, active);
   const run = (a: FieldAction) => { c.dispatch(a.invocation.id, a.invocation.args as never); };
   const item = (a: FieldAction, icon: ReactNode, extra: Partial<Extract<MenuEntry, { label: string }>> = {}): MenuEntry => ({
     label: a.label, icon, command: a.invocation.id, disabled: !!a.disabledReason, disabledReason: a.disabledReason ?? undefined, onSelect: () => run(a), ...extra,
   });
-  const tool = (a: FieldAction, icon: ReactNode, options: { label?: boolean; description?: string; state?: string; className?: string } = {}) =>
+  const tool =(a: FieldAction, icon: ReactNode, options: { label?: boolean; description?: string; state?: string; className?: string } = {}) =>
     <HelpButton key={a.key} command={a.invocation.id === 'transform.preview' && a.invocation.args.operation === 'across-50' ? 'transform.mirror' : a.invocation.id}
       title={a.title} description={options.description} state={options.state} active={a.active}
       disabled={!!a.disabledReason} disabledReason={a.disabledReason ?? undefined} data-command={a.invocation.id}
@@ -56,10 +93,10 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   const rehearse = layout.mode === 'rehearse';
 
   const panelName = layout.tab === 'cast' ? 'Cast' : 'Inspector';
-  const panelToggle = <HelpButton pointerPassThrough title={layout.panelVisible ? `Collapse ${panelName}` : `Show ${panelName}`} description="Show or hide the Inspector and Cast panel beside the field." className="tool tool--quiet" aria-expanded={layout.panelVisible} aria-controls={`workspace-pane-${layout.tab}`}
-    disabled={layout.locked && layout.docked} disabledReason="Finish or cancel the current input or preview first." onClick={layout.togglePanel}><PanelRight size={17} /></HelpButton>;
+  const panelToggle = <HelpButton pointerPassThrough title={layout.panelVisible ? `Collapse ${panelName}` : `Show ${panelName}`} description="Show or hide the Inspector and Cast panel beside the field." className="tool tool--quiet" aria-expanded={layout.panelVisible} aria-controls={`workspace-pane-${layout.tab}`} data-panel-toggle=""
+    disabled={layout.locked && layout.docked || layout.preview && layout.panelVisible} disabledReason="Finish or cancel the current input or preview first." onClick={event => layout.togglePanel(event.detail > 0)}><PanelRight size={17} /></HelpButton>;
   const end = (extra?: ReactNode) => <div className="toolbar-end">{extra}{panelToggle}</div>;
-  const bar = (context: string, children: ReactNode) => <div className="canvas-toolbar field-command-toolbar toolbar" role="toolbar" aria-label="Field tools" aria-orientation="horizontal" data-context={context}>{children}</div>;
+  const bar = (context: string, children: ReactNode) => <div {...roving} className="canvas-toolbar field-command-toolbar toolbar" role="toolbar" aria-label="Field tools" aria-orientation="horizontal" data-context={context}>{children}</div>;
 
   // A preview owns the strip: what is being previewed, and the two ways out.
   if (preview) {
@@ -103,7 +140,7 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
   // Rehearsing and the 3D view: cameras and review, no editing tools.
   if (three || rehearse) {
     const cameras = ([['perspective', 'Perspective'], ['front', 'Front'], ['press-box', 'Press box'], ['top', 'Overhead']] as const)
-      .map(([preset, label]) => action('view.camera', { preset }, label, `${label} camera`, state.ui.camera.preset === preset && !state.ui.camera.savedId));
+      .map(([preset, label]) => action('view.camera', { preset }, label, `${label} camera`, camera.preset === preset && !camera.savedId));
     const passages = action('rehearsal.open', undefined, 'Passages', 'Rehearsal passages');
     const problems = action('analysis.problems-open', undefined, 'Problems', 'Show-wide problems');
     const video = action('dialog.open', { dialog: 'video-export' }, 'Record video', 'Rehearsal video');
@@ -225,6 +262,7 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
 
 /** View controls that float over the field's margin: travel paths, display options and 2D / 3D / Split. */
 export function ViewControls({ controller: c, layout, onWorkspaces }: { controller: EditorController; layout: ShellLayout; onWorkspaces: () => void }) {
+  const roving = useRovingFocus();
   const state = c.store.getState();
   const action = <I extends CommandId>(id: I, args: CommandArguments[I], label?: string, title?: string, active?: boolean) => fieldAction(state, id, args, '', label, title, active);
   const run = (a: FieldAction) => { c.dispatch(a.invocation.id, a.invocation.args as never); };
@@ -252,7 +290,7 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
     item(action('layout.focus', undefined), <Focus size={15} />, { label: layout.focusMode ? 'Exit focus' : 'Focus field', checked: layout.focusMode }),
     { label: 'Workspaces…', icon: <LayoutPanelLeft size={15} />, description: 'Switch, save, rename or reset arrangements of the window on this device.', onSelect: onWorkspaces },
   ];
-  return <div className="canvas-view" role="toolbar" aria-label="View">
+  return <div {...roving} className="canvas-view" role="toolbar" aria-label="View" aria-orientation="horizontal">
     {!three && <Menu label="Travel paths" description="Show how performers travel into or out of this set." className={`canvas-chip${c.showPaths || c.showNextPaths ? ' active' : ''}`} align="end" items={pathsMenu}><PathsFromIcon size={15} /><span>Paths</span><ChevronDown size={11} /></Menu>}
     {!three && <Menu label="View options" description="Labels, grid, snapping and focus." className="canvas-chip" align="end" items={viewMenu}><Eye size={14} /><span>View</span><ChevronDown size={11} /></Menu>}
     <div className="canvas-segmented view-switch" role="group" aria-label="Field view">

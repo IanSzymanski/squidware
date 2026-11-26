@@ -46,6 +46,8 @@ export function useCommandController() {
       if (isModalOpen(state)) return;
       if (isDockedSpatialEditor(state.ui.dialog) && event.key === 'Escape') return;
       if (state.ui.paletteOpen) { if (id === 'palette.open') { event.preventDefault(); store.setValue('ui', 'paletteOpen', false); } return; }
+      // A dialog the store does not track (Workspaces, the start dialog) is modal too: Escape and shortcuts are its own.
+      if (document.querySelector('dialog[open]')) return;
       if (id) {
         const standardFile = id.startsWith('file.') && bindingFromEvent(event, platform) === defaultShortcuts[id];
         if (input && id !== 'palette.open' && !id.startsWith('workspace.') && !standardFile) return;

@@ -13,7 +13,7 @@ const TABS = [{ id: 'inspector', label: 'Inspector' }, { id: 'cast', label: 'Cas
 export function SidePanel({ controller, layout }: { controller: EditorController; layout: ShellLayout }) {
   const drag = useRef<{ pointer: number; startX: number; width: number; current: number } | null>(null);
   const [min, max] = layout.limits;
-  const finish = (commit: boolean) => { const state = drag.current; if (!state) return; drag.current = null; layout.resize(commit ? state.current : state.width, true); };
+  const finish = (commit: boolean) => { const state = drag.current; if (!state) return; drag.current = null; if (commit) layout.resize(state.current, true); else layout.cancelResize(); };
   const hidden = !layout.panelVisible;
   const name = layout.tab === 'cast' ? 'Cast' : 'Inspector';
   return <section id={`workspace-pane-${layout.tab}`} aria-label={`${name} workspace panel`} data-pane={layout.tab} hidden={hidden} inert={hidden}
@@ -21,11 +21,15 @@ export function SidePanel({ controller, layout }: { controller: EditorController
     {!layout.overlay && <div className="workspace-resizer side-panel-resizer" role="separator" tabIndex={layout.locked ? -1 : 0} aria-label={`Resize ${name}`} aria-orientation="vertical"
       aria-valuemin={min} aria-valuemax={max} aria-valuenow={layout.width} aria-valuetext={`${layout.width} pixels. Left and right arrows resize.`} aria-controls={`workspace-pane-${layout.tab}`} aria-disabled={layout.locked}
       onKeyDown={event => {
-        if (layout.locked || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        // Escape gives up a drag in progress; Enter collapses the panel, as on any window splitter.
+        if (event.key === 'Escape' && drag.current) { event.preventDefault(); event.stopPropagation(); finish(false); return; }
+        if (layout.locked) return;
+        if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); layout.hidePanel(); return; }
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault(); event.stopPropagation();
         layout.resize(event.key === 'Home' ? min : event.key === 'End' ? max : layout.width + (event.key === 'ArrowLeft' ? 1 : -1) * (event.shiftKey ? 40 : 10), true);
       }}
-      onPointerDown={event => { if (layout.locked || event.button !== 0) return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); drag.current = { pointer: event.pointerId, startX: event.clientX, width: layout.width, current: layout.width }; }}
+      onPointerDown={event => { if (layout.locked || event.button !== 0) return; event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); drag.current = { pointer: event.pointerId, startX: event.clientX, width: layout.width, current: layout.width }; }}
       onPointerMove={event => { const state = drag.current; if (state?.pointer !== event.pointerId) return; state.current = state.width - (event.clientX - state.startX) / uiScale(); layout.resize(state.current, false); }}
       onPointerUp={() => finish(true)} onPointerCancel={() => finish(false)} onLostPointerCapture={() => finish(false)} />}
     <div className="side-panel-header workspace-pane-heading">
@@ -39,7 +43,8 @@ export function SidePanel({ controller, layout }: { controller: EditorController
             layout.selectTab(next); requestAnimationFrame(() => document.getElementById(`panel-tab-${next}`)?.focus());
           }}>{tab.label}{tab.id === 'cast' && <span className="badge">{controller.project.performers.length}</span>}</button>)}
       </div>
-      {layout.overlay && <HelpButton pointerPassThrough title={`Close ${name}`} description="Close this panel. The panel button in the tool strip brings it back." className="icon-button" onClick={layout.hidePanel}><PanelRightClose size={15} /></HelpButton>}
+      {layout.overlay && <HelpButton pointerPassThrough title={`Close ${name}`} description="Close this panel. The panel button in the tool strip brings it back." className="icon-button"
+        disabled={layout.preview} disabledReason="Apply or cancel the preview first." onClick={event => layout.hidePanel(event.detail > 0)}><PanelRightClose size={15} /></HelpButton>}
     </div>
     <div className="side-panel-content workspace-pane-content">
       <div id="panel-content-inspector" role="tabpanel" aria-labelledby="panel-tab-inspector" className="workspace-tab-content" hidden={layout.tab !== 'inspector'} inert={layout.tab !== 'inspector'}><Inspector controller={controller} /></div>

@@ -35,6 +35,8 @@ export function TopBar({ controller: c, layout, onWorkspaces }: { controller: Ed
   ];
 
   // Routine recovery states stay an icon; only copies to review or a failure ask for words.
+  // The dot agrees with the words beside it, which a compact header hides: a pending draft is unsaved work too.
+  const unsaved = dirty || c.fileStatus.startsWith('Unsaved changes');
   const recoveryState = /available|unavailable/i.test(c.recovery.status) ? 'attention' : 'routine';
   return <header className="app-header topbar">
     <div className="topbar-start">
@@ -45,8 +47,8 @@ export function TopBar({ controller: c, layout, onWorkspaces }: { controller: Ed
         <HelpButton pointerPassThrough title="Production settings" command="project.update" description="Rename the production and edit its ensemble, field and sections." className="project-title" onClick={() => setDialog('settings')}>
           <span>{project.title}</span>
         </HelpButton>
-        <span className={`save-state${dirty ? ' save-state--unsaved' : ''}`} role="status" aria-live="polite">
-          <span className={`status-dot ${dirty ? 'unsaved' : c.savedRevision === null ? 'idle' : ''}`} />
+        <span className={`save-state${unsaved ? ' save-state--unsaved' : ''}`} role="status" aria-live="polite">
+          <span className={`status-dot ${unsaved ? 'unsaved' : c.savedRevision === null ? 'idle' : ''}`} />
           <span className="save-state-text">{c.fileStatus}</span>
         </span>
         <HelpButton title="Recovery copies" description="Squidware keeps automatic local recovery copies of your work. Review them here." className="recovery-indicator" state={c.recovery.status} data-state={recoveryState} onClick={() => { setDialog('recovery'); void c.recovery.refresh(); }}>{recoveryState === 'attention' ? <ShieldAlert size={13} aria-hidden="true" /> : <ShieldCheck size={13} aria-hidden="true" />}<span className="recovery-indicator-text">{c.recovery.status}</span></HelpButton>

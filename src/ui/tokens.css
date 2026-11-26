@@ -154,7 +154,8 @@
   --text: #171b20;
   --text-secondary: #4b5561;
   --muted: #4b5561;
-  --text-tertiary: #5a626d;
+  /* 4.5:1 or better on every light surface it sits on, down to --hover-bg and at the 85% of quiet captions. */
+  --text-tertiary: #555e6a;
   --disabled-text: #5f6873;
   --disabled-bg: #f1f3f5;
 
