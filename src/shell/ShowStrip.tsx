@@ -316,7 +316,7 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
             {arrivals.filter(a => a.index > 0 && a.count > view.start && a.from < view.start + span).map(a => {
               const left = Math.max(0, percent(a.from)), right = Math.min(100, percent(a.count));
               return <HelpButton key={a.set.id} pointerPassThrough command="set.select" showShortcut={false} title={`Set ${a.index + 1}: ${a.set.name}`} description={`Arrive at show count ${a.count}; ${a.counts} move counts. Stop playback and edit this set.`} state={index === a.index ? 'Current set' : 'Available'} aria-current={index === a.index ? 'step' : undefined} className={index === a.index ? 'active' : ''} style={{ left: `${left}%`, width: `${right - left}%` }} onClick={() => selectSet(a.index)}>
-                <span className={(right - left) / 100 * width >= 19 ? 'set-track-number' : 'sr-only'}>{pad(a.index + 1)}</span>
+                <span className={(right - left) / 100 * width >= 22 ? 'set-track-number' : 'sr-only'}>{pad(a.index + 1)}</span>
               </HelpButton>;
             })}
           </div>

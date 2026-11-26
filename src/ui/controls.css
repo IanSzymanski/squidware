@@ -39,11 +39,19 @@
 .icon-button.active, .icon-button[aria-pressed=true], .icon-button[aria-expanded=true] { background: var(--accent-soft); color: var(--accent-text); }
 .icon-button.large { min-width: var(--control-lg); height: var(--control-lg); }
 
-/* One unavailable treatment for every control. HelpButton keeps unavailable buttons focusable with aria-disabled. */
+/*
+ * One unavailable treatment for every control. HelpButton keeps unavailable buttons focusable with aria-disabled, and
+ * their text stays readable: the label takes the disabled color, the icon dims, and an outlined button's border
+ * turns dashed. Nothing is faded with opacity, which would take the label below 4.5:1.
+ */
 button:disabled, button[aria-disabled=true], .button:disabled, .button[aria-disabled=true],
 .icon-button:disabled, .icon-button[aria-disabled=true] {
-  opacity: .48; cursor: not-allowed;
+  color: var(--disabled-text); cursor: not-allowed;
 }
+:is(button:disabled, button[aria-disabled=true]) > svg { opacity: .5; }
+:is(button:disabled, button[aria-disabled=true]) kbd { color: inherit; background: transparent; border-color: var(--border-strong); }
+.button:disabled:not(.subtle):not(.ghost), .button[aria-disabled=true]:not(.subtle):not(.ghost) { border-style: dashed; border-color: var(--border-strong); background: transparent; box-shadow: none; }
+:is(button:disabled, button[aria-disabled=true]):is(.active, [aria-pressed=true]) { background: var(--accent-soft); color: var(--text-secondary); }
 .button[aria-disabled=true]:not(.primary):not(.danger):hover, .button:disabled:not(.primary):not(.danger):hover { background: var(--control); border-color: var(--border); }
 .button.subtle[aria-disabled=true]:hover, .button.subtle:disabled:hover, .icon-button[aria-disabled=true]:hover, .icon-button:disabled:hover { background: transparent; }
 .icon-button[aria-disabled=true]:hover, .icon-button:disabled:hover { color: var(--text-secondary); }
@@ -62,7 +70,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])
   outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft);
 }
 input[aria-invalid=true], textarea[aria-invalid=true] { border-color: var(--error); box-shadow: 0 0 0 3px var(--error-bg); }
-input:disabled, textarea:disabled, select:disabled { opacity: .5; cursor: not-allowed; background: var(--disabled-bg); }
+input:disabled, textarea:disabled, select:disabled { color: var(--disabled-text); cursor: not-allowed; background-color: var(--disabled-bg); border-style: dashed; }
 textarea { min-height: 56px; resize: vertical; }
 input[type=number] { font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -155,8 +163,7 @@ details > summary:hover { color: var(--text); }
 .menu-item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .menu-item-text .menu-item-label { flex: none; font-weight: 500; }
 .menu-item-detail { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.35; }
-.menu-item--detailed[aria-disabled=true] { opacity: 1; }
-.menu-item--detailed[aria-disabled=true] .menu-item-label, .menu-item--detailed[aria-disabled=true] > svg:first-child { opacity: .5; }
+.menu-item[aria-disabled=true] > svg:first-child { opacity: .5; }
 .menu-item .menu-item-check { width: 16px; display: inline-flex; justify-content: center; color: var(--accent-text); }
 .menu-item.danger, .menu-item.danger > svg:first-child { color: var(--error); }
 .menu-item .shortcut-keycaps, .dropdown > button .shortcut-keycaps { margin-left: auto; padding-left: var(--space-4); }

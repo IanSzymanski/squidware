@@ -5,8 +5,7 @@ import type { EditorController } from '../editor/useEditorController';
 import type { ShellLayout } from './useShellLayout';
 
 /** What to do next, for the state the editor is in. */
-function hint(c: EditorController, layout: ShellLayout): string {
-  if (layout.mode === 'plan') return 'Tab moves across cells · Enter moves down · paste a spreadsheet range to fill many sets at once';
+function hint(c: EditorController): string {
   if (c.pathOperations || c.routeEditor || c.movementEditor) return 'Adjust the preview on the field, then Apply or Cancel in the side panel';
   if (c.formationPreview) return 'Drag the handles on the field or type exact values · Enter applies · Esc cancels';
   if (c.transformPreview || c.spacingPreview || c.coordinatePreview || c.selectionPreview) return 'Review the preview on the field · Enter applies · Esc cancels';
@@ -18,13 +17,13 @@ function hint(c: EditorController, layout: ShellLayout): string {
   if (!c.project.performers.length) return 'Open Cast to add performers, then shape your first set';
   if (!c.selectedIds.length) return 'Click a dot, drag a box or pick a section, then choose a shape';
   if (c.selectedIds.length === 1) return `Drag to move · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
-  return `Drag to move · corner handles scale · top handle rotates · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
+  return `Drag to move · handles scale and rotate · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
 }
 
 /** One quiet line on the field's margin that says what to do next. Hidden with the Show hints preference. */
-export function FieldHint({ controller, layout }: { controller: EditorController; layout: ShellLayout }) {
+export function FieldHint({ controller }: { controller: EditorController; layout?: ShellLayout }) {
   const showHints = useShowHints();
-  return showHints ? <p className="canvas-hint" data-hint="">{hint(controller, layout)}</p> : null;
+  return showHints ? <p className="canvas-hint" data-hint="">{hint(controller)}</p> : null;
 }
 
 /** The grid the field snaps to, and the way to change it. */

@@ -21,10 +21,12 @@ export interface NumberFieldProps {
   description?: string;
   disabledReason?: string;
   onDraftChange?: (pending: boolean, fieldId: string) => void;
+  /** Keep the label for assistive technology only, where a caption beside the field already names it. */
+  hideLabel?: boolean;
 }
 
 /** Keeps incomplete and invalid typing local, then commits a validated value on blur/Enter. */
-export function NumberField({ label, value, onChange, min, max, step = 1, integer = false, disabled, description, disabledReason, onDraftChange }: NumberFieldProps) {
+export function NumberField({ label, value, onChange, min, max, step = 1, integer = false, disabled, description, disabledReason, onDraftChange, hideLabel = false }: NumberFieldProps) {
   const [draft, setDraft] = useState(String(value));
   const cancelBlur = useRef(false);
   const errorId = useId();
@@ -51,7 +53,7 @@ export function NumberField({ label, value, onChange, min, max, step = 1, intege
       if (event.key === 'Enter') event.currentTarget.blur();
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(String(value)); onDraftChange?.(false, errorId); event.currentTarget.blur(); }
     }} />;
-  return <label className="form-label">{label}<Tooltip name={label} description={description || `Enter ${integer ? 'a whole number' : 'a number'} from ${min} to ${max}. Enter applies; Escape cancels.`} disabledReason={disabled ? disabledReason || 'This field is unavailable in the current state.' : undefined}>{input}</Tooltip>{error && <span id={errorId} className="field-error" role="status">{error}</span>}</label>;
+  return <label className="form-label">{hideLabel ? <span className="sr-only">{label}</span> : label}<Tooltip name={label} description={description || `Enter ${integer ? 'a whole number' : 'a number'} from ${min} to ${max}. Enter applies; Escape cancels.`} disabledReason={disabled ? disabledReason || 'This field is unavailable in the current state.' : undefined}>{input}</Tooltip>{error && <span id={errorId} className="field-error" role="status">{error}</span>}</label>;
 }
 
 type NumberText = string | number;

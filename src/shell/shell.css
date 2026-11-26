@@ -62,20 +62,13 @@
 }
 .problem-count-badge:hover { background: var(--hover-bg); color: var(--text); }
 .problem-count-badge[data-state=clear] > svg { color: var(--success); }
-.problem-count-badge[data-state=clear] .problem-count-number { font-size: 0; }
-.problem-count-badge[data-state=clear] .problem-count-number::after { content: "No problems"; font-size: var(--text-sm); }
-.problem-count-badge[data-state=pending] .problem-count-number { font-size: 0; }
-.problem-count-badge[data-state=pending] .problem-count-number::after { content: "Checking"; font-size: var(--text-sm); }
 .problem-count-badge[data-state=found], .problem-count-badge[data-state=failed] { background: var(--warning-bg); color: var(--warning); font-weight: 600; }
-.problem-count-badge[data-state=found] .problem-count-number::after { content: " problems"; }
-.problem-count-badge[data-state=found][data-count="1"] .problem-count-number::after { content: " problem"; }
-.problem-count-badge[data-state=failed] .problem-count-number { font-size: 0; }
-.problem-count-badge[data-state=failed] .problem-count-number::after { content: "Check failed"; font-size: var(--text-sm); }
+.problem-count-number:not(.sr-only) + .problem-count-words { margin-left: -2px; }
 .recovery-indicator { appearance: none; display: inline-flex; align-items: center; gap: 5px; height: var(--control-sm); padding: 0 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
 .recovery-indicator:hover { color: var(--text); background: var(--hover-bg); }
 .recovery-indicator[data-state=routine] .recovery-indicator-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .recovery-indicator[data-state=attention] { color: var(--warning); }
-[data-header=compact] .recovery-indicator, [data-header=narrow] .recovery-indicator, [data-header=compact] .problem-count-number::after, [data-header=narrow] .problem-count-number::after { display: none; }
+[data-header=compact] .recovery-indicator, [data-header=narrow] .recovery-indicator, [data-header=compact] .problem-count-words, [data-header=narrow] .problem-count-words { display: none; }
 [data-header=narrow] .save-state-text, [data-header=narrow] .project-title { display: none; }
 [data-header=narrow] .mode-switch > button { min-width: 0; padding: 0 10px; }
 [data-header=compact] .save-state-text { display: none; }
@@ -104,7 +97,8 @@
 .tool--labelled { padding: 0 9px 0 8px; }
 .tool--quiet[aria-expanded=true] { background: transparent; color: var(--text); }
 .tool--quiet[aria-expanded=true]:hover { background: var(--hover-bg); }
-.tool[aria-disabled=true] { opacity: .56; }
+.tool[aria-disabled=true] { color: var(--disabled-text); }
+.tool[aria-disabled=true] > svg { opacity: .45; }
 .tool--menu { padding: 0 5px; gap: 2px; min-width: 0; }
 .tool--caret { min-width: 0; width: 16px; padding: 0; margin-left: -2px; color: var(--text-tertiary); }
 .tool--play { background: var(--accent); color: var(--on-accent); font-weight: 600; padding: 0 12px 0 10px; }
@@ -126,7 +120,7 @@
 .toolbar-preview-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft-strong); flex-shrink: 0; margin: 0 4px; }
 .toolbar-commit { display: flex; align-items: center; gap: var(--space-2); margin-left: var(--space-3); }
 .toolbar-commit .button { min-height: var(--control-md); padding: 0 8px 0 10px; }
-.toolbar-commit .button.primary kbd { background: #00000022; border-color: #00000026; color: inherit; }
+.toolbar-commit .button.primary:not([aria-disabled=true]) kbd { background: #00000022; border-color: #00000026; color: inherit; }
 .toolbar .stage-three__controls { position: static; padding: 0; border: 0; background: none; backdrop-filter: none; }
 @container toolbar (max-width: 1040px) { .toolbar-arrange { display: none; } .toolbar-arrange-menu { display: inline-flex; } .toolbar-arrange + .toolbar-arrange-menu + .divider-vertical { display: inline-block; } }
 @container toolbar (max-width: 860px) { .toolbar-shapes { display: none; } .toolbar-shape-menu { display: inline-flex; } .toolbar-optional .tool-label { display: none; } }
@@ -141,10 +135,10 @@
   position: relative; flex: 1; min-height: 160px; overflow: hidden; background: var(--field-well); container-type: size;
 }
 .field-container:focus-visible { outline-offset: -2px; }
-.field-container { background: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
+.field-container { background-color: var(--field-well); background-image: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
 .field-container .field-stage, .field-container .stage-three { height: 100%; min-height: 0; }
 /* Turf surrounds a football field; a floor or stage sits in a neutral well. */
-.field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background: var(--canvas); }
+.field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background-color: var(--field-chip-well); background-image: none; }
 /* A few pixels above and below the 2D field keep the floating controls off the turf in short windows. */
 .field-container .field-stage { height: calc(100% - 16px); margin-block: 8px; background: none; }
 /* Captions are drawn in field units; where the field is too small for them to be read, they step aside. */
@@ -166,7 +160,7 @@
   transition: background var(--fast) var(--ease);
 }
 .canvas-chip:hover, .canvas-view .popout-3d-button:hover { background: #262d35f0; color: #fff; }
-.canvas-chip.active:not([aria-expanded=true]) { color: var(--accent); border-color: #c2f27966; }
+.canvas-chip.active:not([aria-expanded=true]) { color: var(--field-chip-accent); border-color: #c2f27966; }
 .canvas-chip > svg:last-child { opacity: .6; }
 .canvas-view .popout-3d-button { width: 26px; height: 26px; min-width: 0; }
 .canvas-segmented { display: inline-flex; padding: 2px; gap: 1px; }
@@ -182,6 +176,9 @@
 }
 .canvas-zoom button:hover { background: #ffffff1a; }
 .canvas-zoom .zoom-value { min-width: 44px; }
+/* Canvas controls are dark in every theme, so their unavailable state uses the canvas's own colors. */
+:is(.canvas-chip, .canvas-segmented > button, .canvas-zoom button, .canvas-view .popout-3d-button)[aria-disabled=true] { color: var(--field-chip-disabled); background: transparent; }
+.canvas-segmented > button[aria-disabled=true][aria-pressed=true] { background: #ffffff1a; color: var(--field-chip-muted); }
 .statusbar-snap-button { color: var(--field-chip-muted); font-weight: 400; }
 .canvas-hint {
   position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(50% - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -199,7 +196,9 @@
 .field-container:has(.field-stage--moving) :is(.canvas-view, .canvas-zoom-row, .canvas-hint) { opacity: .35; }
 .field-container.is-3d :is(.canvas-zoom, .statusbar-snap-button) { display: none; }
 .field-stage--keyboard ~ .canvas-hint, .field-container:has(.field-stage--keyboard) .canvas-hint { display: none; }
-@container (max-width: 560px) { .canvas-hint, .statusbar-snap-button, .canvas-chip > span { display: none; } }
+/* A hint is shown whole or not at all. */
+@container (max-width: 900px) { .canvas-hint { display: none; } }
+@container (max-width: 560px) { .statusbar-snap-button, .canvas-chip > span { display: none; } }
 /* The hint needs the apron below the turf; a wide, short field has none to spare. */
 @container (max-aspect-ratio: 1/1) { .canvas-hint { display: none; } }
 @container (min-aspect-ratio: 19/10) and (max-height: 420px) { .canvas-hint { display: none; } }
@@ -274,7 +273,7 @@
 .set-timing-field { position: relative; flex: none; display: inline-flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
 .set-timing-field::after { content: attr(data-unit); }
 /* The field's own label names it for assistive technology; the unit beside it is the visible caption. */
-.set-timing .form-label { flex: none; width: 48px; font-size: 0; gap: 0; }
+.set-timing .form-label { flex: none; width: 48px; gap: 0; }
 .set-timing .form-label input { width: 100%; min-width: 0; min-height: var(--control-md); padding: 0 6px; font-size: var(--text-sm); text-align: right; font-variant-numeric: tabular-nums; }
 .set-timing .form-label .field-error { position: absolute; top: 100%; right: 0; z-index: 2; margin-top: 4px; padding: 3px 6px; border-radius: var(--radius-sm); background: var(--overlay); border: 1px solid var(--error-line); font-size: var(--text-xs); white-space: nowrap; }
 /* Step controls, each named with the size of its step. */
@@ -282,7 +281,7 @@
 .adjust-row { justify-content: space-between; }
 .adjust-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .adjust-label { display: flex; align-items: baseline; gap: 4px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
-.adjust-label small { font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0; text-transform: none; opacity: .85; }
+.adjust-label small { font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0; text-transform: none; }
 .transform-buttons { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-md); background: var(--app-bg); border: 1px solid var(--hairline); }
 .transform-buttons .icon-button { min-width: 26px; height: 24px; padding: 0 3px; }
 .performer-facing > summary { min-height: var(--control-sm); }
@@ -390,7 +389,7 @@
 .set-track > button {
   appearance: none; position: absolute; top: 0; height: 16px; min-width: 0; padding: 0; border: 0; border-left: 1px solid var(--surface); border-radius: 0; background: transparent;
   display: flex; align-items: center; justify-content: center; overflow: hidden;
-  color: var(--text-tertiary); font-size: 9px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1;
+  color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -.2px;
   transition: background var(--fast) var(--ease);
 }
 .set-track > button:nth-child(even) { background: var(--hover-bg); }
@@ -559,7 +558,7 @@ dialog.welcome::backdrop { background: var(--backdrop); backdrop-filter: blur(6p
 .formation-center > details { margin-top: 4px; }
 .selection-stats > div[data-level=large] dd { color: var(--warning); }
 .selection-stats > div[data-level=over] dd { color: var(--error); }
-.selection-stats > div[data-level] dd small { color: inherit; opacity: .85; }
+.selection-stats > div[data-level] dd small { color: inherit; }
 /* Formation results read as rows: what changed, and what it asks of the move. */
 .formation-stats.formation-stats { grid-template-columns: 1fr; }
 .formation-stats > div { flex-direction: row; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
