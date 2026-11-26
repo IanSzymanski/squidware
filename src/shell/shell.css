@@ -181,7 +181,7 @@
 .canvas-zoom .zoom-value { min-width: 44px; }
 .statusbar-snap-button { color: var(--field-chip-muted); font-weight: 400; }
 .canvas-hint {
-  position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(100% - 330px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(50% - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--field-chip-muted); font-size: var(--text-xs); pointer-events: none; text-shadow: 0 1px 2px #000a;
 }
 /* Coordinates under the pointer read in one fixed place, like a status line, instead of covering the dots. */

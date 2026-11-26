@@ -25,6 +25,7 @@ import { commandRegistry } from '../editor/commands';
 import { commandUnavailable } from '../editor/paletteCommands';
 import type { EditorController } from '../editor/useEditorController';
 import { Menu, type MenuEntry } from '../ui/Menu';
+import { nudgeText } from './units';
 import '../editor/tools.css';
 
 type SectionPreference = Extract<keyof Preferences, `inspector${string}Open`>;
@@ -158,7 +159,7 @@ export function Inspector({ controller }: { controller: EditorController }) {
             </dl>
           </div>
           <div className="adjust-row">
-            <div className="adjust-group"><span className="adjust-label">Move<small>{nudgeLabel(controller.preferences.value, project)}</small></span>
+            <div className="adjust-group"><span className="adjust-label">Move<small>{nudgeText(controller.preferences.value, project)}</small></span>
             <div className="transform-buttons move-buttons" role="group" aria-label={`Move ${selectedIds.length === 1 ? 'performer' : 'group'}`}>
               {([{ label: 'left', icon: ArrowLeft, key: 'ArrowLeft' }, { label: 'back', icon: ArrowUp, key: 'ArrowUp' }, { label: 'front', icon: ArrowDown, key: 'ArrowDown' }, { label: 'right', icon: ArrowRight, key: 'ArrowRight' }] as const).map(({ label, icon: Icon, key }) =>
                 <HelpButton key={label} command="selection.nudge" className={`icon-button move-selection-${label}`} title={`Move selection ${label}`} description={`Request ${nudgeLabel(controller.preferences.value, project)} toward field ${label}; arrow icons follow the displayed orientation. ${controller.snap ? snapDescription(project.snapping ?? DEFAULT_SNAPPING) : 'Snapping is off'}. Targets and field boundaries determine the accepted distance. Shift-click requests ${nudgeLabel(controller.preferences.value, project, true)}.`} disabled={readOnly || controller.pendingDraft} disabledReason={unavailable} onClick={event => controller.dispatch('selection.nudge', { key, fast: event.shiftKey, fieldRelative: true })}><Icon size={14} style={{ transform: controller.preferences.value.fieldOrientation === 'audience-top' ? 'rotate(180deg)' : undefined }} /></HelpButton>)}

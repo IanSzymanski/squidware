@@ -1,5 +1,5 @@
 import { DEFAULT_SNAPPING, fieldSnapStatus } from '../snapping';
-import { nudgeLabel } from '../editIncrements';
+import { nudgeText } from './units';
 import { HelpButton, useShowHints } from '../editor/ControlHelp';
 import type { EditorController } from '../editor/useEditorController';
 import type { ShellLayout } from './useShellLayout';
@@ -17,7 +17,8 @@ function hint(c: EditorController, layout: ShellLayout): string {
   if (c.tool === 'pan') return 'Drag to pan · scroll to zoom · V returns to Select';
   if (!c.project.performers.length) return 'Open Cast to add performers, then shape your first set';
   if (!c.selectedIds.length) return 'Click a dot, drag a box or pick a section, then choose a shape';
-  return `Drag to move · Alt+arrows nudge ${nudgeLabel(c.preferences.value, c.project)} · choose a shape to arrange the selection`;
+  if (c.selectedIds.length === 1) return `Drag to move · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
+  return `Drag to move · corner handles scale · top handle rotates · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
 }
 
 /** One quiet line on the field's margin that says what to do next. Hidden with the Show hints preference. */
