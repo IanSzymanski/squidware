@@ -37,7 +37,7 @@ async function click(selector) { await revealFieldTool(window,selector);
 }
 async function text(selector,value) { await click(selector); await key(window,'a',[process.platform==='darwin'?'meta':'control']); await window.webContents.debugger.sendCommand('Input.insertText',{text:value}); await frames(); }
 async function capture(name) { await evaluate("(()=>{document.activeElement?.blur();const modal=document.querySelector('dialog');if(modal)modal.scrollTop=0})()"); await capturePage(window,output,name);viewports.push(await evaluate(`({name:${JSON.stringify(name)},width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container')?.getBoundingClientRect().height,timelineHeight:document.querySelector('.timeline')?.getBoundingClientRect().height})`)); }
-// Analysis rules live in Show-wide problems (opened by the timeline count badge) and the command palette, not the Inspector.
+// Analysis rules live in Show-wide problems (opened by the problem count in the top bar) and the command palette, not the Inspector.
 async function openRules() {
  await click('.problem-count-badge');await wait("!!document.querySelector('.problems-panel [aria-label=\"Analysis rules\"]')",'problems panel rules entry');
  await click('.problems-panel [aria-label="Analysis rules"]');await wait("!!document.querySelector('[aria-label=\"Rule scope\"]') && !document.querySelector('.problems-panel')",'rule editor from problems');
@@ -77,7 +77,7 @@ app.whenReady().then(async()=>{try{
  await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(p)}});${editor}.dispatch('file.open')`);await wait(`${state}.project.present.analysisRules?.sections?.length===1`,'native reopen');await evaluate(`${editor}.dispatch('set.select',{index:1})`);await oracle();
  pass('native save/reopen preserves portable rules and direction declarations independently of local preferences');
  await paletteRules();await selectNativeOption(window,'[aria-label="Rule scope"]','project');await text('[aria-label="Rule minimum spacing"]','-1');assert.equal(await evaluate("document.querySelector('[aria-label=\"Save rules\"]').getAttribute('aria-disabled')"),'true');assert.match(await evaluate("document.querySelector('[role=\"alert\"]').textContent"),/0.1 to 5/);await key(window,'Escape');await wait("!document.querySelector('dialog')",'cancel rules');assert.deepEqual(await evaluate(state+'.project.present.analysisRules'),rules);await oracle();
- pass('Show-wide problems (from the timeline count badge) and the command palette open Analysis rules; the Inspector no longer hosts either launcher');
+ pass('Show-wide problems (from the problem count in the top bar) and the command palette open Analysis rules; the Inspector no longer hosts either launcher');
  await openRules();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await frames();await capture('analysis-rules-'+theme+'.png');}
  window.setContentSize(1024,720);window.webContents.setZoomFactor(1.5);await settleNativeViewport(window,'enlarged rules editor');await capture('analysis-rules-enlarged.png');await evaluate("document.querySelector('[aria-label=\"Save rules\"]').focus()");assert.ok(await evaluate("(()=>{const r=document.querySelector('[aria-label=\"Save rules\"]').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()"));await key(window,'Escape');
  pass('invalid numeric rules are blocked, Escape discards drafts, and supported themes/enlarged layouts retain acceptance controls');
@@ -91,8 +91,11 @@ app.whenReady().then(async()=>{try{
    ${editor}.dispatch('set.select',{index:0});
    ${editor}.setValue('selection','selectedIds',['a']);
    ${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:'dark',inspectorSelectionOpen:true})`);
- await wait("!!document.querySelector('.performer-facing summary')",'facing controls');
- await click('.performer-facing summary');
+ // One performer's Position section has two disclosures: Exact position, then Facing.
+ const facing = '.inspector .selection-section details.performer-facing:not(.selected-performer)';
+ await wait(`!!document.querySelector(${JSON.stringify(facing + ' summary')})`,'facing controls');
+ assert.equal(await evaluate(`document.querySelector(${JSON.stringify(facing + ' summary')}).textContent`),'Facing');
+ await click(facing + ' summary');
  await text('[aria-label="Facing in degrees"]','360');
  await wait("document.querySelector('[aria-label=\"Facing in degrees\"]').getAttribute('aria-invalid')==='true'",'invalid heading');
  await key(window,'Escape');
@@ -128,7 +131,7 @@ app.whenReady().then(async()=>{try{
  await settleNativeViewport(window,'enlarged facing controls');
  await wait("document.querySelector('[data-field-geometry]')?.dataset.fieldGeometry==='audience-top'",'flipped field');
  if (await evaluate("document.querySelector('#workspace-pane-inspector').hidden")) await click('[aria-label="Show Inspector"]');
- if (!await evaluate("document.querySelector('.performer-facing').open")) await click('.performer-facing summary');
+ if (!await evaluate(`document.querySelector(${JSON.stringify(facing)}).open`)) await click(facing + ' summary');
  const angle = '[aria-label="Facing in degrees"]';
  await evaluate(`document.querySelector(${JSON.stringify(angle)}).scrollIntoView({block:'center'})`);
  assert.ok(await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(angle)}).getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth })()`));

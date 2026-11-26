@@ -119,7 +119,8 @@ app.whenReady().then(async()=>{
   await wait(`${state}.ui.dialog===null`,'measure navigation');assert.equal(await evaluate(state+'.playback.count'),10);
   await openScore();await click(button('Go to rehearsal mark B'));await wait(`${state}.ui.dialog===null`,'mark navigation');assert.equal(await evaluate(state+'.playback.count'),22);
   await evaluate(`${editor}.dispatch('workspace.show',{workspace:'design'})`);await frames();await click(button('Rehearsal mark A'));assert.equal(await evaluate(state+'.playback.count'),10);
-  assert.match(await evaluate("document.querySelector('[aria-label=\"Score position\"]').textContent"),/M3 · beat 1 · A/);await capture('score-timeline.png');
+  // The measure readout carries the rehearsal mark as a chip beside the position; its tooltip spells out position, meter and mark.
+  assert.deepEqual(await evaluate("(()=>{const n=document.querySelector('.readout--score [aria-label=\"Score position\"]');return {position:n.querySelector('strong').textContent,mark:n.querySelector('.score-mark-chip')?.textContent,title:n.title};})()"),{position:'M3 · beat 1',mark:'A',title:'M3 · beat 1 · 6/8 · A'});await capture('score-timeline.png');
   pass('measure/beat and rehearsal-mark navigation match sheet positions, timeline markers and count readouts');
   await evaluate(`${editor}.dispatch('metronome.configure',{meter:{numerator:4,denominator:4,grouping:[4]},enabled:true,countInBars:0,speed:1.5});${editor}.dispatch('playback.scrub',{count:0})`);
   await wait('window.__scoreQA.nodes.length>0','audio worklet');await pause(150);await evaluate('window.__scoreQA.clicks=[]');await click(button('Play show'));
