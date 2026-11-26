@@ -148,7 +148,8 @@ async function assertLabels() {
       sizes:nodes.map(n=>Number(n.getAttribute('font-size'))*n.getScreenCTM().a),dpr:devicePixelRatio};
   })()`);
   assert.ok(result.count > 0); assert.ok(result.freeCount > 0, JSON.stringify(result.count));
-  assert.equal(result.collisions, 0); assert.equal(result.dotCollisions, 0); assert.equal(result.clipped, 0);
+  const context = JSON.stringify({ ...result, sizes: [...new Set(result.sizes.map(size => Math.round(size * 100) / 100))].slice(0, 6) });
+  assert.equal(result.collisions, 0, context); assert.equal(result.dotCollisions, 0, context); assert.equal(result.clipped, 0, context);
   assert.deepEqual(result.unlabeledSelected, []);
   // Fractional desktop scaling can round emulated viewport dimensions subpixel-wise.
   assert.ok(result.sizes.every(size => Math.abs(size-LABEL_SIZE_PX)<.1), JSON.stringify({sizes:result.sizes.slice(0,4),dpr:result.dpr}));

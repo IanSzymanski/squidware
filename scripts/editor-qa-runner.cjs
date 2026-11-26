@@ -114,6 +114,8 @@ async function scrubCount(count) {
   await evaluate(`(() => { const input = document.querySelector('.timeline-scrubber'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${count}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await pause(50);
 }
+/** Geometry reported with a failed layout assertion, so a platform-specific failure can be read from the log. */
+const LAYOUT_DIAGNOSTIC = "(() => { const rect = s => { const n = document.querySelector(s); if (!n) return null; const r = n.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }; const sc = document.querySelector('.field-container'); const stage = document.querySelector('.field-stage'); const scroller = [sc, stage, ...document.querySelectorAll('.field-container *')].find(n => n && n.scrollWidth > n.clientWidth + 1 || n && n.scrollHeight > n.clientHeight + 1); return { inner: [innerWidth, innerHeight], dpr: devicePixelRatio, tiers: { ...document.querySelector('.studio').dataset }, container: rect('.field-container'), svg: rect('.field-stage__svg'), surface: rect('[data-field-surface]'), panel: rect('.side-panel'), toolbar: rect('.canvas-toolbar'), transport: rect('.transport'), scroller: scroller ? [scroller.className.toString().slice(0, 40), scroller.scrollLeft, scroller.scrollTop, scroller.scrollWidth, scroller.clientWidth, scroller.scrollHeight, scroller.clientHeight] : null, font: getComputedStyle(document.body).fontFamily.slice(0, 60), active: (document.activeElement?.getAttribute('aria-label') || document.activeElement?.tagName || '').slice(0, 60) }; })()";
 async function screenPoint(x, y) {
   return evaluate(`(() => { const point = new DOMPoint(${x}, ${y}).matrixTransform(document.querySelector('.field-stage__svg').getScreenCTM()); return { x: point.x, y: point.y }; })()`);
 }
@@ -779,10 +781,12 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
     await clickSelector('[aria-label="Zoom in"]');
     await hoverPoint(20, 20);
-    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
+    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field),
+      JSON.stringify({ hover: await screenPoint(20, 20), zoom: await evaluate("document.querySelector('[aria-label=\"Zoom in\"]')?.parentElement?.textContent"), readout: await evaluate("document.querySelector('.field-readout')?.textContent"), layout: await evaluate(LAYOUT_DIAGNOSTIC) }));
     await evaluate("document.querySelector('.field-stage__svg').style.transform = 'scaleX(-1)'");
     await hoverPoint(20, 20);
-    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
+    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field),
+      JSON.stringify({ mirrored: true, hover: await screenPoint(20, 20), under: await evaluate(`(() => { const p = new DOMPoint(20, 20).matrixTransform(document.querySelector('.field-stage__svg').getScreenCTM()); const hit = document.elementFromPoint(p.x, p.y); return (hit?.getAttribute('class') || hit?.tagName || 'nothing').toString().slice(0, 60) + ' in ' + (hit?.closest('.field-container, .side-panel, .toolbar, .timeline, .topbar')?.className.toString().slice(0, 40) || 'elsewhere'); })()`), readout: await evaluate("document.querySelector('.field-readout')?.textContent"), layout: await evaluate(LAYOUT_DIAGNOSTIC) }));
     await evaluate("document.querySelector('.field-stage__svg').style.transform = ''");
     await hoverPoint(20, 20);
     const panStart = await screenPoint(50, 25);
