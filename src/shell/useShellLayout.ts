@@ -67,8 +67,9 @@ export function useShellLayout(controller: EditorController) {
   const mainWidth = viewport.width - (docked ? width : 0);
   const breakpoints = workspaceBreakpoints(viewport, mainWidth);
 
-  // Changing mode, panel tab or workspace ends a panel opened over the field.
-  useLayoutEffect(() => { setOverlayOpen(false); }, [mode, focusMode, controller.preferences.value.workspaces.active]);
+  // Changing mode, panel tab or workspace ends a panel opened over the field. So does resetting the active workspace.
+  const workspaceVersion = useEditorSelector(state => state.ui.workspaceVersion);
+  useLayoutEffect(() => { setOverlayOpen(false); }, [mode, focusMode, controller.preferences.value.workspaces.active, workspaceVersion]);
   // Playback shows the field: starting it closes a panel open over the field.
   useLayoutEffect(() => { if (controller.playing && !preview) setOverlayOpen(false); }, [controller.playing, preview]);
 
