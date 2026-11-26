@@ -18,9 +18,10 @@ import { shortcutCommands } from './commands';
 import { CommandKeycaps, HelpButton } from './ControlHelp';
 import { commandKeycaps } from './shortcutDisplay';
 
-import { ChevronRight, Download, Grid2X2, Plus, ShieldCheck, Users } from 'lucide-react';
+import { Check, ChevronRight, Download, Grid2X2, Plus, ShieldCheck, Users } from 'lucide-react';
 
-import { PROJECT_LIMITS, COORDINATE_CONVENTIONS } from '../domain';
+import { PROJECT_LIMITS, COORDINATE_CONVENTIONS, coordinatePrecisionLabel } from '../domain';
+import { isCustomSurface } from '../surfaces';
 
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -44,7 +45,7 @@ import { NewProductionPanel } from './NewProductionPanel';
 const RehearsalVideoPanel = lazy(() => import('./RehearsalVideoPanel'));
 
 export function EditorDialogs({ controller }: { controller: EditorController }) {
-  const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, printMode, setPrintMode, rosterInput, activeSet, removeSet, exportText, exportPdf, addCast, removeCast } = controller;
+  const { project, dispatch, selectedIds, dialog, setDialog, setPendingDraft, castAmount, setCastAmount, castSection, setCastSection, castPrefix, setCastPrefix, rosterInput, activeSet, removeSet, addCast, removeCast } = controller;
   return (<>
     {dialog === 'choreography' && <ChoreographyPanel controller={controller} />}
     {dialog === 'staging' && <StagingPanel controller={controller} />}
@@ -72,7 +73,7 @@ export function EditorDialogs({ controller }: { controller: EditorController }) 
     {dialog === 'settings' && <Modal title="Production settings" onClose={() => setDialog(null)}><label className="form-label">Production title<CommitInput onDraftChange={setPendingDraft} value={project.title} maxLength={PROJECT_LIMITS.text.title} onCommit={title => dispatch('project.update', { title })} /></label><label className="form-label">Ensemble<CommitInput allowEmpty value={project.ensemble} onDraftChange={setPendingDraft} maxLength={PROJECT_LIMITS.text.ensemble} onCommit={ensemble => dispatch('project.update', { ensemble })} /></label><SurfaceSettings key={project.id} controller={controller} /><NumberField onDraftChange={setPendingDraft} label="Audio sync offset · seconds" value={project.audioOffsetSeconds} min={PROJECT_LIMITS.audioOffsetSeconds.min} max={PROJECT_LIMITS.audioOffsetSeconds.max} step={0.1} onChange={value => dispatch('project.update', { audioOffsetSeconds: value })} /><p className="microcopy">Positive offset starts the music later in the track; negative offset delays the music. Plain .squid files save the offset. Use Export → Portable production to include or reference the recording.</p><button className="button subtle" onClick={() => dispatch('dialog.open', { dialog: 'metronome' })}>Metronome and count-in…</button><h3 className="modal-subtitle">Ensemble sections</h3>{project.sections.map(section => <div className="section-edit" key={section.id}><CommitColor label={`${section.name} color`} value={section.color} onDraftChange={setPendingDraft} onCommit={color => dispatch('section.update', { id: section.id, update: { color } })} /><CommitInput onDraftChange={setPendingDraft} label="Section name" value={section.name} maxLength={PROJECT_LIMITS.text.sectionName} onCommit={name => dispatch('section.update', { id: section.id, update: { name } })} /><EquipmentSelect
       label={`Default 3D equipment for ${section.name}`} value={section.equipment} onChange={equipment => dispatch('section.update', { id: section.id, update: { equipment } })} /></div>)}<button className="button subtle" onClick={() => dispatch('section.add')} disabled={project.sections.length >= PROJECT_LIMITS.sections}><Plus size={14} />Add section</button><div className="modal-actions"><button className="button primary" onClick={() => setDialog(null)}>Done</button></div></Modal>}
     {dialog === 'video-export' && <Suspense fallback={<Modal title="Rehearsal video" onClose={() => setDialog(null)}><p role="status">Loading video export…</p></Modal>}><RehearsalVideoPanel controller={controller} /></Suspense>}
-    {dialog === 'export' && <Modal title="Export" onClose={() => setDialog(null)}><p className="modal-intro">Everything your ensemble needs for the next rehearsal.</p><section aria-labelledby="export-pdf-title"><h3 id="export-pdf-title" className="modal-subtitle">PDF drill book</h3><div className="export-options" role="radiogroup" aria-label="PDF contents"><label className={printMode === 'charts' ? 'selected' : ''}><input type="radio" name="print" checked={printMode === 'charts'} onChange={() => setPrintMode('charts')} /><Grid2X2 size={23} /><div><strong>Field charts</strong><span>One chart per set, with counts and rehearsal notes.</span></div></label><label className={printMode === 'coordinates' ? 'selected' : ''}><input type="radio" name="print" checked={printMode === 'coordinates'} onChange={() => setPrintMode('coordinates')} /><Users size={23} /><div><strong>Performer coordinate sheets</strong><span>Individual dot books with positions for every set.</span></div></label></div><button className="button primary export-pdf" onClick={() => void exportPdf()}><Download size={16} />{window.squidware ? 'Save PDF' : 'Print / save PDF'}</button></section><section aria-labelledby="export-other-title"><h3 id="export-other-title" className="modal-subtitle">Other formats</h3><div className="export-secondary"><HelpButton title="Coordinates CSV" description="Every performer at every set: X and Y coordinates, arrival descriptions, timing, sections and notes." className="button subtle" onClick={() => void exportText('csv')}>Coordinates CSV<Download size={14} /></HelpButton><HelpButton title="Current chart SVG" description="A scalable drawing of the active set, using the current label visibility." className="button subtle" onClick={() => void exportText('svg')}>Current chart SVG<Download size={14} /></HelpButton><HelpButton title="Portable production with audio…" description="Review and save a .squidpack with the recording bundled or referenced, to open on another computer." className="button subtle" onClick={() => dispatch('dialog.open', { dialog: 'package' })}>Portable production with audio…<ChevronRight size={14} /></HelpButton><HelpButton title="Rehearsal video…" description="Render a WebM video of a set range with a chosen camera angle." className="button subtle" onClick={() => dispatch('dialog.open', { dialog: 'video-export' })}>Rehearsal video…<ChevronRight size={14} /></HelpButton></div></section><p className="microcopy">Exports are snapshots. To keep the editable .squid file, use Save in the Project menu.</p></Modal>}
+    {dialog === 'export' && <ExportPanel controller={controller} />}
     {dialog === 'add-cast' && <Modal title="Add performers" onClose={() => setDialog(null)}><p className="modal-intro">New performers are added to every set, with starting positions near the front sideline.</p><div className="form-row"><NumberField onDraftChange={setPendingDraft} label="Number of performers" value={castAmount} min={1} max={Math.max(1, PROJECT_LIMITS.performers - project.performers.length)} integer disabled={project.performers.length >= PROJECT_LIMITS.performers} onChange={value => setCastAmount(Math.round(value))} /><label className="form-label">Label prefix<input value={castPrefix} maxLength={6} onChange={e => setCastPrefix(e.target.value)} /></label></div><label className="form-label">Section<select value={castSection} onChange={e => setCastSection(e.target.value)}>{project.sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label><div className="modal-actions"><button className="button subtle" onClick={() => rosterInput.current?.click()}>Import CSV instead</button><button className="button primary" disabled={project.performers.length >= PROJECT_LIMITS.performers} onClick={() => addCast()}><Plus size={16} />Add performers</button></div><p className="microcopy">CSV headers: label,name,section. Section names must match an existing section. Labels must be unique.</p></Modal>}
     {dialog === 'remove-cast' && <Modal title={`Remove ${selectedIds.length} performers?`} onClose={() => setDialog(null)}><p className="modal-intro">Their positions will be removed from every set. You can undo this change.</p><div className="modal-actions"><button className="button subtle" onClick={() => setDialog(null)}>Cancel</button><button className="button danger" onClick={removeCast}>Remove performers</button></div></Modal>}
     {dialog === 'remove-set' && <Modal title={`Delete “${activeSet.name}”?`} onClose={() => setDialog(null)}><p className="modal-intro">The adjacent sets will connect directly. You can undo this change.</p><div className="modal-actions"><button className="button subtle" onClick={() => setDialog(null)}>Keep set</button><button className="button danger" onClick={removeSet}>Delete set</button></div></Modal>}
@@ -80,4 +81,49 @@ export function EditorDialogs({ controller }: { controller: EditorController }) 
     {/* A sibling, never a child of another Modal, so it opens on top and Escape cancels only the confirmation. */}
     {controller.confirmation && <ConfirmDialog {...controller.confirmation} onCancel={() => controller.settleConfirmation(false)} onConfirm={() => controller.settleConfirmation(true)} />}
   </>);
+}
+
+const papers = [['letter', 'Letter'], ['a4', 'A4']] as const;
+const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
+const all = (count: number, noun: string) => count === 0 ? `No ${noun}s yet` : count === 1 ? `1 ${noun}` : `All ${count} ${noun}s`;
+
+/** Export: the PDF drill book with what it covers and its paper, then the other formats with what each one holds. */
+function ExportPanel({ controller }: { controller: EditorController }) {
+  const { project, dispatch, setDialog, printMode, setPrintMode, exportText, exportPdf, preferences, coordinateFormat, index, activeSet } = controller;
+  const sets = project.sets.length, performers = project.performers.length;
+  // The drill book always covers the whole show; these pages follow the charts or dot books when the production has them.
+  const appendix = [(project.tempoMap || project.audioAnchors?.length) && 'Tempo map', project.rehearsal?.length && plural(project.rehearsal.length, 'rehearsal passage')].filter(Boolean);
+  const coordinates = isCustomSurface(project.field) ? `coordinates in ${project.field.unit}` : `rounded to ${coordinatePrecisionLabel(coordinateFormat).toLowerCase()}`;
+  const contents = [
+    ['charts', Grid2X2, 'Field charts', 'One chart per set, with counts and rehearsal notes.'],
+    ['coordinates', Users, 'Performer coordinate sheets', 'Individual dot books with positions for every set.'],
+  ] as const;
+  return <Modal title="Export" onClose={() => setDialog(null)}>
+    <section aria-labelledby="export-pdf-title">
+      <h3 id="export-pdf-title" className="modal-subtitle">PDF drill book</h3>
+      <div className="export-options" role="radiogroup" aria-label="PDF contents">{contents.map(([mode, Icon, name, summary]) => <label key={mode} className={printMode === mode ? 'selected' : ''}>
+        <input type="radio" name="print" checked={printMode === mode} onChange={() => setPrintMode(mode)} /><Icon size={16} /><div><strong>{name}</strong><span>{summary}</span></div>{printMode === mode && <Check className="export-check" size={14} aria-hidden="true" />}
+      </label>)}</div>
+      <dl className="export-scope">
+        <div><dt>Includes</dt><dd>{printMode === 'charts' ? all(sets, 'set') : `${all(performers, 'performer')}, ${coordinates}`}</dd></div>
+        {appendix.length > 0 && <div><dt>Appendix</dt><dd>{appendix.join(' · ')}</dd></div>}
+        <div><dt id="export-paper-title">Paper</dt><dd><span className="export-paper" role="radiogroup" aria-labelledby="export-paper-title">{papers.map(([value, name]) => <label key={value}><input type="radio" name="paper" checked={preferences.value.paperSize === value} onChange={() => preferences.update({ paperSize: value })} />{name}</label>)}</span><span className="export-scope-note">Landscape</span></dd></div>
+      </dl>
+      <button className="button primary export-pdf" onClick={() => void exportPdf()}><Download size={16} />{window.squidware ? 'Save PDF' : 'Print / save PDF'}</button>
+    </section>
+    <section aria-labelledby="export-other-title">
+      <h3 id="export-other-title" className="modal-subtitle">Other formats</h3>
+      <div className="export-secondary">
+        <HelpButton title="Coordinates CSV" description="Every performer at every set: X and Y coordinates, arrival descriptions, timing, sections and notes." className="button subtle" onClick={() => void exportText('csv')}>Coordinates CSV<Download size={14} /></HelpButton>
+        <span className="export-detail">{plural(performers, 'performer')} × {plural(sets, 'set')}</span>
+        <HelpButton title="Current chart SVG" description="A scalable drawing of the active set, using the current label visibility." className="button subtle" onClick={() => void exportText('svg')}>Current chart SVG<Download size={14} /></HelpButton>
+        <span className="export-detail">Set {index + 1} · {activeSet.name}</span>
+        <HelpButton title="Portable production with audio…" description="Review and save a .squidpack with the recording bundled or referenced, to open on another computer." className="button subtle" onClick={() => dispatch('dialog.open', { dialog: 'package' })}>Portable production with audio…<ChevronRight size={14} /></HelpButton>
+        <span className="export-detail">.squidpack · drill and recording</span>
+        <HelpButton title="Rehearsal video…" description="Render a WebM video of a set range with a chosen camera angle." className="button subtle" onClick={() => dispatch('dialog.open', { dialog: 'video-export' })}>Rehearsal video…<ChevronRight size={14} /></HelpButton>
+        <span className="export-detail">WebM · pick sets and camera</span>
+      </div>
+    </section>
+    <p className="microcopy export-note">Exports are snapshots. To keep the editable .squid file, use Save in the Project menu.</p>
+  </Modal>;
 }

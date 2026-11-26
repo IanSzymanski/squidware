@@ -89,11 +89,18 @@
 }
 .stage-three__controls > button:hover, .stage-three__quality > button:hover { background: #ffffff1a; }
 .stage-three__controls > button[aria-pressed=true] { background: #ffffff26; }
+/* Saved views opens a panel, so it wears a button's outline and icon instead of reading as a caption beside the quality menu. */
+.stage-three__controls > .stage-three__saved-cameras, .stage-three__quality > .stage-three__saved-cameras {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: 2px; padding: 0 9px 0 7px; background: #ffffff14; box-shadow: inset 0 0 0 1px var(--field-chip-line);
+}
+.stage-three__controls > .stage-three__saved-cameras:hover, .stage-three__quality > .stage-three__saved-cameras:hover { background: #ffffff29; }
+.stage-three__saved-cameras > svg { flex-shrink: 0; color: var(--field-chip-muted); }
 .stage-three__controls select, .stage-three__quality select {
   width: auto; min-height: 24px; max-width: 200px; padding: 0 24px 0 8px; border-color: transparent; background-color: transparent; color: var(--field-chip-text); font-size: var(--text-xs);
 }
 .stage-three__controls select:hover, .stage-three__quality select:hover { background-color: #ffffff1a; border-color: transparent; }
-.stage-three__stadium { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--field-chip-text); font-size: var(--text-xs); }
+/* The chip is dark in every theme: its checkbox label must not pick up the theme's text color. */
+.stage-three label.stage-three__stadium { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--field-chip-text); font-size: var(--text-xs); }
 .stage-three__fallback {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-8);
   background: var(--field-well); color: var(--field-chip-text); text-align: center;
