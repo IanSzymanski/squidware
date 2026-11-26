@@ -1,12 +1,12 @@
 # Shared route authoring
 
-Open **Shared routes** from the field toolbar’s More menu or Commands while paused at a set.
+Open **Motion → Shared routes** in the tool strip, or the Command palette, while paused at a set.
 No cast selection is required: these are named, production-local geometries,
 independent of formation shapes, performer identity, set endpoints and timing.
 Creating or editing a route does not assign performers or alter their playback.
 
 Route geometry, handles and distance ticks appear on the main field at its
-current zoom, pan and orientation. Parameters borrow the docked Inspector, with
+current zoom, pan and orientation. The tool strip names the editor. Parameters use the side panel, with
 Apply/Cancel pinned above the scrolling form. Scroll to zoom; Alt-drag or
 middle-drag pans. The separate inset field and modal are removed.
 

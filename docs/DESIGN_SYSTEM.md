@@ -17,10 +17,10 @@ A drill writer does five things, over and over: go to a set, select performers, 
 Rules that follow from this:
 
 - **The field gets the window.** A football field is about 1.9:1, and at Fit it is limited by width in a laptop window and by height on a large display. Do not add a second side panel or a permanent left column, and treat every pixel of chrome height as taken from the field. The apron around the turf at Fit (`FIELD_FIT_MARGIN`) holds the sideline captions and the floating controls; nothing else may claim it.
-- **Direct manipulation first.** A multiple selection is framed on the field with its size in steps and handles that rotate and scale it; dragging a dot moves the selection. The Inspector holds the same edits as numbers, each control named with the size of its step.
+- **Direct manipulation first.** A multiple selection is framed on the field with handles that rotate and scale it in place; dragging a dot moves the selection. The Inspector holds the selection's size in steps and the same edits as numbers, each control named with the size of its step.
 - **Drill vocabulary, one unit system.** Positions read as side, yard line and hash. Lengths read in steps, travel as a step size (`6.2-to-5`), time in counts. Yards appear only where a writer asks for an exact coordinate.
 - **One severity model.** A *problem* breaks a rule of the production and is counted in the top bar, on the timeline and on the set's card. A step *near the stride limit* is advice: it is colored on the field and named as such, and it never changes the problem count.
-- **A preview owns the tool strip.** While a shape, transform, spacing or coordinate preview is open, the strip shows what is being previewed and Cancel / Apply. Parameters are in the side panel with the same two actions.
+- **A preview owns the tool strip.** While a shape, transform, spacing or coordinate preview is open, the strip shows what is being previewed and Cancel / Apply. Parameters are in the side panel. A docked editor (Move operations, Shared routes, performer movement) is named in the strip and keeps its Apply and Cancel in the side panel.
 - **Depth lives in named menus and the palette.** Motion, More shapes, View, Set actions and the Project menu group deeper features by what the writer is trying to do. Every command is also in the command palette (`Ctrl/⌘ K`).
 - **No filler.** A panel does not explain itself in paragraphs. Put the explanation in the control's tooltip, the hint line on the field's margin, or Help. A line of text in a panel must be something the writer needs to read to do the work.
 - **Modes are stages of work, not arrangements of panels.** Write is the field and its tools. Plan is the production sheet. Rehearse is playback, cameras and review.
@@ -62,7 +62,7 @@ Section colors and the field artwork belong to the production. Themes never reco
 | Tooltip | [`<HelpButton>`](../src/editor/ControlHelp.tsx) / `<Tooltip>` | Name, one sentence, shortcut, and the reason when unavailable. |
 | Badge, keycap, toast | `.badge`, `kbd`, `.toast` | |
 
-An unavailable control stays visible at reduced opacity and says why in its tooltip. Do not hide a tool because it does not apply right now.
+An unavailable control stays visible and says why in its tooltip. Its label takes the disabled text color, its icon dims and an outlined button's border turns dashed; nothing is faded with opacity. Do not hide a tool because it does not apply right now.
 
 ## Icons
 

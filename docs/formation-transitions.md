@@ -1,8 +1,8 @@
 # Controlled formation transitions
 
-Pause at an arrival set in 2D with full-show editing. Select 2–500 performers and open **Formation transition…** in Formation tools, or search **Formation transition** in Commands. The incoming move joins the previous set to this arrival set.
+Pause at an arrival set in 2D with full-show editing. Select 2–500 performers and open **Motion → Formation transition** in the tool strip, or search **Formation transition** in the Command palette. The incoming move joins the previous set to this arrival set.
 
-Choose an editable source formation on the previous set and an editable destination formation on the arrival set. Every selected performer must belong to both. Prepare these endpoints using **Keep editable on this set** in a shape preview. A saved parametric template now offers the same checkbox in its placement preview; applying it creates live geometry and membership as one undo action. Saved dot pictures remain anonymous snapshots. Existing conflicting live membership must be edited or explicitly detached before keeping a template editable.
+Choose an editable source formation on the previous set and an editable destination formation on the arrival set. Every selected performer must belong to both. Prepare these endpoints using **Keep as a live formation** in a shape preview. A saved parametric template offers **Keep editable on this set** in its placement preview; applying it creates live geometry and membership as one undo action. Saved dot pictures remain anonymous snapshots. Existing conflicting live membership must be edited or explicitly detached before keeping a template editable.
 
 The mapping table shows each performer's exact source and destination slot, saved pins, and path choice. Identity determines the mapping; this review never reassigns destinations. Both endpoint forms, coordinates, vacant slots, membership and assignment restrictions remain fixed. To change assignments, cancel and use [Optimize assignment](assignment-optimization.md) on the destination formation first.
 

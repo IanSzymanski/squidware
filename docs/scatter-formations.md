@@ -1,6 +1,6 @@
 # Seeded scatter formations
 
-Select performers while paused at a set in 2D, then choose **Scatter…** in Formation tools or **Preview scatter formation** in Commands. An empty selection never targets the ensemble implicitly. Scatter destinations remain an editable live formation on that set.
+Select performers while paused at a set in 2D, then choose **More shapes → Scatter…** in the tool strip or **Preview scatter formation** in the Command palette. An empty selection never targets the ensemble implicitly. Scatter destinations remain an editable live formation on that set.
 
 Choose a rectangle, ellipse or polygon. The first two use opposite bounding corners; polygons use 3–32 ordered vertices, including concave outlines. Drag the square region handles or select a Region vertex and edit its numeric X/Y coordinates. Split edge inserts its midpoint; Delete vertex reconnects neighbors with at least three vertices remaining. Crossing/touching non-adjacent polygon edges, degenerate regions and out-of-field vertices are rejected with the last valid values restored.
 

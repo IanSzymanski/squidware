@@ -1,6 +1,6 @@
 # Constrained assignment comparison
 
-Select 2–500 performers while paused at a set in 2D. Start a formation preview, or Edit a saved formation, then choose **Optimize assignment…** in Formation tools. The command palette exposes the same action. The selected performers and occupied destination slots are explicit; vacant slots stay vacant. Geometry, performer IDs and Cast order stay fixed during comparison.
+Select 2–500 performers while paused at a set in 2D. Start a formation preview, or Edit a saved formation, then choose **Optimize assignment…** in the formation parameters in the Inspector. The command palette exposes the same action. The selected performers and occupied destination slots are explicit; vacant slots stay vacant. Geometry, performer IDs and Cast order stay fixed during comparison.
 
 Choose a member and destination to pin that pairing or prohibit it. Pins reserve the destination for that member. Section rules default to each destination’s current section; clear individual rules or all section rules explicitly to permit exchanges. Enter an instrument/role tag and required slot role when needed. Tags belong to this formation, match exactly after outer whitespace is trimmed, and are never inferred from names or section labels. Blank means unknown. Unknown members cannot fill role-restricted slots unless **Allow unknown roles** is selected; an explicitly different tag still cannot fill the slot.
 

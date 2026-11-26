@@ -1,6 +1,6 @@
 # Spacing guides, alignment and exact intervals
 
-Implements [#79](https://github.com/IanSzymanski/squidware/issues/79). Select at least two performers, then choose **Align** in the selection bar. The Inspector and field preview share one evaluator for all proposed and accepted positions. Apply/Cancel remain above the scrolling controls.
+Implements [#79](https://github.com/IanSzymanski/squidware/issues/79). Select at least two performers, then select **Align** in the tool strip. The Inspector and field preview share one evaluator for all proposed and accepted positions. Apply and Cancel are in the tool strip.
 
 ## Axes, ordering and anchors
 
@@ -26,7 +26,7 @@ Tab navigates the ordinary shared buttons and inputs; Enter/Space activates choi
 
 ## Bounds, scope and history
 
-Exact spacing bypasses grid snapping. The field status states this explicitly. Boundary-crossing previews cannot Apply; the tool does not translate, shrink, or clamp a group to fit. Only floating-point noise within 1e-8 yard of an edge is normalized. Interval values must be positive and at most 1000 yards/steps; numeric entry and handles use a 0.001 minimum. Missing selections, invalid parameters, no-op geometry and pending input cannot Apply.
+Exact spacing bypasses grid snapping. The snap chip over the field states this explicitly. Boundary-crossing previews cannot Apply; the tool does not translate, shrink, or clamp a group to fit. Only floating-point noise within 1e-8 yard of an edge is normalized. Interval values must be positive and at most 1000 yards/steps; numeric entry and handles use a 0.001 minimum. Missing selections, invalid parameters, no-op geometry and pending input cannot Apply.
 
 One Apply writes only the selected performers on the captured set, as one named undo action. Other performers, sets, performer identities and move paths remain unchanged. Undo/redo and native save/reopen preserve accepted coordinates. Previews do not change the project, history, file-save state, recovery geometry, or exports. No schema change is required; settings and guides are transient session state.
 

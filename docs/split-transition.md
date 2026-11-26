@@ -1,6 +1,6 @@
 # Split a transition
 
-Select the destination set and choose **Split transition** in Inspector → Set properties, or search for it in the Command palette. From the opening set, the action targets the first move. Playback pauses; an interior paused playhead suggests the nearest whole count, otherwise the preview starts at the midpoint.
+Select the destination set and choose **Split transition** in the tool strip's **Motion** menu or the Inspector's **Set actions** menu, or search for it in the Command palette. From the opening set, the action targets the first move. Playback pauses; an interior paused playhead suggests the nearest whole count, otherwise the preview starts at the midpoint.
 
 Enter a whole local count strictly inside the move. A 16-count move split at 5 becomes 5 + 11 counts, with the same tempo and total duration. The preview shows every performer's position from the shared engine. Use the comparison slider (including arrow keys), **Show split picture** and, for eased moves, **Show largest change** to review movement before applying.
 

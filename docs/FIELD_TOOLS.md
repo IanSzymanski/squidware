@@ -35,4 +35,4 @@ Field zoom, display toggles and camera choices do not alter physical coordinates
 
 Each tool is a button in the normal Tab order. On a menu button, Enter, Space or Down opens the menu; Up/Down and Home/End move between its items, Enter chooses, and Escape or Tab closes it and returns focus to the button. Escape closes an open menu before it cancels a preview. A dialog opened from a menu returns focus to that menu's button when it closes.
 
-The strip never wraps. As it narrows, Align, Rotate, Mirror and Place fold into an **Arrange** menu, then the shapes fold into a **Shape** menu, then labelled tools show only their icons. [Workspace layout](WORKSPACE_LAYOUT.md#small-windows-and-ui-scale) gives the widths. The Command palette has every tool, the field grid and the camera commands.
+The strip never wraps. As it narrows, Align, Rotate, Mirror and Place fold into an **Arrange** menu, then the shapes fold into a **Shape** menu, then labeled tools show only their icons. [Workspace layout](WORKSPACE_LAYOUT.md#small-windows-and-ui-scale) gives the widths. The Command palette has every tool, the field grid and the camera commands.

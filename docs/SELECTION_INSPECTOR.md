@@ -1,20 +1,20 @@
 # Selection actions and contextual Inspector
 
-Implements the workspace scope of [#18](https://github.com/IanSzymanski/squidware/issues/18). The selection bar stays above the Inspector's scrolling sections, preserving the compact field layout from #16.
+Implements the workspace scope of [#18](https://github.com/IanSzymanski/squidware/issues/18). The selection header stays above the Inspector's scrolling sections. Since the shell rebuild, the actions that used to sit in a selection bar (Move, Rotate, Shape, Mirror, Align and Place) are tools in the tool strip above the field, and the Inspector shows the selection and the set as numbers.
 
-- No selection: show an explicit Select all action and explain that dots or a section must be selected before editing. Apply formation never falls back to the ensemble.
-- One performer: show its label and X/Y coordinates, exact coordinate inputs and movement controls. Rotation requires a group.
-- Group: show the arithmetic center and the width/depth of its axis-aligned bounds, in yards. Move, rotate and scale use the existing shared transform command and field-boundary policy.
-- Move, Rotate and Shape reveal the relevant section and transfer keyboard focus to its controls. Shape parameters and the explicitly scoped Apply formation action stay together.
-- Between sets or during playback: label the summary with its source set, disable positional edits, and offer Return to this set to edit. The existing live field readout remains the authority for sampled preview positions.
+- No selection: the header shows **0 selected**, the cast size and **Select all**, and the section chips select a section. The field's hint line says to select a dot, a box or a section first. A shape never falls back to the ensemble.
+- One performer: the header shows its label and name. The **Position** section shows its coordinate in drill language, the move into the set (counts, travel and step size), **Move** buttons, and **Exact position** with X/Y inputs. Rotate and Scale require a group.
+- Group: the **Selection** section shows the center in drill language and the **Size** of its axis-aligned bounds in steps (the surface's unit on a floor or stage), with the longest path and biggest step into the set. **Move** uses the shared nudge command. **Rotate** and **Scale** open the exact transform preview with the preset step. On the field, the selection frame's handles rotate and scale in place as one undoable edit.
+- A shape, transform, spacing or coordinate preview puts its parameters at the top of the Inspector in place of the set and selection sections until it ends. **Apply** and **Cancel** are in the tool strip.
+- Between sets or during playback: positional edits are unavailable and say why, and the tool strip offers **Edit set N**. The live field readout remains the authority for sampled preview positions.
 
 Mirror opens the [exact transform preview](EXACT_TRANSFORMS.md) from #27. Align opens [spacing and alignment](SPACING_ALIGNMENT.md) for at least two selected performers, including exact intervals and even distribution. Formation controls use their own preview and field handles; each accepted operation is one named undo action.
 
-Place opens [drill-language coordinate entry](COORDINATE_ENTRY.md): absolute placement for one performer or an exact relative move for the explicit selection. Side and unit choices are visible, proposed positions have field paths/crosshairs, and Apply/Cancel stay in the selection bar.
+Place opens [drill-language coordinate entry](COORDINATE_ENTRY.md): absolute placement for one performer or an exact relative move for the explicit selection. Side and unit choices are visible, proposed positions have field paths/crosshairs, and Apply/Cancel are in the tool strip.
 
 ## Section state and drafts
 
-Performer/group selection, Formation tools, Set properties and Transition check use native keyboard-operable disclosure controls. Four validated boolean personal preferences remember expansion through restart and reset with other personal settings. Older preferences receive defaults: selection and set properties open, formation and transition checks closed. They never enter `.squid` project data or change its saved revision.
+The **Selection** (or **Position**), **Set N details** and **Move check** sections use native keyboard-operable disclosure controls. Validated boolean personal preferences remember expansion through restart and reset with other personal settings. Older preferences receive defaults: selection and set details open, move check closed. They never enter `.squid` project data or change its saved revision.
 
 Closing a disclosure keeps its fields mounted. Selection changes preserve unrelated formation and set drafts, including invalid input and its pending-save state. Exact performer input follows the selected performer; set drafts follow their set/project identity. Formation inputs retain the established validation and named undo behavior.
 

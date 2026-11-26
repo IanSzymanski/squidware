@@ -1,6 +1,6 @@
 # Measures, meter changes, pickups and rehearsal marks
 
-Open **Sheet → Score map**, **Timeline view → Score map**, or search **Score map** in the Command palette. Musical structure shares one count axis with the existing drill, audio clock and rehearsal passages. It never changes positions, move counts, written tempos or count-to-seconds conversion.
+Open **Score map** in the Plan sheet's toolbar, **Timeline options → Score map…** in the transport, or search **Score map** in the Command palette. Musical structure shares one count axis with the existing drill, audio clock and rehearsal passages. It never changes positions, move counts, written tempos or count-to-seconds conversion.
 
 One drill count is one denominator beat; BPM means counts per minute. Thus 6/8 at 120 has six eighth-note counts per bar, rather than 120 dotted-quarter beats per minute. The opening meter defaults to 4/4 and group `[4]`, including legacy files with no metadata. Existing saved `meter` remains the opening meter; missing `score` is interpreted as first measure 1, no pickup, no changes and no marks, without modifying the file.
 
@@ -12,7 +12,7 @@ The Score map dialog handles events at any whole show count, including inside a 
 
 Rehearsal navigation uses the saved map. Enter a measure and beat (fractions allowed), or choose a rehearsal-mark button. The dialog shows the corresponding absolute count. Apply map edits before navigating. Navigation stops playback, clears an active rehearsal range, moves the timeline to that count and creates no history entry. Timeline mark buttons use the same command; crowded marks are grouped and open the complete list. Rehearsal passage target descriptions include the same musical positions while retaining their original stable set/move references.
 
-The timeline ruler can show Measures or Show counts through Timeline view. Measure labels are thinned at low zoom; all marks remain accessible in Score map. The transport always shows the musical position with its current rehearsal label beside the original show/move readouts. Musical labels share the existing ruler and transport footprint, preserving field height.
+The timeline ruler shows measures or show counts; choose **Ruler in measures** or **Ruler in counts** in **Timeline options**. Measure labels are thinned at low zoom; all marks remain accessible in Score map. The transport always shows the musical position with its current rehearsal label beside the original show/move readouts. Musical labels share the existing ruler and transport footprint, preserving field height.
 
 ## Pickup and boundary semantics
 
