@@ -4,7 +4,8 @@
  * The field is the hero: chrome sits in thin rows above and below it and one panel beside it.
  */
 .studio {
-  height: var(--viewport-height); display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  /* Clipped, not hidden: nothing inside, not even focus moving to a control out of view, can scroll the window's frame. */
+  height: var(--viewport-height); display: flex; flex-direction: column; min-width: 0; overflow: clip;
   background: var(--app-bg); color: var(--text);
 }
 .studio-body { position: relative; flex: 1; min-height: 0; display: flex; }
@@ -148,6 +149,9 @@
 @container toolbar (max-width: 640px) {
   .toolbar .tool--labelled > .tool-label, .toolbar-commit kbd, .toolbar-preview > span:last-child, .toolbar-optional { display: none; }
 }
+/* The camera strip keeps its four views by name. In a narrow window its caption and the review tools' words give way
+   first, so the side panel's button stays in reach. */
+@container toolbar (max-width: 740px) { .toolbar:is([data-context="3d"], [data-context=rehearsal]) :is(.toolbar-caption, .tool--labelled > .tool-label) { display: none; } }
 /* A collapsed group leaves one divider, not two. */
 .toolbar-shapes + .toolbar-shape-menu + .divider-vertical, .toolbar-pointers + .divider-vertical { display: inline-block; }
 
@@ -264,7 +268,7 @@
 .side-panel-resizer:hover, .side-panel-resizer:focus-visible { background: var(--accent-line); outline: none; }
 .side-panel-header { flex: none; display: flex; align-items: stretch; justify-content: space-between; height: 40px; padding: 0 6px 0 8px; border-bottom: 1px solid var(--hairline); }
 .side-panel-header > .icon-button { align-self: center; }
-.side-panel-content { flex: 1; min-height: 0; }
+.side-panel-content { flex: 1; min-height: 0; overflow: hidden; }
 .workspace-tab-content { height: 100%; min-height: 0; }
 
 .inspector { display: flex; flex-direction: column; height: 100%; min-height: 0; }
@@ -289,7 +293,8 @@
 .section-chips button.partial i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent-line); }
 /* With a selection the sections fold to one row of colors; each still selects its section. */
 .section-legend { display: flex; align-items: flex-start; gap: 4px; }
-.section-legend > .section-chips { flex: 1; min-width: 0; }
+/* A long section list scrolls inside its own share of the panel, so the selection and the set always keep theirs. */
+.section-legend > .section-chips { flex: 1; min-width: 0; max-height: min(232px, 30vh); overflow: hidden auto; scrollbar-width: thin; overscroll-behavior: contain; }
 .section-legend-toggle { flex: none; min-width: 22px; height: 22px; margin-right: -4px; }
 .section-legend--compact > .section-chips { display: flex; flex-wrap: wrap; gap: 2px 2px; margin: 0 -4px; }
 /* Folded, a section is its color and the letters its labels start with; the full name is in its tooltip. */

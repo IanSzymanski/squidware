@@ -48,7 +48,7 @@ Path and movement edits use reviewed previews and named undo actions. See [indiv
 
 Edit set names, counts, tempos and notes in the **Production sheet**. Navigate cells with the keyboard or review a CSV/TSV paste before applying the range as one undoable edit. Add pickups, meter changes and rehearsal marks through the **Score map**; measure/beat readouts and the metronome use the same count axis. Preview [tempo ranges, linear BPM ramps and timed fermatas](docs/tempo-map.md) with one undoable Apply; playback and the metronome share the map.
 
-![Tether's editable Production sheet, showing the opening rows of its 67-set show with multiline notes, incoming counts, base tempos, readable meters and rehearsal marks](docs/images/production-sheet.png)
+![Tether's editable Production sheet, showing the opening rows of its 67-set show in Plan mode with notes, incoming counts, base tempos, meters and rehearsal marks](docs/images/production-sheet.png)
 
 Use the set strip to move between sets and reorder them by drag, and the set finder in the transport to search by number or name. The [Production sheet guide](docs/production-sheet.md) and [Score map guide](docs/score-map.md) explain editing and timing rules.
 

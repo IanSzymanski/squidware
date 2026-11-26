@@ -114,6 +114,8 @@ async function scrubCount(count) {
   await evaluate(`(() => { const input = document.querySelector('.timeline-scrubber'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${count}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await pause(50);
 }
+/** Geometry reported with a failed layout assertion, so a platform-specific failure can be read from the log. */
+const LAYOUT_DIAGNOSTIC = "(() => { const rect = s => { const n = document.querySelector(s); if (!n) return null; const r = n.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }; const sc = document.querySelector('.field-container'); const stage = document.querySelector('.field-stage'); const scroller = [sc, stage, ...document.querySelectorAll('.field-container *')].find(n => n && n.scrollWidth > n.clientWidth + 1 || n && n.scrollHeight > n.clientHeight + 1); return { inner: [innerWidth, innerHeight], dpr: devicePixelRatio, tiers: { ...document.querySelector('.studio').dataset }, container: rect('.field-container'), svg: rect('.field-stage__svg'), surface: rect('[data-field-surface]'), panel: rect('.side-panel'), toolbar: rect('.canvas-toolbar'), transport: rect('.transport'), scroller: scroller ? [scroller.className.toString().slice(0, 40), scroller.scrollLeft, scroller.scrollTop, scroller.scrollWidth, scroller.clientWidth, scroller.scrollHeight, scroller.clientHeight] : null, font: getComputedStyle(document.body).fontFamily.slice(0, 60), active: (document.activeElement?.getAttribute('aria-label') || document.activeElement?.tagName || '').slice(0, 60) }; })()";
 async function screenPoint(x, y) {
   return evaluate(`(() => { const point = new DOMPoint(${x}, ${y}).matrixTransform(document.querySelector('.field-stage__svg').getScreenCTM()); return { x: point.x, y: point.y }; })()`);
 }
@@ -239,7 +241,10 @@ async function checkCompactChrome() {
     // A control is clipped when no button of that name is on screen, inside the window and on top at its center.
     const clippedControls = names => evaluate(`${JSON.stringify(names)}.filter(name => ![...document.querySelectorAll('button[aria-label="'+name+'"]')].some(node => { const r=node.getBoundingClientRect(); return r.width>0 && r.left>=0 && r.right<=innerWidth+.5 && r.top>=0 && r.bottom<=innerHeight+.5 && node.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)); }))`);
     // Help lives in the Project menu at every width; the top bar keeps the three modes and command search. Save joins it once there is something to save.
-    const required = ['Undo','Redo','Export','Write mode','Plan mode','Rehearse mode','Project menu','Command palette','Play show','First set','Last set','Select performers','Motion','Collapse Inspector','2D field','3D preview','Add set'];
+    // Only the narrowest transport (the 1120 px window at 125%) folds First set and Last set away; Find set reaches every set there.
+    const narrowTransport = await evaluate("document.querySelector('.studio').dataset.transport === 'narrow'");
+    assert.equal(narrowTransport, width === 1120 && scale === 1.25, `narrowest transport at ${width}px / ${scale}×`);
+    const required = ['Undo','Redo','Export','Write mode','Plan mode','Rehearse mode','Project menu','Command palette','Play show',...(narrowTransport ? ['Find set','Previous set','Next set'] : ['First set','Last set']),'Select performers','Motion','Collapse Inspector','2D field','3D preview','Add set'];
     const measure = await evaluate(`(() => {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x:r.x, y:r.y, width:r.width, height:r.height }; };
       return { viewport:{width:innerWidth,height:innerHeight}, compactHeader:document.querySelector('.studio').dataset.header !== 'full', header:rect('.app-header'), toolbar:rect('.canvas-toolbar'), field:rect('.field-container'), timeline:rect('.timeline'), transport:rect('.transport'), tracks:rect('.timeline-tracks'), emptyAudioLane:!!document.querySelector('.audio-track'), legendInInspector:!!document.querySelector('.inspector .field-legend')?.getClientRects().length, legendInField:!!document.querySelector('.field-container .field-legend') };
@@ -264,8 +269,8 @@ async function checkCompactChrome() {
     const name = `Compact ${width} ${scale}`;
     await typeText('.inspector input[aria-label="Set name"]', name); await fieldKey('.inspector input[aria-label="Set name"]', 'Enter');
     await editNumber('Counts', 12);
-    // The transport names the current set, as does its card.
-    await uiWait(`document.querySelector('.set-jump-name').textContent === ${JSON.stringify(name)} && !!document.querySelector('.set-jump-name').getClientRects().length && document.querySelector('.set-card.selected .set-row-name').textContent === ${JSON.stringify(name)}`, 'canvas set name');
+    // The transport names the current set, as does its card. The narrowest transport draws the set's number alone.
+    await uiWait(`document.querySelector('.set-jump-name').textContent === ${JSON.stringify(name)} && !!document.querySelector('.set-jump-number').getClientRects().length && !!document.querySelector('.set-jump-name').getClientRects().length === ${!narrowTransport} && document.querySelector('.set-card.selected .set-row-name').textContent === ${JSON.stringify(name)}`, 'canvas set name');
     await evaluate('document.querySelector(\'[aria-label="Play show"]\').focus()'); await sendKey(window, 'Return');
     await uiWait(`!!document.querySelector('[aria-label="Pause playback"]') && ${showCount}>0`, 'compact playback advances');
     await evaluate('document.querySelector(\'[aria-label="Pause playback"]\').focus()'); await sendKey(window, 'Return');
@@ -776,10 +781,12 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
     await clickSelector('[aria-label="Zoom in"]');
     await hoverPoint(20, 20);
-    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
+    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field),
+      JSON.stringify({ hover: await screenPoint(20, 20), zoom: await evaluate("document.querySelector('[aria-label=\"Zoom in\"]')?.parentElement?.textContent"), readout: await evaluate("document.querySelector('.field-readout')?.textContent"), layout: await evaluate(LAYOUT_DIAGNOSTIC) }));
     await evaluate("document.querySelector('.field-stage__svg').style.transform = 'scaleX(-1)'");
     await hoverPoint(20, 20);
-    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field));
+    assert.equal(await evaluate("document.querySelector('.field-readout span').textContent"), coordinateDescription({ x: 20, y: 20 }, saved.field),
+      JSON.stringify({ mirrored: true, hover: await screenPoint(20, 20), under: await evaluate(`(() => { const p = new DOMPoint(20, 20).matrixTransform(document.querySelector('.field-stage__svg').getScreenCTM()); const hit = document.elementFromPoint(p.x, p.y); return (hit?.getAttribute('class') || hit?.tagName || 'nothing').toString().slice(0, 60) + ' in ' + (hit?.closest('.field-container, .side-panel, .toolbar, .timeline, .topbar')?.className.toString().slice(0, 40) || 'elsewhere'); })()`), readout: await evaluate("document.querySelector('.field-readout')?.textContent"), layout: await evaluate(LAYOUT_DIAGNOSTIC) }));
     await evaluate("document.querySelector('.field-stage__svg').style.transform = ''");
     await hoverPoint(20, 20);
     const panStart = await screenPoint(50, 25);
@@ -883,6 +890,8 @@ app.whenReady().then(async () => {
     // The emptied list is a sentence, not a bare bordered list; the now-unavailable Undo looks unavailable (the design
     // system's unavailable text color, which stays readable, instead of the available Redo's) and reads unavailable.
     await uiWait("!!document.querySelector('.history-empty')", 'history empty state after undo');
+    // The two buttons change color over a short transition; read them once it has finished.
+    await uiWait("[...document.querySelectorAll('.history-actions button')].every(button => button.getAnimations().length === 0)", 'history actions settled after undo');
     assert.deepEqual(await evaluate("({ list: !!document.querySelector('.history-list:not(.future)'), empty: document.querySelector('.history-empty')?.textContent, undo: [document.querySelector('.history-actions button:first-child').getAttribute('aria-disabled'), (() => { const undo = document.querySelector('.history-actions button:first-child'), redo = document.querySelector('.history-actions button:nth-child(2)'), probe = document.createElement('span'); probe.style.color = 'var(--disabled-text)'; document.body.append(probe); const unavailable = getComputedStyle(probe).color; probe.remove(); return getComputedStyle(undo).color === unavailable && getComputedStyle(redo).color !== unavailable && getComputedStyle(undo).opacity === '1'; })()], redo: document.querySelector('.history-actions button:nth-child(2)').getAttribute('aria-label') })"), { list: false, empty: 'No actions to undo.', undo: ['true', true], redo: `Redo ${actions[0]}` });
     // Undoing past the saved revision brings Save into the top bar, with the unsaved dot beside the title; redo takes both away.
     const unsaved = "[!!document.querySelector('.topbar .header-save')?.getClientRects().length, document.querySelector('.save-state').classList.contains('save-state--unsaved'), document.querySelector('.save-state .status-dot').classList.contains('unsaved')]";

@@ -212,7 +212,8 @@ app.whenReady().then(async () => {
     await tabTo('.field-performer[tabindex="0"]'); await key('End');
     await uiWait("document.querySelector('.field-readout strong')?.textContent.includes('P500')", 'focused readout');
     assert.equal(await evaluate("document.activeElement.classList.contains('field-performer--focused')"), true);
-    assert.equal(await evaluate("getComputedStyle(document.activeElement.querySelector('.field-focus-ring')).visibility"), 'visible');
+    assert.equal(await evaluate("getComputedStyle(document.activeElement.querySelector('.field-focus-ring')).visibility"), 'visible',
+      JSON.stringify(await evaluate("(() => { const a = document.activeElement, ring = a.querySelector('.field-focus-ring'), chain = []; for (let n = ring; n && n !== document.body; n = n.parentElement) chain.push([(n.getAttribute('class') || n.tagName).toString().slice(0, 50), getComputedStyle(n).visibility, getComputedStyle(n).display]); return { cls: a.getAttribute('class'), focusVisible: a.matches(':focus-visible'), chain, inner: [innerWidth, innerHeight], rules: [...document.styleSheets].flatMap(sheet => { try { return [...sheet.cssRules]; } catch { return []; } }).filter(rule => rule.selectorText && rule.selectorText.includes('field-focus-ring')).map(rule => rule.cssText.slice(0, 160)) }; })()")));
     const visible = await evaluate("(() => { const dot = document.activeElement.getBoundingClientRect(); const field = document.querySelector('.field-stage__svg').getBoundingClientRect(); return dot.left >= field.left && dot.right <= field.right && dot.top >= field.top && dot.bottom <= field.bottom; })()");
     assert.equal(visible, true);
     await audit('design at 1366 × 768'); await capture('field-keyboard.png');

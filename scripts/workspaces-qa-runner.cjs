@@ -45,7 +45,8 @@ app.whenReady().then(async()=>{try{
    assert.deepEqual(await evaluate(`[${state}.preferences.value.workspaceLayout.inspectorWidth,${state}.preferences.value.workspaceLayout.castWidth]`),[340,340]);
    assert.equal(await evaluate(`${state}.ui.castPanelOpen`),true);
    await wait("document.querySelector('#panel-tab-cast')?.getAttribute('aria-selected')==='true'&&!document.querySelector('#workspace-pane-cast').hidden",'restored Cast tab');
-   assert.equal(await evaluate("Math.round(document.querySelector('#workspace-pane-cast').getBoundingClientRect().width)"),340);
+   // The restored arrangement reaches the panel a frame after the preferences load; wait for the panel itself to be that wide.
+   await wait("Math.round(document.querySelector('#workspace-pane-cast').getBoundingClientRect().width)===340",'restored Cast drawn at its saved width');
    // A custom workspace keeps the mode it was saved from in the top bar and is the one marked in Workspaces.
    assert.deepEqual(await evaluate("[...document.querySelectorAll('.mode-switch > button[aria-pressed=true]')].map(n=>n.getAttribute('aria-label'))"),['Write mode']);
    await openWorkspaces();assert.deepEqual(await evaluate(`[...document.querySelectorAll('${listed} .workspace-choice[aria-pressed=true]')].map(n=>n.getAttribute('aria-label'))`),['Daily writing workspace']);await closeWorkspaces();

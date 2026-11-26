@@ -1,86 +1,96 @@
 {
   "source": {
-    "revision": "e279177522dfec0826816e92e4971fbc11bb36dc",
-    "tree": "5c0239f8f143be52805f534bd7e9926a384a45ad",
+    "revision": "96b23f9eae346c4d515ea28f743b0c166e619a40",
+    "tree": "0cd73c9acb997494cb28036f720a698be93fe63d",
     "dirty": false,
-    "contentHash": "aeae5de0a0b5a4b8d9df96964f619d836e1c27952e5b5a7dd2b35541062a3f41",
-    "lockfileHash": "7b2d963df72ac094d7fad1bae640d7645add6fb9c9332d5b16860953bd73cfe0"
+    "contentHash": "2adc269b4f71a1a678a359fae9a9b6b12800e513dad5e344e9c8cd381f2c6417",
+    "lockfileHash": "3136bc8a6a5b452af0512d4953912d52ed06eaed155931c0835fb9955da837f2"
   },
   "build": {
-    "builtAt": "2026-11-10T20:46:35.328Z",
-    "outputHash": "880967cb99001e037e0d3d4f321b0f8e2f05e29fc0f2fcb89f668655c19c4e0e"
+    "builtAt": "2026-11-26T20:25:14.106Z",
+    "outputHash": "e24d6492a004a8c5f46556a3967660078a4e55e37ff5ffc648c5589720ae19fe"
   },
   "captures": [
     {
       "name": "studio.png",
-      "description": "Tether, EH 3 \u00b7 Accretion disc, 24 Sopranos selected, Write layout and contextual Inspector",
+      "description": "Tether, EH 3 · Accretion disc, 24 Sopranos selected, Write mode with the side panel and set strip",
       "width": 1600,
       "height": 1000,
-      "workspace": "design",
+      "mode": "write",
       "view": "2d",
-      "fieldHeight": 713,
+      "fieldHeight": 748,
       "webglDraws": 0,
-      "sha256": "5ac0bd7e834d2d18ec78b14fbcb9cafab07d24321f8a25d4513dee3da8a67ef5"
+      "sha256": "d5992941e83837ff105ff78106d9c09f7130c0a2de3be33d78aa58894c7cbad6"
     },
     {
       "name": "production-sheet.png",
-      "description": "Tether Production sheet, 67 sets, readable notes, meter and rehearsal marks",
+      "description": "Tether production sheet in Plan mode, 67 sets, notes, counts, tempos, meters and rehearsal marks",
       "width": 1600,
       "height": 1000,
-      "workspace": "production",
+      "mode": "plan",
       "view": "2d",
       "webglDraws": 0,
-      "sha256": "70b15f5cb0b6ed7bb87c756a6cd565754c7934ed83577c226e6d9e4e0707b3f9"
+      "sha256": "56a2efe070ff11f175616ce6957b6277e5074c037258dd47cdb730a1b9e2a20c"
     },
     {
       "name": "rehearsal-3d.png",
-      "description": "Tether, EH 3 \u00b7 Accretion disc in the Rehearse layout, perspective 3D camera",
+      "description": "Tether, EH 3 · Accretion disc in Rehearse mode, perspective 3D camera",
       "width": 1600,
       "height": 1000,
-      "workspace": "design",
+      "mode": "rehearse",
       "view": "3d",
-      "fieldHeight": 713,
-      "webglDraws": 38,
-      "sha256": "368146f53984c9106e4be92d1a4612429c1dd0ae254de7fa20211408977e7636"
+      "fieldHeight": 825,
+      "webglDraws": 40,
+      "sha256": "a9d45c20b5d6f7f01e87737dd3045b47f041329a6d5ae6afd38460d8f2356c59"
     },
     {
       "name": "travel-path.png",
-      "description": "Unapplied Tether S16 cubic performer path preview into EH 9 \u00b7 Lament, at 2\u00d7 field zoom",
+      "description": "Unapplied cubic performer path preview for S16 into EH 9 · Lament, at 2x path field zoom",
       "width": 1600,
       "height": 1000,
-      "workspace": "design",
+      "mode": "write",
       "view": "2d",
-      "fieldHeight": 713,
-      "webglDraws": 38,
+      "fieldHeight": 748,
+      "webglDraws": 40,
       "crop": {
-        "x": 411,
-        "y": 0,
-        "width": 778,
-        "height": 1000
+        "x": 386,
+        "y": 96,
+        "width": 828,
+        "height": 808
       },
-      "sha256": "eaa550da9667543a305ee7840fe016949f5123a5010e8045dc9be7929dc19706"
+      "sha256": "25e2af3dba732162bc00ef344d7d108b8a373022317582171b5d9f6100385abc"
     },
     {
       "name": "portable-audio.png",
       "description": "Portable production export, bundled generated recording and two-second sync offset",
       "width": 1600,
       "height": 1000,
-      "workspace": "design",
+      "mode": "write",
       "view": "2d",
-      "fieldHeight": 676,
-      "webglDraws": 38,
+      "fieldHeight": 722,
+      "webglDraws": 40,
       "crop": {
-        "x": 546,
-        "y": 200,
-        "width": 508,
-        "height": 599
+        "x": 536,
+        "y": 219,
+        "width": 528,
+        "height": 562
       },
-      "sha256": "d70e036a3dcef9ff3c062d8226387b913d6079dde3a20ea572e8e5c2da51bf7f"
+      "sha256": "4677a0aabd94dd256d3761701bbfbadc1241ffc264a6a5ef06912b5f9ff1f83b"
     }
   ],
+  "path": {
+    "performer": "S16",
+    "controls": [
+      64.661,
+      26.662,
+      69.946,
+      23.571
+    ],
+    "fieldZoom": 2
+  },
   "recording": "Generated 80-second PCM pulse; no private recording.",
   "renderer": "Production renderer/preload/main; Xvfb and SwiftShader WebGL.",
-  "date": "2026-11-10",
+  "date": "2026-11-26",
   "errors": [],
   "demo": {
     "title": "Tether",

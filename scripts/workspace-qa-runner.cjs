@@ -129,7 +129,8 @@ app.whenReady().then(async () => {
       await drag(true); await wait("document.querySelector('[aria-label=\"Resize Inspector\"]').getAttribute('aria-valuenow')==='288'", 'cancelled resize returns to the saved width');
       assert.equal(await evaluate(`JSON.stringify(${layout})`), writeLayout, 'a cancelled resize leaves the saved layout as it was');
       await drag(false); await wait(`${widths}==='362,362'`, 'accepted pointer resize');
-      assert.equal(await evaluate("document.querySelector('#workspace-pane-inspector').getBoundingClientRect().width"), 362);
+      // The saved width changes first and the panel redraws a frame later; wait for the panel itself to be exactly that wide.
+      await wait("document.querySelector('#workspace-pane-inspector').getBoundingClientRect().width===362", 'the panel is drawn at the accepted width');
       pass('native arrows/Home/End resize, Enter collapses, pointer drag accepts once and Escape cancels its draft');
       // Focus uses real keyboard dispatch and Escape before the field selection handler.
       await evaluate(`${editor}.setValue('selection','selectedIds',[${state}.project.present.performers[0].id])`);

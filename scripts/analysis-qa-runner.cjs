@@ -166,8 +166,8 @@ app.whenReady().then(async () => {
     await wait(`!document.querySelector('.problem-cluster-list') && ${snapshot}.selected!==null`,'pointer group choice');assert.ok(firstItem.startsWith(findingName((await evaluate(snapshot+'.selected')).issue,labels)));
     assert.equal(await evaluate(state+'.playback.count'),(await evaluate(snapshot+'.selected')).issue.atCount);
     pass('the problem row is one Tab stop of non-overlapping 24 px markers named by type, performers and whole count; arrows reach every finding, groups list theirs, Escape returns, Tab and Shift+Tab move on from the marker and choices seek and select');
-    // Escape in a group list closes only the list, also in focus mode and over a tucked-panel overlay (the workspace
-    // handles Escape in the capture phase); the next Escape then belongs to the workspace.
+    // Escape in a group list closes only the list, also in focus mode and beside a side panel open over the field (the
+    // shell handles Escape in the capture phase); the next Escape then belongs to the shell.
     await evaluate(`${editor}.dispatch('set.select',{index:1});${analysis}.clearSelection()`);await frames();
     async function escapeFromGroup(label) {
       const marker=await evaluate("document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').getAttribute('aria-label')");
@@ -178,17 +178,20 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`${state}.ui.focusMode && !!document.querySelector('.studio--focus')`,'focus mode');await frames();
     await escapeFromGroup('focus mode');assert.equal(await evaluate(`${state}.ui.focusMode`),true,'Escape in the list keeps focus mode');
     await key(window,'Escape');await wait(`!${state}.ui.focusMode && !!document.activeElement?.matches('[aria-label="Focus field"],[aria-label="Project menu"]')`,'the next Escape exits focus mode and returns focus to the header');await frames();
-    window.setContentSize(900,650);await settleNativeViewport(window,'tucked analysis layout');
-    await click('[aria-label="Show Set list"]');await wait("!!document.querySelector('.workspace-pane--overlay[data-pane=sets]')",'Set list overlay');
-    await escapeFromGroup('overlay');assert.ok(await evaluate("!!document.querySelector('.workspace-pane--overlay[data-pane=sets]')"),'Escape in the list keeps the overlay');
-    // Escape closes the overlay and returns focus to its Show button on the next frame; wait for it so that late focus cannot close the next list.
-    await key(window,'Escape');await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.getAttribute('aria-label')==='Show Set list'",'the next Escape closes the overlay and returns focus to Show Set list');
+    // In a window this narrow at 125% the side panel does not dock: its button in the tool strip opens it over the field.
+    window.setContentSize(900,650);await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1.25})`);await settleNativeViewport(window,'tucked analysis layout');
+    await wait("document.querySelector('#workspace-pane-inspector').hidden && !document.querySelector('.workspace-pane--overlay')",'side panel tucked in a narrow window');
+    await click('[aria-label="Show Inspector"]');await wait("!!document.querySelector('.workspace-pane--overlay[data-pane=inspector]:not([hidden])')",'Inspector over the field');
+    await escapeFromGroup('overlay');assert.ok(await evaluate("!!document.querySelector('.workspace-pane--overlay[data-pane=inspector]:not([hidden])')"),'Escape in the list keeps the panel open');
+    // Escape closes the panel and returns focus to its button on the next frame; wait for it so that late focus cannot close the next list.
+    await key(window,'Escape');await wait("!document.querySelector('.workspace-pane--overlay') && document.activeElement?.matches('[data-panel-toggle][aria-label=\"Show Inspector\"]')",'the next Escape closes the panel and returns focus to Show Inspector');
     // A layout change closes an open list instead of leaving it over a moved marker; focus stays on the row.
     await evaluate("document.querySelector('.problem-track .problem-marker[aria-haspopup=menu]').focus()");await key(window,'Return');await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list before focus mode');
     await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`${state}.ui.focusMode && !document.querySelector('.problem-cluster-list') && document.activeElement?.matches('.problem-track .problem-marker')`,'focus mode closes the list and keeps focus on the row');
     await evaluate(`${editor}.dispatch('layout.focus')`);await wait(`!${state}.ui.focusMode`,'focus mode restored');
-    window.setContentSize(1366,768);await settleNativeViewport(window,'analysis window restored');
-    pass('Escape in a group list returns to its marker in focus mode and over a tucked-panel overlay before the workspace handles Escape; layout changes close an open list and keep focus in the row');
+    window.setContentSize(1366,768);await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,uiScale:1})`);await settleNativeViewport(window,'analysis window restored');
+    await wait("!document.querySelector('#workspace-pane-inspector').hidden && !document.querySelector('.workspace-pane--overlay')",'side panel docked again');
+    pass('Escape in a group list returns to its marker in focus mode and beside a side panel open over the field before the shell handles Escape; layout changes close an open list and keep focus in the row');
     // The row restores focus in the commit that removes its focused marker or list; a recheck that empties the row (a
     // keyboard edit from it) restores it when its results arrive, unless the user pressed a key or clicked meanwhile.
     // Markers that return to a row emptied otherwise, or after such input, never take focus back, where Space would open
@@ -229,7 +232,10 @@ app.whenReady().then(async () => {
     const sparse=fixture();for(const [i,set] of sparse.sets.entries())set.positions=Object.fromEntries(sparse.performers.map((p,j)=>[p.id,{x:[10,22,22,34][i],y:10+j*2}]));
     sparse.moves=sparse.moves.map((m,i)=>({...m,counts:i===1?400:8,transition:'linear'}));
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(sparse)}});${editor}.dispatch('set.select',{index:0})`);await oracle();
-    await click('.timeline-view-toggle');for(let i=0;i<2;i++)await click('[aria-label="Zoom timeline in"]');await click('.timeline-view-toggle');
+    // Zoom is in the Timeline options menu, which stays open between zoom steps.
+    const timelineMenu='[role=menu][aria-label="Timeline options"]';
+    for(let i=0;i<2;i++)await click(timelineMenu+' [aria-label="Zoom in"]');
+    await key(window,'Escape');await wait(`document.querySelector(${JSON.stringify(timelineMenu)}).hidden && !!document.querySelector('[aria-label="Pan timeline"]')`,'timeline zoomed and its menu closed');
     await evaluate(`${editor}.dispatch('set.select',{index:3});${qa}.hold=true;${editor}.dispatch('positions.move',{index:3,updates:{p0:{x:34,y:9}}});${editor}.dispatch('set.select',{index:0})`);
     await evaluate("document.querySelector('.problem-track .problem-marker[tabindex=\"0\"]').focus()");await wait(`${rowFocus} && ${snapshot}.moves[2].status==='pending'`,'marker focused while another move is rechecked');
     await evaluate(`${editor}.dispatch('playback.scrub',{count:208})`);await wait("!document.querySelector('.problem-track .problem-marker') && document.activeElement===document.body",'a count window past the findings empties the row');
@@ -275,20 +281,33 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate(`${qa}.requests.filter(r=>r.input).every(r=>r.input.tracks.length<=500 && !r.input.sets)`),true);
     const maximumTotal=await evaluate(`${snapshot}.moves.reduce((n,m)=>n+m.issues.length,0)`),maximumRow=await timelineRow();
     if(maximumTotal){rowGeometry(maximumRow,await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width"));await badgesFit();assert.equal(maximumRow.reduce((n,m)=>n+m.size,0),maximumTotal);}metrics.maximum={findings:maximumTotal,markers:maximumRow.length};
-    // Choosing from a group beside Cast returns to Design and the Inspector: the track widens and dense groups regroup,
-    // replacing the focused marker. Keyboard focus stays on the row's remembered marker, never the document body.
+    // Choosing from a group beside Cast returns to the Inspector. The timeline runs under the side panel at the window's
+    // width, so the row keeps its width and its markers. Keyboard focus stays on the row's marker, never the document body.
     assert.ok(maximumRow.filter(m=>m.group).length>=4,'dense maximum groups');
-    const designWidth=await evaluate("document.querySelector('.problem-track').getBoundingClientRect().width");let regrouped=0;
+    const trackSize=()=>evaluate("document.querySelector('.problem-track').getBoundingClientRect().width");
+    const onRow=async()=>assert.ok(await evaluate("document.activeElement?.matches('.problem-track .problem-marker[tabindex=\"0\"]')"),`focus stays on the problem row: ${await evaluate("document.activeElement?.outerHTML.slice(0,120)")}`);
+    const focusGroup=index=>evaluate(`(()=>{const m=[...document.querySelectorAll('.problem-track .problem-marker[aria-haspopup=menu]')][${index}];window.__chosenMarker=m;m.focus();return document.activeElement===m;})()`);
+    const designWidth=await trackSize();
     for(const index of [1,2,3]){
-      await evaluate(`${editor}.dispatch('cast.show',{mode:'panel'})`);await wait(`${state}.ui.castPanelOpen && document.querySelector('.problem-track').getBoundingClientRect().width<${designWidth}`,'Cast beside the field');await frames();
-      await evaluate(`(()=>{const m=[...document.querySelectorAll('.problem-track .problem-marker[aria-haspopup=menu]')][${index}];window.__chosenMarker=m;m.focus();})()`);await key(window,'Return');
+      await evaluate(`${editor}.dispatch('cast.show',{mode:'panel'})`);await wait(`${state}.ui.castPanelOpen && document.querySelector('#workspace-pane-cast:not([hidden]) #panel-tab-cast')?.getAttribute('aria-selected')==='true'`,'Cast beside the field');await frames();
+      assert.equal(await trackSize(),designWidth,'Cast leaves the timeline its width');
+      assert.equal(await focusGroup(index),true);await key(window,'Return');
       await wait("document.activeElement?.getAttribute('role')==='menuitem'",'group list beside Cast');await key(window,'Return');
-      await wait(`!${state}.ui.castPanelOpen && ${snapshot}.selected!==null && !document.querySelector('.problem-cluster-list') && document.querySelector('.problem-track').getBoundingClientRect().width===${designWidth}`,'review from Cast');await frames();await frames();
-      regrouped+=await evaluate('Number(!window.__chosenMarker.isConnected)');
-      assert.ok(await evaluate("document.activeElement?.matches('.problem-track .problem-marker[tabindex=\"0\"]')"),`focus stays on the problem row: ${await evaluate("document.activeElement?.outerHTML.slice(0,120)")}`);
+      await wait(`!${state}.ui.castPanelOpen && ${snapshot}.selected!==null && !document.querySelector('.problem-cluster-list') && document.querySelector('#workspace-pane-inspector:not([hidden]) #panel-tab-inspector')?.getAttribute('aria-selected')==='true'`,'review from Cast');await frames();await frames();
+      assert.equal(await trackSize(),designWidth);await onRow();
       await evaluate(`${analysis}.clearSelection();${editor}.dispatch('set.select',{index:1})`);await frames();
     }
-    assert.ok(regrouped>0,'reviews from Cast regroup the row');metrics.castReviewsRegrouped=regrouped;
+    // What does regroup the dense row is a change of the window's width: the focused marker is replaced, and keyboard
+    // focus stays on the row's remembered marker, never the document body.
+    let regrouped=0;
+    for(const index of [1,2,3]){
+      assert.equal(await focusGroup(index),true);
+      window.setContentSize(1180,768);await settleNativeViewport(window,'narrower analysis window');await wait(`document.querySelector('.problem-track').getBoundingClientRect().width<${designWidth}`,'narrower problem row');await frames();await frames();
+      regrouped+=await evaluate('Number(!window.__chosenMarker.isConnected)');await onRow();
+      window.setContentSize(1366,768);await settleNativeViewport(window,'analysis window width restored');await wait(`document.querySelector('.problem-track').getBoundingClientRect().width===${designWidth}`,'problem row width restored');await frames();await frames();
+      await onRow();
+    }
+    assert.ok(regrouped>0,'a narrower window regroups the row');metrics.resizesRegrouped=regrouped;
     // 500 performers on one spot make about 125,000 findings at one count: a “99k+” group. Its badge fits in the app font
     // and in the widest common fallback faces, DejaVu Sans (Linux without the app's fonts) or Verdana (macOS, Windows).
     const stacked=createPerformanceFixture('maximum'),spot0=Object.values(stacked.sets[0].positions)[0];stacked.sets=stacked.sets.slice(0,2);stacked.moves=stacked.moves.slice(0,1);
@@ -304,7 +323,7 @@ app.whenReady().then(async () => {
     if(wideFont){await frames();await badgesFit();}else console.log('SKIP wide-fallback badge check: neither DejaVu Sans nor Verdana is installed (required when CI is set)');
     await evaluate("document.getElementById('qa-badge-font').remove()");metrics.capped={size:capped.size,width:capped.right-capped.left,wideFontText:wideFont?wide.wide:null};
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(project)}});${editor}.dispatch('set.select',{index:1})`);await oracle();
-    pass(`127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast keeps focus in the regrouped row; a 99k+ badge fits${wideFont?' in wide fallback faces':''} and its row stays inside the timeline; rapid edits and same-ID project replacement keep reference-correct results`);
+    pass(`127 moves with 500 performers complete with bounded DOM markers whose names start with their badges; choosing from Cast and regrouping in a narrower window keep focus in the row; a 99k+ badge fits${wideFont?' in wide fallback faces':''} and its row stays inside the timeline; rapid edits and same-ID project replacement keep reference-correct results`);
     await openProblems();for(const theme of ['light','high-contrast']){await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`);await capture(`problems-${theme}.png`);}
     await close();
     window.setContentSize(1024,720);window.webContents.setZoomFactor(1.25);await settleNativeViewport(window,'enlarged analysis');await openProblems();await capture('problems-enlarged.png');
