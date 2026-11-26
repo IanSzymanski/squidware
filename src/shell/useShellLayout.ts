@@ -8,7 +8,18 @@ import type { EditorController } from '../editor/useEditorController';
 
 const PANEL_MIN = 288;
 const PANEL_TOGGLE = '[data-panel-toggle]', PANEL_CLOSE = '.side-panel--overlay .side-panel-header > .icon-button', PROJECT_MENU = 'button[aria-label="Project menu"]';
-const focusSoon = (selector: string, options?: FocusOptions) => requestAnimationFrame(() => document.querySelector<HTMLElement>(selector)?.focus(options));
+/**
+ * Hands focus to a control on the next frame, once the shell has redrawn. If the writer has moved focus to another
+ * visible control by then (a key pressed inside that frame), it stays where they put it.
+ */
+function focusSoon(selector: string, options?: FocusOptions, when: () => boolean = () => true) {
+  const from = document.activeElement;
+  requestAnimationFrame(() => {
+    const now = document.activeElement, target = document.querySelector<HTMLElement>(selector);
+    const movedOn = now instanceof HTMLElement && now !== document.body && now !== from && now !== target && now.getClientRects().length > 0 && !now.closest('[hidden], [inert]');
+    if (!movedOn && when()) target?.focus(options);
+  });
+}
 /** A pointer click moves focus without the keyboard focus ring and its help; Enter, Space and Escape keep them. */
 const quiet = (pointer: boolean) => pointer ? { focusVisible: false } as FocusOptions : undefined;
 const previewing = (ui: { transformPreview: unknown; formationPreview: unknown; spacingPreview: unknown; coordinatePreview: unknown; selectionPreview: unknown }) =>
@@ -132,7 +143,7 @@ export function useShellLayout(controller: EditorController) {
     if (fits) return;
     setOverlayOpen(true);
     // The panel covers the button that opened it, so focus moves inside. A preview started while it opens owns focus.
-    requestAnimationFrame(() => { if (wasPreviewing || !previewing(controller.store.getState().ui)) document.querySelector<HTMLElement>(PANEL_CLOSE)?.focus(quiet(pointer)); });
+    focusSoon(PANEL_CLOSE, quiet(pointer), () => wasPreviewing || !previewing(controller.store.getState().ui));
   }
   function hidePanel(pointer = false) {
     // A preview keeps its parameters in view: the panel stays until the preview is applied or cancelled.
