@@ -47,6 +47,18 @@ async function mouse(type, p, button = 'left') {
   await frames();
 }
 async function field(p) { return evaluate(`(()=>{const s=document.querySelector('.travel-field');s.scrollIntoView({block:'center'});const p=new DOMPoint(${p.x},${p.y}).matrixTransform(s.getScreenCTM());return {x:p.x,y:p.y};})()`); }
+/** A native pointer gesture starts from a still layout. A hidden window draws frames only when asked, so the shell can
+ * finish settling (panel, tiers, field scale) a few frames after the action that caused it; a change landing in the
+ * middle of a gesture cancels it, as it should. Wait until the field's geometry is the same across three frame pairs. */
+async function stillField(label) {
+  await wait(`new Promise(resolve => {
+    const read = () => { const svg = document.querySelector('.field-stage__svg'), m = svg.getScreenCTM(), box = document.querySelector('.field-container').getBoundingClientRect();
+      return [svg.getAttribute('viewBox'), m.a, m.d, m.e, m.f, box.left, box.top, box.width, box.height, JSON.stringify({ ...document.querySelector('.studio').dataset })].join('|'); };
+    let last = read(), same = 0, tries = 0;
+    const tick = () => requestAnimationFrame(() => requestAnimationFrame(() => { const now = read(); same = now === last ? same + 1 : 0; last = now; if (same >= 3 || ++tries >= 40) resolve(same >= 3); else tick(); }));
+    tick();
+  })`, `field layout still before ${label}`);
+}
 async function zoomAroundStroke(points) {
   const midpoint = axis => {
     const values = points.map(point => point[axis]);
@@ -192,12 +204,14 @@ app.whenReady().then(async () => { try {
   for (const [name,value] of [['Control 1 X',18],['Control 1 Y',20],['Control 2 X',25],['Control 2 Y',22]]) await type(`Interval 1 ${name}`,value);
   await evaluate("document.querySelector('.travel-field').focus()");await press('Right');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Interval 1 Control 1 X\"]').value"),'18.1');
+  await stillField('the native pan');
   const beforePan=await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')");
   const center=await field({x:20,y:20});
   for(const [type,x] of [['mouseDown',center.x],['mouseMove',center.x+40],['mouseUp',center.x+40]]) {
     await mouse(type==='mouseDown'?'mousePressed':type==='mouseUp'?'mouseReleased':'mouseMoved',{x,y:center.y},'middle');
   }
-  assert.notEqual(await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox')"),beforePan);
+  // The view follows the drag when the pan's update is drawn, which can be a moment after the release is acknowledged.
+  await wait(`document.querySelector('.field-stage__svg').getAttribute('viewBox')!==${JSON.stringify(beforePan)}`, 'native middle-button pan moves the view');
   await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,fieldOrientation:'audience-top'})`);await frames();
   await evaluate("document.querySelector('.travel-field').focus()");await press('Right');
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Interval 1 Control 1 X\"]').value"),'18');
@@ -228,6 +242,7 @@ app.whenReady().then(async () => { try {
     await frames();
     assert.equal(await evaluate(`${state}.ui.zoom`), 1);
     if (zoom === 2) await zoomAroundStroke(forward);
+    await stillField(`the freehand stroke at ${zoom}×`);
     const screen = await visibleStrokePoints(forward);
     const captured = "document.querySelector('.travel-stroke')?.points.numberOfItems";
     await mouse('mousePressed', screen[0]);
