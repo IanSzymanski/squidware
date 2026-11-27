@@ -163,7 +163,13 @@ export function useEditorController() {
   function movePerformers(updates: Record<string, Point>) { dispatch('positions.move', { index, updates }); }
   function transform(options: { dx?: number; dy?: number; rotation?: number; scale?: number }) { dispatch('selection.transform', { index, ids: selectedIds, options }); }
   // The next set usually grows out of this one, so Add set starts from the current picture; the dialog offers the other ways.
-  function addSet() { dispatch('set.hold'); }
+  // One click adds the next set holding this picture; the full choice of kinds and counts is one step further.
+  function addSet() {
+    const index = store.getState().selection.activeIndex;
+    if (dispatch('set.create', { index, kind: 'hold' })) { notify(`Set ${index + 2} added, holding set ${index + 1}. Move performers to write it.`); return; }
+    // Where a held set cannot go in as it is, the full choice opens instead of a message.
+    setToast(''); dispatch('set.hold');
+  }
   function duplicateSet() { dispatch('set.duplicate'); }
   function removeSet() { dispatch('set.remove', { index }); }
   function reorderSet(direction: -1 | 1) { dispatch('set.reorder', { index, direction }); }

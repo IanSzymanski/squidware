@@ -27,14 +27,16 @@ export function ProblemsPanel({ controller }: { controller: EditorController }) 
   function change(update: Partial<ProblemFilter>) { setFilter({ ...filter, ...update }); setPage(0); }
   const status = pending ? `Checking · ${checks.moves.length - pending} / ${checks.moves.length} ${openingOnly ? 'sets' : 'moves'}` : failed.length ? `${failed.length} ${failed.length === 1 ? 'move' : 'moves'} could not be checked` : total ? `${total} ${total === 1 ? 'problem' : 'problems'} to fix` : 'No problems';
   const clean = !pending && !failed.length && !total;
+  // A short list needs no filters; they appear once there is something to narrow, or while one is set.
+  const filtered = JSON.stringify(filter) !== JSON.stringify(defaultProblemFilter);
   return <Modal title="Show-wide problems" wide onClose={() => controller.setDialog(null)}>
     <div className="problems-panel" data-show-analysis-status={pending ? 'pending' : failed.length ? 'error' : 'ready'}>
       <div className="problems-summary">
         <div className={`problems-headline${clean ? ' is-clean' : ''}`}>{clean ? <CircleCheck size={18} /> : total ? <TriangleAlert size={18} /> : null}<strong>{status}</strong></div>
-        <span className="problems-checked" role="status">{checks.moves.length - pending - failed.length} / {checks.moves.length} {openingOnly ? 'sets' : 'moves'} checked · {total} {total === 1 ? 'finding' : 'findings'}{pending ? ` · ${pending} pending` : ''}{failed.length ? ` · ${failed.length} unavailable` : ''}</span>
+        <span className="problems-checked" role="status">{pending || failed.length ? `${checks.moves.length - pending - failed.length} of ${checks.moves.length} ${openingOnly ? 'sets' : 'moves'} checked` : `All ${checks.moves.length} ${openingOnly ? 'sets' : 'moves'} checked`}</span>
         <HelpButton command="analysis.rules-open" title="Analysis rules" description={`Spacing and stride limits. Now: at least ${defaults.minimumSpacing} yd apart, steps no bigger than ${Number((5 / defaults.maximumStride).toFixed(2))}-to-5${project.analysisRules?.sections?.length ? `, with ${project.analysisRules.sections.length} section rules` : ''}.`} className="button subtle small" disabled={!rules} disabledReason="Finish or cancel the current input or preview before editing analysis rules." onClick={() => controller.dispatch('analysis.rules-open')}><SlidersHorizontal size={14} />Rules…</HelpButton>
       </div>
-      {total > 0 && <div className="problem-filters" role="group" aria-label="Filter problems">
+      {(total > 3 || filtered) && <div className="problem-filters" role="group" aria-label="Filter problems">
         <select aria-label="Problem type" value={filter.type} onChange={e => change({ type: e.target.value })}><option value="all">All types</option><option value="collision">Spacing</option><option value="stride">Stride</option><option value="clearance">Clearance</option></select>
         <select aria-label="Problem severity" value={filter.severity} onChange={e => change({ severity: e.target.value })}><option value="all">Any severity</option><option value="danger">Danger</option><option value="warning">Warning</option></select>
         <select aria-label="Problem move" value={filter.moveId} onChange={e => change({ moveId: e.target.value })}><option value="all">Whole show</option>{checks.moves.map(m => <option key={m.moveId} value={m.moveId}>{m.index ? `Set ${m.index} → ${m.index + 1} · ${project.sets[m.index].name}` : 'Opening set'}</option>)}</select>

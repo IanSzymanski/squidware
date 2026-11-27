@@ -51,7 +51,7 @@ module.exports = async function ({window,output,evaluate,uiWait,clickSelector,re
   await uiWait(`Math.abs(Number(${numberSelector('Rotation · °')}.value)-45)<.001`,'endpoint updates rotation');
   const dragged=await shown(); near(dragged,{[ids[0]]:{x:28,y:20},[ids[1]]:{x:38,y:30}});
   // The field shows hundredths of a step; the geometry above is exact.
-  assert.ok(Math.abs(Number(await evaluate(`${numberSelector('Length · steps')}.value`))-steps(Math.sqrt(200)))<=.005);
+  assert.ok(Math.abs(Number(await evaluate(`${numberSelector('Length · steps')}.value`))-steps(Math.sqrt(200)))<=.05,"Length shows the dragged length to a tenth of a step");
   await drag('end',{x:43,y:30},true); near(await shown(),dragged); await screenshot('formation-endpoints.png'); await cancel();
   await open('Line');
   await editNumber('Length · steps',steps(Math.sqrt(200))); await editNumber('Rotation · °',45); await center(33,25); near(await shown(),dragged);

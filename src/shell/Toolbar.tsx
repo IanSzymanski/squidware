@@ -201,20 +201,20 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     })] : []),
   ];
   const motionMenu: MenuEntry[] = [
-    // One reason for the whole group, in its heading, rather than the same sentence under each item.
+    // One reason for the whole group, in its heading; what each item does is in its tooltip, so the menu reads as a list of names.
     { type: 'heading', label: count === 1 ? 'One performer' : 'One performer · select exactly one' },
-    item(action('path.open', undefined), <Spline size={15} />, { label: 'Edit performer path', keepDetail: count !== 1, detail: 'Bend one performer’s path with handles on the field', description: 'Curve one performer’s travel into this set with handles on the field.' }),
-    item(action('path.draw-open', undefined), <Pencil size={15} />, { label: 'Draw performer path', keepDetail: count !== 1, detail: 'Sketch one performer’s path freehand', description: 'Sketch one performer’s travel into this set on the field.' }),
-    item(action('schedule.open', undefined), <Clock3 size={15} />, { label: 'Edit movement timing', keepDetail: count !== 1, detail: 'Holds and timed stages inside the move', description: 'Give one performer holds and timed stages within the move.' }),
+    item(action('path.open', undefined), <Spline size={15} />, { label: 'Edit performer path', description: 'Curve one performer’s travel into this set with handles on the field.' }),
+    item(action('path.draw-open', undefined), <Pencil size={15} />, { label: 'Draw performer path', description: 'Sketch one performer’s travel into this set on the field.' }),
+    item(action('schedule.open', undefined), <Clock3 size={15} />, { label: 'Edit movement timing', description: 'Give one performer holds and timed stages within the move.' }),
     { type: 'heading', label: 'Groups' },
-    item(action('group.open', {}), <Footprints size={15} />, { label: 'Group route movement', detail: 'Follow-the-leader, counter-march or conveyor', description: 'Follow the leader, counter-march or conveyor along a shared route.' }),
-    ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, name: `Edit group ${group.name}`, label: `“${group.name}”`, detail: 'Edit this group movement' })),
-    item(action('transition.open', undefined), <Blend size={15} />, { label: 'Formation transition', detail: 'Morph one live formation into another', description: 'Morph one live formation into another with shared timing and checks.' }),
-    item(action('routes.open', undefined), <Route size={15} />, { label: 'Shared routes', detail: 'Reusable routes that group movements follow', description: 'Draw reusable routes that group movements travel along.' }),
+    item(action('group.open', {}), <Footprints size={15} />, { label: 'Group route movement', description: 'Follow the leader, counter-march or conveyor along a shared route.' }),
+    ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, name: `Edit group ${group.name}`, label: `“${group.name}”` })),
+    item(action('transition.open', undefined), <Blend size={15} />, { label: 'Formation transition', description: 'Morph one live formation into another with shared timing and checks.' }),
+    item(action('routes.open', undefined), <Route size={15} />, { label: 'Shared routes', description: 'Draw reusable routes that group movements travel along.' }),
     { type: 'heading', label: 'This move' },
-    item(action('path.operations-open', undefined), <SlidersHorizontal size={15} />, { label: 'Move operations', detail: 'Resize, reverse or copy this move', description: 'Resize the move’s counts, reverse it, or copy its intervals.' }),
-    item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition', detail: 'Add a set partway through this move' }),
-    item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues', detail: 'Body and equipment cues by count' }),
+    item(action('path.operations-open', undefined), <SlidersHorizontal size={15} />, { label: 'Move operations', description: 'Resize the move’s counts, reverse it, or copy its intervals.' }),
+    item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition' }),
+    item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues' }),
   ];
   const shapeMenu: MenuEntry[] = [...shapes.map(shape => item(shape.action, shape.icon, { key: shape.action.key })), ...moreShapes];
   const arrangeMenu: MenuEntry[] = [

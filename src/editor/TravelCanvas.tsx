@@ -5,6 +5,7 @@ import { FieldDrawing } from '../components/Field2D';
 import { formatYards } from '../coordinates';
 import { movementSvg, movementTravels } from '../movementPaths';
 import { moveSelection } from '../snapping';
+import { isCustomSurface } from '../surfaces';
 import type { PerformerPath, Point, Project, Move } from '../types';
 import { DRAW_LIMIT, travelTicks, type TravelHandle } from './pathAuthoring';
 import { HelpButton } from './ControlHelp';
@@ -50,6 +51,10 @@ export function TravelCanvas(props: TravelPreview & { toolbar?: ReactNode }) {
     <svg className="path-preview" viewBox={`${origin.x} ${origin.y} ${width} ${height}`}>
       <g pointerEvents="none"><FieldDrawing project={project} positions={props.positions} selectedIds={[props.performerId]} showLabels={false} /></g>
       <TravelOverlay {...props} zoom={zoom} snap={snap} />
+      {zoom > 1 && !isCustomSurface(project.field) && <g className="travel-ruler" pointerEvents="none" aria-hidden="true">
+        <rect x={origin.x - width} y={origin.y} width={width * 3} height={3.4 / zoom} />
+        {Array.from({ length: 9 }, (_, i) => (i + 1) * 10).filter(x => x > origin.x + 1 && x < origin.x + width - 1).map(x => <text key={x} x={x} y={origin.y + 2.5 / zoom} fontSize={2.3 / zoom}>{Math.min(x, project.field.width - x)}</text>)}
+      </g>}
     </svg>
   </div>;
 }

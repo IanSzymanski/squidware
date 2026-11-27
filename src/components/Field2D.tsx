@@ -278,7 +278,7 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const hitCycle = useRef<HitCycle | null>(null);
-  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut]);
+  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut, presentation?.labelReachSelected]);
   const [canvasReady, setCanvasReady] = useState(false);
   const [screen, setScreen] = useState<DrawingProps['screen']>();
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });

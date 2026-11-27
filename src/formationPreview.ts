@@ -18,6 +18,8 @@ export interface FormationSession {
   /** Session-only: the geometry a shortest-travel order was solved for. Geometry edits keep the order frozen. */
   assignmentSolvedFor?: string;
   live?: { id: string; name: string; slotCount: number; slots: number[] };
+  /** Selected performers a first shape left where they stand because they were far from the rest. */
+  apart?: string[];
 }
 export interface FormationResult {
   positions: Record<string, Point>; updates: Record<string, Point>; changed: boolean; error: string | null; travel: { total: number; maximum: number } | null;

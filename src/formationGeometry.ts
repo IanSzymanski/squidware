@@ -2,6 +2,7 @@ import type { FormationKind, FormationOptions, Point, Project } from './types';
 import { PROJECT_LIMITS } from './projectValidation';
 import { formationCenter } from './formationAssignment';
 import { affinePoint } from './transforms';
+import { hashLines } from './snapping';
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 export function generateFormation(kind: FormationKind, count: number, options: FormationOptions): Point[] {
@@ -101,7 +102,15 @@ export function formationInterval(points: readonly Point[]): number {
  * between neighbors lands on a whole number of grid steps. */
 export function defaultFormationOptions(kind: FormationKind, positions: Record<string, Point>, ids: readonly string[], preferred: FormationSeed, field: Project['field'], minimumSpacing: number, center?: Point, gridStep?: number): FormationOptions {
   const body = formationBody(positions, ids);
-  center ??= formationCenter(positions, body);
+  // A seeded center sits on a step: whole steps from the yard lines, and from whichever sideline or hash it is nearest.
+  // A block keeps its own center, as it keeps its footprint, and so does a handful of performers.
+  if (!center) {
+    const mean = formationCenter(positions, body);
+    if (gridStep && gridStep > 1e-6 && kind !== 'block' && ids.length >= 6) {
+      const references = [0, ...hashLines(field), field.height], reference = references.reduce((best, y) => Math.abs(y - mean.y) < Math.abs(best - mean.y) ? y : best);
+      center = { x: Math.round(mean.x / gridStep) * gridStep, y: reference + Math.round((mean.y - reference) / gridStep) * gridStep };
+    } else center = mean;
+  }
   const pivot = formationCenter(positions, body);
   const local = extent(body.map(id => affinePoint(positions[id], pivot, -preferred.rotation, 1)));
   // Micro-yard rounding keeps seeded values readable (56, not 55.99999999999999); fitting below stays exact.

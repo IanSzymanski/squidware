@@ -3,6 +3,7 @@ import type { PointerEvent } from 'react';
 import type { Point, Project } from '../types';
 import { transformPositions } from '../domain';
 import { affinePoint } from '../transforms';
+import { formationBody } from '../formationGeometry';
 
 export interface FieldSelectionBox {
   /** Commit a handle drag as one undoable edit: degrees clockwise and a scale factor about the selection's center. */
@@ -51,8 +52,9 @@ export function SelectionBox({ ids, positions, original, box, field, scale, flip
 
   const px = (value: number) => value / scale;
   const pad = px(radius + 9);
+  // The frame holds the group: a performer standing well apart (a soloist offstage) neither stretches it nor moves its center.
   const bounds = (source: Record<string, Point>) => {
-    const points = ids.map(id => source[id]).filter(Boolean);
+    const points = formationBody(source, ids.filter(id => source[id])).map(id => source[id]);
     return points.length < 2 ? null : {
       left: Math.min(...points.map(p => p.x)) - pad, right: Math.max(...points.map(p => p.x)) + pad,
       top: Math.min(...points.map(p => p.y)) - pad, bottom: Math.max(...points.map(p => p.y)) + pad,
@@ -85,8 +87,9 @@ export function SelectionBox({ ids, positions, original, box, field, scale, flip
       const base = Object.fromEntries(ids.filter(id => original[id]).map(id => [id, original[id]]));
       const members = Object.values(base);
       if (event.button !== 0 || !start || !from || members.length < 2) return;
-      // The same center the edit turns about: the mean of the selected positions.
-      const pivot = members.reduce((sum, point) => ({ x: sum.x + point.x / members.length, y: sum.y + point.y / members.length }), { x: 0, y: 0 });
+      // The same center the edit turns about: the mean of the group, leaving out anyone standing well apart.
+      const body = formationBody(base, Object.keys(base)).map(id => base[id]);
+      const pivot = body.reduce((sum, point) => ({ x: sum.x + point.x / body.length, y: sum.y + point.y / body.length }), { x: 0, y: 0 });
       drag.current = { handle: kind, start, pivot, base, rotation: 0, scale: 1, moved: false };
       event.currentTarget.setPointerCapture(event.pointerId);
       setLive({ handle: kind, rotation: 0, scale: 1, pivot, frame: from });

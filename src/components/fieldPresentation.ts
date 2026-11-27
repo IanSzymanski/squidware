@@ -10,6 +10,8 @@ export interface FieldPresentation {
   labelSizePx: number;
   /** Width and height in pixels of what floats over the view's right corners, where labels are not placed. */
   labelKeepOut?: { topRight?: readonly [number, number]; bottomRight?: readonly [number, number] };
+  /** False while a shape previews: its labels sit beside their dots where they fit, with no leaders reaching farther out. */
+  labelReachSelected?: boolean;
   labelMode: 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
@@ -87,12 +89,13 @@ function outwardSides(dots: readonly LabelDot[]): Map<string, readonly [number, 
  * out. A selected or focused performer is always named: farther from its dot if it must be, tied to it by a leader, and
  * clear of other labels wherever that is possible.
  */
-export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentation: FieldPresentation): Map<string, ScreenBox> {
+export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentation: FieldPresentation, obstacles: readonly ScreenBox[] = []): Map<string, ScreenBox> {
   const result = new Map<string, ScreenBox>();
   if (presentation.labelMode === 'none') return result;
   const dotSpace = new Occupancy(), labelSpace = new Occupancy();
   const radius = presentation.dotRadiusPx + 3;
   for (const dot of dots) dotSpace.add({ left: dot.x - radius, top: dot.y - radius, right: dot.x + radius, bottom: dot.y + radius });
+  for (const box of obstacles) dotSpace.add(box);
   const { topRight, bottomRight } = presentation.labelKeepOut ?? {};
   if (topRight) labelSpace.add({ left: bounds.right - topRight[0], top: bounds.top, right: bounds.right, bottom: bounds.top + topRight[1] });
   if (bottomRight) labelSpace.add({ left: bounds.right - bottomRight[0], top: bounds.bottom - bottomRight[1], right: bounds.right, bottom: bounds.bottom });
@@ -111,10 +114,11 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
     const at = (extra: number) => sides.map(side => labelBox(dot, side, (side[0] > .9 ? gap : far) + extra, width, height)).filter(inView);
     const near = at(0);
     let box = near.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate));
-    if (!box && (dot.selected || dot.focused)) {
+    if (!box && (dot.focused || dot.selected && presentation.labelReachSelected !== false)) {
       const reach = [...near, ...at(10), ...at(22), ...at(36)];
+      // Labels never overlap: a selected label that finds no clear spot even farther out is left out; only focus always names.
       box = reach.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate))
-        ?? reach.find(candidate => !labelSpace.intersects(candidate)) ?? near[0];
+        ?? reach.find(candidate => !labelSpace.intersects(candidate)) ?? (dot.focused ? near[0] : undefined);
     }
     if (box) { result.set(dot.id, box); labelSpace.add(box); }
   }

@@ -92,7 +92,8 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('analysis.problems-open')`);
     await wait("document.querySelector('[data-show-analysis-status]')?.dataset.showAnalysisStatus==='ready'", 'all 66 moves checked', 150000);
     const analysis = await evaluate("document.querySelector('.problems-panel [role=status]').textContent");
-    assert.match(analysis, /66 \/ 66 moves checked · 1 finding\b/);
+    assert.match(analysis, /^All 66 moves checked$/);
+    assert.match(await evaluate("document.querySelector('.problems-headline').textContent"), /^1 problem to fix$/);
     assert.equal(await evaluate("document.querySelectorAll('.problem-result').length"), 1);
     assert.ok(expected.sets.find(s => s.name === 'TE 5 · Layers').notes.includes('TEACHING FINDING'));
     await key(window, 'Escape'); await wait(`${state}.ui.dialog===null`, 'analysis closed');
