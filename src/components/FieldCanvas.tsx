@@ -123,7 +123,8 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
           // Labels outside a selection (or under many paths) recede; with nothing selected they sit a little under the dots.
           const ink = isSelected ? 1 : quietLabels || selectedIds.length ? .45 : .85;
           context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'round';
-          const line = labelLeader(p, label, display.dotRadiusPx);
+          // Only a selected or focused label is tied by a leader; the others sit against their dots.
+          const line = isSelected || person.id === focusedId ? labelLeader(p, label, display.dotRadiusPx) : null;
           if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = '#c3d0c4'; context.globalAlpha = .5 * ink; context.lineWidth = 1; context.stroke(); }
           context.globalAlpha = ink;
           context.strokeStyle = '#1c3026'; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);

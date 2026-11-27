@@ -185,7 +185,7 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
         {isSelected && <circle className={screen ? "field-selection-ring" : undefined} r={screen ? (display.dotRadiusPx + 3) / scale : .96} fill={`${color}22`} stroke="#ffffff" strokeWidth={screen ? 1.5 / scale : .16} pointerEvents="none" />}
         <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth={screen ? 1 / scale : .16} />
         <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity="0.3" pointerEvents="none" />
-        {showLabels && screen && label && leader(labelPoint, label) }
+        {showLabels && screen && label && (isSelected || performer.id === keyboardFocusId) && leader(labelPoint, label) }
         {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} strokeLinejoin="round" paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} opacity={!screen || isSelected ? undefined : selected.size ? .45 : .85} pointerEvents="none">{performer.label}</text>}
         </g>
       </g>;

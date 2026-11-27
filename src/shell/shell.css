@@ -300,12 +300,12 @@
 .section-legend--compact > .section-chips { display: flex; flex-wrap: wrap; gap: 2px 2px; margin: 0 -4px; }
 .section-legend--compact .section-chips button { position: relative; flex: none; width: auto; max-width: none; padding: 0 5px 0 4px; gap: 4px; }
 .section-legend--compact .section-chips button .section-count { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-/* Folded, every section keeps its name where the window has the height; in a short window the sections outside the selection fold to
-   their colors, each still a button with its name in its tooltip, so the selection's numbers stay in view. */
+/* Folded, every section keeps its name where the window has the height; in a short window the sections outside the selection take the
+   short word a writer says for them ("Mello", "Bari"), with the full name in the tooltip, so the selection's numbers stay in view. */
 .section-legend--compact .section-chips button .section-name { color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; }
 @media (max-height: 820px) {
-  .section-legend--compact .section-chips button:not(.selected, .partial) { padding: 0 3px; }
   .section-legend--compact .section-chips button:not(.selected, .partial) .section-name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .section-legend--compact .section-chips button:not(.selected, .partial)::after { content: attr(data-short); color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; }
 }
 .section-legend--compact .section-chips button:is(.selected, .partial) .section-name { color: var(--text); font-weight: 600; }
 .section-legend--compact .section-chips button.selected { background: transparent; }

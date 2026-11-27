@@ -60,6 +60,8 @@ export function FormationHandles({ preview, field, scale }: { preview: FieldForm
       : kind === 'bulge' || kind === 'depth' ? <rect x={-5/scale} y={-5/scale} width={10/scale} height={10/scale} rx={1/scale} transform="rotate(45)" fill="#fff" strokeWidth={2/scale} />
       : <rect x={-5.5/scale} y={-5.5/scale} width={11/scale} height={11/scale} rx={1.5/scale} fill="#fff" strokeWidth={2/scale} />}
   </g>;
+  // The new form is the clearest thing on screen: flagged steps keep their color, the three longest moves stay legible and the rest are a trace.
+  const longest = new Set([...session.ids].filter(id => result.updates[id]).sort((a, b) => Math.hypot(result.updates[b].x - original[b].x, result.updates[b].y - original[b].y) - Math.hypot(result.updates[a].x - original[a].x, result.updates[a].y - original[a].y)).slice(0, 3));
   const endpoints = session.kind === 'line' || session.kind === 'arc';
   const baseline = session.kind === 'arc' ? -options.height/2 : 0;
   const start = at(-options.width/2,baseline); const end = at(options.width/2,baseline);
@@ -67,7 +69,7 @@ export function FormationHandles({ preview, field, scale }: { preview: FieldForm
   const outline = [[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y]) => at(x*options.width/2,y*options.height/2));
   return <g ref={geometry} className="formation-handles" aria-hidden="true" stroke={result.error ? '#ffb6aa' : '#8dc8ff'}>
     <g pointerEvents="none" fill="none" strokeWidth={1.5/scale} strokeDasharray={`${4/scale} ${3/scale}`}>
-      {session.ids.map(id => <g key={id} data-stride={preview.strides?.[id]} stroke={preview.strides?.[id] ? STRIDE_COLORS[preview.strides[id]] : undefined} opacity={preview.strides?.[id] ? undefined : .22}><circle cx={original[id].x} cy={original[id].y} r={6/scale} /><path data-formation-path={id} d={`M${original[id].x},${original[id].y}L${result.positions[id].x},${result.positions[id].y}`} /></g>)}
+      {session.ids.map(id => <g key={id} data-stride={preview.strides?.[id]} stroke={preview.strides?.[id] ? STRIDE_COLORS[preview.strides[id]] : undefined} opacity={preview.strides?.[id] ? undefined : longest.has(id) ? .35 : .1}><circle cx={original[id].x} cy={original[id].y} r={6/scale} /><path data-formation-path={id} d={`M${original[id].x},${original[id].y}L${result.positions[id].x},${result.positions[id].y}`} /></g>)}
       {endpoints ? <path d={`M${start.x},${start.y}L${end.x},${end.y}`} /> : <polygon points={outline.map(p => `${p.x},${p.y}`).join(' ')} />}
       <path d={`M${options.center.x},${options.center.y}L${rotation.x},${rotation.y}`} />
     </g>

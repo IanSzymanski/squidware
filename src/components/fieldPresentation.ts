@@ -114,7 +114,9 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
     const far = gap + LABEL_LEADER_ROOM;
     const out = dot.prefer === 'below' ? [0, 1] as const : dot.prefer === 'above' ? [0, -1] as const : outward.get(dot.id);
     const sides = out ? [...SIDES].sort((a, b) => (b[0] * out[0] + b[1] * out[1]) - (a[0] * out[0] + a[1] * out[1])) : SIDES;
-    const at = (extra: number) => sides.map(side => labelBox(dot, side, (side[0] > .9 ? gap : far) + extra, width, height)).filter(inView);
+    // An unselected label sits right against its dot on whichever side is free, so it needs no leader; a selected one may sit farther out, tied by one.
+    const tied = dot.selected || dot.focused;
+    const at = (extra: number) => sides.map(side => labelBox(dot, side, (side[0] > .9 || !tied ? gap : far) + extra, width, height)).filter(inView);
     const near = at(0);
     let box = near.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate));
     if (!box && (dot.focused || dot.selected && presentation.labelReachSelected !== false)) {
