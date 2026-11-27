@@ -132,6 +132,8 @@ export function defaultFormationOptions(kind: FormationKind, positions: Record<s
     const interval = formationInterval(generateFormation(kind, ids.length, options));
     const target = Math.max(Math.round(interval / gridStep), Math.ceil(minimumSpacing / gridStep - 1e-9), 1) * gridStep;
     if (interval > 1e-9) options = { ...options, width: options.width * target / interval, height: kind === 'line' ? options.height : options.height * target / interval };
+    // A curved form's width and depth land on half steps too; its interval then stays within a few hundredths of a step of the target.
+    if (kind !== 'line') { const half = gridStep / 2; options = { ...options, width: Math.max(half, Math.round(options.width / half) * half), height: Math.round(options.height / half) * half }; }
   }
   options = { ...options, width: Math.min(200, options.width), height: Math.min(200, options.height) };
   return fitFormationOptions(kind, ids.length, options, field);

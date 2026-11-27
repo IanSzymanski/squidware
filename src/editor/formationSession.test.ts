@@ -73,8 +73,10 @@ describe('formation preview commands', () => {
     // The brass already stand in Cast order in a block, so reproducing it in Cast order crosses no paths and keeps the numbers in order.
     expect(session).toMatchObject(kind==='block'?{kind,assignmentMode:'roster',options:{assignment:'roster'}}:{kind,assignmentMode:'shortest',options:{assignment:'position'}});
     // Seeded from the 56 × 14 yd brass footprint, then spread so neighbors stand a whole number of 8-to-5 steps apart.
-    if (kind!=='block') { const steps=formationInterval(generateFormation(kind,24,session.options))/.625; expect(steps).toBeCloseTo(Math.round(steps),6); }
-    if (kind==='arc') expect(session.options.height/session.options.width).toBeCloseTo(14/56,6);
+    if (kind!=='block') { const steps=formationInterval(generateFormation(kind,24,session.options))/.625; expect(Math.abs(steps-Math.round(steps))).toBeLessThan(.05); }
+    // Width and depth of a curved form land on half steps.
+    if (kind!=='block'&&kind!=='line') for (const size of [session.options.width,session.options.height]) expect(size/.3125).toBeCloseTo(Math.round(size/.3125),6);
+    if (kind==='arc') expect(session.options.height/session.options.width).toBeCloseTo(14/56,1);
     expect(result.error).toBeNull(); expect(properCrossings(project.sets[0].positions,result.updates)).toBe(0);
     // The brass already stand in an 8 × 3 block, so the selection-sized block seed reproduces it exactly.
     expect(result.changed).toBe(kind!=='block'); if (kind==='block') return;

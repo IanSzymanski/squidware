@@ -160,7 +160,7 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
   // The tie between a dot and a label placed away from its usual side, in the performer's own frame.
   const leader = (at: Point, box: ScreenBox) => {
     const line = labelLeader({ x: at.x * scale, y: at.y * scale }, box, display.dotRadiusPx);
-    return line && <line className="field-label-leader" x1={line.x1 / scale - at.x} y1={line.y1 / scale - at.y} x2={line.x2 / scale - at.x} y2={line.y2 / scale - at.y} stroke="#c3d0c4" strokeOpacity=".75" strokeWidth={1 / scale} pointerEvents="none" />;
+    return line && <line className="field-label-leader" x1={line.x1 / scale - at.x} y1={line.y1 / scale - at.y} x2={line.x2 / scale - at.x} y2={line.y2 / scale - at.y} stroke="#c3d0c4" strokeOpacity=".5" strokeWidth={1 / scale} pointerEvents="none" />;
   };
   return <>
     {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} gridScale={screen?.scale} />}
@@ -186,7 +186,7 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
         <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth={screen ? 1 / scale : .16} />
         <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity="0.3" pointerEvents="none" />
         {showLabels && screen && label && leader(labelPoint, label) }
-        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} strokeLinejoin="round" paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} pointerEvents="none">{performer.label}</text>}
+        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} strokeLinejoin="round" paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} opacity={!screen || isSelected ? undefined : selected.size ? .45 : .85} pointerEvents="none">{performer.label}</text>}
         </g>
       </g>;
     })}
@@ -278,7 +278,7 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const hitCycle = useRef<HitCycle | null>(null);
-  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut, presentation?.labelReachSelected]);
+  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut, presentation?.labelReachSelected, presentation?.labelSubset]);
   const [canvasReady, setCanvasReady] = useState(false);
   const [screen, setScreen] = useState<DrawingProps['screen']>();
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });

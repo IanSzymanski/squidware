@@ -7,7 +7,7 @@ import { flushSync } from 'react-dom';
 import type { ChangeEvent } from 'react';
 
 import type { AudioAttachment, SetPropertyUpdate, Performer, Point, Project } from '../types';
-import { exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, totalCounts, uid, PROJECT_LIMITS } from '../domain';
+import { exportCoordinatesCsv, importRosterCsv, parseProject, serializeProject, setTiming, totalCounts, uid, PROJECT_LIMITS } from '../domain';
 import { sampleStaging } from '../staging';
 import { FieldDrawing } from '../components/Field2D';
 
@@ -165,8 +165,9 @@ export function useEditorController() {
   // The next set usually grows out of this one, so Add set starts from the current picture; the dialog offers the other ways.
   // One click adds the next set holding this picture; the full choice of kinds and counts is one step further.
   function addSet() {
-    const index = store.getState().selection.activeIndex;
-    if (dispatch('set.create', { index, kind: 'hold' })) { notify(`Set ${index + 2} added, holding set ${index + 1}. Move performers to write it.`); return; }
+    // The new move takes the current set's length, the phrase the writer is already in.
+    const index = store.getState().selection.activeIndex, counts = index > 0 ? setTiming(store.getState().project.present, index).counts : undefined;
+    if (dispatch('set.create', { index, kind: 'hold', ...(counts ? { counts } : {}) })) { notify(`Set ${index + 2} added: ${counts ?? store.getState().preferences.value.newSetCounts} counts, holding set ${index + 1}. Move performers to write it.`); return; }
     // Where a held set cannot go in as it is, the full choice opens instead of a message.
     setToast(''); dispatch('set.hold');
   }

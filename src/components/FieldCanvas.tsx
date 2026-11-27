@@ -120,10 +120,11 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
         context.globalAlpha = 1;
         const label = receded ? undefined : labels.get(person.id);
         if (label) {
-          const ink = quietLabels && !isSelected ? .5 : 1;
+          // Labels outside a selection (or under many paths) recede; with nothing selected they sit a little under the dots.
+          const ink = isSelected ? 1 : quietLabels || selectedIds.length ? .45 : .85;
           context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'round';
           const line = labelLeader(p, label, display.dotRadiusPx);
-          if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = '#c3d0c4'; context.globalAlpha = .75 * ink; context.lineWidth = 1; context.stroke(); }
+          if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = '#c3d0c4'; context.globalAlpha = .5 * ink; context.lineWidth = 1; context.stroke(); }
           context.globalAlpha = ink;
           context.strokeStyle = '#1c3026'; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
           context.fillStyle = isSelected ? '#fff' : '#c3d0c4'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);

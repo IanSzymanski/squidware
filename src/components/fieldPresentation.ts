@@ -12,6 +12,8 @@ export interface FieldPresentation {
   labelKeepOut?: { topRight?: readonly [number, number]; bottomRight?: readonly [number, number] };
   /** False while a shape previews: its labels sit beside their dots where they fit, with no leaders reaching farther out. */
   labelReachSelected?: boolean;
+  /** While a shape previews, the selected performers named along it (the ends and every fourth); the rest of the shape goes unlabeled. */
+  labelSubset?: ReadonlySet<string>;
   labelMode: 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
@@ -99,7 +101,8 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
   const { topRight, bottomRight } = presentation.labelKeepOut ?? {};
   if (topRight) labelSpace.add({ left: bounds.right - topRight[0], top: bounds.top, right: bounds.right, bottom: bounds.top + topRight[1] });
   if (bottomRight) labelSpace.add({ left: bounds.right - bottomRight[0], top: bounds.bottom - bottomRight[1], right: bounds.right, bottom: bounds.bottom });
-  const ordered = dots.filter(dot => presentation.labelMode === 'all' || dot.selected || dot.focused)
+  const subset = presentation.labelSubset;
+  const ordered = dots.filter(dot => (presentation.labelMode === 'all' || dot.selected || dot.focused) && (!subset || !dot.selected || dot.focused || subset.has(dot.id)))
     .sort((a, b) => Number(b.focused) - Number(a.focused) || Number(b.selected) - Number(a.selected) || stableIdOrder(a, b));
   const outward = outwardSides(dots);
   const height = presentation.labelSizePx + 4;

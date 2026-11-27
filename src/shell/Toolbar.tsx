@@ -200,12 +200,14 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
       return { key: live.id, label: live.name, icon: <Sparkles size={15} />, hint: `${live.members.length}`, disabled: !!a.disabledReason, disabledReason: a.disabledReason ?? undefined, onSelect: () => run(a) };
     })] : []),
   ];
-  const motionMenu: MenuEntry[] = [
+  const onePerformer: MenuEntry[] = [
     // One reason for the whole group, in its heading; what each item does is in its tooltip, so the menu reads as a list of names.
     { type: 'heading', label: count === 1 ? 'One performer' : 'One performer · select exactly one' },
     item(action('path.open', undefined), <Spline size={15} />, { label: 'Edit performer path', description: 'Curve one performer’s travel into this set with handles on the field.' }),
     item(action('path.draw-open', undefined), <Pencil size={15} />, { label: 'Draw performer path', description: 'Sketch one performer’s travel into this set on the field.' }),
     item(action('schedule.open', undefined), <Clock3 size={15} />, { label: 'Edit movement timing', description: 'Give one performer holds and timed stages within the move.' }),
+  ];
+  const groupMotion: MenuEntry[] = [
     { type: 'heading', label: 'Groups' },
     item(action('group.open', {}), <Footprints size={15} />, { label: 'Group route movement', description: 'Follow the leader, counter-march or conveyor along a shared route.' }),
     ...groups.map(group => item(action('group.open', { id: group.id }), <Users size={15} />, { key: group.id, name: `Edit group ${group.name}`, label: `“${group.name}”` })),
@@ -216,6 +218,8 @@ export function Toolbar({ controller: c, layout }: { controller: EditorControlle
     item(action('set.split-open', undefined), <Scissors size={15} />, { label: 'Split transition' }),
     item(action('choreography.open', undefined), <Sparkles size={15} />, { label: 'Choreography cues' }),
   ];
+  // With a group selected, what applies to it comes first; the one-performer tools wait at the bottom, still named, with their reason.
+  const motionMenu: MenuEntry[] = count >= 2 ? [...groupMotion, ...onePerformer] : [...onePerformer, ...groupMotion];
   const shapeMenu: MenuEntry[] = [...shapes.map(shape => item(shape.action, shape.icon, { key: shape.action.key })), ...moreShapes];
   const arrangeMenu: MenuEntry[] = [
     item(align, <AlignHorizontalJustifyCenter size={15} />, { label: 'Align selection' }), item(rotate, <RotateCw size={15} />, { label: 'Rotate selection' }),
