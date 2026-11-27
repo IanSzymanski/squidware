@@ -528,7 +528,7 @@ export const commandRegistry = {
       const center = previous?.options.center ?? formationCenter(positions, ids), saved = previous?.live ? previous.options : s.ui.formationDrafts[kind];
       const preferred = { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns };
       // Session drafts and live edits win; a first use is sized from the selection and fit inside the field.
-      const seeded: FormationOptions = saved || a.scaffold ? { assignment: 'position', ...(saved ?? preferred), center } : defaultFormationOptions(kind, positions, ids, preferred, s.project.present.field, (s.project.present.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES).minimumSpacing, previous?.options.center);
+      const seeded: FormationOptions = saved || a.scaffold ? { assignment: 'position', ...(saved ?? preferred), center } : defaultFormationOptions(kind, positions, ids, preferred, s.project.present.field, (s.project.present.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES).minimumSpacing, previous?.options.center, isCustomSurface(s.project.present.field) ? undefined : 5 / (s.project.present.snapping ?? DEFAULT_SNAPPING).steps);
       const inherited = inherit ? sessionAssignmentMode(previous!) : undefined;
       const remembered = s.ui.formationAssignmentModes[kind];
       let mode = a.assignmentMode ?? inherited ?? (a.scaffold ? (seeded.assignment === 'roster' ? 'roster' : 'position') : remembered && remembered !== 'shortest' ? remembered : defaultAssignmentMode(ids.length));

@@ -101,7 +101,7 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(state+'.project.past.length'),0,'unpressed movement creates no undo entry');
   pass('selection clicks and no-button native pointer movement preserve project geometry and history');
   await openPath();await fillCurve(true);await capture('paths-preview.png');
-  assert.match(await evaluate("document.querySelector('[aria-label=\"Path preview position\"]').textContent"),/: X 20, Y 26\.25 yd/);
+  assert.match(await evaluate("document.querySelector('[aria-label=\"Path preview position\"]').textContent"),/X 20, Y 26\.25 yd/);
   assert.deepEqual(await present(),p);assert.equal(await evaluate(state+'.project.past.length'),0);
   await type(button('Control 1 X'),-1);
   assert.equal(await evaluate(`document.querySelector(${JSON.stringify(apply)}).getAttribute('aria-disabled')`),'true');

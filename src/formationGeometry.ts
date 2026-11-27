@@ -74,15 +74,38 @@ const nearestGap = (points: readonly Point[]) => {
   return gap;
 };
 
+const median = (values: number[]) => { const sorted = [...values].sort((a, b) => a - b), mid = sorted.length >> 1; return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; };
+/** The body of a selection: a performer standing well away from the rest (a soloist offstage, say) does not size or
+ * center a new shape. At most one in ten is left out, and only from selections of six or more. */
+export function formationBody(positions: Record<string, Point>, ids: readonly string[]): readonly string[] {
+  if (ids.length < 6) return ids;
+  const middle = { x: median(ids.map(id => positions[id].x)), y: median(ids.map(id => positions[id].y)) };
+  const distance = (id: string) => Math.hypot(positions[id].x - middle.x, positions[id].y - middle.y);
+  const typical = median(ids.map(distance)), limit = Math.max(3 * typical, typical + 10);
+  const far = ids.filter(id => distance(id) > limit);
+  return far.length && far.length <= Math.floor(ids.length / 10) ? ids.filter(id => !far.includes(id)) : ids;
+}
+
+/** Average distance from each slot to its nearest neighbor: the interval a drill writer reads off a form. */
+export function formationInterval(points: readonly Point[]): number {
+  if (points.length < 2) return 0;
+  let total = 0;
+  for (const a of points) { let nearest = Infinity; for (const b of points) if (a !== b) nearest = Math.min(nearest, Math.hypot(a.x - b.x, a.y - b.y)); total += nearest; }
+  return total / points.length;
+}
+
 /** First-use parameters for a shape: sized from the selection's footprint in the shape's
  * rotated frame, spread to the minimum spacing, then fit inside the field. Preferences
  * supply rotation and columns, the size for a selection without extent, and the deepest
- * depth-to-width proportion for arcs, circles and waves. */
-export function defaultFormationOptions(kind: FormationKind, positions: Record<string, Point>, ids: readonly string[], preferred: FormationSeed, field: Project['field'], minimumSpacing: number, center = formationCenter(positions, ids)): FormationOptions {
-  const pivot = formationCenter(positions, ids);
-  const local = extent(ids.map(id => affinePoint(positions[id], pivot, -preferred.rotation, 1)));
+ * depth-to-width proportion for arcs, circles and waves. With a grid step, the interval
+ * between neighbors lands on a whole number of grid steps. */
+export function defaultFormationOptions(kind: FormationKind, positions: Record<string, Point>, ids: readonly string[], preferred: FormationSeed, field: Project['field'], minimumSpacing: number, center?: Point, gridStep?: number): FormationOptions {
+  const body = formationBody(positions, ids);
+  center ??= formationCenter(positions, body);
+  const pivot = formationCenter(positions, body);
+  const local = extent(body.map(id => affinePoint(positions[id], pivot, -preferred.rotation, 1)));
   // Micro-yard rounding keeps seeded values readable (56, not 55.99999999999999); fitting below stays exact.
-  const span = (min: number, max: number) => ids.length ? Math.round((max - min) * 1e6) / 1e6 : 0;
+  const span = (min: number, max: number) => body.length ? Math.round((max - min) * 1e6) / 1e6 : 0;
   const spanX = span(local.minX, local.maxX), spanY = span(local.minY, local.maxY);
   let width = preferred.width, height = preferred.height;
   if (Math.max(spanX, spanY) >= 1e-6) {
@@ -95,6 +118,12 @@ export function defaultFormationOptions(kind: FormationKind, positions: Record<s
   const gap = ids.length > 1 ? nearestGap(generateFormation(kind, ids.length, options)) : Infinity;
   // Uniform scaling multiplies every slot distance; a line has no depth to scale.
   if (gap > 1e-9 && gap < minimumSpacing) options = { ...options, width: options.width * minimumSpacing / gap, height: kind === 'line' ? options.height : options.height * minimumSpacing / gap };
+  // A block keeps the footprint it was sized from: its rows and files may already sit on different intervals.
+  if (gridStep && gridStep > 1e-6 && ids.length > 1 && kind !== 'block') {
+    const interval = formationInterval(generateFormation(kind, ids.length, options));
+    const target = Math.max(Math.round(interval / gridStep), Math.ceil(minimumSpacing / gridStep - 1e-9), 1) * gridStep;
+    if (interval > 1e-9) options = { ...options, width: options.width * target / interval, height: kind === 'line' ? options.height : options.height * target / interval };
+  }
   options = { ...options, width: Math.min(200, options.width), height: Math.min(200, options.height) };
   return fitFormationOptions(kind, ids.length, options, field);
 }

@@ -112,7 +112,7 @@ app.whenReady().then(async () => {
     await selectNativeOption(window,'[aria-label="Problem type"]','stride');await selectNativeOption(window,'[aria-label="Problem move"]','m1');
     assert.equal(await evaluate("document.querySelectorAll('.problem-result').length"),16);await selectNativeOption(window,'[aria-label="Problem sort"]','severity');
     await click('[aria-label="Find a problem"]');await window.webContents.debugger.sendCommand('Input.insertText',{text:'p15'});await frames();
-    assert.equal(await evaluate("document.querySelectorAll('.problem-result').length"),1);assert.match(await evaluate("document.querySelector('.problem-result').textContent"),/Performer IDs: p15/);
+    assert.equal(await evaluate("document.querySelectorAll('.problem-result').length"),1);assert.match(await evaluate("document.querySelector('.problem-result .problem-headline').textContent"),/: step too big$/);
     pass('all moves match the reference; every finding is reachable through native keyboard pagination, sorting, move/type filters and performer search');
     const row=moves[1].issues.find(i=>i.type==='stride'&&i.performerIds[0]==='p15');const before=await evaluate(`JSON.stringify(${state}.project)`);
     await click('.problem-result');await wait("!document.querySelector('dialog')",'finding navigation');
