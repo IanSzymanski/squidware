@@ -1,6 +1,6 @@
 # Squidware design system
 
-How the app looks and where things go. Read this before adding a screen, control or panel. The [design guidance](DESIGN_GUIDANCE.md) records the principles; this page is the system that implements them.
+How the app looks and where things go. Read this before adding a screen, control or panel. The [design guidance](DESIGN_GUIDANCE.md) records the principles; this page is the system that implements them. [The rebuilt interface](UI_REBUILD.md) shows what this system replaced, with before-and-after screenshots, and how it was reviewed.
 
 ## What the shell is for
 

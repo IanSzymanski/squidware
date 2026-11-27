@@ -150,7 +150,7 @@ Squidware uses Electron, React, TypeScript and Three.js. Geometry, timing and va
 
 | Path | Responsibility |
 | --- | --- |
-| `src/ui/` | Design tokens, shared controls, dialogs, menus and icons ([design system](docs/DESIGN_SYSTEM.md)) |
+| `src/ui/` | Design tokens, shared controls, dialogs, menus and icons ([design system](docs/DESIGN_SYSTEM.md); [what the rebuild changed and why](docs/UI_REBUILD.md)) |
 | `src/shell/` | The application shell: top bar, tool strip, side panel, show strip and welcome |
 | `src/editor/` | Editor state, commands, feature panels, playback and file sessions |
 | `src/domain.ts` | Geometry, timeline, validation and data exchange |
