@@ -51,8 +51,10 @@ hr { border: 0; border-top: 1px solid var(--hairline); margin: var(--space-1) 0;
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pop-in { from { opacity: 0; transform: translateY(4px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+/* Reduced motion means no motion. A tiny duration here would do the opposite of what it looks like: every property of
+   every element would gain a transition, and a change would only land once a frame was drawn. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 /* The personal UI scale zooms the whole document. */
