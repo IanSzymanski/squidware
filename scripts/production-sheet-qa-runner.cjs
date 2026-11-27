@@ -94,7 +94,7 @@ app.whenReady().then(async () => {
     const demo = createDemoProject(); await load(demo); await capture('sheet-notes.png');
     const noteCells = () => evaluate(`[...document.querySelectorAll('.sheet-scroll [data-column="3"]')].map(n=>({value:n.value,client:n.clientHeight,scroll:n.scrollHeight,clipped:n.scrollWidth>n.clientWidth+1,nameHeight:n.closest('tr').querySelector('[data-column="0"]').clientHeight,top:n.getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top,nameTop:n.closest('tr').querySelector('[data-column="0"]').getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top}))`);
     const wrapPressed = () => evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(button('Wrap notes'))});return [n.getAttribute('aria-pressed'),document.querySelector('.sheet-scroll').classList.contains('sheet-scroll--dense')];})()`);
-    // Notes take one line per set until Wrap notes is on, so more sets fit. A cell holds its whole note: a long one
+    // Inactive sets take one line until Wrap notes is on. The active cell holds its whole note: a long one
     // runs past the cell's edge at rest, and opens to whole lines while it is being edited. At 1366 px the Notes column
     // is wide enough for every demo note, so a narrower window gives the notes that need a second line.
     assert.deepEqual(await wrapPressed(),['false',true]);
@@ -103,12 +103,14 @@ app.whenReady().then(async () => {
     window.setContentSize(1024,768); await settleNativeViewport(window,'narrower sheet'); await frames();
     notes = await noteCells();
     assert.deepEqual(notes.map(n=>n.value),demo.sets.map(set=>set.notes));
-    assert.ok(notes.length===6 && notes.every(n=>n.value && n.client===n.nameHeight && n.scroll<=n.client+1 && Math.abs(n.top-n.nameTop)<=1) && notes.some(n=>n.clipped),JSON.stringify(notes));
+    assert.ok(notes.length===6 && notes.every((n,i)=>n.value && (i===0?n.client>=n.nameHeight:n.client===n.nameHeight) && n.scroll<=n.client+1 && Math.abs(n.top-n.nameTop)<=1) && notes.some(n=>n.clipped),JSON.stringify(notes));
     const long = notes.findIndex(n=>n.clipped);
     await click(cell(long,3)); await wait(`document.activeElement===document.querySelector(${JSON.stringify(cell(long,3))})`,'long note focused');
     const editing = (await noteCells())[long];
     assert.ok(editing.client>40 && editing.scroll<=editing.client+1 && Math.abs(editing.top-editing.nameTop)<=1,JSON.stringify(editing));
     await key(window,'Escape'); await evaluate('document.activeElement?.blur()'); await frames();
+    assert.equal((await noteCells())[long].client,editing.client, 'current note stays readable after editing');
+    await evaluate(`${editor}.dispatch('set.select',{index:0})`); await frames();
     assert.equal((await noteCells())[long].client,notes[long].client); assert.deepEqual(await present(),demo);
     // With Wrap notes on, every note shows whole lines, top-aligned with its row.
     await click(button('Wrap notes')); await wait(`document.querySelector(${JSON.stringify(button('Wrap notes'))}).getAttribute('aria-pressed')==='true'`,'Wrap notes on');

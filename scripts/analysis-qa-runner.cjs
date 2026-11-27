@@ -109,6 +109,7 @@ app.whenReady().then(async () => {
       seen.push(...await evaluate("[...document.querySelectorAll('.problem-result')].map(e=>e.textContent)"));
     }
     assert.equal(seen.length,total);assert.equal(new Set(seen).size,total);
+    await click('.problem-disclosure > summary');
     await selectNativeOption(window,'[aria-label="Problem type"]','stride');await selectNativeOption(window,'[aria-label="Problem move"]','m1');
     assert.equal(await evaluate("document.querySelectorAll('.problem-result').length"),16);await selectNativeOption(window,'[aria-label="Problem sort"]','severity');
     await click('[aria-label="Find a problem"]');await window.webContents.debugger.sendCommand('Input.insertText',{text:'p15'});await frames();

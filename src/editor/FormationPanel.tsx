@@ -123,7 +123,7 @@ export function FormationPanel({ controller: c }: { controller: EditorController
         : <dl className="selection-stats formation-stats" role="status">
           {c.formationResult?.travel && <div><dt>Farthest moved</dt><dd>{display1(c.formationResult.travel.maximum / lengthYards)}<small>{lengthUnit}</small></dd></div>}
           {strides
-            ? <div data-level={strides.level}><dt>Biggest step from set {c.index}</dt><dd>{strides.stride > 1e-6 ? `${(5 / strides.stride).toFixed(1)}-to-5` : 'Hold'}{strides.level !== 'ok' && <small>{strides.level === 'over' ? 'over the limit' : 'near the limit'}</small>}</dd></div>
+            ? <div data-level={strides.level}><dt>Biggest step<span className="formation-move-context">Set {c.index} → {c.index + 1} · {strides.counts} counts</span></dt><dd>{strides.stride > 1e-6 ? `${(5 / strides.stride).toFixed(1)}-to-5` : 'Hold'}{strides.level !== 'ok' && <small>{strides.level === 'over' ? 'over the limit' : 'near the limit'}</small>}</dd></div>
             : c.formationResult?.travel && <div><dt>Total moved</dt><dd>{display1(c.formationResult.travel.total / lengthYards)}<small>{lengthUnit}</small></dd></div>}
         </dl>}
       {c.formationResult?.travel && !c.formationResult.error && <p className="formation-travel sr-only" role="status">Total travel {c.formationResult.travel.total.toFixed(2)} yd · Longest {c.formationResult.travel.maximum.toFixed(2)} yd</p>}

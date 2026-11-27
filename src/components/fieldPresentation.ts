@@ -10,7 +10,7 @@ export interface FieldPresentation {
   labelSizePx: number;
   /** Width and height in pixels of what floats over the view's right corners, where labels are not placed. */
   labelKeepOut?: { topRight?: readonly [number, number]; bottomRight?: readonly [number, number] };
-  labelMode: 'all' | 'selected' | 'none';
+  labelMode: 'adaptive' | 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
   colorMode: 'section', customColor: '#b9ed85', dotRadiusPx: 3.5, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 11, labelMode: 'all',
@@ -96,7 +96,10 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
   const { topRight, bottomRight } = presentation.labelKeepOut ?? {};
   if (topRight) labelSpace.add({ left: bounds.right - topRight[0], top: bounds.top, right: bounds.right, bottom: bounds.top + topRight[1] });
   if (bottomRight) labelSpace.add({ left: bounds.right - bottomRight[0], top: bounds.bottom - bottomRight[1], right: bounds.right, bottom: bounds.bottom });
-  const ordered = dots.filter(dot => presentation.labelMode === 'all' || dot.selected || dot.focused)
+  const adaptive = presentation.labelMode === 'adaptive';
+  const selectedCount = adaptive ? dots.filter(dot => dot.selected).length : 0;
+  const showContext = presentation.labelMode === 'all' || (adaptive && selectedCount === 0);
+  const ordered = dots.filter(dot => showContext || dot.selected || dot.focused)
     .sort((a, b) => Number(b.focused) - Number(a.focused) || Number(b.selected) - Number(a.selected) || stableIdOrder(a, b));
   const outward = outwardSides(dots);
   const height = presentation.labelSizePx + 4;
@@ -111,12 +114,17 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
     const at = (extra: number) => sides.map(side => labelBox(dot, side, (side[0] > .9 ? gap : far) + extra, width, height)).filter(inView);
     const near = at(0);
     let box = near.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate));
-    if (!box && (dot.selected || dot.focused)) {
+    if (!box && (dot.focused || (dot.selected && (!adaptive || selectedCount === 1)))) {
       const reach = [...near, ...at(10), ...at(22), ...at(36)];
       box = reach.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate))
         ?? reach.find(candidate => !labelSpace.intersects(candidate)) ?? near[0];
     }
-    if (box) { result.set(dot.id, box); labelSpace.add(box); }
+    if (box) {
+      result.set(dot.id, box);
+      // Screen-space breathing room thins context labels at Fit and reveals more as dots spread under zoom.
+      const pad = adaptive ? height * (dot.selected || dot.focused ? 0.8 : 1.5) : 0;
+      labelSpace.add({ left: box.left - pad, right: box.right + pad, top: box.top - pad, bottom: box.bottom + pad });
+    }
   }
   return result;
 }

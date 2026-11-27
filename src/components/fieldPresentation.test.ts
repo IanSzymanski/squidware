@@ -61,6 +61,13 @@ describe('readable field labels', () => {
     expect(layoutFieldLabels(same, bounds, { ...DEFAULT_FIELD_PRESENTATION, labelMode: 'none' }).size).toBe(0);
     expect(layoutFieldLabels([{ ...dots[0], labelWidth: 5000 }], bounds, DEFAULT_FIELD_PRESENTATION).size).toBe(0);
   });
+  it('keeps the focused ID in a crowded adaptive section and restores all selected IDs on request', () => {
+    const section = dots.slice(0, 18).map((dot, i) => ({ ...dot, selected: true, focused: i === 10 }));
+    const adaptive = layoutFieldLabels(section, bounds, { ...DEFAULT_FIELD_PRESENTATION, labelMode: 'adaptive' });
+    expect(adaptive.has(section[10].id)).toBe(true);
+    expect(adaptive.size).toBeLessThan(section.length);
+    expect(layoutFieldLabels(section, bounds, { ...DEFAULT_FIELD_PRESENTATION, labelMode: 'all' }).size).toBe(section.length);
+  });
   it('always names a selected or focused performer, even where nothing fits without touching a neighbor', () => {
     // A tight cluster: every side of the middle dot is taken by a neighbor.
     const cluster: LabelDot[] = [[0, 0], [14, 0], [-14, 0], [0, 14], [0, -14], [14, 14], [-14, -14], [14, -14], [-14, 14]].map(([dx, dy], i) => ({ id: `p${i}`, x: 600 + dx, y: 400 + dy, labelWidth: 22, selected: false, focused: false }));

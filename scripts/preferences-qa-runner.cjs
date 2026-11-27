@@ -65,7 +65,7 @@ async function pdf(paper) {
 }
 
 // The hint line on the field's margin says what to do next for the state the editor is in.
-const NO_SELECTION_HINT = 'Click a dot, drag a box or pick a section, then choose a shape';
+const NO_SELECTION_HINT = 'Click a dot or drag a box to select';
 const fieldHint = () => evaluate("document.querySelector('.field-container .canvas-hint[data-hint]')?.textContent ?? null");
 /** The Inspector shows a coordinate as a side caption and one line per axis; the words are those of the description. */
 function inspectorCoordinate(description) {

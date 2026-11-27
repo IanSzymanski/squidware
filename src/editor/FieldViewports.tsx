@@ -12,7 +12,7 @@ export function FieldViewports({ view, field, preview, closePreview }: {
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: stackBelow, height: 320 });
   // The chart is what the writer edits, so it starts with most of the space and the 3D view is a monitor beside or below it; the divider changes that.
-  const [preferred, setPreferred] = useState(72);
+  const [preferred, setPreferred] = useState(60);
   const drag = useRef<{ pointer: number; start: number } | null>(null);
 
   useLayoutEffect(() => {
