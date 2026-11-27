@@ -104,7 +104,9 @@ app.whenReady().then(async () => {
       await click(button('Undo')); await chooseSet(1);
     }
     pass('all four native shortcuts open review; invalid timing and Cancel preserve the show; Apply, Undo and Redo preserve the documented properties and identities');
-    await click(button('Add set')); await click(button('Hold positions'));
+    // Add set opens the creation dialog; its kind chooser is distinct from the Inspector's Set actions menu.
+    await click(button('Add set')); await click('dialog[open] .set-creation-kinds '+button('Hold positions'));
+    assert.equal(await evaluate("document.querySelector('dialog[open] .set-creation-kinds [aria-label=\"Hold positions\"]').getAttribute('aria-pressed')"),'true');
     await type(button('Creation counts'), '17'); await click(button('Apply set creation'));
     const accepted = await present();
     await click(button('Save'));
@@ -121,7 +123,10 @@ app.whenReady().then(async () => {
     assert.equal(opening.moves[0].toSetId,accepted.sets[0].id); assert.equal(opening.moves[0].counts,32);
     await click(button('Undo')); assert.deepEqual(await present(),accepted);
     pass('inserting before opening creates a zero-count picture and a separate hold into the former opening');
-    await chooseSet(1); await click(button('Duplicate current set'));
+    // Duplicate lives in the Inspector's Set actions menu beside the set's name.
+    await chooseSet(1); await click('.inspector .set-name-row '+button('Set actions'));
+    await wait("document.querySelector('[role=menu][aria-label=\"Set actions\"]')?.hidden===false", 'Set actions menu');
+    await click('[role=menu][aria-label="Set actions"] '+button('Duplicate set'));
     assert.equal(await evaluate(state+'.ui.setCreationKind'),'duplicate'); await key(window,'Escape'); await wait(`${state}.ui.dialog===null`, 'duplicate cancel');
     await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,newSetCounts:24})`);
     await click(button('Add set')); await wait(`${state}.ui.dialog==='set-create'`, 'default-count dialog'); assert.equal(await evaluate("document.querySelector('[aria-label=\"Creation counts\"]').value"),'24');

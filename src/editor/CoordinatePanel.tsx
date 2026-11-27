@@ -27,8 +27,8 @@ export function CoordinatePanel({controller:c}:{controller:EditorController}) {
     <label className="form-label">Drill phrase<Tooltip name="Drill phrase" pointerPassThrough description="Type a complete coordinate or movement phrase. Preview updates while typing. Enter focuses Apply; Escape cancels this preview."><textarea ref={input} aria-label="Drill phrase" spellCheck={false} autoComplete="off" rows={3} maxLength={DRILL_ENTRY_LIMIT} value={options.text} placeholder={example} aria-invalid={!!options.text.trim()&&!!result.error} aria-describedby={help}
       onChange={event=>update({text:event.target.value})} onKeyDown={event=>{
         if(event.nativeEvent.isComposing)return;
-        if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();if(!result.error&&result.changed)document.querySelector<HTMLElement>('.selection-bar [aria-label="Apply coordinates"]')?.focus();}
-        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();c.dispatch('coordinates.cancel');requestAnimationFrame(()=>{const target=document.querySelector<HTMLElement>('#workspace-pane-inspector.workspace-pane--overlay:not([hidden]) .workspace-pane-heading button')??document.querySelector<HTMLElement>('.field-primary [aria-label="Enter coordinates"]')??document.querySelector<HTMLElement>('[aria-label="More field tools"]');target?.focus();});}
+        if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();if(!result.error&&result.changed)document.querySelector<HTMLElement>('.toolbar [aria-label="Apply coordinates"]')?.focus();}
+        if(event.key==='Escape'){event.preventDefault();event.stopPropagation();c.dispatch('coordinates.cancel');requestAnimationFrame(()=>{const target=document.querySelector<HTMLElement>('#workspace-pane-inspector.workspace-pane--overlay:not([hidden]) .workspace-pane-heading button')??document.querySelector<HTMLElement>('.toolbar [aria-label="Enter coordinates"]')??document.querySelector<HTMLElement>('[aria-label="More field tools"]');target?.focus();});}
       }}/></Tooltip></label>
     <div className="form-row coordinate-examples">
       <HelpButton title="Use example phrase" description="Insert the displayed example for the current entry mode without committing it." className="button subtle" onClick={()=>update({text:example,side:null,defaultUnit:'steps'})}>Use example</HelpButton>
@@ -41,7 +41,7 @@ export function CoordinatePanel({controller:c}:{controller:EditorController}) {
         {choice('Use Side 1 for coordinate entry','Side 1',options.side===1,()=>update({side:1}))}
         {choice('Use Side 2 for coordinate entry','Side 2',options.side===2,()=>update({side:2}))}
       </div>
-      <p className="microcopy">Side 1 is the physical left half; Side 2 is the right half. Inside goes toward midfield. Name front/back hash or sideline explicitly.</p>
+      <p className="microcopy">Side 1 is the left half, Side 2 the right. Inside is toward midfield.</p>
     </>}
     {surface && options.mode === 'absolute' ? <p className="microcopy">{SURFACE_AXES} A pair without a unit uses {surface.unit}.</p> : <>
     <p className="form-label">Interpret bare numbers as</p>
@@ -50,11 +50,9 @@ export function CoordinatePanel({controller:c}:{controller:EditorController}) {
       {choice('Bare numbers mean yards','Yards',options.defaultUnit==='yards',()=>update({defaultUnit:'yards'}))}
       {choice('Require units in the phrase','Require units',options.defaultUnit===null,()=>update({defaultUnit:null}))}
     </div>
-    <p className="microcopy">Entry uses {steps}-to-5 steps: 1 step = {number(5/steps)} yd. Explicit steps/yards in the phrase take precedence. {!surface && 'Rehearsal coordinate readouts use 8-to-5.'}</p></>}
+    <p className="microcopy">Entry uses {steps}-to-5 steps: 1 step = {number(5/steps)} yd.</p></>}
     <p className={`transform-result${result.error&&options.text.trim()?' transform-result--error':''}`} id={help} role="status">{result.error || (c.pendingDraft?'Finish or cancel the pending input before Apply.':result.changed?'Preview ready. Apply records one undo action.':'The preview matches the original positions.')}</p>
     {result.parsed?.mode==='absolute'&&<div className="coordinate-resolved"><p>{surface ? surfaceCoordinateText(result.parsed.point, surface) : `Target: X ${number(result.parsed.point.x)} · Y ${number(result.parsed.point.y)} yd`}</p>{!surface && <p>{formatDrillCoordinate(result.parsed.point,c.project.field,steps,c.coordinateFormat)}</p>}</div>}
     {result.parsed?.mode==='relative'&&<p className="coordinate-resolved">Group delta: X {number(result.parsed.delta.x)} · Y {number(result.parsed.delta.y)} yd</p>}
-    <p className="microcopy">{surface ? 'Forward is toward the audience edge and right is along positive X.' : 'Forward is toward the front sideline; right is toward Side 2, regardless of audience orientation or facing.'} Exact entry bypasses snapping. Field crossings reject the whole move.</p>
-    <p className="microcopy">Enter focuses Apply; Enter on the field applies. Escape cancels. Changing selection, set or editing context cancels this preview.</p>
   </section>;
 }

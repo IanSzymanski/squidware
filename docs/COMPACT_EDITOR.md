@@ -4,15 +4,19 @@ Implements [#16](https://github.com/IanSzymanski/squidware/issues/16) using sect
 
 ## Layout and behavior
 
-The 48 px header combines file status, workspace navigation and the existing history/file/help commands. Design, Cast and Sheet keep their accessible names and current-workspace state. Set name and 2D/3D controls share the canvas toolbar. Cast and Production sheet retain concise headings and their workspace actions.
+The chrome this issue introduced has since been rebuilt. The [design system](DESIGN_SYSTEM.md) and [workspace layout](WORKSPACE_LAYOUT.md) are the current references. In the current shell:
 
-Section selection floats inside the field. Its horizontal scroller supports the maximum 64 sections without growing the chrome vertically; native keyboard focus scrolls each chip into view. Field coordinates and neighboring-set/preview overlays remain separate from the chip row. In 3D, camera controls sit below that row; read-only previews dock them above the field footer, clear of the preview banner. Native WebGL layout checks verify non-overlap and pointer hit access at default and narrow enlarged sizes. Selection count remains visible at narrow sizes.
+- A 44 px top bar combines the Project menu, the production title and file status, the **Write**, **Plan** and **Rehearse** modes, undo and redo, the problems badge, command search and **Export**.
+- A 44 px tool strip above the field holds the tools. The current set's name is in the transport's **Find set** control, and the 2D / 3D / Split control floats over the field's margin with the other view controls.
+- Section selection is a row of chips at the top of the Inspector instead of a row floating inside the field. While performers are selected the chips fold to their colors.
+- The show strip combines a 44 px transport, the timeline (ruler, set track and problem markers) and the set strip. Attach or replace audio sits with the playback options. No audio track is rendered until a decoded track is attached.
+- Enlarged and narrow layouts keep the top bar, tool strip and transport on one row and fold controls into menus instead of wrapping (see [Small windows and UI scale](WORKSPACE_LAYOUT.md#small-windows-and-ui-scale)).
 
-The timeline combines the count ruler, set track and transport. Attach/Replace audio lives beside playback options. No audio track or label is rendered until an actual decoded track is attached. An attached waveform adds one 31 px lane. Enlarged/narrow layouts keep the header and transport on one row and move secondary controls into Menu or **More playback options** instead of wrapping (see [Small windows and UI scale](WORKSPACE_LAYOUT.md#small-windows-and-ui-scale)); no required action is hidden. Existing sidebars retain their scroll regions, with workspace overflow available at sizes below the supported desktop minimum.
-
-This change reuses HelpButton, Button, tooltips, Lucide icons, the current palette/focus styles and shared editor commands. No production schema, coordinate, timing, preference or file-save semantics change. Resizable panels and workspace presets remain owned by #40; Inspector reorganization remains owned by #18. Theme switching remains #43.
+No production schema, coordinate, timing, preference or file-save semantics changed.
 
 ## Evidence and acceptance
+
+The captures and measurements below record the earlier compact chrome (a 48 px header, a legend floating in the field and a left set list). They have not been repeated for the rebuilt shell.
 
 Before/after captures and measured regions are in [evidence/compact-editor](evidence/compact-editor). Measurements use CSS pixels; native screenshot capture briefly widens the window by one pixel to refresh the hidden compositor surface.
 

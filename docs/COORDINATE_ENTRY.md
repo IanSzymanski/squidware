@@ -1,6 +1,6 @@
 # Drill-language coordinates and exact group moves
 
-Implements [#22](https://github.com/IanSzymanski/squidware/issues/22). Select performers and choose **Place** in the selection bar. The inline Inspector accepts an absolute position for one performer or a relative move for the explicit selection. Dashed paths and target crosshairs show the proposed coordinates. Apply/Cancel stay above the independently scrolling form.
+Implements [#22](https://github.com/IanSzymanski/squidware/issues/22). Select performers and select **Place** in the tool strip. The Inspector accepts an absolute position for one performer or a relative move for the explicit selection. Dashed paths and target crosshairs show the proposed coordinates. Apply and Cancel are in the tool strip.
 
 ## Supported phrases
 
@@ -28,7 +28,7 @@ Tab navigates the shared buttons and input. Enter in a valid changed phrase focu
 
 One Apply edits only selected performers on the captured set and creates one named undo entry. Relative moves preserve every selected offset. No empty selection falls back to the ensemble; absolute placement requires exactly one performer. Other performers, sets, identities, sections and move-path metadata remain unchanged. Undo/redo and native save/reopen preserve accepted geometry.
 
-Exact entry bypasses snapping, as stated on the field. Boundary-crossing requests reject the whole result without snapping, clamping or shortening a delta. Only floating-point noise within 1e-8 yard at an edge is normalized. Negative or nonfinite amounts are invalid; choose the opposite direction instead of a negative amount. Zero-distance/no-op results cannot Apply.
+Exact entry bypasses snapping, as the snap chip over the field states. Boundary-crossing requests reject the whole result without snapping, clamping or shortening a delta. Only floating-point noise within 1e-8 yard at an edge is normalized. Negative or nonfinite amounts are invalid; choose the opposite direction instead of a negative amount. Zero-distance/no-op results cannot Apply.
 
 Selection, arrival set/count, playback, view/workspace, dialog, project revision/load and history transactions invalidate the session synchronously. Other positional commands and production snapping changes are disabled during a preview. Pending unrelated text/numeric drafts block Apply and are preserved by Cancel. Audience orientation changes presentation while preserving physical input direction and coordinates.
 

@@ -182,7 +182,7 @@ async function mirrorFixture(fixture) {
   if (fixture.name === 'demo') {
     await evaluate(`${editor}.setValue('selection', 'selectedIds', [${JSON.stringify(id)}])`); await pause(100);
     const point = await evaluate(`(() => { const node = document.querySelector('.field-performer[data-performer-id=${JSON.stringify(id)}]'); const p = new DOMPoint(0, 0).matrixTransform(node.getScreenCTM()); return { x: p.x, y: p.y }; })()`);
-    assert.equal(await evaluate(`document.elementFromPoint(${point.x}, ${point.y})?.closest('[data-performer-id]')?.getAttribute('data-performer-id')`), id, 'the drag hits the intended performer');
+    assert.equal(await evaluate(`document.elementFromPoint(${point.x}, ${point.y})?.closest('[data-performer-id]')?.getAttribute('data-performer-id')`), id, 'the drag hits the intended performer ' + JSON.stringify(await evaluate(`(() => { const at = id => { const node = document.querySelector('.field-performer[data-performer-id="' + id + '"]'); const p = new DOMPoint(0, 0).matrixTransform(node.getScreenCTM()); const hit = node.querySelector('.field-hit-area'); return { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10, hitRadiusPx: hit ? Math.round(Number(hit.getAttribute('r')) * hit.getScreenCTM().a * 10) / 10 : null }; }; const hit = document.elementFromPoint(${point.x}, ${point.y}); const other = hit?.closest('[data-performer-id]')?.getAttribute('data-performer-id'); const svg = document.querySelector('.field-stage__svg').getBoundingClientRect(); return { inner: [innerWidth, innerHeight], dpr: devicePixelRatio, wanted: at(${JSON.stringify(id)}), hit: other ? at(other) : (hit?.getAttribute('class') || hit?.tagName), hitNode: (hit?.getAttribute('class') || hit?.tagName), svg: [Math.round(svg.width), Math.round(svg.height)], tiers: { ...document.querySelector('.studio').dataset } }; })()`)));
     const revision = await evaluate(`${editor}.getState().project.revision`);
     const mouse = args => cdp('Input.dispatchMouseEvent', args);
     await mouse({ type: 'mousePressed', ...point, button: 'left', buttons: 1, clickCount: 1 }); await pause(80);
@@ -441,6 +441,10 @@ async function restorePhase() {
     browser.webContents.setBackgroundThrottling(false);
     await browser.loadURL(pathToFileURL(path.join(root, 'dist', 'index.html')).href);
     await waitUntil(() => browser.webContents.executeJavaScript("!!document.querySelector('.set-card')"), 'renderer without desktop bridge');
+    // An ordinary launch opens the start dialog over the demo, and shortcuts are that dialog's own until it closes.
+    await waitUntil(() => browser.webContents.executeJavaScript("!!document.querySelector('dialog.welcome[open]')"), 'start dialog without desktop bridge');
+    await browser.webContents.executeJavaScript("[...document.querySelectorAll('dialog.welcome .welcome-action')].find(node => node.textContent.includes('Explore the demo')).click()");
+    await waitUntil(() => browser.webContents.executeJavaScript("!document.querySelector('dialog[open]')"), 'start dialog closed');
     const viewControls = await browser.webContents.executeJavaScript("[typeof window.squidware, !!document.querySelector('.popout-3d-button'), [...document.querySelectorAll('.view-switch button')].map(button => button.getAttribute('aria-label'))]");
     assert.deepEqual(viewControls, ['undefined', false, ['2D field', '3D preview', 'Split review']]);
     // The hidden command's Shift+T is inert there: the key is not consumed, and another command can take it.

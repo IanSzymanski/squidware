@@ -2,10 +2,13 @@ import { useEffect, useRef } from 'react';
 import type { PointerEvent } from 'react';
 import type { ScatterFormation, ScatterRegion, BezierFormation, FormationOptions, Point, Project } from '../types';
 import { formationHandleValue, formationPoint } from '../formationPreview';
+import { STRIDE_COLORS } from '../neighborPaths';
 import type { FormationHandle, FormationResult, FormationSession } from '../formationPreview';
 
 export interface FieldFormationPreview {
   session: FormationSession; result: FormationResult; original: Record<string, Point>; invalidInput: boolean;
+  /** Performers whose step into this set would be large or over the limit at the previewed spot. */
+  strides?: Record<string, 'large' | 'over'>;
   onScatterSelect?: (selection: {vertex?:number;slot?:number}) => void; onScatterRestore?: (scatter:ScatterFormation,pending:boolean) => void;
   onScatterRegion?: (region: ScatterRegion) => void; onScatterPoint?: (slot: number, point: Point) => void;
   onBezierSelect?: (id: string) => void;
@@ -51,8 +54,11 @@ export function FormationHandles({ preview, field, scale }: { preview: FieldForm
     }} onPointerUp={event => finish(event)} onPointerCancel={event => finish(event,true)} onLostPointerCapture={event => { if (drag.current) finish(event,true); }}>
     <title>{label} · drag to preview; Inspector numbers provide keyboard entry</title>
     <circle r={13/scale} fill="transparent" stroke="none" />
-    <circle r={kind === 'center' ? 7/scale : 6/scale} fill={kind === 'center' ? '#d4e6ff' : '#fff'} strokeWidth={2/scale} />
-    {kind === 'center' && <path d={`M${-10/scale},0h${20/scale}M0,${-10/scale}v${20/scale}`} strokeWidth={1.5/scale} />}
+    {/* Each handle looks like what it does: square ends resize, a diamond bends or deepens, a ringed dot turns, a crosshair moves. */}
+    {kind === 'center' ? <><circle r={7/scale} fill="#d4e6ff" strokeWidth={2/scale} /><path d={`M${-10/scale},0h${20/scale}M0,${-10/scale}v${20/scale}`} strokeWidth={1.5/scale} /></>
+      : kind === 'rotate' ? <><circle r={6.5/scale} fill="#fff" strokeWidth={2/scale} /><circle r={2/scale} fill="currentColor" stroke="none" style={{ color: '#3d82c4' }} /></>
+      : kind === 'bulge' || kind === 'depth' ? <rect x={-5/scale} y={-5/scale} width={10/scale} height={10/scale} rx={1/scale} transform="rotate(45)" fill="#fff" strokeWidth={2/scale} />
+      : <rect x={-5.5/scale} y={-5.5/scale} width={11/scale} height={11/scale} rx={1.5/scale} fill="#fff" strokeWidth={2/scale} />}
   </g>;
   const endpoints = session.kind === 'line' || session.kind === 'arc';
   const baseline = session.kind === 'arc' ? -options.height/2 : 0;
@@ -61,7 +67,7 @@ export function FormationHandles({ preview, field, scale }: { preview: FieldForm
   const outline = [[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y]) => at(x*options.width/2,y*options.height/2));
   return <g ref={geometry} className="formation-handles" aria-hidden="true" stroke={result.error ? '#ffb6aa' : '#8dc8ff'}>
     <g pointerEvents="none" fill="none" strokeWidth={1.5/scale} strokeDasharray={`${4/scale} ${3/scale}`}>
-      {session.ids.map(id => <g key={id}><circle cx={original[id].x} cy={original[id].y} r={6/scale} /><path data-formation-path={id} d={`M${original[id].x},${original[id].y}L${result.positions[id].x},${result.positions[id].y}`} /></g>)}
+      {session.ids.map(id => <g key={id} data-stride={preview.strides?.[id]} stroke={preview.strides?.[id] ? STRIDE_COLORS[preview.strides[id]] : undefined}><circle cx={original[id].x} cy={original[id].y} r={6/scale} /><path data-formation-path={id} d={`M${original[id].x},${original[id].y}L${result.positions[id].x},${result.positions[id].y}`} /></g>)}
       {endpoints ? <path d={`M${start.x},${start.y}L${end.x},${end.y}`} /> : <polygon points={outline.map(p => `${p.x},${p.y}`).join(' ')} />}
       <path d={`M${options.center.x},${options.center.y}L${rotation.x},${rotation.y}`} />
     </g>

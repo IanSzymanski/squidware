@@ -1,0 +1,246 @@
+/*
+ * Squidware design tokens.
+ *
+ * Every color, size, radius, shadow and duration in the app chrome comes from here. Components never hard-code
+ * these values. Three themes share one set of names: dark (default), light and high-contrast.
+ *
+ * Production content is separate from chrome: section colors and the field artwork are never recolored by a theme.
+ */
+:root, :root[data-theme=dark] {
+  color-scheme: dark;
+
+  /* Surfaces, darkest (the canvas well) to lightest (pressed controls). */
+  --canvas: #0b0d0f;
+  --app-bg: #101214;
+  --surface: #16191c;
+  --surface-raised: #1c2024;
+  --surface-muted: #1f2327;
+  --control: #23282d;
+  --hover-bg: #2a3036;
+  --active-bg: #323940;
+  --overlay: #1f2328;
+  --input-bg: #0e1012;
+
+  /* Lines. */
+  --hairline: #22262b;
+  --border: #30363d;
+  --border-strong: #4a525b;
+
+  /* Text. */
+  --text: #eceef1;
+  --text-secondary: #a8b0ba;
+  --muted: #a8b0ba;
+  --text-tertiary: #8f98a3;
+  /* Unavailable controls stay readable (4.5:1 on every surface); the dimmed icon and outline say they are unavailable. */
+  --disabled-text: #8d96a1;
+  --disabled-bg: #1a1d21;
+
+  /* Brand accent: squid lime. */
+  --accent: #c2f279;
+  --accent-hover: #d0f794;
+  --accent-pressed: #b1e464;
+  --on-accent: #12200a;
+  --accent-text: #c2f279;
+  --accent-soft: #c2f27918;
+  --accent-soft-strong: #c2f2792b;
+  --accent-line: #c2f27966;
+  --selected-bg: #c2f27918;
+  --focus-ring: #c2f279;
+
+  /* Meaning. */
+  --success: #6fd6a0;
+  --success-bg: #6fd6a01a;
+  --warning: #f2c26b;
+  --warning-bg: #f2c26b1a;
+  --warning-line: #f2c26b55;
+  --error: #ff8f85;
+  --error-bg: #ff8f851a;
+  --error-line: #ff8f8555;
+  --info: #8fc4ff;
+  --info-bg: #8fc4ff1a;
+
+  /* Depth. */
+  --shadow: #00000066;
+  --shadow-sm: 0 1px 2px #0000004d;
+  --shadow-md: 0 8px 24px #00000059, 0 1px 2px #0000004d;
+  --shadow-lg: 0 24px 64px #00000080, 0 2px 8px #00000059;
+  --backdrop: #05070ab3;
+
+  /* The field keeps one look in every theme. */
+  --field-accent: #ffffff;
+  --field-well: #1b2924;
+  --field-well-glow: #22332c;
+  --field-chip: #10151af0;
+  --field-chip-line: #ffffff24;
+  --field-chip-text: #eef2f6;
+  --field-chip-muted: #b3bcc7;
+  --field-chip-disabled: #868e98;
+  --field-chip-accent: #c2f279;
+  /* The well around a floor or stage: neutral and dark in every theme, like the canvas controls over it. */
+  --field-chip-well: #15181b;
+
+  /* Type. */
+  --font-ui: Inter, "Inter Variable", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+  /* No text is smaller than 11px. The two smallest steps share a size and differ by weight, case and color. */
+  --text-2xs: 11px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+
+  /* Space: a 4px grid. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Shape. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  /* Control sizes. */
+  --control-sm: 24px;
+  --control-md: 28px;
+  --control-lg: 32px;
+  --control-xl: 40px;
+
+  /* Shell metrics. */
+  --topbar-height: 44px;
+  --toolbar-height: 44px;
+  --transport-height: 44px;
+  --panel-width: 288px;
+
+  /* Motion. */
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --fast: 100ms;
+  --normal: 160ms;
+
+  /* The personal UI scale preference zooms the document; these express the window in scaled px. */
+  --ui-scale: 1;
+  --viewport-height: calc(100dvh / var(--ui-scale));
+  --viewport-width: calc(100vw / var(--ui-scale));
+}
+
+:root[data-theme=light] {
+  color-scheme: light;
+
+  --canvas: #dfe3e8;
+  --app-bg: #eef0f3;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f5f6f8;
+  --control: #f1f3f5;
+  --hover-bg: #e8ebef;
+  --active-bg: #dde1e6;
+  --overlay: #ffffff;
+  --input-bg: #ffffff;
+
+  --hairline: #e4e7eb;
+  --border: #d3d8de;
+  --border-strong: #9aa3ae;
+
+  --text: #171b20;
+  --text-secondary: #4b5561;
+  --muted: #4b5561;
+  /* 4.5:1 or better on every light surface it sits on, down to --hover-bg and at the 85% of quiet captions. */
+  --text-tertiary: #555e6a;
+  --disabled-text: #5f6873;
+  --disabled-bg: #f1f3f5;
+
+  --accent: #2f6b0d;
+  --accent-hover: #3a7c14;
+  --accent-pressed: #275a0a;
+  --on-accent: #ffffff;
+  --accent-text: #2f6b0d;
+  --accent-soft: #4d9a1a17;
+  --accent-soft-strong: #4d9a1a2b;
+  --accent-line: #4d9a1a80;
+  --selected-bg: #4d9a1a17;
+  --focus-ring: #2f6b0d;
+
+  --success: #17714a;
+  --success-bg: #17714a14;
+  --warning: #8a5a00;
+  --warning-bg: #f2c26b33;
+  --warning-line: #b9820080;
+  --error: #b3261e;
+  --error-bg: #b3261e12;
+  --error-line: #b3261e66;
+  --info: #1d5fae;
+  --info-bg: #1d5fae14;
+
+  --shadow: #1017201f;
+  --shadow-sm: 0 1px 2px #1017201a;
+  --shadow-md: 0 8px 24px #10172024, 0 1px 2px #1017201a;
+  --shadow-lg: 0 24px 64px #10172038, 0 2px 8px #1017201f;
+  --backdrop: #10172066;
+
+}
+
+:root[data-theme=high-contrast] {
+  color-scheme: dark;
+
+  --canvas: #000000;
+  --app-bg: #000000;
+  --surface: #000000;
+  --surface-raised: #0a0a0a;
+  --surface-muted: #111111;
+  --control: #141414;
+  --hover-bg: #262626;
+  --active-bg: #333333;
+  --overlay: #000000;
+  --input-bg: #000000;
+
+  --hairline: #8c8c8c;
+  --border: #bdbdbd;
+  --border-strong: #ffffff;
+
+  --text: #ffffff;
+  --text-secondary: #f0f0f0;
+  --muted: #f0f0f0;
+  --text-tertiary: #dcdcdc;
+  --disabled-text: #b8b8b8;
+  --disabled-bg: #1c1c1c;
+
+  --accent: #d4ff8f;
+  --accent-hover: #e2ffb0;
+  --accent-pressed: #c2f279;
+  --on-accent: #000000;
+  --accent-text: #d4ff8f;
+  --accent-soft: #d4ff8f26;
+  --accent-soft-strong: #d4ff8f40;
+  --accent-line: #d4ff8f;
+  --selected-bg: #d4ff8f26;
+  --focus-ring: #ffffff;
+
+  --success: #8ff0b6;
+  --success-bg: #8ff0b626;
+  --warning: #ffe28a;
+  --warning-bg: #ffe28a26;
+  --warning-line: #ffe28a;
+  --error: #ffb4b4;
+  --error-bg: #ffb4b426;
+  --error-line: #ffb4b4;
+  --info: #a9d6ff;
+  --info-bg: #a9d6ff26;
+
+  --shadow-sm: 0 0 0 1px #ffffff;
+  --shadow-md: 0 0 0 1px #ffffff;
+  --shadow-lg: 0 0 0 2px #ffffff;
+  --backdrop: #000000cc;
+
+  --field-chip: #000000;
+  --field-chip-line: #ffffff;
+}

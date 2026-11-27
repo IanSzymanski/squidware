@@ -1,8 +1,9 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { selectionMembership } from '../selection';
 import type { Point, Project } from '../types';
-import type { NeighborOverlay, NeighborPath } from '../neighborPaths';
+import { STRIDE_COLORS, type NeighborOverlay, type NeighborPath } from '../neighborPaths';
 import type { SelectionReview } from '../selectionTools';
+import { labelLeader } from './fieldPresentation';
 import type { FieldPresentation } from './fieldPresentation';
 import { fieldViewPoint, type FieldOrientation } from './fieldOrientation';
 import { fieldCanvasSize, fieldDotColor, fieldLabels, measureFieldLabels, type FieldScreen } from './fieldScene';
@@ -14,9 +15,13 @@ interface Props {
   neighbors?: NeighborOverlay[]; selectionPreview?: SelectionReview | null;
   snapPreview: Record<string, Point>; original: Record<string, Point>;
   onReady: (ready: boolean) => void;
+  /** The performers a preview is about. Everyone else recedes, and their labels step aside, so the preview reads. */
+  subject?: ReadonlySet<string>;
+  /** Unselected labels recede: used while paths are drawn for many performers at once. */
+  quietLabels?: boolean;
 }
 /** Dynamic pixels only. Input, focus and export remain in the shared SVG layer. */
-export function FieldCanvas({ project, positions, selectedIds, display, screen, orientation, focusedId, showLabels, enabled, neighbors, selectionPreview, snapPreview, original, onReady }: Props) {
+export function FieldCanvas({ project, positions, selectedIds, display, screen, orientation, focusedId, showLabels, enabled, neighbors, selectionPreview, snapPreview, original, onReady, subject, quietLabels }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const lost = useRef(false);
   const sprites = useRef(new Map<string, HTMLCanvasElement>());
@@ -59,9 +64,10 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
       if (orientation === 'audience-top') { context.translate(project.field.width, project.field.height); context.rotate(Math.PI); }
       for (const overlay of neighbors ?? []) {
         const incoming = overlay.direction === 'previous';
-        context.strokeStyle = incoming ? '#b9e3f4' : '#f1d39a'; context.lineWidth = 1.5 / scale;
+        const base = incoming ? '#b9e3f4' : '#f1d39a'; context.lineWidth = 1.5 / scale;
         context.lineCap = 'round';
         for (const path of overlay.paths) {
+          context.strokeStyle = path.level === 'ok' ? base : STRIDE_COLORS[path.level]; context.lineWidth = 1.5 / scale;
           if (path.moving) {
             let cached = paths.current.get(path);
             if (!cached) {
@@ -108,12 +114,20 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
           dotCircle(radius / 4, pad - radius * .23, pad - radius * .27); ink.fillStyle = '#fff'; ink.globalAlpha = .3; ink.fill();
           sprites.current.set(key, sprite);
         }
+        const receded = !!subject && !subject.has(person.id);
+        context.globalAlpha = receded ? .4 : 1;
         context.drawImage(sprite, p.x - pad, p.y - pad, sprite.width / size.ratio, sprite.height / size.ratio);
-        const label = labels.get(person.id);
+        context.globalAlpha = 1;
+        const label = receded ? undefined : labels.get(person.id);
         if (label) {
-          context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'miter';
-          context.strokeStyle = '#1c3026'; context.lineWidth = 3; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
-          context.fillStyle = isSelected ? '#fff' : '#e0e9de'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          const ink = quietLabels && !isSelected ? .5 : 1;
+          context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'round';
+          const line = labelLeader(p, label, display.dotRadiusPx);
+          if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = '#c3d0c4'; context.globalAlpha = .75 * ink; context.lineWidth = 1; context.stroke(); }
+          context.globalAlpha = ink;
+          context.strokeStyle = '#1c3026'; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          context.fillStyle = isSelected ? '#fff' : '#c3d0c4'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          context.globalAlpha = 1;
         }
       }
       if (selectionPreview) {
@@ -136,6 +150,6 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
       // A failed allocation/context must leave the editable vector renderer usable.
       lost.current = true; canvas.style.visibility = 'hidden'; onReady(false);
     }
-  }, [project, positions, selectedIds, display, screen, orientation, focusedId, showLabels, enabled, neighbors, selectionPreview, snapPreview, original, onReady, generation, scale, bounds, width, height]);
+  }, [project, positions, selectedIds, display, screen, orientation, focusedId, showLabels, enabled, neighbors, selectionPreview, snapPreview, original, onReady, subject, quietLabels, generation, scale, bounds, width, height]);
   return <canvas ref={ref} data-field-canvas="true" aria-hidden="true" className="field-stage__canvas" />;
 }

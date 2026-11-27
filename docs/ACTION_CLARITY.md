@@ -6,27 +6,27 @@ Implements the product changes in [#36](https://github.com/IanSzymanski/squidwar
 
 | Action or workspace | Location and visible label | Glyph / behavior |
 | --- | --- | --- |
-| New production | Header **Menu → New production**; native File menu | Lucide FilePlus2; dialog heading **New production** |
-| Production settings | Header **Menu → Production settings** | Settings2; the title is now a plain production name |
-| Personal preferences | Header **Menu → Preferences** | SlidersHorizontal; personal settings remain separate from production data |
-| Help and shortcuts | Labeled **Help** at the bottom of the workspace rail; native **Squidware Help / F1** | CircleHelp; dialog heading **Help**; standard macOS About remains in the application menu |
-| Export | Header **Export** in every workspace | Download; dialog heading **Export** |
-| History | Header icon button beside Undo and Redo, accessible name **History** | Lucide History (a clock on a counter-clockwise arrow), distinct from the Undo2/Redo2 arrows; dialog heading **History**. Its Undo/Redo buttons name the action and explain why they are unavailable. **Menu → Recovery copies** keeps RotateCcw |
-| Cast | Workspace rail **Cast** | Users; workspace heading **Cast** |
-| Production sheet | Workspace rail **Sheet**, accessible name **Production sheet** | ListMusic; workspace heading **Production sheet** |
-| Add set | Labeled button below the set list | Plus; header duplicate removed; the empty timeline points here without adding another button |
-| Select all | Field toolbar | SquareDashed; full selection changes the effect, accessible name, glyph and command shortcut to **Clear selection / X / Escape** |
-| Previous / next paths | Independent field toolbar controls | ArrowDownLeft / ArrowUpRight; existing distinct ghosts and path styles retained |
-| Performer labels | Field toolbar | Tags; existing all / selected or focused / hidden cycle retained |
-| Attach or replace audio | Timeline heading | AudioLines; metronome uses Timer, mute retains Volume2 / VolumeX |
-| Select section | Button chips below the field, **Select Brass** etc. | Section-color dot, performer count, border/background, pressed state and selected checkmark; same selection command behavior as before |
-| Arc formation | Formation tools | Custom 24 × 24 SVG, currentColor, rounded strokes; replaces the font-dependent arc character and uses the same grid as Lucide |
+| New production | **Project menu → New production…**; native File menu; the welcome dialog's starters | Lucide FilePlus2; dialog heading **New production** |
+| Production settings | **Project menu → Production settings…**, or the production title in the top bar | Settings2 |
+| Personal preferences | **Project menu → Preferences…** | SlidersHorizontal; personal settings remain separate from production data |
+| Help and shortcuts | **Project menu → Help and shortcuts**; native **Squidware Help / F1** | CircleHelp; dialog heading **Help**; standard macOS About remains in the application menu |
+| Export | **Export** in the top bar in every mode; also **Project menu → Export…** | Download; dialog heading **Export** |
+| History | **Project menu → History…** | Lucide History (a clock on a counter-clockwise arrow), distinct from the Undo2/Redo2 arrows; dialog heading **History**. Its Undo/Redo buttons name the action and explain why they are unavailable. **Project menu → Recovery copies…** uses LifeBuoy |
+| Cast | **Cast** tab of the side panel | Tab label with the performer count |
+| Production sheet | **Plan** mode in the top bar | Text mode button; the sheet's accessible name is **Editable production sheet** |
+| Add set | Labeled button at the end of the set strip; an icon button in the transport when the strip is hidden | Plus; opens the **Add set** dialog |
+| Select all | Inspector header and the tool strip's **Select menu** | The Inspector header shows **Select all** with nothing selected and **Clear** (**Clear selection**) otherwise; the Select menu lists both |
+| Previous / next paths | **Travel paths** menu over the field: **Show paths from previous set** and **Show paths to next set** | Custom path glyphs; existing distinct ghosts and path styles retained |
+| Performer labels | **View options** menu over the field | Tags; **Show labels**, **Selected only** and **Hide labels**; the J shortcut still cycles them |
+| Attach or replace audio | Transport | AudioLines; metronome uses Timer, mute retains Volume2 / VolumeX |
+| Select section | Button chips at the top of the Inspector, **Select all Brass** etc.; also listed in the **Select menu** | Section-color dot, name and performer count; with a selection the chips fold to their colors until **Show section names**; same selection command behavior as before |
+| Arc formation | Tool strip | Custom glyph drawn as performers in the formation, using currentColor |
 
 Redundant Settings and Help routes, the avatar, repeated local-workspace notices, duplicate production-sheet Export buttons and promotional copy are removed. Explicit file status, Save, Undo, Export and recovery status/access stay available. The geometric rehearsal disclaimer is in Help. Contextual keyboard instructions and invalid-draft feedback remain available where they are needed.
 
 ## Introductory hint
 
-Selecting performers retires the status-bar selection hint. Clearing selection, changing productions and restarting do not restore it. The additive, validated `selectionHintDismissed` version-1 personal preference defaults to false in older files; Reset defaults restores it. A retained selection during reset does not immediately dismiss it again. No production schema, coordinates, history, recovery content or export format changes are required.
+The status bar and its retiring selection hint are gone. One hint line at the field's lower left follows the editor's state: with nothing selected it says to select a dot, a box or a section, and with a selection it names the drag and the nudge. It does not retire; turn it off with **Show hints** in Preferences. The additive, validated `selectionHintDismissed` version-1 personal preference is still recorded when performers are first selected and still resets with Reset defaults, but it no longer hides anything. No production schema, coordinates, history, recovery content or export format changes are required.
 
 ## Validation and design evidence
 

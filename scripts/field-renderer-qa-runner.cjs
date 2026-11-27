@@ -49,7 +49,8 @@ function instrument(project) {
 }
 const summarize = values => { const sorted = [...values].sort((a,b)=>a-b); return { samples: sorted.length, median: sorted[Math.floor(sorted.length*.5)], p95: sorted[Math.min(sorted.length-1,Math.floor(sorted.length*.95))] }; };
 async function run(fixture) {
-  const window = new BrowserWindow({ width:1366,height:768,show:true,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false,preload:path.join(manifest.root,'electron/preload.cjs'),backgroundThrottling:false} });
+  // As electron/main.cjs does for a manifest-driven QA window: open straight into the editor, without the start dialog.
+  const window = new BrowserWindow({ width:1366,height:768,show:true,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false,preload:path.join(manifest.root,'electron/preload.cjs'),backgroundThrottling:false,additionalArguments:['--squidware-legacy-demo']} });
   await window.loadURL('about:blank'); window.webContents.debugger.attach('1.3');
   const command = (method,args) => window.webContents.debugger.sendCommand(method,args);
   const evaluate = source => window.webContents.executeJavaScript(source);

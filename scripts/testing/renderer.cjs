@@ -215,33 +215,24 @@ function confirmShim() {
  * evaluate for the current document, or a Page.addScriptToEvaluateOnNewDocument
  * sender (registered before reload) to cover every later document. */
 async function installConfirmShim(run) { return run(`(${confirmShim.toString()})();`); }
-/** Reveal a toolbar action that moved into More, using acknowledged native input.
- * Existing owner suites keep testing the same operation after responsive layout. */
+/** Reveal a control that lives in one of the shell's menus (Motion, More shapes, Select, View, Travel paths,
+ * Timeline options, the Project menu and others), using acknowledged native input as a writer would: open the menu
+ * that owns it, then leave the click to the owner suite. A control already on screen needs nothing. */
 async function revealFieldTool(window, selector) {
   // Hidden Chromium widgets on Windows/Linux can throttle compositor frames
   // even with backgroundThrottling=false. Keep native layout/key waits live
   // without activating the QA window or changing their deadlines.
   if(process.platform!=='darwin'&&!window.isVisible())window.showInactive();
-  // Context updates can move a command between the row and More. Resolve its
-  // location after React and the responsive measurement have committed.
-  await window.webContents.executeJavaScript(`new Promise(resolve=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-command-toolbar'))requestAnimationFrame(()=>requestAnimationFrame(resolve));else resolve();})`);
-  if(/(?:Line|Arc|Circle|Block|Wave|Bézier curve|Bézier wave|Scatter) formation/.test(selector)&&!await window.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(selector)})`)){
-    // Let the responsive row finish moving actions after the owner resized.
-    await window.webContents.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
-    await revealFieldTool(window,'[aria-label="Shape selection"]');
-    const point=await window.webContents.executeJavaScript("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const n=document.querySelector('[aria-label=\"Shape selection\"]');const r=n.getBoundingClientRect();resolve({x:r.x+r.width/2,y:r.y+r.height/2});})))");
-    for(const type of ['mouseMoved','mousePressed','mouseReleased'])await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,...point,...(type==='mouseMoved'?{}:{button:'left',buttons:type==='mousePressed'?1:0,clickCount:1})});
-    await waitFor(()=>window.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(selector)})`),'formation parameters opened');
-    await waitFor(()=>window.webContents.executeJavaScript("!!document.activeElement?.closest('.formation-grid')"),'formation opening focus settled');
-  }
-  const point=await window.webContents.executeJavaScript(`(()=>{const target=document.querySelector(${JSON.stringify(selector)});if(!target?.closest('.field-tools-menu[hidden]'))return null;const r=document.querySelector('[aria-label="More field tools"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
-  if(point){
-    await window.webContents.executeJavaScript("document.querySelector('[aria-label=\"More field tools\"]').focus()");
-    await keyWithRelease(window,'Down',[],{releaseKey:'ArrowDown'});
-    await waitFor(()=>window.webContents.executeJavaScript("!!document.querySelector('.field-tools-menu:not([hidden])')"),'More field tools open');
-    await waitFor(()=>window.webContents.executeJavaScript("!!document.activeElement?.closest('.field-tools-menu:not([hidden])')"),'More field tools keyboard entry');
-  }
-  await window.webContents.executeJavaScript(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});if(n?.closest('.field-tools-menu'))n.scrollIntoView({block:'nearest'});})()`);
+  const evaluate=code=>window.webContents.executeJavaScript(code);
+  // Context updates enable, disable or move tools. Resolve the control after React has committed.
+  await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+  const owner=await evaluate(`(()=>{const target=document.querySelector(${JSON.stringify(selector)});const menu=target?.closest('[role=menu][hidden]');if(!menu)return null;const trigger=[...document.querySelectorAll('[aria-controls]')].find(n=>n.getAttribute('aria-controls')===menu.id&&n.getClientRects().length);if(!trigger)return null;trigger.focus();return {id:menu.id,focused:document.activeElement===trigger};})()`);
+  if(!owner)return;
+  // Arrow Down on a menu button opens its menu and enters it, as More field tools did.
+  await keyWithRelease(window,'Down',[],{releaseKey:'ArrowDown'});
+  await waitFor(()=>evaluate(`document.getElementById(${JSON.stringify(owner.id)})?.hidden===false`),'menu open for '+selector);
+  // The menu is placed in a layout effect; let it settle before the owner measures the item.
+  await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({block:'nearest'});resolve();})))`);
 }
 module.exports = { pause, waitFor, waitForProgress, key, keyWithRelease, selectNativeOption, capturePage, waitViewport, settleNativeViewport, installConfirmShim, revealFieldTool };
 
@@ -260,13 +251,25 @@ async function activateWorkspace(window, id) {
     await evaluate(`document.querySelector(${JSON.stringify(selector)})?.focus()`);
     await waitFor(() => evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const n=document.querySelector(${JSON.stringify(selector)});resolve(!!n&&!!n.getClientRects().length&&document.activeElement===n&&document.hasFocus());})))`), 'workspace native focus '+selector);
   };
-  await focus('[aria-label="Switch workspace"]');
-  await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
-  await waitFor(() => evaluate("!!document.querySelector('#workspace-options')"), 'workspace options');
-  const name = id[0].toUpperCase() + id.slice(1);
-  await focus('#workspace-options [aria-label="'+name+' workspace"]');
-  await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
-  await waitFor(() => evaluate(`!document.querySelector('#workspace-options') && document.querySelector('.workspace-trigger').textContent===${JSON.stringify(name)}`), name+' workspace');
+  // Write, Plan and Rehearse are the modes in the top bar; other arrangements are chosen in Workspaces.
+  const mode = { design: 'Write mode', production: 'Plan mode', rehearse: 'Rehearse mode' }[id];
+  if (mode) {
+    const selector = '[aria-label="'+mode+'"]';
+    await focus(selector);
+    await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
+    await waitFor(() => evaluate(`document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-pressed')==='true'`), mode);
+  } else {
+    const name = id[0].toUpperCase() + id.slice(1);
+    await revealFieldTool(window, '[aria-label="Workspaces"]');
+    await focus('[aria-label="Workspaces"]');
+    await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
+    await waitFor(() => evaluate("!!document.querySelector('dialog[open] .workspace-list')"), 'workspaces dialog');
+    await focus('dialog[open] [aria-label="'+name+' workspace"]');
+    await keyWithRelease(window, 'Return', [], {releaseKey:'Enter'});
+    await waitFor(() => evaluate(`document.querySelector('dialog[open] [aria-label="${name} workspace"]')?.getAttribute('aria-pressed')==='true'`), name+' workspace');
+    await keyWithRelease(window, 'Escape', [], {releaseKey:'Escape'});
+    await waitFor(() => evaluate("!document.querySelector('dialog[open] .workspace-list')"), 'workspaces dialog closed');
+  }
   // Existing editing owners explicitly return to Inspector after choosing Design.
   if (id === 'design') await showRightPanel(window, 'inspector');
 }

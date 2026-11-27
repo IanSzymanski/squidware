@@ -3,11 +3,11 @@
 At an arrival picture, pause and select exactly one performer. **Edit performer
 path** opens cubic controls for a simple move, or the interval editor for a
 scheduled move. **Draw performer path** opens the interval editor in Draw Path
-mode. Both actions are also in the command palette. Empty or multiple selections
+mode. Both actions are in the tool strip's **Motion** menu and the Command palette. Empty or multiple selections
 never implicitly target the cast.
 
 Draw performer path and Edit movement timing preview directly on the main field,
-with parameters in the docked Inspector and Apply/Cancel above its scrolling
+with parameters in the side panel and Apply/Cancel above its scrolling
 contents. The simple cubic editor opened by Edit performer path remains a dialog.
 [Shared routes](shared-routes.md) also uses the main field with docked controls.
 Move operations keeps its existing editor during the incremental

@@ -1,10 +1,6 @@
-.modal.analysis-rules-panel { display: flex; flex-direction: column; overflow: hidden; }
-.analysis-rules-panel .modal-header { flex-shrink: 0; margin-bottom: 12px; }
-.analysis-rules-panel form { display: flex; flex-direction: column; min-height: 0; }
-.analysis-rules-content { overflow: auto; min-height: 0; padding: 2px 4px; }
-.analysis-rules-panel .modal-actions { flex-shrink: 0; flex-wrap: wrap; margin-top: 12px; }
-.analysis-declarations { max-height: 180px; overflow: auto; font-size: 13px; }
+/* Analysis rules: spacing, stride and clearance thresholds that travel with the production. */
+.analysis-declarations { max-height: 180px; overflow: auto; font-size: var(--text-sm); }
 .transition-check .issue-list button span { overflow-wrap: anywhere; }
-.clearance-settings { margin-top: 14px; }
-.clearance-settings summary { cursor: pointer; font-size: 13px; font-weight: 600; }
-.clearance-toggle { display: flex; align-items: center; gap: 7px; margin: 10px 0; font-size: 13px; }
+.clearance-settings { display: flex; flex-direction: column; gap: var(--space-2); }
+.clearance-settings > summary { color: var(--text); font-weight: 600; }
+.clearance-toggle { font-size: var(--text-sm) !important; }

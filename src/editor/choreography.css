@@ -1,10 +1,10 @@
-.cue-form { display: grid; gap: 8px; }
+/* Choreography cues: body and equipment work timed to counts. */
+.cue-form { display: grid; gap: var(--space-3); }
 .cue-reassign { justify-self: start; }
-.cue-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
-.cue-list { list-style: none; padding: 0; margin: 8px 0; }
-.cue-list li {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-  gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border);
-}
-.cue-list p:not(.field-error) { margin-top: 4px; color: var(--muted); }
+.cue-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-2); }
+.cue-list { border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.cue-list:empty { display: none; }
+.cue-list li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); padding: 9px 12px; border-bottom: 1px solid var(--hairline); font-size: var(--text-sm); }
+.cue-list li:last-child { border-bottom: 0; }
+.cue-list p:not(.field-error) { margin-top: 2px; color: var(--text-tertiary); font-size: var(--text-xs); }
 .cue-actions { display: flex; flex-wrap: wrap; gap: 6px; }

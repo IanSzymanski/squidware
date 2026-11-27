@@ -96,7 +96,7 @@ app.whenReady().then(async () => {
       await evaluate('window.__playbackQA.releaseAnalysis()');
       await wait("window.__playbackQA.analysisReplies > 0 && document.querySelector('[data-analysis-status]')?.dataset.analysisStatus === 'ready'", 'worker reply during measured scrub');
     });
-    assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.EditorShell, 0); assert.equal(diff.InspectorCounts, 0); assert.ok(diff.EditorTimeline >= 12);
+    assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.AppShell, 0); assert.equal(diff.InspectorCounts, 0); assert.ok(diff.ShowStrip >= 12);
     const transforms = await evaluate("Array.from(document.querySelectorAll('.field-performer')).map(n=>n.getAttribute('transform'))");
     assert.equal(transforms.length, 500);
     pass('500-performer fractional scrub and delayed worker results update the timeline/check panel while shell, sibling Inspector controls and static markings remain idle');
@@ -105,18 +105,33 @@ app.whenReady().then(async () => {
     diff = await measureRenders('real-playback', async () => { await pause(600); await wait(`${state}.playback.count > ${beforeCount}`, 'clock advanced'); });
     assert.ok(await evaluate(state + '.playback.count') > beforeCount);
     assert.notDeepEqual(await evaluate("Array.from(document.querySelectorAll('.field-performer')).map(n=>n.getAttribute('transform'))"), transforms);
-    assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.EditorShell, 0); assert.equal(diff.InspectorCounts, 0); assert.ok(diff.EditorTimeline > 0);
+    assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.AppShell, 0); assert.equal(diff.InspectorCounts, 0); assert.ok(diff.ShowStrip > 0);
     await evaluate(`${editor}.dispatch('playback.toggle')`);
     pass('real playback advances geometry and count without redrawing the static field or unrelated shell controls');
     await evaluate(`${editor}.dispatch('workspace.select',{id:'production'}); ${editor}.dispatch('playback.toggle')`); await pause(250);
-    diff = await measureRenders('cast-playback', () => pause(400)); assert.equal(diff.CastWorkspace, 0); assert.equal(diff.EditorShell, 0);
+    diff = await measureRenders('cast-playback', () => pause(400)); assert.equal(diff.CastWorkspace, 0); assert.equal(diff.AppShell, 0);
     await evaluate(`${editor}.dispatch('playback.toggle'); ${editor}.dispatch('workspace.select',{id:'design'}); ${editor}.dispatch('set.select',{index:0})`); await pause(200);
     pass('Cast remains idle during playback');
     diff = await measureRenders('grid-invalidation', () => evaluate(`${editor}.setValue('ui','showGrid', !${state}.ui.showGrid)`)); assert.equal(diff.StaticFieldMarkings, 1);
     diff = await measureRenders('field-invalidation', () => evaluate(`${editor}.dispatch('project.update',{preset:'high-school'})`)); assert.equal(diff.StaticFieldMarkings, 1);
-    diff = await measureRenders('zoom-fit-resize', async () => { await evaluate(`${editor}.setValue('ui','zoom',1.4)`); window.setContentSize(1200,800); await pause(100); await evaluate(`${editor}.setValue('ui','fitVersion',1)`); }); assert.equal(diff.StaticFieldMarkings, 0);
+    // The grid thins by zoom: the markings are drawn once per quarter-octave of screen scale (gridLevel in Field2D).
+    // They are retained by a zoom, fit or resize inside a level and redrawn exactly once when a level is crossed.
+    const gridScale = () => evaluate("(()=>{const m=document.querySelector('.field-stage__svg').getScreenCTM();return Math.log2(Math.hypot(m.a,m.b))*4;})()");
+    const fitScale = await gridScale(), fitLevel = Math.round(fitScale);
+    assert.equal(await evaluate(state + '.ui.zoom'), 1);
+    // A zoom that changes the scale by 0.3 to 0.8 of a level's width and stays inside the level.
+    const insideScale = fitLevel + (fitScale <= fitLevel ? .3 : -.3), insideZoom = 2 ** ((insideScale - fitScale) / 4);
+    diff = await measureRenders('zoom-inside-grid-level', async () => { await evaluate(`${editor}.setValue('ui','zoom',${insideZoom})`); await wait(`Math.abs(${state}.ui.zoom-${insideZoom})<1e-9`, 'zoom inside the grid level'); await settleFrames(); });
+    const zoomedScale = await gridScale();
+    assert.ok(Math.abs(zoomedScale - insideScale) < .05, `The zoom must reach the intended screen scale: ${zoomedScale} for ${insideScale}`);
+    assert.equal(Math.round(zoomedScale), fitLevel); assert.equal(diff.StaticFieldMarkings, 0);
+    diff = await measureRenders('zoom-across-grid-level', async () => { await evaluate(`${editor}.setValue('ui','zoom',1.4)`); await settleFrames(); });
+    const crossedLevel = Math.round(await gridScale());
+    assert.notEqual(crossedLevel, fitLevel, 'A 1.4× zoom spans almost two grid levels.'); assert.equal(diff.StaticFieldMarkings, 1);
+    diff = await measureRenders('fit-resize', async () => { window.setContentSize(1200,800); await pause(100); await evaluate(`${editor}.setValue('ui','fitVersion',1)`); await settleFrames(); });
+    assert.equal(diff.StaticFieldMarkings, Math.round(await gridScale()) === crossedLevel ? 0 : 1);
     assert.equal(await evaluate("document.querySelector('.field-stage__svg').getAttribute('viewBox').split(' ').length"), 4);
-    pass('grid and field type invalidate markings; zoom, fit and resize retain the static drawing');
+    pass('grid and field type invalidate markings; zoom, fit and resize retain the static drawing inside a grid level and redraw it once across one');
     const project = await evaluate(state + '.project.present'); const id = project.performers.at(-1).id;
     await wait("document.querySelector('.recovery-indicator')?.textContent==='Recovery copy saved'", 'field change recovery finished');
     await evaluate(`${editor}.setValue('ui','zoom',1); ${editor}.setValue('selection','selectedIds',[${JSON.stringify(id)}]); ${editor}.setValue('ui','snap',false)`); await pause(100);
@@ -129,7 +144,7 @@ app.whenReady().then(async () => {
     diff = await measureRenders('drag-preview', async () => {
       for (let step=1;step<=6;step++) { await mouse({type:'mouseMoved',x:point.x+step*5,y:point.y+step*2,button:'left',buttons:1}); await pause(20); }
     });
-    assert.equal(await evaluate(state + '.project.revision'), revision); assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.EditorShell, 0);
+    assert.equal(await evaluate(state + '.project.revision'), revision); assert.equal(diff.StaticFieldMarkings, 0); assert.equal(diff.AppShell, 0);
     await mouse({type:'mouseReleased',x:point.x+30,y:point.y+12,button:'left',buttons:0,clickCount:1}); await pause(200);
     assert.equal(await evaluate(state + '.project.past.length'), history+1);
     assert.notDeepEqual(await evaluate(`${state}.project.present.sets[0].positions[${JSON.stringify(id)}]`), project.sets[0].positions[id]);

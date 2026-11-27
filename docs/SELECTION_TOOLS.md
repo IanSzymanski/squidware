@@ -1,10 +1,10 @@
 # Selection tools and saved groups — #33
 
-Open **Selection tools and groups** from the field toolbar or the docked/full Cast heading. Both use the same selection and shared command registry. The panel scrolls independently at narrow/enlarged sizes; it does not add a permanent toolbar row. Close returns keyboard focus to the opener.
+Open **Selection tools and groups** from the tool strip's **Select menu**, from **More Cast actions** on the Cast tab, or from the full Cast table's heading. All use the same selection and shared command registry. The panel scrolls independently at narrow/enlarged sizes; it does not add a permanent row. Close returns keyboard focus to the opener.
 
 ## Sections and scope
 
-- Click a section button to replace the selection with that whole section. Shift-click, Shift-Enter or Shift-Space adds the section, without toggling away already-selected members. Section buttons ignore Cast filters. As before, changing sections cancels a contextual position preview while preserving unrelated drafts.
+- Click a section chip at the top of the Inspector to replace the selection with that whole section. The **Select menu** lists the same sections and the saved groups. Shift-click, Shift-Enter or Shift-Space adds the section, without toggling away already-selected members. Section buttons ignore Cast filters. As before, changing sections cancels a contextual position preview while preserving unrelated drafts.
 - **Invert visible** inverts only performers matching the current Cast search and section filter. Selected performers outside that scope stay selected. A search matches performer labels and names; it is not restricted to labels.
 - Geometric selection uses the same Cast filter scope. The panel reports its scope count. Group recall uses the whole saved ID list, including members hidden by filters; Cast retains its existing hidden-selection notice.
 - The **Add to selection** checkbox offers a keyboard-accessible alternative to Shift for preview results and group recall.

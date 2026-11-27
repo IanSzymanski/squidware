@@ -1,6 +1,6 @@
 # Set creation
 
-Issue [#29](https://github.com/IanSzymanski/squidware/issues/29) separates the former Add/Duplicate operation into four reviewed actions. The single **Add set** control opens a dialog. The Inspector’s copy control, command palette and shortcuts open the same dialog with the requested action selected. Opening or canceling the dialog does not edit the production; opening pauses playback. Apply selects the created picture and commits one named history entry.
+Issue [#29](https://github.com/IanSzymanski/squidware/issues/29) separates the former Add/Duplicate operation into four reviewed actions. **Add set**, at the end of the set strip or in the transport when the strip is hidden, opens a dialog that starts from the current picture: **Hold positions** is selected, followed by **Duplicate set**, **New set** and **Insert before**. The Inspector’s **Set actions** menu (**Duplicate set**, **Hold positions**, **Insert set before**), the command palette and shortcuts open the same dialog with the requested action selected. Opening or canceling the dialog does not edit the production; opening pauses playback. Apply selects the created picture and commits one named history entry.
 
 | Action | Placement and positions | Notes and name | New move defaults |
 | --- | --- | --- | --- |

@@ -39,9 +39,8 @@ export function TransformPanel({ controller: c }: { controller: EditorController
         <NumberField label="Pivot X · yards" min={0} max={c.project.field.width} step={.625} value={options.pivot.point.x} onDraftChange={c.setPendingDraft} onChange={x => update({ pivot: { kind: 'custom', point: { x, y: result.pivot?.y ?? 0 } } })} />
         <NumberField label="Pivot Y · yards" min={0} max={c.project.field.height} step={.625} value={options.pivot.point.y} onDraftChange={c.setPendingDraft} onChange={y => update({ pivot: { kind: 'custom', point: { x: result.pivot?.x ?? 0, y } } })} />
       </div>}
-      {result.pivot && <p className="microcopy">Pivot: {Number(result.pivot.x.toFixed(3))}, {Number(result.pivot.y.toFixed(3))} yd. Drag the round rotation handle, square scale handle, or pivot crosshair. Numbers are the keyboard alternative.</p>}
-    </> : <p className="microcopy">{options.operation === 'across-50' ? custom ? 'Reflect X around the surface center. Y stays fixed.' : 'Reflect X around midfield; Y stays fixed.' : 'Reflect Y around the middle of the field; X stays fixed.'} Performer identities stay the same.</p>}
-    <p className={`transform-result${result.error ? ' transform-result--error' : ''}`} role="status">{result.error || (c.pendingDraft ? 'Finish or cancel incomplete inputs before applying.' : result.changed ? 'Preview ready. Apply once to record one undo action.' : 'Preview matches the original positions.')}</p>
-    <p className="microcopy">Out-of-field results cannot be applied. Changing selection, set, workspace, playback or project revision cancels this preview.</p>
+      {result.pivot && <p className="microcopy">Pivot: {Number(result.pivot.x.toFixed(3))}, {Number(result.pivot.y.toFixed(3))} yd</p>}
+    </> : <p className="microcopy">{options.operation === 'across-50' ? custom ? 'Flips left to right around the surface center.' : 'Flips left to right around midfield.' : 'Flips front to back around the middle of the field.'}</p>}
+    <p className={`transform-result${result.error ? ' transform-result--error' : ''}`} role="status">{result.error || (c.pendingDraft ? 'Finish or cancel incomplete inputs before applying.' : result.changed ? 'Preview ready.' : 'Preview matches the original positions.')}</p>
   </section>;
 }

@@ -44,6 +44,9 @@ describe('musical score map',()=>{
     const p=createPerformanceFixture('maximum');p.meter=parseMeterText('1/4'); const map=compileScore(p);
     const ticks=scoreTicks(map,0,map.total,800);expect(ticks.length).toBeLessThanOrEqual(12);expect(ticks[0]).toEqual({count:0,label:'M1'});
     expect(scoreTicks(map,500,504,800)).toContainEqual({count:502,label:'M503'});
+    // After the opening measure the ruler is a scale: every label a multiple of one interval, evenly apart.
+    const measures=ticks.slice(1).map(tick=>Number(tick.label.slice(1))), interval=measures[1]-measures[0];
+    expect(measures.length).toBeGreaterThan(2);expect(measures.every((measure,i)=>measure%interval===0&&(i===0||measure-measures[i-1]===interval))).toBe(true);
   });
   it('shares pickup and meter-change accents with the actual audio scheduler across loops and a start cue',()=>{
     const map=compileScore(source());

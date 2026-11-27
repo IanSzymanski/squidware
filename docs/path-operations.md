@@ -1,6 +1,6 @@
 # Detailed movement operations
 
-Issue [#77](https://github.com/IanSzymanski/squidware/issues/77) defines reviewed count resizing, selected-path reversal and interval copy/paste for [curves](movement-paths.md) and [independent schedules](movement-schedules.md). Pause on a picture and choose **Move operations** in the field toolbar’s More tools menu or Command palette. The opening targets the first outgoing move; every later picture targets its incoming move, including the closing picture. A one-picture production has no move to operate on.
+Issue [#77](https://github.com/IanSzymanski/squidware/issues/77) defines reviewed count resizing, selected-path reversal and interval copy/paste for [curves](movement-paths.md) and [independent schedules](movement-schedules.md). Pause on a picture and choose **Motion → Move operations** in the tool strip or the Command palette. The tool strip names the editor while it is open. The opening targets the first outgoing move; every later picture targets its incoming move, including the closing picture. A one-picture production has no move to operate on.
 
 The main field compares saved dashed geometry and ghost dots with proposed solid geometry and sampled performers at the current field zoom and orientation. The show timeline marks the saved and proposed count ranges, with interval boundaries for a single selected performer. For copy, the solid path and timeline row show the selected source window. The Inspector’s progress slider reviews these ranges without moving the show playhead.
 

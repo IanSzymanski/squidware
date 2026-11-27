@@ -1,7 +1,6 @@
-.group-cues { border:1px solid var(--border); border-radius:6px; padding:10px; margin:12px 0; font-size:12px; }
-.group-cue { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:10px; align-items:center; }
-.group-member-list { display:grid; gap:9px; max-height:260px; overflow:auto; padding:8px; }
-.group-motion-panel .transition-check { margin:8px 0; line-height:1.5; }
-.group-motion-panel .transition-preview-toggles .transition-check { margin:0; }
-.group-motion-panel .transition-body { overflow-wrap:anywhere; }
-@media(max-width:700px) { .group-cue { grid-template-columns:1fr; } }
+/* Group route movement: followers, counter-march cues and conveyors. */
+.group-cues { display: flex; flex-direction: column; gap: var(--space-2); padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius-md); font-size: var(--text-sm); }
+.group-cue { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; }
+.group-member-list { display: grid; gap: 6px; max-height: 260px; overflow: auto; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--input-bg); }
+.group-motion-panel .transition-body { overflow-wrap: anywhere; }
+@media (max-width: 700px) { .group-cue { grid-template-columns: 1fr; } }

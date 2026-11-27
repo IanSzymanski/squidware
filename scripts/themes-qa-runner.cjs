@@ -44,6 +44,12 @@ async function preferences() {
   await click('[aria-label="Project menu"]'); await click('.dropdown [aria-label="Preferences"]');
   await wait("document.querySelector('dialog[open] h2')?.textContent==='Preferences'", 'preferences');
 }
+/** The top bar offers Save while there are unsaved changes; the Project menu always has it. */
+async function save() {
+  if (await evaluate("!!document.querySelector('.topbar .header-save')?.getClientRects().length")) await click('.topbar .header-save');
+  else { await click('[aria-label="Project menu"]'); await click('.dropdown [aria-label="Save"]'); }
+  await wait(`${state}.fileSession.fileOperation===null && !document.querySelector('.topbar .header-save')`, 'native save');
+}
 async function close() { await click('.modal [aria-label="Close dialog"]'); await wait("!document.querySelector('dialog[open]')", 'closed'); }
 async function capture(name) {
   await evaluate('document.activeElement?.blur()');
@@ -53,7 +59,9 @@ async function capture(name) {
 }
 async function audit(label) {
   await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
-  const result = await evaluate(`(${auditText.toString()})({includeDisabled:true})`); audits.push({ label, ...result });
+  // Dialogs and menus fade in: measure the settled colors, not a frame of the transition.
+  await wait("document.getAnimations().every(animation => animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity)", 'animations settled before ' + label);
+  const result = await evaluate(`(${auditText.toString()})({includeDisabled:true,skipUnrendered:true})`); audits.push({ label, ...result });
   assert.deepEqual(result.failures, [], label); assert.ok(result.checked > 40, label);
 }
 async function focus(selector) { await revealFieldTool(window,selector);
@@ -92,7 +100,9 @@ app.whenReady().then(async () => {
         await audit(theme + ' preferences'); await capture(`themes-${theme}-preferences.png`);
         await click('.preferences-nav [aria-label="Shortcuts"]'); await wait("document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Shortcuts' && document.querySelector('.shortcut-preferences').open", 'Shortcuts section');
         await audit(theme + ' shortcut preferences'); await close();
-        await focus('.header-actions [aria-label="Save"]');
+        // Top bar buttons show the keyboard focus ring: Export always, and Save while it is offered.
+        await focus('.topbar .topbar-export');
+        if (await evaluate("!!document.querySelector('.topbar .header-save')")) await focus('.topbar .header-save');
         await focus(`[data-performer-id="${id}"]`);
         await wait("getComputedStyle(document.activeElement.querySelector('.field-focus-ring')).visibility==='visible'", 'field keyboard focus');
         const dot = await evaluate(`(() => {const p=document.querySelector('[data-performer-id="${id}"]');return {fill:p.querySelector('.field-dot').getAttribute('fill'),selection:getComputedStyle(p.querySelector('.field-selection-ring')).stroke,focus:getComputedStyle(p.querySelector('.field-focus-ring')).stroke};})()`);
@@ -107,12 +117,12 @@ app.whenReady().then(async () => {
         const number = '.preferences-fields input[type=number]'; await click(number); await evaluate(`document.querySelector(${JSON.stringify(number)}).select()`); await key('Backspace'); await key('Tab');
         await wait("!!document.querySelector('.preferences-fields [aria-invalid=true]')", 'invalid preference'); await audit(theme + ' validation error');
         await evaluate("document.querySelector('.preferences-fields [aria-invalid=true]').focus()"); await key('Escape'); await close();
-        await click('.canvas-toolbar [aria-label="Fit field"]');
+        await click('.canvas-zoom [aria-label="Fit field"]');
         await viewport(1000, 700); await preferences(); await select('UI scale', 1.25); await audit(theme + ' 125% preferences'); await close();
-        // #178: at 125% in a 1000 px window the effective width is 800 px, so Layout lives in Menu.
-        await click('[aria-label="Switch workspace"]'); await wait("!!document.querySelector('#workspace-options')", 'layout options from Menu'); await audit(theme + ' enlarged layout controls'); await capture(`themes-${theme}-layout.png`); await key('Escape'); await wait("!document.querySelector('#workspace-options')", 'workspace options dismissed');
+        // #178: at 125% in a 1000 px window the effective width is 800 px. Arrangements of the window are in Workspaces, from the Project menu.
+        await click('[aria-label="Project menu"]'); await click('.dropdown [aria-label="Workspaces"]'); await wait("!!document.querySelector('dialog[open] .workspace-list')", 'Workspaces from the Project menu'); await audit(theme + ' enlarged layout controls'); await capture(`themes-${theme}-layout.png`); await key('Escape'); await wait("!document.querySelector('dialog[open]')", 'workspace options dismissed');
         await click('[aria-label="Selection tools and groups"]'); await audit(theme + ' enlarged selection tools'); await capture(`themes-${theme}-selection.png`); await click('[aria-label="Close selection tools"]');
-        await click('.header-actions [aria-label="Save"]'); await wait(`${state}.fileSession.fileOperation===null`, 'native save');
+        await save();
         const hit = await evaluate(`(() => { const svg=document.querySelector('.field-stage__svg'), matrix=document.querySelector('[data-field-geometry]').getScreenCTM(); const bounds=svg.getBoundingClientRect(); for(const person of ${state}.project.present.performers){const p=${state}.project.present.sets[0].positions[person.id], point=new DOMPoint(p.x,p.y).matrixTransform(matrix); const target=document.elementFromPoint(point.x,point.y); if(point.x>bounds.left && point.x<bounds.right && target?.closest('.field-stage__svg')) return {id:person.id,x:point.x,y:point.y};} return null;})()`);
         assert.ok(hit, 'A field dot remains available at 125%');
         for(const type of ['mouseMoved','mousePressed','mouseReleased']) await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type,x:hit.x,y:hit.y,button:type==='mouseMoved'?'none':'left',buttons:type==='mousePressed'?1:0,clickCount:type==='mouseMoved'?0:1});
@@ -121,7 +131,10 @@ app.whenReady().then(async () => {
         await viewport(850, 650); await preferences(); await select('UI scale', 1.5); await audit(theme + ' 150% preferences');
         // At 150% in a small window the section nav stays on one row, pinned to the dialog top above the Editing heading.
         await click('.preferences-nav [aria-label="Editing"]');
-        await wait("(()=>{const d=document.querySelector('dialog[open]').getBoundingClientRect(),n=document.querySelector('.preferences-nav'),r=n.getBoundingClientRect(),h=document.activeElement.getBoundingClientRect();return document.activeElement.textContent==='Editing'&&n.querySelector('[aria-pressed=true]')?.textContent==='Editing'&&new Set([...n.children].map(c=>Math.round(c.getBoundingClientRect().top))).size===1&&Math.abs(r.top-d.top)<3&&h.top>=r.bottom&&h.bottom<=d.bottom})()", 'pinned 150% section nav');
+        await wait("document.activeElement.textContent==='Editing'&&document.querySelector('.preferences-nav [aria-pressed=true]')?.textContent==='Editing'", 'Editing section chosen');
+        const nav = await evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const d=document.querySelector('dialog[open]').getBoundingClientRect(),t=document.querySelector('dialog[open] .modal-header').getBoundingClientRect(),n=document.querySelector('.preferences-nav'),r=n.getBoundingClientRect(),h=document.activeElement.getBoundingClientRect();resolve({rows:new Set([...n.children].map(c=>Math.round(c.getBoundingClientRect().top))).size,dialog:[d.top,d.bottom],title:[t.top,t.bottom],nav:[r.top,r.bottom],heading:[h.top,h.bottom]});})))");
+        // The dialog's title bar is its top edge; the section nav stays on one row pinned directly under it, above the Editing heading.
+        assert.ok(nav.rows===1&&Math.abs(nav.title[0]-nav.dialog[0])<3&&Math.abs(nav.nav[0]-nav.title[1])<3&&nav.heading[0]>=nav.nav[1]&&nav.heading[1]<=nav.dialog[1], 'pinned 150% section nav: '+JSON.stringify(nav));
         await audit(theme + ' 150% Editing preferences'); await close();
         await click('.header-actions [aria-label="Export"]'); await audit(theme + ' 150% Export'); await close();
         await capture(`themes-${theme}-850-150.png`);
@@ -138,7 +151,7 @@ app.whenReady().then(async () => {
     await fs.writeFile(path.join(output, 'results-' + phase + '.json'), JSON.stringify({ phase, checks, audits, metrics, electron: process.versions.electron }, null, 2));
     app.exit(0);
   } catch (error) {
-    console.error(error); if (window) { console.error(await evaluate('document.body.innerText.slice(-1500)').catch(() => 'No renderer')); await capturePage(window, output, 'failure.png').catch(() => {}); }
+    console.error(error); await fs.writeFile(path.join(output, 'failed-audits-' + phase + '.json'), JSON.stringify(audits, null, 2)).catch(() => {}); if (window) { console.error(await evaluate('document.body.innerText.slice(-1500)').catch(() => 'No renderer')); await capturePage(window, output, 'failure.png').catch(() => {}); }
     app.exit(1);
   }
 });

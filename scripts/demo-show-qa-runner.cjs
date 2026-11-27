@@ -69,7 +69,13 @@ app.whenReady().then(async () => {
     assert.deepEqual(await evaluate(state + '.project.present'), expected);
     assert.equal(await clean(), true);
     assert.equal(await evaluate(state + '.fileSession.audioUrl'), '');
-    pass('ordinary startup loads the authored 165-member/67-set Tether cleanly, without a recording');
+    // An ordinary launch offers the start dialog over the loaded show. Its Explore the demo action only closes it.
+    await wait("(()=>{const d=document.querySelector('dialog.welcome');return !!d&&d.open&&d.matches(':modal')&&d.contains(document.activeElement)})()", 'start dialog at launch');
+    assert.equal(await evaluate("document.querySelector('dialog.welcome h1').textContent"), 'Write your show');
+    assert.match(await evaluate("[...document.querySelectorAll('dialog.welcome .welcome-action')].find(n=>n.textContent.includes('Explore the demo')).textContent"), /Tether · 165 performers, 67 sets/);
+    await press('Explore the demo'); await wait("!document.querySelector('dialog.welcome') && !document.querySelector('dialog[open]')", 'start dialog closed by Explore the demo');
+    assert.deepEqual(await evaluate(state + '.project.present'), expected); assert.equal(await clean(), true);
+    pass('ordinary startup loads the authored 165-member/67-set Tether cleanly, without a recording, under a start dialog that Explore the demo closes');
 
     await evaluate(`${editor}.setValue('preferences','value',p=>({...p,minimumSpacing:2,maximumStride:.6,snapDefaults:{steps:6,subdivision:1,target:'grid',group:'individual'}}))`);
     await evaluate(`${editor}.dispatch('dialog.open',{dialog:'new'})`);

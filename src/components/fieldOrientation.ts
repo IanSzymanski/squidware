@@ -14,13 +14,19 @@ export function fieldDirection(key: string, step: number, orientation: FieldOrie
     dy: key === 'ArrowUp' ? -distance : key === 'ArrowDown' ? distance : 0 };
 }
 /**
- * Yards of apron shown around the field at Fit. Sideline labels need about 5.1 yd above and 5.4 yd below the
- * playing surface; no permanent overlay covers the field, so the apron only needs to hold those labels.
+ * Yards of apron shown around the field at Fit. The sideline captions sit within 3.7 yd of the playing surface,
+ * and the controls that float over the canvas stay inside this margin, so the field itself fills the window.
  */
-export const FIELD_FIT_MARGIN = { x: 4, y: 6 } as const;
+export const FIELD_FIT_MARGIN = { x: 4, y: 4 } as const;
 /** The 2D viewBox for a zoom (clamped by the caller) and a pan offset in field yards. */
+/** The apron for a surface of any size: a football field's margin, in proportion for a smaller floor or stage. */
+export function fieldFitMargin(field: Pick<Project['field'], 'width' | 'height'>) {
+  const share = (size: number, full: number) => Math.min(1, Math.max(.3, size / full));
+  return { x: FIELD_FIT_MARGIN.x * share(field.width, 100), y: FIELD_FIT_MARGIN.y * share(field.height, 160 / 3) };
+}
 export function fieldViewBox(field: Pick<Project['field'], 'width' | 'height'>, zoom: number, pan: Point) {
-  const width = (field.width + FIELD_FIT_MARGIN.x * 2) / zoom;
-  const height = (field.height + FIELD_FIT_MARGIN.y * 2) / zoom;
+  const margin = fieldFitMargin(field);
+  const width = (field.width + margin.x * 2) / zoom;
+  const height = (field.height + margin.y * 2) / zoom;
   return { x: field.width / 2 + pan.x - width / 2, y: field.height / 2 + pan.y - height / 2, width, height };
 }

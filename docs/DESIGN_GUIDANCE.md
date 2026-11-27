@@ -13,10 +13,10 @@ The guide describes the intended product across releases. It does not make unfin
 ## 1. Give the field priority
 
 - Keep the workspace compact: approximately 48 px for the combined header/workspace bar and approximately 120 px for transport/timeline. At 1366 × 768 and default scale, target approximately 470 px of field height; measure and explain deviations.
-- Put set name and 2D/3D controls with the canvas toolbar, float the legend within the field, and hide an unused audio lane.
+- Keep view controls (paths, View, 2D/3D/Split, zoom) in the field's margin, put section selection in the Inspector header, and hide an unused audio lane. The [design system](DESIGN_SYSTEM.md) records where each control lives in the current shell.
 - Preserve visible or readily accessible Save, Undo, Export, workspace navigation and playback. Remove redundant headings, avatars, repeated local-status notices and duplicate actions without losing meaningful file status.
 - Keep selection count and applicable actions visible at laptop size. Use contextual, collapsible Inspector sections and keep formation parameters near their preview.
-- As the corresponding issues land, support resizable/collapsible panels, Write/Review/Rehearse presets, an escapable focus mode and Cast selection alongside the field.
+- Support one resizable, collapsible side panel, the Write, Plan and Rehearse modes with saved workspaces, an escapable focus mode and Cast selection alongside the field.
 
 Sources and owners: [#16](https://github.com/IanSzymanski/squidware/issues/16), [#18](https://github.com/IanSzymanski/squidware/issues/18), [#32](https://github.com/IanSzymanski/squidware/issues/32), [#40](https://github.com/IanSzymanski/squidware/issues/40). Compact set rows and advanced timeline navigation remain separately owned by [#17](https://github.com/IanSzymanski/squidware/issues/17) and [#31](https://github.com/IanSzymanski/squidware/issues/31).
 
@@ -26,7 +26,7 @@ Sources and owners: [#16](https://github.com/IanSzymanski/squidware/issues/16), 
 - Reserve section colors for performers, a distinct accent for selection/focus and distinct status colors. Preserve user-defined section colors; distinguish selection and errors with geometry or text as well as color.
 - Use readable interface text: at least 11 px, with a 12–13 px default where practical. Use tabular numerals for counts, tempos and coordinates.
 - Use Lucide icons consistently; custom drill glyphs follow its grid. Give different actions distinct, meaningful glyphs.
-- Name actions and workspaces directly: New production, Export, Help, Cast and Production sheet. Make actionable legend chips look like controls.
+- Name actions and workspaces directly: New production, Export, Help, Cast and Production sheet. Make actionable section chips look like controls.
 - Consolidate duplicate Settings, Help and Add set entry points. Retire introductory hints after use and move persistent rehearsal disclaimers into Help.
 
 Sources and owners: [#36](https://github.com/IanSzymanski/squidware/issues/36), [#37](https://github.com/IanSzymanski/squidware/issues/37), [#43](https://github.com/IanSzymanski/squidware/issues/43).

@@ -10,12 +10,12 @@ import { generateScatter } from '../../src/scatterFormations';
 const SECTIONS = [
   ['sec-sop', 'Sopranos', '#f6c445', 'S', 'Soprano', 24], ['sec-mel', 'Mellophones', '#f2873a', 'M', 'Mellophone', 16],
   ['sec-tbn', 'Trombones', '#e95b4f', 'TB', 'Trombone', 8], ['sec-bar', 'Baritones', '#c77dff', 'BR', 'Baritone', 8],
-  ['sec-eup', 'Euphoniums', '#9a8cff', 'E', 'Euphonium', 12], ['sec-tub', 'Tubas', '#5c7cfa', 'T', 'Tuba', 16],
-  ['sec-snr', 'Snares', '#3dd6c4', 'SD', 'Snare', 10], ['sec-ten', 'Tenors', '#2bb3a3', 'TD', 'Tenor', 5],
-  ['sec-bas', 'Bass drums', '#1f8f84', 'BD', 'Bass', 5], ['sec-cym', 'Cymbals', '#98e6b8', 'CY', 'Cymbal', 4],
+  ['sec-eup', 'Euphoniums', '#9a8cff', 'E', 'Euphonium', 12], ['sec-tub', 'Tubas', '#6f9bff', 'T', 'Tuba', 16],
+  ['sec-snr', 'Snares', '#ffffff', 'SD', 'Snare', 10], ['sec-ten', 'Tenors', '#7fe3ff', 'TD', 'Tenor', 5],
+  ['sec-bas', 'Bass drums', '#22c7e6', 'BD', 'Bass', 5], ['sec-cym', 'Cymbals', '#f1e3b0', 'CY', 'Cymbal', 4],
   ['sec-pit', 'Front ensemble', '#a6b0bf', 'FE', 'Front ensemble', 13],
-  ['sec-flg', 'Guard · flags', '#f68ab8', 'F', 'Flag', 24], ['sec-rif', 'Guard · rifles', '#e9579f', 'R', 'Rifle', 12],
-  ['sec-sab', 'Guard · sabres', '#c9378a', 'X', 'Sabre', 8],
+  ['sec-flg', 'Guard · flags', '#ffa8cf', 'F', 'Flag', 24], ['sec-rif', 'Guard · rifles', '#f0569f', 'R', 'Rifle', 12],
+  ['sec-sab', 'Guard · sabres', '#c552e0', 'X', 'Sabre', 8],
 ] as const;
 const PIT_NAMES = ['Synthesizer', 'Marimba 1', 'Vibraphone 1', 'Marimba 2', 'Vibraphone 2', 'Marimba 3', 'Timpani', 'Marimba 4', 'Vibraphone 3', 'Xylophone & crotales', 'Drum kit', 'Electric bass', 'Electric guitar'];
 const performers: { id: string; label: string; name: string; sectionId: string }[] = [];

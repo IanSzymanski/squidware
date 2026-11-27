@@ -57,7 +57,9 @@ async function record(name, code, modifiers = []) {
   await type(button('Find a shortcut'), name); await click(button('Change shortcut: '+name));
   await key(code, modifiers); await wait(`document.querySelector(${JSON.stringify(button('Change shortcut: '+name))}).getAttribute('aria-pressed')==='false'`, 'finished recording');
 }
-async function audit(label) {const result=await evaluate(`(${auditText.toString()})({includeDisabled:true})`);audits.push({label,...result});assert.deepEqual(result.failures,[],label);}
+// The audit reads settled colors: a dialog still fading in, or a theme change still easing, is not what the writer reads.
+const settled = () => wait("document.getAnimations().every(animation => animation.playState !== 'running' || animation.effect?.getComputedTiming().iterations === Infinity)", 'animations settled before the text audit');
+async function audit(label) {await settled();const result=await evaluate(`(${auditText.toString()})({includeDisabled:true})`);audits.push({label,...result});assert.deepEqual(result.failures,[],label);}
 async function capture(name) {await debug('Input.dispatchMouseEvent',{type:'mouseMoved',x:2,y:2});await evaluate('document.activeElement?.blur()');await capturePage(window,output,name);}
 app.whenReady().then(async () => {
   try {

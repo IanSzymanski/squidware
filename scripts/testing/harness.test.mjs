@@ -397,12 +397,12 @@ test('right-panel navigation lets the reveal callback finish before activating i
   assert.deepEqual(activated,['Show Inspector','Cast'],'each control receives exactly one native activation');
 });
 
-test('workspace navigation settles queued Cast and menu focus before each native activation', async () => {
+test('workspace navigation settles queued Cast focus before its native activation', async () => {
   const frames = [], listeners = new Set(), activated = [];
-  let menu = false, workspace = 'Design', castSettled = false;
+  let mode = 'Write', castSettled = false;
   const control = name => ({ name, getClientRects: () => [{}], focus() { context.document.activeElement = this; } });
-  const trigger = control('switch'), cast = control('cast'), design = control('design'), production = control('production');
-  Object.defineProperty(trigger, 'textContent', { get: () => workspace });
+  const cast = control('cast'), plan = control('plan');
+  plan.getAttribute = name => name === 'aria-pressed' ? String(mode === 'Plan') : null;
   const context = { window: {
     addEventListener(_type, listener) { listeners.add(listener); },
     removeEventListener(_type, listener) { listeners.delete(listener); },
@@ -410,9 +410,8 @@ test('workspace navigation settles queued Cast and menu focus before each native
     activeElement: cast, hasFocus: () => true,
     querySelector(selector) {
       if (selector.startsWith('dialog')) return null;
-      if (selector === '#workspace-options') return menu ? {} : null;
-      if (selector.includes('Production workspace')) return production;
-      return trigger;
+      if (selector.includes('Plan mode')) return plan;
+      return null;
     },
   } };
   // A pending pane reveal would steal focus if Enter were sent immediately.
@@ -423,8 +422,7 @@ test('workspace navigation settles queued Cast and menu focus before each native
       if (event.type === 'char') {
         const target = context.document.activeElement; activated.push(target.name);
         assert.equal(castSettled, true);
-        if (target === trigger) { menu = true; frames.push(() => design.focus()); }
-        else if (target === production) { menu = false; workspace = 'Production'; }
+        if (target === plan) mode = 'Plan';
       }
       if (event.type === 'keyUp') for (const listener of listeners) listener({ isTrusted: true, key: 'Enter' });
     },
@@ -439,6 +437,6 @@ test('workspace navigation settles queued Cast and menu focus before each native
     assert.ok(Date.now() < deadline, 'workspace activation should finish after pending focus callbacks');
   }
   await navigating;
-  assert.equal(workspace, 'Production');
-  assert.deepEqual(activated, ['switch', 'production'], 'each native activation occurs exactly once on the intended control');
+  assert.equal(mode, 'Plan');
+  assert.deepEqual(activated, ['plan'], 'the mode receives exactly one native activation');
 });

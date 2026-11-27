@@ -34,21 +34,19 @@ export function SpacingPanel({ controller: c }: { controller: EditorController }
         {(['yards', 'steps'] as const).map(unit => <span key={unit}>{choice(`Interval in ${unit}`, unit === 'yards' ? 'Yards' : `${(c.project.snapping ?? DEFAULT_SNAPPING).steps}-to-5 steps`, options.unit === unit, () => update({ unit, interval: options.interval * spacingUnit(options, c.project) / spacingUnit({ ...options, unit }, c.project) }), 'Change the displayed unit while preserving the physical interval. Steps use the production step size, independently of grid subdivision.')}</span>)}
       </div>
       <NumberField key={options.unit} label={`Interval · ${options.unit}`} description="Projected center-to-center interval. Enter updates the preview; Apply commits it. Exact spacing bypasses snapping." value={options.interval} min={.001} max={1000} step={options.unit === 'steps' ? .25 : .1} onDraftChange={c.setPendingDraft} onChange={interval => update({ interval })} />
-      <p className="microcopy">{display(options.interval * spacingUnit(options, c.project))} yd per gap. Drag the square interval handle or enter a number.</p>
+      <p className="microcopy">{display(options.interval * spacingUnit(options, c.project))} yd per gap</p>
     </>}
     {options.operation !== 'distribute' ? <>
       <p className="form-label">{options.operation === 'align' ? 'Align to' : 'Keep fixed'}</p>
       <div className="spacing-choices" role="group" aria-label="Spacing anchor">
         {(['start', 'center', 'end'] as const).map(anchor => <span key={anchor}>{choice(`Anchor ${anchor}`, anchor === 'start' ? 'Minimum' : anchor === 'end' ? 'Maximum' : 'Center', options.anchor === anchor, () => update({ anchor }), 'Use the minimum coordinate, bounds midpoint, or maximum coordinate on this physical axis. Interval anchoring is evaluated separately for each lane.')}</span>)}
       </div>
-    </> : <p className="microcopy">Distribution keeps both extrema fixed. Perpendicular coordinates stay unchanged.</p>}
+    </> : <p className="microcopy">Keeps both ends where they are and evens out the gaps.</p>}
     {options.operation !== 'align' && <>
       <HelpButton title="Space each lane separately" description="Group performers by their perpendicular coordinate. Each lane starts at its smallest perpendicular coordinate and includes dots within the stated tolerance. Singletons stay fixed." aria-pressed={options.lanes} className={options.lanes ? 'button primary spacing-lanes' : 'button subtle spacing-lanes'} disabled={c.pendingDraft} disabledReason="Finish or cancel the pending input first." onClick={() => update({ lanes: !options.lanes })}>Each rank/file: {options.lanes ? 'on' : 'off'}</HelpButton>
       {options.lanes && <NumberField label="Lane tolerance · yards" description="Maximum perpendicular distance from the first dot in each lane. Preview groups before Apply; irregular groups can form singleton lanes." value={options.laneTolerance} min={0} max={10} step={.05} onDraftChange={c.setPendingDraft} onChange={laneTolerance => update({ laneTolerance })} />}
     </>}
     <p className={`transform-result${result.error ? ' transform-result--error' : ''}`} role="status">{result.error || (c.pendingDraft ? 'Finish or cancel incomplete inputs before applying.' : result.changed ? 'Preview ready. Apply records one undo action.' : 'Preview matches the original positions.')}</p>
     {options.operation !== 'align' && <p className="spacing-summary microcopy">{result.groups.length} {options.lanes ? 'lanes' : 'group'} · {result.groups.filter(g => g.ids.length === 1).length} singletons. Gaps: {gapSummary}.</p>}
-    <p className="microcopy">Order follows position along the axis, then perpendicular position, then performer ID for ties. With one group, irregular rows may cross or overlap. Guides show projected spacing; review actual clearance.</p>
-    <p className="microcopy">Exact tools bypass snapping and reject field crossings. Selection or context changes cancel the preview. Escape cancels; Enter on the field applies.</p>
   </section>;
 }

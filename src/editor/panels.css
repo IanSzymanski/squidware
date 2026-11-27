@@ -1,0 +1,116 @@
+/* Content of the shared dialogs: export, new production, settings, help, history, recovery, preferences, video. */
+
+/* Choice cards: large, obvious options. */
+.new-options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.new-options button, .export-options > label {
+  appearance: none; display: flex; align-items: flex-start; gap: var(--space-3); padding: 14px; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--control); color: var(--text-secondary);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.new-options button { flex-direction: column; gap: var(--space-2); }
+.new-options button:hover, .export-options > label:hover { border-color: var(--border-strong); background: var(--hover-bg); }
+.new-options strong, .export-options strong { display: block; color: var(--text); font-size: var(--text-md); font-weight: 600; }
+.new-options span, .export-options span { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.45; }
+.new-options svg, .export-options svg { color: var(--text-secondary); }
+.export-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.export-options input[type=radio] { position: absolute; opacity: 0; pointer-events: none; }
+/* Export contents are the same cards as Add set: icon, name and one line, with a check on the chosen one. */
+.export-options > label:has(> input[type=radio]) {
+  position: relative; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md); color: var(--text); font-weight: 400;
+}
+.export-options > label > svg:first-of-type { margin-top: 2px; }
+.export-options > label > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding-right: var(--space-6); }
+.export-options > label span { font-size: var(--text-xs); line-height: 1.4; }
+.export-options > label.selected { border-color: var(--accent-line); background: var(--accent-soft); }
+.export-options > label.selected svg { color: var(--accent-text); }
+.export-options > label > .export-check { position: absolute; top: var(--space-3); right: var(--space-3); }
+.export-options > label:has(input:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+
+/* What the drill book covers and the paper it prints on, read as label and value. */
+.export-result { display: flex; align-items: flex-start; gap: var(--space-4); }
+.export-result-facts { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.export-summary { margin: 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.5; text-wrap: pretty; }
+.export-summary strong { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.export-paper-row { display: flex; align-items: center; gap: var(--space-3); margin-top: 2px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 500; }
+.export-paper { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--app-bg); }
+.export-paper label {
+  display: inline-flex; align-items: center; height: var(--control-sm); padding: 0 10px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size: var(--text-xs); font-weight: 500; cursor: pointer;
+}
+.export-paper label:hover { color: var(--text); }
+.export-paper label:has(input:checked) { background: var(--active-bg); color: var(--text); box-shadow: var(--shadow-sm); }
+.export-paper label:has(input:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.export-paper input[type=radio] { position: absolute; opacity: 0; pointer-events: none; }
+/* The first page, small: paper stays paper in every theme. */
+.export-preview { flex: none; width: 132px; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.export-preview svg { display: block; width: 100%; height: auto; border-radius: 3px; box-shadow: var(--shadow-md); }
+.export-preview-paper { fill: #f7f7f4; }
+.export-preview-title { font: 700 4.6px var(--font-ui); fill: #1b1f24; }
+.export-preview-text { font: 500 3.3px var(--font-ui); fill: #59616b; }
+.export-preview-rule { stroke: #c9cdd2; stroke-width: 1.3; stroke-linecap: round; fill: none; }
+.export-preview-rule.strong { stroke: #8b939c; stroke-width: .6; }
+.export-preview figcaption { color: var(--text-tertiary); font-size: var(--text-xs); text-align: center; }
+.export-pdf { width: 100%; min-height: var(--control-xl) !important; font-size: var(--text-md) !important; }
+
+/* Other formats: one list, each row naming the format and what it holds. */
+.export-secondary { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.export-secondary > button { grid-column: 1; justify-content: space-between; min-height: calc(var(--control-lg) + var(--space-1)); padding: 0 var(--space-3); border: 0; border-radius: 0; }
+.export-secondary > button + span ~ button, .export-secondary > button + span ~ button:hover { border-top: 1px solid var(--hairline); }
+.export-secondary > button:focus-visible { outline-offset: -2px; }
+.export-secondary > .export-detail {
+  grid-column: 1; justify-self: end; align-self: center; max-width: 52%; margin-right: var(--space-10); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text-secondary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.export-secondary > :is(:nth-child(1), :nth-child(2)) { grid-row: 1; }
+.export-secondary > :is(:nth-child(3), :nth-child(4)) { grid-row: 2; }
+.export-secondary > :is(:nth-child(5), :nth-child(6)) { grid-row: 3; }
+.export-secondary > :is(:nth-child(7), :nth-child(8)) { grid-row: 4; }
+.export-note { text-wrap: pretty; }
+
+/* Production settings */
+.section-edit { display: flex; align-items: center; gap: var(--space-2); }
+.section-edit > input:not([type=color]) { flex: 1; }
+.section-edit > select, .section-edit > span > select { width: 150px; flex: none; }
+
+/* Help */
+.guide-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-8); }
+.guide-grid h3 { margin: var(--space-4) 0 6px; color: var(--text); font-size: var(--text-md); font-weight: 600; }
+.guide-grid section > h3:first-child { margin-top: 0; }
+.guide-grid p { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; }
+.shortcut-list { display: flex; flex-direction: column; margin-top: var(--space-2); }
+.shortcut-list > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 32px; border-bottom: 1px solid var(--hairline); color: var(--text-secondary); font-size: var(--text-sm); }
+.shortcut-list dd { color: var(--text); font-weight: 500; text-align: right; }
+.help-note { display: flex; align-items: flex-start; gap: var(--space-3); padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-muted); color: var(--text-secondary); }
+.help-note > svg { margin-top: 2px; color: var(--accent-text); }
+.help-note p { font-size: var(--text-sm); line-height: 1.6; }
+
+/* History and recovery */
+.history-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.history-actions button { white-space: normal; text-align: left; }
+.history-list, .recovery-list { max-height: 320px; overflow: auto; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface); }
+.history-list li, .recovery-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 9px 12px; border-bottom: 1px solid var(--hairline); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.history-list li:last-child, .recovery-list li:last-child { border-bottom: 0; }
+.history-list small, .history-policy, .history-empty { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.5; }
+.recovery-list li div { display: grid; gap: 2px; min-width: 0; }
+.recovery-list strong { font-weight: 600; overflow-wrap: anywhere; }
+.recovery-list time, .recovery-list span, .recovery-status { color: var(--text-tertiary); font-size: var(--text-xs); }
+.recovery-error { color: var(--error); font-size: var(--text-sm); line-height: 1.5; }
+
+/* Preferences */
+.preferences-nav { position: sticky; top: calc(-1 * var(--space-4)); z-index: 2; display: flex; gap: 2px; margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-5)) 0; padding: var(--space-2) var(--space-5); border-bottom: 1px solid var(--hairline); background: var(--surface-raised); }
+.preferences-nav .button { border-color: transparent; background: transparent; color: var(--text-secondary); }
+.preferences-nav .button:hover { background: var(--hover-bg); color: var(--text); }
+.preferences-nav .button[aria-pressed=true] { background: var(--active-bg); border-color: transparent; color: var(--text); }
+.preferences-fields { display: flex; flex-direction: column; gap: var(--space-3); }
+.preferences-section { display: flex; flex-direction: column; gap: var(--space-3); }
+.preferences-section + .preferences-section { margin-top: var(--space-4); padding-top: var(--space-5); border-top: 1px solid var(--hairline); }
+.preferences-section > h3 { font-size: var(--text-lg); font-weight: 600; }
+.preferences-toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px var(--space-4); }
+.display-color-control { display: flex; align-items: center; gap: var(--space-2); font-variant-numeric: tabular-nums; }
+.field-display-preferences { display: flex; flex-direction: column; gap: var(--space-3); }
+.checkbox-label { color: var(--text) !important; }
+
+/* Rehearsal video */
+.video-export-options { display: flex; flex-direction: column; gap: var(--space-3); }
+.video-export-audio { font-size: var(--text-sm); }
+.video-export-progress progress { width: 100%; accent-color: var(--accent); }
+@media (max-width: 620px) { .guide-grid, .new-options, .preferences-toggles { grid-template-columns: 1fr; } }

@@ -9,6 +9,7 @@ import { currentTransformResult } from './transformSession';
 import type { EditorState } from './state';
 import { drillPlan, isDrillPhrase } from './drillCommands';
 import { openingMoveNote } from './setList';
+import { splitTransitionError } from './splitTransition';
 
 export type CommandInvocation = { [I in CommandId]: { id: I; args: CommandArguments[I] } }[CommandId];
 export interface PaletteEntry { key: string; name: string; description: string; keywords: string; invocation: CommandInvocation; disabledReason: string | null }
@@ -41,7 +42,10 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'path.open' || id === 'path.draw-open' || id === 'schedule.open') return 'Pause at an arrival set and select exactly one performer. Finish other input first.';
   if (id === 'set.split-open') {
     if (state.project.present.sets.length >= PROJECT_LIMITS.sets) return 'The production has reached its set limit.';
-    return 'Choose a transition with at least two counts.';
+    // Say what actually stops this move from being split, not a guess at it.
+    const move = state.project.present.moves[Math.max(0, state.selection.activeIndex - 1)];
+    const error = move ? splitTransitionError(state.project.present, move.id, 1) : null;
+    return error ?? 'Choose a transition with at least two counts.';
   }
   if (id === 'set.previous') return 'This is the first set.';
   if (id === 'set.next') return 'This is the last set.';
@@ -57,7 +61,7 @@ export function commandUnavailable(state: EditorState, invocation: CommandInvoca
   if (id === 'selection.invert') return 'Add performers before inverting the selection.';
   if (id === 'selection.section') return 'This section has no performers to select.';
   if (id === 'group.select') return 'This saved group has no performers to select.';
-  if (id === 'layout.focus') return 'Open the Design workspace before focusing the field.';
+  if (id === 'layout.focus') return 'Open Write mode before focusing the field.';
   if (id === 'view.popout') return 'The 3D window is available in the desktop app.';
   if (id === 'view.popout-close') return 'The 3D window is not open.';
   return 'This action is unavailable in the current editing context.';
@@ -90,7 +94,15 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   for (const [preset,name] of [['perspective','Perspective camera'],['front','Front camera'],['press-box','Press box camera'],['top','Overhead camera']] as const) add('view.camera',{preset},name,`camera-${preset}`);
   for (const w of state.preferences.value.workspaces.entries.filter(w => w.id.startsWith('custom-'))) add('workspace.select', { id: w.id }, `${w.name} workspace`, `workspace-${w.id}`);
   add('transform.preview', { operation: 'front-back' }, 'Mirror front / back', 'mirror-front-back');
-  for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`);
+  // Each shape says what it does, so moving through them changes the description beside the list.
+  const shapes = {
+    line: 'Arrange the selection in a straight line at one interval. Preview, adjust, then apply.',
+    arc: 'Bend the selection along an arc between two ends. Preview, adjust, then apply.',
+    circle: 'Space the selection evenly around a circle or oval. Preview, adjust, then apply.',
+    block: 'Arrange the selection in rows and columns. Preview, adjust, then apply.',
+    curve: 'Run the selection along a wave. Preview, adjust, then apply.',
+  } as const;
+  for (const kind of ['line', 'arc', 'circle', 'block', 'curve'] as const) add('formation.preview', { kind }, `Preview ${kind} formation`, `formation-${kind}`, shapes[kind]);
   add('formation.bezier',{wave:false},'Preview Bézier curve formation','formation-bezier-curve');
   add('formation.bezier',{wave:true},'Preview Bézier wave formation','formation-bezier-wave');
   for (const shape of state.project.present.sets[state.selection.activeIndex].liveFormations ?? []) {

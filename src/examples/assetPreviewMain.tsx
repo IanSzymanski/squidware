@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
 import { AssetPreview } from './AssetPreview';
-import '../styles.css';
+import '../ui/index.css';
 
 createRoot(document.getElementById('root')!).render(<AssetPreview />);

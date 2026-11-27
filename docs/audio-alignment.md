@@ -1,6 +1,6 @@
 # Recording alignment — #53
 
-Open **Sheet → Align recording**, **Timeline view → Align recording**, or search **Align recording** in the Command palette. Set arrivals and individual show counts can be matched to a variable-tempo recording without changing written counts, meter, performer positions or movement paths.
+Open **Align recording** in the Plan sheet's toolbar, **Timeline options → Align recording…** in the transport, or search **Align recording** in the Command palette. Set arrivals and individual show counts can be matched to a variable-tempo recording without changing written counts, meter, performer positions or movement paths.
 
 Enter CSV/TSV rows without headings: `Count, Recording seconds`. For example, with a count-zero offset of `0.4`, `4,2.9` places count 4 at recording time 2.9 seconds. The offset is the implicit count-zero anchor. Counts are whole numbers from 1 through the final show count, distinct and sorted on acceptance. Times must increase strictly after the offset. At most 256 anchors are supported, with each stored time after the offset in `(0, 86400]` seconds. Reversed/duplicate counts and times, invalid numeric input and out-of-show anchors prevent Apply.
 
@@ -33,4 +33,4 @@ The native codec, recovery worker and portable audio container use this same val
 
 ## Design review
 
-[Design guidance](DESIGN_GUIDANCE.md) sections 1–5 apply. The editor reuses Modal, shared command/draft guards, input/table styles, theme tokens, and existing native recording attachment. Sheet and timeline-view tools expose the command; the normal field/transport layout keeps its dimensions. Assistance is collapsed on opening so alignment errors and preview are visible first. The modal body scrolls independently of its action footer. See [rendered evidence](evidence/audio-alignment/README.md) for theme, keyboard, enlarged-layout and desktop results. Cross-platform certification remains with CI; these local checks do not certify other operating systems.
+[Design guidance](DESIGN_GUIDANCE.md) sections 1–5 apply. The editor reuses Modal, shared command/draft guards, input/table styles, theme tokens, and existing native recording attachment. The Plan sheet's toolbar and **Timeline options** expose the command; the normal field/transport layout keeps its dimensions. Assistance is collapsed on opening so alignment errors and preview are visible first. The modal body scrolls independently of its action footer. See [rendered evidence](evidence/audio-alignment/README.md) for theme, keyboard, enlarged-layout and desktop results. Cross-platform certification remains with CI; these local checks do not certify other operating systems.

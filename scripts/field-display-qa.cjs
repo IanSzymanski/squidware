@@ -12,7 +12,8 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   const center = id => evaluate(centerExpression(id));
   const select = async id => { await click(await center(id)); await wait(`${state}.selection.selectedIds.length===1 && ${state}.selection.selectedIds[0]===${JSON.stringify(id)}`, 'flipped nearest selection'); };
   const preferences = update => evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,...${JSON.stringify(update)}})`);
-  const clickControl = async selector => { await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`); await click(await evaluate(`(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`)); };
+  // A dialog body can still be scrolling or animating in: aim native input only once the control has come to rest.
+  const clickControl = async selector => { await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'})`); await click(await evaluate(`new Promise(resolve => {let last=null,still=0;const step=()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();still=last&&Math.abs(r.x-last.x)<.01&&Math.abs(r.y-last.y)<.01?still+1:0;last=r;if(still>=3)resolve({x:r.x+r.width/2,y:r.y+r.height/2});else requestAnimationFrame(step)};step()})`)); };
   const undo = async () => { await evaluate(`${editor}.dispatch('history.undo')`); await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x}`, 'undo flipped edit'); };
   window.setContentSize(1366, 768); window.webContents.setZoomFactor(1);
   await settleNativeViewport(window, 'display preference viewport');
@@ -54,7 +55,9 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await key('Right', ['alt']);
   await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x-.625}`, 'flipped field nudge');
   await undo();
-  await evaluate("document.querySelector('[aria-label=\"Show field grid\"]').focus()");
+  // A control outside the field: the global shortcut, not the field's own key handler, must answer.
+  await evaluate("document.querySelector('.canvas-view [aria-label=\"View options\"]').focus()");
+  assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'View options');
   await key('Right', ['alt']);
   await wait(`${state}.project.present.sets[0].positions[${JSON.stringify(ids[212])}].x===${original.sets[0].positions[ids[212]].x-.625}`, 'flipped global nudge');
   await undo();
@@ -132,6 +135,7 @@ module.exports = async function checkDisplay({ project, editor, state, evaluate,
   await window.webContents.debugger.sendCommand('Emulation.clearDeviceMetricsOverride');
   assert.deepEqual((await evaluate(`${state}.project`)).present, original);
   pass('section/selection/custom colors retain selection geometry; 12px dots and 16px upright labels remain pixel-sized through zoom, 2x DPI, narrow windows and 125% UI scale');
-  await preferences({fieldOrientation:'audience-bottom',fieldColorMode:'section',fieldDotRadiusPx:3,fieldLabelSizePx:12});
+  // Back to the defaults in src/preferences.ts.
+  await preferences({fieldOrientation:'audience-bottom',fieldColorMode:'section',fieldDotRadiusPx:3.5,fieldLabelSizePx:11});
   await evaluate(`${editor}.setValue('selection','selectedIds',[]); ${editor}.setValue('ui','fitVersion',500)`);
 };

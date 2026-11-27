@@ -25,7 +25,7 @@ module.exports=async function({project,editor,state,evaluate,wait,key,capture:ta
   await revealFieldTool(window,'[aria-label="Line formation"]');
   await wait("!!document.querySelector('[aria-label=\"Line formation\"]')",'formation panel');
   await capture('bezier-before.png');
-  await control('[aria-label="Bézier wave formation"]');
+  await control('[aria-label="Bézier wave"]');
   await wait(`!!${state}.ui.formationPreview?.bezier`,'wave preview');
   const initial=await evaluate(`${state}.ui.formationPreview.bezier`);
   await capture('bezier-wave-preview.png');

@@ -1,41 +1,65 @@
-.cast-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.cast-panel-heading h2 { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.cast-panel-heading > div { display: flex; gap: 4px; }
-.cast-filter-notice { flex-shrink: 0; padding: 8px 12px; background: var(--surface-muted); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.5; }
-.cast-filter-notice button { display: block; color: inherit; background: transparent; text-decoration: underline; padding: 4px 0; font-weight: 600; text-align: left; }
-.cast-inline-edit { border: 0; padding: 0; margin: 0; min-width: 0; }
-.cast-workspace.cast-dock { flex: 0 0 300px; width: 300px; min-width: 0; margin: 0; border: 0; border-left: 1px solid var(--border); border-radius: 0; overflow: hidden; background: var(--surface); }
-.cast-dock .cast-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; padding: 10px; }
-.cast-dock .search-field { grid-column: 1 / -1; min-width: 0; background: var(--surface); }
-.cast-dock .cast-controls > select { min-width: 0; width: 100%; }
-.cast-dock .cast-controls .button { min-width: 0; padding: 6px; }
-.cast-dock .table-scroll { min-height: 80px; overscroll-behavior: contain; }
-.cast-select-visible { display: flex; align-items: center; gap: 7px; padding: 8px 12px; font-size: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.cast-select-visible span { margin-left: auto; font-variant-numeric: tabular-nums; }
-.cast-list { list-style: none; margin: 0; padding: 0; }
-.cast-list li { border-bottom: 1px solid var(--border); }
-.cast-list li > button { display: flex; align-items: center; width: 100%; gap: 8px; padding: 9px 12px; background: transparent; text-align: left; color: var(--text); }
-.cast-list li > button:hover { background: var(--surface-muted); }
-.cast-list .selected > button { background: var(--selected-bg); box-shadow: inset 3px 0 var(--shadow); }
-.cast-list .performer-label { flex: 0 0 auto; font-size: 12px; }
-.cast-person { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
-.cast-person strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
-.cast-person > span { font-size: 12px; overflow-wrap: anywhere; }
-.cast-selection-mark { width: 14px; font-size: 14px; font-weight: 700; }
-.cast-edit { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
-.cast-edit h3 { font-size: 13px; margin-bottom: 8px; }
-.cast-edit fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.cast-edit .form-label { min-width: 0; margin-bottom: 6px; font-size: 12px; }
-.cast-edit .form-label input, .cast-edit .form-label select { min-width: 0; width: 100%; padding: 6px; }
-.cast-edit .microcopy { font-size: 12px; margin-top: 6px; overflow-wrap: anywhere; }
-.cast-dock .table-footer { padding: 7px 12px; font-size: 12px; }
-.cast-keyboard-help { padding: 6px 12px; border-top: 1px solid var(--border); background: var(--hover-bg); font-size: 12px; line-height: 1.5; flex-shrink: 0; }
-.cast-dock .empty-state { padding: 20px 12px; gap: 10px; text-align: center; }
-@media (max-width: 1250px) { .cast-workspace.cast-dock { flex-basis: 280px; width: 280px; } }
-.studio.studio--cast-panel { min-height: 0; }
-
-.cast-edit .performer-appearance { margin: 4px 0; }
-.performer-appearance summary, .performer-facing summary { font-size: 12px; cursor: pointer; padding: 6px 0; }
+/* Cast: the roster as a list beside the field, or as a full table. */
+.cast-workspace { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; }
+.cast-panel-heading { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding-bottom: var(--space-2); }
+.cast-panel-heading h2 { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-md); }
+.cast-panel-heading > div { display: flex; gap: 2px; }
+.count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: var(--radius-full); background: var(--control); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cast-controls { flex: none; display: flex; flex-direction: column; gap: var(--space-2); padding: 12px; border-bottom: 1px solid var(--hairline); }
+.cast-controls-row { display: flex; align-items: center; gap: 4px; }
+.cast-controls-row > select { flex: 1; min-width: 0; }
+.cast-controls-row > .button { padding: 0 8px; }
+.search-field { display: flex; align-items: center; gap: var(--space-2); min-width: 0; padding: 0 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text-tertiary); transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease); }
+.search-field:focus-within { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search-field > input { border: 0 !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
+.cast-filter-notice { flex: none; padding: 8px 12px; border-bottom: 1px solid var(--hairline); background: var(--warning-bg); color: var(--warning); font-size: var(--text-xs); line-height: 1.45; }
+.cast-filter-notice button { appearance: none; display: block; padding: 2px 0; border: 0; background: transparent; color: inherit; font-size: inherit; font-weight: 600; text-decoration: underline; text-align: left; }
+.cast-inline-edit { min-width: 0; }
+.cast-select-visible { flex: none; padding: 7px 12px; border-bottom: 1px solid var(--hairline); color: var(--text-secondary) !important; font-size: var(--text-xs) !important; }
+.cast-select-visible span { margin-left: auto; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.table-scroll { flex: 1; min-height: 80px; overflow: auto; overscroll-behavior: contain; }
+.cast-list { padding: 0 4px 6px; }
+.cast-section-heading { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 8px; background: var(--surface); color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
+.cast-section-heading i { width: 9px; height: 9px; border-radius: 50%; }
+.cast-section-heading span { margin-left: auto; color: var(--text-tertiary); font-weight: 400; font-variant-numeric: tabular-nums; }
+.cast-list li > button {
+  appearance: none; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 28px; padding: 2px 8px; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text); text-align: left;
+}
+.cast-list li > button:hover { background: var(--hover-bg); }
+.cast-list .selected > button { background: var(--accent-soft-strong); }
+.performer-label {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 19px; padding: 0 6px; flex-shrink: 0;
+  border: 1.5px solid var(--border-strong); border-radius: var(--radius-full); background: transparent; color: var(--text);
+  font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.cast-person { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: var(--space-2); }
+.cast-person strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 400; }
+.cast-person strong.unnamed { color: var(--text-tertiary); }
+.cast-person > span { margin-left: auto; flex-shrink: 0; color: var(--text-tertiary); font-size: var(--text-xs); }
+.cast-selection-mark { width: 12px; color: var(--accent-text); font-size: var(--text-sm); font-weight: 700; }
+.cast-edit { flex: none; display: flex; flex-direction: column; gap: var(--space-2); max-height: 46%; overflow: auto; padding: 12px; border-top: 1px solid var(--hairline); }
+.cast-edit h3 { font-size: var(--text-sm); font-weight: 600; }
+.cast-edit fieldset { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.performer-appearance > summary { min-height: var(--control-sm); }
 .performer-appearance fieldset { margin-top: 4px; }
-.performer-appearance input[type=color] { min-height: 32px; }
 .performer-appearance .button { grid-column: 1 / -1; justify-self: start; }
+.table-footer { flex: none; display: flex; justify-content: space-between; gap: var(--space-4); padding: 7px 12px; border-top: 1px solid var(--hairline); color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.cast-workspace .empty-state { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-8) var(--space-4); }
+.cast-workspace .empty-state h3 { color: var(--text); font-size: var(--text-md); }
+.cast-workspace .empty-state > svg { color: var(--text-tertiary); }
+
+/* The full table, in a dialog. */
+.cast-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--text-sm); }
+.cast-table th { position: sticky; top: 0; z-index: 1; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--surface-raised); color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 600; white-space: nowrap; }
+.cast-table td { padding: 4px 10px; border-bottom: 1px solid var(--hairline); color: var(--text); }
+.cast-table th:first-child, .cast-table td:first-child { width: 32px; }
+.cast-table tr.selected td { background: var(--accent-soft); }
+.cast-table input:not([type=checkbox]), .cast-table select { min-width: 90px; border-color: transparent; background-color: transparent; }
+.cast-table input:not([type=checkbox]):hover, .cast-table select:hover { border-color: var(--border); }
+.cast-table button.performer-label { cursor: pointer; }
+.coordinate-cell { max-width: 220px; color: var(--text-secondary) !important; font-size: var(--text-xs); line-height: 1.45; }
+dialog.modal:has(.cast-table) { width: min(980px, calc(var(--viewport-width) - 32px)); }
+dialog.modal:has(.cast-table) .cast-controls { padding: 0 0 12px; flex-direction: row; }
+dialog.modal:has(.cast-table) .cast-controls > .search-field { flex: 1; }
+dialog.modal:has(.cast-table) .cast-controls-row > select { width: 180px; flex: none; }
+dialog.modal:has(.cast-table) .table-footer { padding: 10px 0 0; }

@@ -1,6 +1,6 @@
 # Editable Bézier formations
 
-Select at least two performers while paused at a set in 2D. Open Formation tools and choose **Bézier curve** or **Bézier wave** (also available in Commands). Existing Arc and Wave tools retain their behavior. Both Bézier presets enter the same point editor and keep editable geometry on the active set.
+Select at least two performers while paused at a set in 2D. Open **More shapes** in the tool strip and choose **Bézier curve** or **Bézier wave** (also in the Command palette). In an open formation preview the same shapes are the **Curve** and **S-curve** tiles. Existing Arc and Wave tools retain their behavior. Both Bézier presets enter the same point editor and keep editable geometry on the active set.
 
 Drag square anchors or round tangent handles on the field. Selecting a handle selects its anchor in the Inspector. The Curve anchor and Point or tangent selectors plus X/Y fields provide keyboard entry. Pointer snapping uses the production's existing grid/marking rules; numeric entry specifies exact yards. Translating an anchor carries its handles. Edits that would put any control outside the field are rejected with an explanation, preserving the last valid preview.
 

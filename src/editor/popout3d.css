@@ -1,12 +1,13 @@
-/* The separate 3D window (#181). Its document has only these roots, so class-scoped rules apply there. */
-body.popout-3d-body { margin: 0; overflow: hidden; background: #141e1b; }
+/* The separate 3D window. Its document has only these roots, so class-scoped rules apply there. */
+body.popout-3d-body { margin: 0; overflow: hidden; background: var(--field-well); }
 .popout-3d-root, .popout-3d { height: var(--viewport-height, 100vh); }
 .popout-3d { display: flex; flex-direction: column; background: var(--app-bg); color: var(--text); }
-.popout-3d__status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.popout-3d__status strong { color: var(--text); font-size: 13px; font-weight: 650; }
-.popout-3d__status .popout-3d__note { margin-left: auto; }
+.popout-3d__status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--space-4); padding: 8px 14px; border-bottom: 1px solid var(--hairline); background: var(--surface); color: var(--text-secondary); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.popout-3d__status strong { color: var(--text); font-size: var(--text-md); font-weight: 600; }
+.popout-3d__status .popout-3d__note { margin-left: auto; color: var(--text-tertiary); }
 .popout-3d__stage { position: relative; flex: 1; min-height: 0; }
 .popout-3d__stage .stage-three, .popout-3d__stage .stage-three__canvas { height: 100%; min-height: 0; }
+.popout-3d-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-8); background: var(--field-well); color: var(--field-chip-text); text-align: center; }
+.popout-3d-placeholder p { max-width: 380px; color: var(--field-chip-muted); font-size: var(--text-sm); line-height: 1.5; }
 /* Second recovery action (Return 3D here, Close 3D window) is secondary to the first. */
-.stage-three__fallback > button + button { border-color: #9fb59a; background: transparent; color: #e4eedf; }
-.popout-3d-button.is-open { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.stage-three__fallback > button + button { background: transparent; color: var(--field-chip-text); box-shadow: inset 0 0 0 1px var(--field-chip-line); }

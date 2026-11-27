@@ -55,7 +55,11 @@ export function ProblemFieldStatus() {
   const scatter = useEditorSelector(s=>!!s.ui.formationPreview?.scatter);
   if (checks.draft) {
     const draft = checks.draft;
-    return <div className="problem-field-status" data-draft-analysis-status={draft.state.status} role="status">{scatter ? 'Formation preview' : 'Drag preview'} · {draft.index === 0 ? 'outgoing move' : draft.index === checks.project.sets.length-1 ? 'incoming move' : 'both adjacent moves'} · {draft.state.status === 'pending' ? 'pending · old preview hidden' : draft.state.status === 'error' ? 'unavailable · release or cancel to return to committed checks' : `${draft.state.result?.issues.length ?? 0} flags`} · not committed</div>;
+    // Plain words for what the check of this unapplied picture found; the attribute carries the state for automation.
+    const found = draft.state.result?.issues.length ?? 0, when = scatter ? 'if applied' : 'if dropped here';
+    return <div className="problem-field-status" data-draft-analysis-status={draft.state.status} role="status">{draft.state.status === 'pending' ? 'Preview · checking…'
+      : draft.state.status === 'error' ? 'Preview · cannot be checked until it is applied'
+      : found ? `Preview · ${found} ${found === 1 ? 'problem' : 'problems'} ${when}` : `Preview · no problems ${when}`}</div>;
   }
   if (!checks.selected || playing || Math.abs(count-(checks.selected.issue.atCount ?? 0)) > 1e-6) return null;
   const { issue, index } = checks.selected;

@@ -1,63 +1,17 @@
+/* 2D, 3D or both side by side. Outside split review the viewports add no boxes of their own. */
 .field-viewports, .field-viewports__field, .field-viewports__preview { display: contents; }
-
-.field-viewports[data-layout] {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  --review-divider-size: 12px;
-}
-.field-viewports[data-layout=side-by-side] {
-  grid-template-columns: minmax(0, var(--split-first)) var(--review-divider-size) minmax(0, var(--split-second));
-}
-.field-viewports[data-layout=stacked] {
-  grid-template-rows: minmax(0, var(--split-first)) var(--review-divider-size) minmax(0, var(--split-second));
-}
+.field-viewports[data-layout] { position: absolute; inset: 0; display: grid; --review-divider-size: 9px; }
+.field-viewports[data-layout=side-by-side] { grid-template-columns: minmax(0, var(--split-first)) var(--review-divider-size) minmax(0, var(--split-second)); }
+.field-viewports[data-layout=stacked] { grid-template-rows: minmax(0, var(--split-first)) var(--review-divider-size) minmax(0, var(--split-second)); }
 .field-container:has(.field-viewports[data-layout=stacked]) { min-height: 300px; }
-.field-viewports[data-layout] > :is(.field-viewports__field, .field-viewports__preview) {
-  display: block;
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-.field-container .field-viewports[data-layout] :is(.field-stage, .field-stage__svg, .stage-three, .stage-three__canvas) {
-  min-height: 0;
-}
-.field-viewports[data-layout] .field-topline > span:last-child { display: none; }
-.field-viewports[data-layout] .field-preview-banner { top: 26px; }
-.field-viewports__divider {
-  z-index: 1;
-  position: relative;
-  touch-action: none;
-  background: var(--surface-muted);
-  color: var(--muted);
-  cursor: col-resize;
-}
+.field-viewports[data-layout] > :is(.field-viewports__field, .field-viewports__preview) { display: block; position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.field-container .field-viewports[data-layout] :is(.field-stage, .field-stage__svg, .stage-three, .stage-three__canvas) { min-height: 0; }
+.field-viewports__divider { position: relative; z-index: 1; touch-action: none; background: var(--surface); color: var(--border-strong); cursor: col-resize; }
 .field-viewports[data-layout=stacked] .field-viewports__divider { cursor: row-resize; }
-.field-viewports__divider::after {
-  content: '';
-  position: absolute;
-  inset: calc(50% - 13px) calc(50% - 1px);
-  background: currentColor;
-  border-radius: 2px;
-}
-.field-viewports[data-layout=stacked] .field-viewports__divider::after { inset: calc(50% - 1px) calc(50% - 13px); }
-.field-viewports__divider:hover, .field-viewports__divider:focus-visible { color: var(--accent); }
-.field-viewports__divider:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.field-viewports[data-layout] .stage-three--split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-}
-.field-viewports[data-layout] .stage-three--split .stage-three__canvas { grid-area: 2 / 1; }
-.field-container .field-viewports[data-layout] .stage-three__controls--split {
-  position: static;
-  grid-area: 1 / 1;
-  justify-content: flex-end;
-  margin: 4px 6px 0;
-  max-width: none;
-}
-.field-viewports[data-layout] .stage-three__controls--split select { min-width: 0; }
-.field-viewports[data-layout] .stage-three__controls--split { flex-wrap: wrap; }
-.field-viewports[data-layout] .stage-three__fallback { padding: 12px; gap: 8px; }
+.field-viewports__divider::after { content: ""; position: absolute; inset: calc(50% - 14px) calc(50% - 1.5px); border-radius: 2px; background: currentColor; }
+.field-viewports[data-layout=stacked] .field-viewports__divider::after { inset: calc(50% - 1.5px) calc(50% - 14px); }
+.field-viewports__divider:hover, .field-viewports__divider:focus-visible { color: var(--accent-text); outline: none; }
+.field-viewports[data-layout] .stage-three--split { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.field-viewports[data-layout] .stage-three--split .stage-three__canvas { grid-area: 1 / 1; }
+.field-viewports[data-layout] .stage-three__fallback { padding: var(--space-3); gap: var(--space-2); }
 .field-viewports[data-layout=stacked] .stage-three__fallback > svg { display: none; }

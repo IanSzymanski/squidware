@@ -17,13 +17,13 @@ Persisted choices:
 | Appearance | Interface theme | Dark; Light and High contrast available |
 | Appearance | UI scale | 100%; 110%, 125% and 150% available |
 | Appearance | Panel layout | Comfortable; Compact |
-| Appearance | Show hints | On. Off hides short instructional lines in the set list, field, status bar, Inspector, command palette and 3D preview; tooltips and Help keep the same guidance, and field keyboard help remains the field's accessible description. |
+| Appearance | Show hints | On. Off hides the hint line at the field's lower left and the short tips in the Plan sheet, command palette and 3D preview; tooltips and Help keep the same guidance, and field keyboard help remains the field's accessible description. |
 | Field display | Start view | 2D; 3D preview |
 | Field display | Previous paths; next paths; field grid | Off; off; on |
 | Field display | Field zoom | 1×; 0.6–3× |
 | Field display | Audience orientation | Bottom; top turns the 2D view 180° |
-| Field display | Dot radius; label size | 3 / 12 CSS px; 2–8 / 11–24 px |
-| Field display | Label visibility | All; selected/focused or hidden also persist from the toolbar |
+| Field display | Dot radius; label size | 3.5 / 11 CSS px; 2–8 / 11–24 px |
+| Field display | Label visibility | All; selected/focused or hidden also persist from **View options** over the field |
 | Field display | Performer coloring; custom color | Section colors; selection groups or custom RGB (`#B9ED85`) |
 | Field display | Coordinate precision; decimals | Quarter steps; whole or half steps, or legacy decimal steps with 0, 1 or 2 decimals |
 | Editing | Normal / fast nudge; unit | 0.625 / 2.5, in yards by default; 0.125–5 / 0.125–10. Optional production-step units use the current 8/6/12-to-5 grid step, independent of subdivision. |
@@ -39,7 +39,7 @@ Persisted choices:
 
 The desktop app also remembers the [3D window's](USER_GUIDE.md#3d-window) position, size and display. Main places those bounds fully on a connected display before opening the window, or centers it on the main display when the saved display is gone. Without a usable display id it uses the display under the saved window. Reset defaults forgets them.
 
-Toolbar changes to the persisted view, toggles, zoom and selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
+Changes made with the view controls over the field (view, toggles and zoom) and the selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
 
 See [themes and UI scale](APPEARANCE.md) for appearance, selection/focus cues and enlarged layouts.
 
@@ -47,7 +47,7 @@ See [editing increments](EDIT_INCREMENTS.md) for shared command routing, modifie
 
 See [2D field display](FIELD_DISPLAY.md) for orientation, sizing and coloring. These choices do not change project coordinates, print/SVG geometry or the 3D camera. Flipped dragging and keyboard arrows follow the screen; Inspector directions retain their field meaning.
 
-Production cast, positions, field markings, movement counts/tempo/easing, notes, audio offset and optional placement rules stay in the project. The grid toggle controls visibility; the magnet enables the production's snapping rules. Personal placement defaults seed only newly created productions and never override opened shows. Files without rules use 8-to-5 whole steps with rigid anchor snapping. See [Grid and group snapping](GRID_SNAPPING.md). Meter and shared review rules remain separate future features.
+Production cast, positions, field markings, movement counts/tempo/easing, notes, audio offset and optional placement rules stay in the project. **Show field grid** controls visibility; **Snap to grid** enables the production's snapping rules. Personal placement defaults seed only newly created productions and never override opened shows. Files without rules use 8-to-5 whole steps with rigid anchor snapping. See [Grid and group snapping](GRID_SNAPPING.md). Meter and shared review rules remain separate future features.
 
 Selection, active set, workspace, search, pointer hover, drag/pan previews, playback count, speed/loop, audio attachment, undo history, draft text and file destinations are excluded.
 

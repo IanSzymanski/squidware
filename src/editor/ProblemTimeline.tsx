@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { OctagonAlert, TriangleAlert } from 'lucide-react';
+import { LoaderCircle, OctagonAlert, ShieldCheck, TriangleAlert } from 'lucide-react';
 import type { Finding } from '../analysis/show';
 import type { Project } from '../types';
 import { placeTooltip } from '../components/tooltipPlacement';
@@ -23,7 +23,14 @@ export function ProblemTimelineLabel() {
   const pending = checks.moves.filter(m => m.status === 'pending').length, failed = checks.moves.filter(m => m.status === 'error').length;
   const available = useEditorSelector(s => canReviewProblems(s) && !s.ui.dialog);
   const total = checks.moves.reduce((n,m) => n+m.issues.length,0);
-  return <span className="problem-track-label"><HelpButton command="analysis.problems-open" title="Show-wide problems" aria-label={`Show-wide problems: ${pending ? 'checking moves' : failed ? 'some moves unavailable' : `${total} finding${total === 1 ? '' : 's'}`}`} className="problem-count-badge" disabled={!available} disabledReason="Finish or cancel the current input or preview before reviewing problems." state={`${total} current findings · ${pending} pending moves · ${failed} unavailable moves`} description="Filter findings, go to a count or open Analysis rules. The marker row groups nearby findings." onClick={() => store.dispatch('analysis.problems-open')}><TriangleAlert size={12} aria-hidden="true" />{pending ? '…' : failed ? '!' : total}</HelpButton></span>;
+  // Until the checker has listed this show's moves there is no result yet, which is not the same as no problems.
+  const busy = pending > 0 || (checks.moves.length === 0 && checks.project.moves.length > 0);
+  const state = busy ? 'pending' : failed ? 'failed' : total ? 'found' : 'clear';
+  // A re-check while the writer drags or types keeps showing the last settled result for this show instead of flickering to "Checking".
+  const settled = useRef<{ epoch: number; state: string; total: number } | null>(null);
+  if (!busy) settled.current = { epoch: checks.epoch, state, total };
+  const shown = settled.current?.epoch === checks.epoch ? settled.current : { state, total };
+  return <span className="problem-track-label"><HelpButton command="analysis.problems-open" title="Show-wide problems" aria-label={`Show-wide problems: ${busy ? 'checking moves' : failed ? 'some moves unavailable' : `${total} finding${total === 1 ? '' : 's'}`}`} className="problem-count-badge" data-state={state} data-display={shown.state} data-count={total} aria-busy={busy || undefined} disabled={!available} disabledReason="Finish or cancel the current input or preview before reviewing problems." state={`${total} current findings · ${pending} pending moves · ${failed} unavailable moves`} description="Filter findings, go to a count or open Analysis rules. The marker row groups nearby findings." onClick={() => store.dispatch('analysis.problems-open')}>{shown.state === 'pending' ? <LoaderCircle size={13} className="spin" aria-hidden="true" /> : shown.state === 'clear' ? <ShieldCheck size={13} aria-hidden="true" /> : <TriangleAlert size={13} aria-hidden="true" />}<span className="problem-count-number sr-only">{busy ? '…' : failed ? '!' : total}</span>{shown.state === 'found' && <span className="problem-count-shown" aria-hidden="true">{shown.total}</span>}<span className="problem-count-words">{shown.state === 'pending' ? 'Checking' : shown.state === 'failed' ? 'Check failed' : shown.state === 'clear' ? 'No problems' : shown.total === 1 ? 'problem' : 'problems'}</span></HelpButton></span>;
 }
 /** One Tab stop (roving tabindex): Left/Right/Home/End move between markers, Enter/Space go to a finding or list a group. */
 export function ProblemTimeline({ start, span, width }: { start: number; span: number; width: number }) {

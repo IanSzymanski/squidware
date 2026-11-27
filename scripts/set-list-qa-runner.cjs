@@ -5,7 +5,7 @@ const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('node:fs/promises'), path = require('node:path');
 const { capturePage, key, waitFor, settleNativeViewport } = require('./testing/renderer.cjs');
 const { root, output, profile, bundle } = require(process.argv.find(a => a.startsWith('--set-list-manifest=')).slice('--set-list-manifest='.length));
-const { createPerformanceFixture, parseProject, setStartCount } = require(bundle);
+const { createPerformanceFixture, parseProject, setStartCount, setTiming } = require(bundle);
 const savedFile = path.join(output, 'reordered.squid'), checks = [], layouts = [], errors = [];
 app.disableHardwareAcceleration(); app.setPath('userData', profile);
 BrowserWindow.prototype.show = function () {};
@@ -48,13 +48,24 @@ async function type(selector, value) {
   await wait(`(()=>{const n=document.querySelector(${JSON.stringify(selector)});return document.activeElement===n&&n.value===${JSON.stringify(String(value))}})()`, 'observed native input '+selector); await frames();
 }
 const named = s => `[aria-label=${JSON.stringify(s)}]`;
-const row = id => `[data-set-id=${JSON.stringify(id)}]`;
+const row = id => `.set-strip [data-set-id=${JSON.stringify(id)}]`;
+// The set list is on demand: Find set in the transport opens a popover with a search field and every set as a row.
+const finder = '.set-finder', finderInput = '.set-finder input[aria-label="Find set"]', finderTrigger = '.transport .set-jump';
+const finderRows = () => evaluate("Array.from(document.querySelectorAll('.set-finder [role=option]'),n=>({number:n.querySelector('.set-finder-number').textContent,name:n.querySelector('.menu-item-label').textContent,hint:n.querySelector('.menu-item-hint').textContent,active:n.dataset.active==='true',current:n.getAttribute('aria-selected')==='true'}))");
+async function openFinder() {
+  await click(finderTrigger);
+  await wait(`document.querySelector(${JSON.stringify(finderTrigger)}).getAttribute('aria-expanded')==='true' && document.activeElement===document.querySelector(${JSON.stringify(finderInput)}) && document.activeElement.value===''`, 'Find set opens on an empty search');
+}
+const finderClosed = label => wait(`!document.querySelector(${JSON.stringify(finder)}) && document.activeElement===document.querySelector(${JSON.stringify(finderTrigger)})`, label);
+const thumbnailsItem = '[role=menu][aria-label="Timeline options"] [aria-label="Set thumbnails"]';
+const persistedThumbnails = () => evaluate('(async()=> (await window.squidware.readPreferences()).preferences.setThumbnails)()');
 async function capture(name) {
   await evaluate('document.activeElement?.blur()'); await debug('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
   await wait("!document.querySelector('.tooltip-panel')", 'dismissed help'); await capturePage(window, output, name);
 }
 async function visibleCurrent() {
-  await wait("(()=>{const n=document.querySelector('.set-card[aria-current]'),s=document.querySelector('.set-list');if(!n)return false;const a=n.getBoundingClientRect(),b=s.getBoundingClientRect();return a.top>=b.top-.5&&a.bottom<=b.bottom+.5})()", 'revealed current set');
+  // The strip scrolls sideways; the current card must be wholly inside it.
+  await wait("(()=>{const n=document.querySelector('.set-strip .set-card[aria-current]'),s=document.querySelector('.set-strip .set-list');if(!n)return false;const a=n.getBoundingClientRect(),b=s.getBoundingClientRect();return a.width>0&&a.left>=b.left-.5&&a.right<=b.right+.5&&a.top>=b.top-.5&&a.bottom<=b.bottom+.5})()", 'revealed current set');
 }
 async function dragRow(fromId, toId) {
   const source = await point(row(fromId)), target = await point(row(toId));
@@ -86,27 +97,51 @@ app.whenReady().then(async () => {
     const maximum = parseProject(JSON.stringify(createPerformanceFixture('maximum')));
     maximum.sets[39].name = 'Ballad arrival'; maximum.sets[99].name = 'Ballad reprise';
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(maximum)}})`);
-    await wait("document.querySelectorAll('.set-card').length===128", 'maximum compact list');
-    assert.equal(await evaluate("document.querySelectorAll('.mini-field').length"), 0);
-    const reference = await evaluate("({width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height,rowHeight:document.querySelector('.set-card').getBoundingClientRect().height,add:document.querySelectorAll('.set-panel [aria-label=\"Add set\"]').length})");
-    assert.equal(reference.width, 1366); assert.equal(reference.height, 768); assert.ok(reference.fieldHeight >= 470); assert.equal(reference.rowHeight, 32); assert.equal(reference.add, 1); layouts.push({ name: 'reference', ...reference }); await capture('set-list-compact.png');
-    // At the default pane width the BPM column gives way to set names; a wider pane shows it again.
-    assert.equal(await evaluate("getComputedStyle(document.querySelector('.set-row-tempo')).display"), 'none');
-    await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:300}})`); await wait("getComputedStyle(document.querySelector('.set-row-tempo')).display!=='none'", 'wide set list shows BPM');
-    await evaluate(`${editor}.dispatch('layout.update',{update:{setsWidth:216}})`); await wait("getComputedStyle(document.querySelector('.set-row-tempo')).display==='none'", 'default set list hides BPM');
-    await type(named('Find set'), '040'); await key(window, 'Return'); await wait(`${state}.selection.activeIndex===39`, 'number jump'); await visibleCurrent();
-    assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 1);
-    await type(named('Find set'), 'ballad'); assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 2); await capture('set-list-search.png'); await evaluate("document.querySelector('[aria-label=\"Find set\"]').focus()");
-    await key(window, 'Return'); await key(window, 'End'); await wait(`${state}.selection.activeIndex===99`, 'filtered End'); await visibleCurrent();
-    await key(window, 'Home'); await wait(`${state}.selection.activeIndex===39`, 'filtered Home');
-    await type(named('Find set'), 'not found'); assert.equal(await evaluate("document.querySelectorAll('.set-card').length"), 0); await capture('set-list-empty.png'); await evaluate("document.querySelector('[aria-label=\"Find set\"]').focus()");
-    await key(window, 'Escape'); await wait("document.querySelectorAll('.set-card').length===128", 'escape clears search'); await visibleCurrent();
-    await wait("document.activeElement.matches('.set-card[aria-current]')", 'Escape restores current-row focus');
-    // A user can leave search before its deferred focus restoration runs.
-    await evaluate("(()=>{const n=document.querySelector('[aria-label=\"Find set\"]');n.focus();n.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('[aria-label=\"Show set thumbnails\"]').focus()})()"); await frames();
-    assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Show set thumbnails');
+    await wait("document.querySelectorAll('.set-strip .set-card').length===128", 'maximum set strip');
+    // The strip is a storyboard by default: every card carries its thumbnail. Compact cards are a personal preference, checked below.
+    assert.equal(await evaluate("document.querySelectorAll('.set-strip .mini-field').length"), 128);
+    const reference = await evaluate("({width:innerWidth,height:innerHeight,fieldHeight:document.querySelector('.field-container').getBoundingClientRect().height,cardWidth:document.querySelector('.set-strip .set-card').getBoundingClientRect().width,add:document.querySelectorAll('.set-strip [aria-label=\"Add set\"]').length,addControls:document.querySelectorAll('[aria-label=\"Add set\"]').length})");
+    assert.equal(reference.width, 1366); assert.equal(reference.height, 768); assert.ok(reference.fieldHeight >= 470, JSON.stringify(reference)); assert.equal(reference.cardWidth, 88); assert.equal(reference.add, 1); assert.equal(reference.addControls, 1); layouts.push({ name: 'reference', ...reference }); await capture('set-list-strip.png');
+    // Home and End walk the cards in show order and keep the current card in view and focused.
+    assert.equal(await evaluate(`${state}.selection.activeIndex`), 0);
+    await evaluate("document.querySelector('.set-strip .set-card[aria-current]').focus()");
+    await key(window, 'End'); await wait(`${state}.selection.activeIndex===127 && document.activeElement.matches('.set-strip .set-card[aria-current]')`, 'End reaches the last set'); await visibleCurrent();
+    await key(window, 'Home'); await wait(`${state}.selection.activeIndex===0 && document.activeElement.matches('.set-strip .set-card[aria-current]')`, 'Home returns to the opening set'); await visibleCurrent();
+    // A number addresses one set of the unfiltered show order.
+    await openFinder();
+    let rows = await finderRows(); assert.equal(rows.length, 128); assert.deepEqual(rows.filter(r => r.current).map(r => r.number), ['01']); assert.deepEqual(rows.filter(r => r.active).map(r => r.number), ['01']);
+    await type(finderInput, '040'); rows = await finderRows();
+    assert.deepEqual(rows.map(r => [r.number, r.name]), [['40', 'Ballad arrival']]);
+    // The row carries what the old list's counts and BPM columns did.
+    // It also says where the set falls in the music: the measure it arrives on, then its counts and tempo.
+    const hint = new RegExp(`^(M\\d+) · ${setTiming(maximum, 39).counts} counts · ${setTiming(maximum, 39).tempo} BPM$`).exec(rows[0].hint);
+    assert.ok(hint, rows[0].hint);
+    await key(window, 'Return'); await wait(`${state}.selection.activeIndex===39`, 'number jump'); await finderClosed('number jump returns focus to Find set'); await visibleCurrent();
+    // The measure in the row is the one the transport shows on arrival.
+    assert.equal((await evaluate("document.querySelector('.transport .score-readout strong').textContent")).split(' · ')[0], hint[1]);
+    assert.equal(await evaluate("document.querySelectorAll('.set-strip .set-card').length"), 128);
+    // A name filters the rows. Arrow keys move through the matches only; Enter goes to the active one.
+    await openFinder(); await type(finderInput, 'ballad'); rows = await finderRows();
+    assert.deepEqual(rows.map(r => r.number), ['40', '100']); assert.deepEqual(rows.map(r => r.active), [true, false]); assert.deepEqual(rows.map(r => r.current), [true, false]);
+    await capture('set-list-search.png'); await evaluate(`document.querySelector(${JSON.stringify(finderInput)}).focus()`);
+    await key(window, 'Up'); await wait("document.querySelector('.set-finder [role=option][data-active=true] .set-finder-number')?.textContent==='100'", 'Up wraps to the last match');
+    await key(window, 'Return'); await wait(`${state}.selection.activeIndex===99`, 'last filtered match'); await finderClosed('filtered jump returns focus to Find set'); await visibleCurrent();
+    await openFinder(); await type(finderInput, 'ballad'); await key(window, 'Down'); await wait("document.querySelector('.set-finder [role=option][data-active=true] .set-finder-number')?.textContent==='100'", 'Down reaches the second match');
+    await key(window, 'Down'); await wait("document.querySelector('.set-finder [role=option][data-active=true] .set-finder-number')?.textContent==='40'", 'Down wraps to the first match');
+    await key(window, 'Return'); await wait(`${state}.selection.activeIndex===39`, 'first filtered match'); await finderClosed('first match returns focus to Find set'); await visibleCurrent();
+    await openFinder(); await type(finderInput, 'not found'); assert.deepEqual(await finderRows(), []);
+    assert.equal(await evaluate("document.querySelector('.set-finder .empty-state[role=status]').textContent"), 'No matching sets. Enter a number from 1 to 128, or part of a name.');
+    await capture('set-list-empty.png'); await evaluate(`document.querySelector(${JSON.stringify(finderInput)}).focus()`);
+    // Enter without a match goes nowhere; Escape leaves search, restores the whole list and returns focus to Find set.
+    await key(window, 'Return'); await frames(); assert.equal(await evaluate(`!!document.querySelector(${JSON.stringify(finder)}) && ${state}.selection.activeIndex`), 39);
+    await key(window, 'Escape'); await finderClosed('Escape leaves search'); await visibleCurrent();
+    assert.equal(await evaluate("document.querySelectorAll('.set-strip .set-card').length"), 128);
+    await openFinder(); rows = await finderRows(); assert.equal(rows.length, 128); assert.deepEqual(rows.filter(r => r.active).map(r => r.number), ['40']);
+    // A user can leave search and move on at once: closing never pulls focus back afterwards.
+    await evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(finderInput)});n.focus();n.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));document.querySelector('[aria-label="Timeline options"]').focus()})()`); await frames();
+    assert.equal(await evaluate("document.activeElement.getAttribute('aria-label')"), 'Timeline options'); assert.equal(await evaluate(`!!document.querySelector(${JSON.stringify(finder)})`), false);
     assert.equal(await evaluate(`${state}.project.past.length`), 0);
-    pass('128-set number/name navigation, filtered Home/End, no-match recovery and current-row reveal create no history');
+    pass('128-set number/name navigation, Home/End on the strip, arrow keys over filtered matches, no-match recovery and current-card reveal create no history');
     // The set list no longer reserves a footer for direct positions; the Command palette keeps the one-step reorder.
     const palette = named('Search commands or drill phrases');
     await evaluate(`${editor}.dispatch('palette.open')`); await wait(`!!document.querySelector(${JSON.stringify(palette)})`, 'palette open');
@@ -128,10 +163,18 @@ app.whenReady().then(async () => {
     await evaluate(`${editor}.dispatch('file.save-as')`); await wait(`${state}.fileSession.saveStatus==='Project file saved'`, 'saved native reordered show');
     assert.deepEqual(parseProject(await fs.readFile(savedFile, 'utf8')), accepted);
     await evaluate(`${editor}.dispatch('file.open')`); await wait(`${state}.project.past.length===0`, 'native reopen'); assert.deepEqual(await evaluate(state + '.project.present'), accepted);
-    await click(named('Show set thumbnails')); await wait(`${state}.preferences.value.setThumbnails && ${state}.preferences.status==='saved'`, 'saved thumbnail preference'); assert.equal(await evaluate("document.querySelectorAll('.mini-field').length"), 128);
-    assert.equal(await evaluate('(async()=> (await window.squidware.readPreferences()).preferences.setThumbnails)()'), true);
-    assert.equal(await evaluate(`${state}.project.past.length`), 0); await capture('set-list-thumbnails.png');
-    await click(named('Show set thumbnails')); await wait("document.querySelectorAll('.mini-field').length===0", 'compact restored');
+    // Thumbnails are a personal preference in Timeline options. Turning them off gives compact cards; neither choice edits the project.
+    await click(thumbnailsItem); await wait(`!${state}.preferences.value.setThumbnails && ${state}.preferences.status==='saved'`, 'saved compact preference');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(thumbnailsItem)}).getAttribute('aria-checked')`), 'false');
+    assert.equal(await evaluate("document.querySelectorAll('.set-strip .mini-field').length"), 0); assert.equal(await evaluate("document.querySelectorAll('.set-strip .set-card').length"), 128);
+    assert.equal(await evaluate("document.querySelector('.set-strip .set-card').getBoundingClientRect().height"), 28);
+    assert.equal(await persistedThumbnails(), false); assert.equal(await evaluate(`${state}.project.past.length`), 0);
+    await key(window, 'Escape'); await wait("document.querySelector('[role=menu][aria-label=\"Timeline options\"]').hidden", 'Timeline options closed'); await visibleCurrent(); await capture('set-list-compact.png');
+    await click(thumbnailsItem); await wait(`${state}.preferences.value.setThumbnails && ${state}.preferences.status==='saved'`, 'saved thumbnail preference');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(thumbnailsItem)}).getAttribute('aria-checked')`), 'true');
+    assert.equal(await evaluate("document.querySelectorAll('.set-strip .mini-field').length"), 128); assert.equal(await persistedThumbnails(), true);
+    assert.equal(await evaluate(`${state}.project.past.length`), 0);
+    await key(window, 'Escape'); await wait("document.querySelector('[role=menu][aria-label=\"Timeline options\"]').hidden", 'Timeline options closed again'); await capture('set-list-thumbnails.png');
     pass('native save/reopen preserves all reordered data; optional thumbnails persist as personal preferences without a project edit');
     const small = parseProject(JSON.stringify(createPerformanceFixture('demo')));
     await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(small)}});${editor}.dispatch('set.select',{index:1})`); await frames();
@@ -139,21 +182,42 @@ app.whenReady().then(async () => {
     await wait(`${state}.project.present.sets[4].id===${JSON.stringify(small.sets[2].id)}`, 'native drag drop');
     assert.equal(await evaluate(`${state}.project.past.length`), 1); assert.equal(await evaluate(`${state}.selection.activeIndex`), 1);
     await evaluate(`${editor}.dispatch('history.undo')`); assert.deepEqual(await evaluate(state + '.project.present'), small);
-    await evaluate(`document.querySelector(${JSON.stringify(row(small.sets[1].id))}).focus()`); await key(window, 'Down', ['alt']); await wait(`${state}.selection.activeIndex===2 && ${state}.project.present.sets[2].id===${JSON.stringify(small.sets[1].id)}`, 'keyboard reorder');
-    assert.equal(await evaluate(`${state}.project.past.length`), 1); await evaluate(`${editor}.dispatch('history.undo')`);
-    pass('native pointer drag and Alt+Down use atomic reorder while preserving active set identity');
+    // Alt with an arrow moves the focused card one position; the card keeps focus and stays current.
+    for (const arrow of ['Right', 'Down']) {
+      await evaluate(`document.querySelector(${JSON.stringify(row(small.sets[1].id))}).focus()`); await key(window, arrow, ['alt']); await wait(`${state}.selection.activeIndex===2 && ${state}.project.present.sets[2].id===${JSON.stringify(small.sets[1].id)}`, 'keyboard reorder with Alt+' + arrow);
+      assert.equal(await evaluate(`document.activeElement===document.querySelector(${JSON.stringify(row(small.sets[1].id))})`), true);
+      assert.equal(await evaluate(`${state}.project.past.length`), 1); await evaluate(`${editor}.dispatch('history.undo')`); assert.deepEqual(await evaluate(state + '.project.present'), small);
+    }
+    await evaluate(`${editor}.dispatch('set.select',{index:2})`); await evaluate(`document.querySelector(${JSON.stringify(row(small.sets[2].id))}).focus()`); await key(window, 'Left', ['alt']); await wait(`${state}.selection.activeIndex===1 && ${state}.project.present.sets[1].id===${JSON.stringify(small.sets[2].id)}`, 'keyboard reorder with Alt+Left');
+    assert.equal(await evaluate(`${state}.project.past.length`), 1); await evaluate(`${editor}.dispatch('history.undo')`); assert.deepEqual(await evaluate(state + '.project.present'), small);
+    pass('native pointer drag and Alt+arrow keys use atomic reorder while preserving active set identity');
     for (const theme of ['dark', 'light', 'high-contrast']) {
       await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`); await frames(); await capture('set-list-' + theme + '.png');
     }
-    for (const [width, height, zoom] of [[1120,768,1.25],[1024,720,1.5]]) {
+    // Enlarged narrow layouts. A short window (under 620 effective px) gives the strip's height to the field; search and
+    // every row stay in Find set. 1120×800 at 125% is as narrow and still tall enough for the strip.
+    for (const [width, height, zoom] of [[1120,768,1.25],[1024,720,1.5],[1120,800,1.25]]) {
       window.setContentSize(width, height); window.webContents.setZoomFactor(zoom); await settleNativeViewport(window, 'set list enlarged');
-      if (await evaluate("!!document.querySelector('[aria-label=\"Show Set list\"]') && !document.querySelector('.set-panel')?.getBoundingClientRect().width")) await click(named('Show Set list'));
-      const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},list:rect('.set-list'),search:rect('[aria-label=\"Find set\"]'),add:rect('.set-panel [aria-label=\"Add set\"]')}})()");
-      for (const r of [metrics.search, metrics.add]) assert.ok(r.top>=0&&r.bottom<=metrics.viewport.height+.5&&r.left>=0&&r.right<=metrics.viewport.width+.5, JSON.stringify(metrics));
-      assert.ok(metrics.list.height >= 64); layouts.push({ width, height, zoom, ...metrics }); await capture(`set-list-${width}-${zoom}.png`);
+      const inside = (r, v) => r.width > 0 && r.height > 0 && r.top >= 0 && r.bottom <= v.height + .5 && r.left >= 0 && r.right <= v.width + .5;
+      const short = await evaluate("document.querySelector('.studio').dataset.height==='short'");
+      assert.equal(short, await evaluate('innerHeight<620'), 'short layout follows the height breakpoint');
+      await openFinder();
+      const metrics = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}};return {viewport:{width:innerWidth,height:innerHeight},trigger:rect('.transport .set-jump'),finder:rect('.set-finder'),search:rect('.set-finder input[aria-label=\"Find set\"]'),rows:rect('.set-finder-list'),row:rect('.set-finder [role=option]'),options:document.querySelectorAll('.set-finder [role=option]').length,strip:document.querySelector('.set-strip').getClientRects().length,addControls:document.querySelectorAll('[aria-label=\"Add set\"]').length}})()");
+      for (const r of [metrics.trigger, metrics.finder, metrics.search, metrics.rows]) assert.ok(inside(r, metrics.viewport), JSON.stringify(metrics));
+      assert.equal(metrics.options, small.sets.length); assert.ok(metrics.rows.height >= 2 * metrics.row.height, JSON.stringify(metrics)); assert.equal(metrics.addControls, 1);
+      await capture(`set-list-${width}x${height}-${zoom}.png`); await evaluate(`document.querySelector(${JSON.stringify(finderInput)}).focus()`);
+      await key(window, 'Escape'); await finderClosed('Find set closed at ' + width + '×' + height);
+      assert.equal(metrics.strip > 0, !short, JSON.stringify(metrics));
+      if (!short) {
+        const strip = await evaluate("(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}};return {list:rect('.set-strip .set-list'),card:rect('.set-strip .set-card'),add:rect('.set-strip [aria-label=\"Add set\"]')}})()");
+        for (const r of [strip.list, strip.add]) assert.ok(inside(r, metrics.viewport), JSON.stringify({ metrics, strip }));
+        assert.ok(strip.list.width >= 2 * strip.card.width && strip.list.height >= strip.card.height, JSON.stringify(strip)); await visibleCurrent(); Object.assign(metrics, strip);
+      }
+      layouts.push({ width, height, zoom, short, ...metrics });
     }
+    assert.deepEqual(layouts.slice(1).map(l => l.short), [true, true, false]);
     pass('supported themes and enlarged narrow layouts retain search, rows and the single Add control');
     assert.deepEqual(errors, []); assert.deepEqual(await evaluate('window.__setListQA.errors'), []);
     await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ passed: checks, layouts, platform: process.platform }, null, 2)); app.exit(0);
-  } catch (error) { console.error(error); console.error('Set-list diagnostic',await evaluate("({focus:document.activeElement?.outerHTML.slice(0,300),query:document.querySelector('[aria-label=\"Find set\"]')?.value,active:window.__setListQA?.editor?.getState().selection.activeIndex,history:window.__setListQA?.editor?.getState().project.past.length})").catch(()=>null)); if (window && !window.isDestroyed()) await capturePage(window, output, 'failure.png').catch(() => {}); app.exit(1); }
+  } catch (error) { console.error(error); console.error('Set-list diagnostic',await evaluate("({focus:document.activeElement?.outerHTML.slice(0,300),query:document.querySelector('.set-finder input')?.value,active:window.__setListQA?.editor?.getState().selection.activeIndex,history:window.__setListQA?.editor?.getState().project.past.length})").catch(()=>null)); if (window && !window.isDestroyed()) await capturePage(window, output, 'failure.png').catch(() => {}); app.exit(1); }
 });

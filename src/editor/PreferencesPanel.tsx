@@ -18,7 +18,8 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
   const nav = useRef<HTMLDivElement>(null); const jumped = useRef(-1); const uid = useId();
   // Every group stays mounted (the close guard and number drafts need all fields); the nav only scrolls.
   useEffect(() => {
-    const bar = nav.current, dialog = bar?.closest('dialog'); if (!bar || !dialog) return;
+    // The dialog's body scrolls, not the dialog: follow, pad and reset that element.
+    const bar = nav.current, dialog = bar?.closest<HTMLElement>('.modal-body') ?? bar?.closest('dialog'); if (!bar || !dialog) return;
     const follow = () => {
       const tops = preferencesSections.map(({ id }) => document.getElementById(uid + id)?.getBoundingClientRect().top ?? Infinity);
       const index = preferencesSectionAt(tops, bar.getBoundingClientRect().bottom, dialog.getBoundingClientRect().bottom, dialog.scrollTop > 0 && dialog.scrollTop + dialog.clientHeight >= dialog.scrollHeight - 2, jumped.current);
@@ -36,7 +37,7 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
     jumped.current = index; setCurrent(preferencesSections[index].id);
     // Jumping to a group that is a single collapsed disclosure (Keyboard shortcuts) opens it.
     if (heading.nextElementSibling instanceof HTMLDetailsElement) heading.nextElementSibling.open = true;
-    if (index) heading.scrollIntoView({ block: 'start' }); else heading.closest('dialog')?.scrollTo({ top: 0 });
+    if (index) heading.scrollIntoView({ block: 'start' }); else (heading.closest('.modal-body') ?? heading.closest('dialog'))?.scrollTo({ top: 0 });
     heading.focus({ preventScroll: true });
   }
   const section = (index: number, children: ReactNode) => { const { id, title } = preferencesSections[index]; return <section className="preferences-section" aria-labelledby={uid + id}><h3 id={uid + id} tabIndex={-1}>{title}</h3>{children}</section>; };
@@ -58,9 +59,9 @@ export function PreferencesPanel({ controller }: { controller: EditorController 
         <div className="form-row"><label className="form-label">Interface theme<select value={p.theme} onChange={e => update({ theme: e.target.value as typeof p.theme })}><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select></label><label className="form-label">UI scale<select value={p.uiScale} onChange={e => update({ uiScale: Number(e.target.value) as typeof p.uiScale })}>{[1, 1.1, 1.25, 1.5].map(scale => <option key={scale} value={scale}>{Math.round(scale * 100)}%</option>)}</select></label></div>
         <p className="microcopy">Theme and scale apply immediately on this device. Field coordinates and saved section colors stay the same.</p>
         <label className="form-label">Panel layout<select value={p.panelLayout} onChange={e => update({ panelLayout: e.target.value as typeof p.panelLayout, workspaceLayout: { ...p.workspaceLayout, preset: 'custom', setsWidth: e.target.value === 'compact' ? 176 : 216, inspectorWidth: e.target.value === 'compact' ? 235 : 258 } })}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
-        <p className="microcopy">Use the named workspace switcher in the header to arrange panels, change the timeline and save custom workspaces.</p>
+        <p className="microcopy">Write, Plan and Rehearse in the top bar set the stage of work. To save your own arrangement of the panel, timeline and view, open Workspaces from the Project menu.</p>
         <div className="preferences-toggles"><label><input type="checkbox" checked={p.showHints} onChange={e => update({ showHints: e.target.checked, ...(e.target.checked ? { selectionHintDismissed: false } : {}) })} />Show hints</label></div>
-        <p className="microcopy">Short keyboard and mouse tips in the set list, field, status bar, Inspector, command palette and 3D preview. Tooltips and Help keep the same guidance when hints are off.</p>
+        <p className="microcopy">The hint line at the field’s lower left and the short tips in the Plan sheet, command palette and 3D preview. Tooltips and Help keep the same guidance when hints are off.</p>
       </>)}
       {section(1, <>
         <label className="form-label">Start view<select value={p.view} onChange={e => update({ view: e.target.value as typeof p.view })}><option value="2d">2D field</option><option value="3d">3D preview</option><option value="split">2D and 3D</option></select></label>

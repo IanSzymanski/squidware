@@ -37,9 +37,10 @@ describe('UI-scale-aware breakpoints', () => {
   it('resolves the 900–1920 px × 100–150% matrix from effective pixels, not raw window pixels', () => {
     const expected: Record<string, [string, string, boolean, boolean, boolean]> = {
       // header, transport, short, set list tucked, Inspector tucked
-      '900x650@1': ['compact', 'compact', false, true, false], '900x650@1.25': ['narrow', 'compact', true, true, true], '900x650@1.5': ['narrow', 'compact', true, true, true],
-      '1024x700@1': ['compact', 'compact', false, false, false], '1024x700@1.25': ['compact', 'compact', true, true, false], '1024x700@1.5': ['narrow', 'compact', true, true, true],
-      '1366x768@1': ['full', 'full', false, false, false], '1366x768@1.25': ['compact', 'compact', true, false, false], '1366x768@1.5': ['compact', 'compact', true, true, false],
+      // The transport tiers moved up with the rebuilt transport, which holds more: full from 1000 px of main width, narrow below 700.
+      '900x650@1': ['compact', 'narrow', false, true, false], '900x650@1.25': ['narrow', 'narrow', true, true, true], '900x650@1.5': ['narrow', 'narrow', true, true, true],
+      '1024x700@1': ['compact', 'narrow', false, false, false], '1024x700@1.25': ['compact', 'narrow', true, true, false], '1024x700@1.5': ['narrow', 'narrow', true, true, true],
+      '1366x768@1': ['full', 'compact', false, false, false], '1366x768@1.25': ['compact', 'narrow', true, false, false], '1366x768@1.5': ['compact', 'narrow', true, true, false],
       '1920x1080@1': ['full', 'full', false, false, false], '1920x1080@1.25': ['full', 'full', false, false, false], '1920x1080@1.5': ['full', 'compact', false, false, false],
     };
     for (const [key, tiers] of Object.entries(expected)) {

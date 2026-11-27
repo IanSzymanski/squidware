@@ -81,13 +81,43 @@ app.whenReady().then(async () => {
     const cells = await evaluate(`(()=>{const q=s=>document.querySelector(s),marks=[...document.querySelectorAll('.sheet-scroll [data-column="5"]')],table=q('.sheet-scroll');return {meter:q(${JSON.stringify(cell(0,4))}).value,inherit:q(${JSON.stringify(cell(1,4))}).placeholder,described:q(${JSON.stringify(cell(0,4))}).getAttribute('aria-describedby'),help:q('#sheet-meter-help').textContent,marks:marks.map(m=>m.placeholder),outline:getComputedStyle(marks[0]).borderTopColor,blank:getComputedStyle(marks[1]).borderTopColor,markRight:marks[0].getBoundingClientRect().right,tableRight:table.getBoundingClientRect().right,overflow:table.scrollWidth-table.clientWidth}})()`);
     assert.deepEqual([cells.meter,cells.inherit,cells.described],['4/4','inherit 4/4','sheet-help sheet-meter-help'],JSON.stringify(cells));
     assert.match(cells.help,/4\/4.*7\/8:2\+2\+3.*inherits/);
+    // A blank Meter inherits. It says so in the current set's row and while it is edited, and is blank at rest elsewhere.
+    const inheritShown = row => `getComputedStyle(document.querySelector(${JSON.stringify(cell(row,4))}),'::placeholder').opacity`;
+    assert.deepEqual(await evaluate(`[${state}.selection.activeIndex,document.querySelector(${JSON.stringify(cell(1,4))}).closest('td').classList.contains('sheet-inherit'),${inheritShown(1)},${inheritShown(2)}]`),[0,true,'0','0']);
+    await evaluate(`${editor}.dispatch('set.select',{index:1})`); await wait(`${inheritShown(1)}==='1'`,'inherited meter shown in the current row');
+    assert.equal(await evaluate(inheritShown(2)),'0');
+    await evaluate(`document.querySelector(${JSON.stringify(cell(2,4))}).focus()`); await wait(`${inheritShown(2)}==='1'`,'inherited meter shown in the edited cell');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(cell(2,4))}).placeholder`),'inherit 4/4');
+    await evaluate('document.activeElement?.blur()');
     assert.deepEqual(cells.marks,['Add mark','',''],JSON.stringify(cells));
     assert.ok(cells.outline!==cells.blank && cells.blank==='rgba(0, 0, 0, 0)' && cells.overflow<=0 && cells.markRight<=cells.tableRight,JSON.stringify(cells));
-    await load(createDemoProject()); await capture('sheet-notes.png');
-    const notes = await evaluate(`[...document.querySelectorAll('.sheet-scroll [data-column="3"]')].map(n=>({value:n.value,client:n.clientHeight,scroll:n.scrollHeight,top:n.getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top,nameTop:n.closest('tr').querySelector('[data-column="0"]').getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top}))`);
+    const demo = createDemoProject(); await load(demo); await capture('sheet-notes.png');
+    const noteCells = () => evaluate(`[...document.querySelectorAll('.sheet-scroll [data-column="3"]')].map(n=>({value:n.value,client:n.clientHeight,scroll:n.scrollHeight,clipped:n.scrollWidth>n.clientWidth+1,nameHeight:n.closest('tr').querySelector('[data-column="0"]').clientHeight,top:n.getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top,nameTop:n.closest('tr').querySelector('[data-column="0"]').getBoundingClientRect().top-n.closest('tr').getBoundingClientRect().top}))`);
+    const wrapPressed = () => evaluate(`(()=>{const n=document.querySelector(${JSON.stringify(button('Wrap notes'))});return [n.getAttribute('aria-pressed'),document.querySelector('.sheet-scroll').classList.contains('sheet-scroll--dense')];})()`);
+    // Notes take one line per set until Wrap notes is on, so more sets fit. A cell holds its whole note: a long one
+    // runs past the cell's edge at rest, and opens to whole lines while it is being edited. At 1366 px the Notes column
+    // is wide enough for every demo note, so a narrower window gives the notes that need a second line.
+    assert.deepEqual(await wrapPressed(),['false',true]);
+    let notes = await noteCells();
+    assert.ok(notes.length===6 && notes.every(n=>n.value && n.client===n.nameHeight && Math.abs(n.top-n.nameTop)<=1),JSON.stringify(notes));
+    window.setContentSize(1024,768); await settleNativeViewport(window,'narrower sheet'); await frames();
+    notes = await noteCells();
+    assert.deepEqual(notes.map(n=>n.value),demo.sets.map(set=>set.notes));
+    assert.ok(notes.length===6 && notes.every(n=>n.value && n.client===n.nameHeight && n.scroll<=n.client+1 && Math.abs(n.top-n.nameTop)<=1) && notes.some(n=>n.clipped),JSON.stringify(notes));
+    const long = notes.findIndex(n=>n.clipped);
+    await click(cell(long,3)); await wait(`document.activeElement===document.querySelector(${JSON.stringify(cell(long,3))})`,'long note focused');
+    const editing = (await noteCells())[long];
+    assert.ok(editing.client>40 && editing.scroll<=editing.client+1 && Math.abs(editing.top-editing.nameTop)<=1,JSON.stringify(editing));
+    await key(window,'Escape'); await evaluate('document.activeElement?.blur()'); await frames();
+    assert.equal((await noteCells())[long].client,notes[long].client); assert.deepEqual(await present(),demo);
+    // With Wrap notes on, every note shows whole lines, top-aligned with its row.
+    await click(button('Wrap notes')); await wait(`document.querySelector(${JSON.stringify(button('Wrap notes'))}).getAttribute('aria-pressed')==='true'`,'Wrap notes on');
+    assert.deepEqual(await wrapPressed(),['true',false]);
+    notes = await noteCells(); await capture('sheet-notes-wrapped.png');
     assert.ok(notes.length===6 && notes.every(n=>n.value && n.scroll<=n.client+1 && Math.abs(n.top-n.nameTop)<=1) && notes.some(n=>n.client>40),JSON.stringify(notes));
+    window.setContentSize(1366,768); await settleNativeViewport(window,'sheet width restored');
     await load(project);
-    pass('sheet Meter reads 4/4 with explained notation, the active empty Mark cell shows an outlined Add mark placeholder in view, and multi-line demo notes show whole lines top-aligned with their row');
+    pass('sheet Meter reads 4/4 with explained notation, a blank Meter says it inherits in the current row and while edited, the active empty Mark cell shows an outlined Add mark placeholder in view, and demo notes take one line per set at rest, open to whole lines while edited and, with Wrap notes on, show whole lines top-aligned with their row');
     // The field budget belongs to this exact viewport. Once shown, macOS can
     // constrain the native window to its shorter desktop work area.
     await evaluate(`${editor}.dispatch('workspace.show',{workspace:'design'})`); await frames();
@@ -116,15 +146,30 @@ app.whenReady().then(async () => {
     pass('native Tab/Enter navigate cells and synchronize active set/timeline; invalid edits and Escape preserve data');
     await evaluate('document.activeElement?.blur()'); await click(button('Undo')); await click(button('Undo'));
     assert.deepEqual(await present(),project);
+    // Plan mode shows the sheet without the side panel, so the Inspector's draft is typed in Write mode and the writer
+    // then turns to Plan. The sheet refuses to start an edit over it, and the draft is still there back in Write mode.
+    const mode = name => button(name + ' mode'), pressed = name => `document.querySelector(${JSON.stringify(mode(name))}).getAttribute('aria-pressed')==='true'`;
+    await click(mode('Write')); await wait(`${pressed('Write')} && document.querySelector('.workspace-sheet').hidden`,'Write mode');
     await showRightPanel(window,'inspector');
-    await type('.inspector .form-row input[type=number]','-1'); await click(cell(0,0));
+    const inspectorCounts = '.inspector .set-timing [data-unit=counts] input[type=number]';
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(inspectorCounts)}).labels[0].querySelector('.sr-only').textContent`),'Counts');
+    await type(inspectorCounts,'-1'); await wait(`${state}.ui.pendingDraft`,'Inspector draft pending');
+    await click(mode('Plan')); await wait(`${pressed('Plan')} && !document.querySelector('.workspace-sheet').hidden && document.querySelector('.side-panel').hidden && !!document.querySelector(${JSON.stringify(inspectorCounts)}).closest('[hidden]')`,'Plan mode over the pending draft');
+    await click(cell(0,0));
+    assert.equal(await evaluate("document.querySelector('.sheet-error').textContent.includes('Finish or cancel the other pending input before editing the sheet.')"),true);
     assert.equal(await evaluate(state+'.selection.activeIndex'),2);
-    assert.equal(await evaluate("document.querySelector('.inspector .form-row input[type=number]').value"),'-1');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(inspectorCounts)}).value`),'-1');
     assert.equal(await evaluate(state+'.ui.pendingDraft'),true);
     assert.deepEqual(await present(),project);
-    await evaluate("document.querySelector('.inspector .form-row input[type=number]').focus()"); await key(window,'Escape');
+    await click(mode('Write')); await wait(`${pressed('Write')} && !document.querySelector(${JSON.stringify(inspectorCounts)}).closest('[hidden]')`,'Write mode with the draft');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(inspectorCounts)}).value`),'-1');
+    assert.equal(await evaluate(state+'.ui.pendingDraft'),true); assert.equal(await evaluate(state+'.selection.activeIndex'),2);
+    await evaluate(`document.querySelector(${JSON.stringify(inspectorCounts)}).focus()`); await key(window,'Escape');
     assert.equal(await evaluate(state+'.ui.pendingDraft'),false);
-    pass('focusing a sheet cell preserves an unrelated invalid Inspector draft and its active set');
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(inspectorCounts)}).value`),String(project.moves[1].counts));
+    await click(mode('Plan')); await wait(`${pressed('Plan')} && !document.querySelector('.workspace-sheet').hidden`,'Plan mode after the draft is cancelled');
+    assert.deepEqual(await present(),project);
+    pass('focusing a sheet cell preserves an unrelated invalid Inspector draft, left pending in Write mode, and its active set');
     await nativePaste(0,0,'Opening\t0\t100\t"Line 1\nLine 2"\nTravel\t12\t143.25\tWatch spacing\nEnd\t30\t150\t');
     assert.deepEqual(await present(),project);
     assert.match(await evaluate("document.querySelector('.sheet-paste-modal').textContent"),/12 cells · 0 new sets · 0 errors/);

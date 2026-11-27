@@ -12,8 +12,9 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   const fixture = { ...project, title: 'Grid and snapping QA', performers: people, sets: project.sets.map(set => ({ ...set, positions })), moves: project.moves.map(move => ({ ...move, paths: {} })) };
   await evaluate(`${editor}.dispatch('project.load',{project:${JSON.stringify(fixture)}}); ${editor}.setValue('ui','snap',true); ${editor}.setValue('ui','showGrid',true); ${editor}.setValue('ui','zoom',1); ${editor}.setValue('ui','fitVersion',99); ${editor}.setValue('ui','showPaths',false); ${editor}.setValue('ui','showNextPaths',false); ${editor}.setValue('selection','selectedIds',${JSON.stringify(ids.slice(0,2))})`);
   await wait("document.querySelectorAll('.field-performer').length===3", 'placement fixture');
-  // Snap mode has one persistent home, the status bar; nothing drawn at idle covers the playing surface.
-  assert.ok(await evaluate("(() => {const surface=document.querySelector('.field-stage__background [data-field-surface]').getBoundingClientRect();const drawn=n=>{const s=getComputedStyle(n);return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)>0&&s.clipPath==='none'};return !document.querySelector('.field-snap-status') && /steps|Yard lines|Snap off/.test(document.querySelector('.statusbar-snap')?.textContent ?? '') && ['.field-legend','.field-topline','.field-keyboard-help'].every(selector=>{const n=document.querySelector(selector);if(!n||!drawn(n))return true;const b=n.getBoundingClientRect();return b.right<=surface.left||b.left>=surface.right||b.bottom<=surface.top||b.top>=surface.bottom})})()"), 'snap mode lives in the status bar and no idle overlay covers the drawn field');
+  // Snap mode has one persistent home, the chip beside the zoom control; nothing drawn at idle covers the playing surface,
+  // including the controls that float in the field's apron.
+  assert.ok(await evaluate("(() => {const surface=document.querySelector('.field-stage__background [data-field-surface]').getBoundingClientRect();const drawn=n=>{const s=getComputedStyle(n);return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)>0&&s.clipPath==='none'};return !document.querySelector('.field-snap-status') && /steps|Yard lines|Snap off/.test(document.querySelector('.canvas-zoom-row .statusbar-snap')?.textContent ?? '') && ['.field-legend','.field-topline','.field-keyboard-help','.canvas-view','.canvas-zoom-row','.canvas-hint'].every(selector=>{const n=document.querySelector(selector);if(!n||!drawn(n))return true;const b=n.getBoundingClientRect();return b.right<=surface.left||b.left>=surface.right||b.bottom<=surface.top||b.top>=surface.bottom})})()"), 'snap mode lives in the canvas chip and no idle overlay covers the drawn field');
   // Exactly one snap location is visible and announced in narrow windows and in focus mode as well.
   const snapHomes = () => evaluate("[...document.querySelectorAll('.statusbar-snap, .field-topline-snap')].filter(n => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && /steps|Yard lines|Snap off/.test(n.textContent); }).map(n => n.className)");
   assert.deepEqual(await snapHomes(), ['statusbar-snap']);
@@ -21,7 +22,8 @@ module.exports = async function ({ project, editor, state, evaluate, wait, click
   assert.deepEqual(await snapHomes(), ['statusbar-snap'], 'snap status stays visible in narrow windows');
   window.setContentSize(1366, 768); await settleNativeViewport(window, 'snapping baseline');
   await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`${state}.ui.focusMode`, 'focus mode');
-  assert.deepEqual(await snapHomes(), ['field-topline-snap'], 'focus mode keeps one visible snap status');
+  // The chip floats over the field, so focus mode keeps it; the old field topline is never drawn.
+  assert.deepEqual(await snapHomes(), ['statusbar-snap'], 'focus mode keeps one visible snap status');
   await evaluate(`${editor}.dispatch('layout.focus')`); await wait(`!${state}.ui.focusMode`, 'focus mode exited');
   const before = await evaluate(`${state}.project`);
   await capture('snapping-before.png');

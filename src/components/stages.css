@@ -1,73 +1,114 @@
-.field-stage, .stage-three { width: 100%; height: 100%; min-height: 280px; position: relative; overflow: hidden; background: #141d1a; }
-.field-stage { background: radial-gradient(ellipse at 50% 45%, #1c2b25 0%, #141d1a 72%); }
+/* The 2D field and the 3D stage. Their surface keeps one look in every theme: UI themes never recolor a show. */
+.field-stage, .stage-three { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; background: var(--field-well); }
+.field-stage { background: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
 .field-stage__background, .field-stage__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 .field-stage__canvas { visibility: hidden; }
-.field-stage__svg { position: relative; display: block; width: 100%; height: 100%; min-height: 280px; touch-action: none; user-select: none; outline: none; }
-.field-stage__svg:focus-visible { outline: 1px solid #bfe68a; outline-offset: -3px; }
+.field-stage__svg { position: relative; display: block; width: 100%; height: 100%; min-height: 0; touch-action: none; user-select: none; outline: none; }
+.field-stage__svg:focus-visible, .stage-three__canvas > canvas:focus-visible { outline: 2px solid var(--field-accent); outline-offset: -4px; }
 .field-performer { cursor: grab; outline: none; }
 .field-stage--readonly .field-performer { cursor: default; }
-.field-container--preview { border-color: #d7bd77; }
-.field-preview-banner { position: absolute; z-index: 3; top: 38px; left: 12px; right: 12px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #a78c4d; border-radius: 6px; background: #283126f5; color: #f4e9c7; }
-.field-preview-banner > svg { flex-shrink: 0; }
-.field-preview-banner > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.4; }
+.field-stage--pan .field-stage__svg, .field-stage--pan .field-performer { cursor: grab; }
+.field-stage--moving .field-stage__svg, .field-stage--moving .field-performer { cursor: grabbing; }
+.field-selection-ring { fill: none; stroke: var(--field-accent); }
+.field-focus-ring { stroke: var(--field-accent); visibility: hidden; }
+.field-performer:focus-visible .field-focus-ring, .field-performer--focused .field-focus-ring { visibility: visible; }
+
+/* Chips that float over the field share one treatment. */
+.field-preview-banner, .field-readout, .neighbor-legend, .field-drag-status, .field-keyboard-help, .problem-field-status, .stage-three__quality, .stage-three__controls {
+  border: 1px solid var(--field-chip-line); background: var(--field-chip); color: var(--field-chip-text); backdrop-filter: blur(10px);
+}
+.field-preview-banner {
+  position: absolute; z-index: 4; top: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+  width: max-content; max-width: calc(100% - 24px); padding: 6px 6px 6px 12px; border-radius: var(--radius-lg); font-size: var(--text-sm);
+}
+.field-preview-banner > svg { flex-shrink: 0; color: var(--warning); }
+.field-preview-banner > div { min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.35; }
 .field-preview-banner strong { font-weight: 600; overflow-wrap: anywhere; }
-.field-preview-banner span { color: #dce2d4; }
-.field-preview-banner button { flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid #e4d1a1; border-radius: 4px; background: #f4e9c7; color: #283126; font-size: 12px; }
-.field-preview-banner button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
-.field-readout { position: absolute; z-index: 2; width: min(300px, calc(100% - 16px)); padding: 9px 11px; border: 1px solid #688264; border-radius: 6px; background: #14231bf5; color: #f0f5e8; pointer-events: none; display: flex; flex-direction: column; gap: 5px; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
-.field-readout strong { font-weight: 600; }
-.neighbor-legend { position: absolute; z-index: 1; top: 36px; left: 12px; max-width: calc(100% - 24px); display: flex; flex-wrap: wrap; gap: 5px 12px; padding: 6px 9px; border: 1px solid #688264; border-radius: 5px; background: #14231bf5; color: #edf5e5; font-size: 11px; line-height: 1.4; pointer-events: none; }
-.neighbor-legend > span { display: flex; align-items: center; gap: 5px; overflow-wrap: anywhere; min-width: 0; }
-.neighbor-legend svg { flex-shrink: 0; fill: #14231b; stroke: currentColor; stroke-width: 1.5; }
+.field-preview-banner span { color: var(--field-chip-muted); font-size: var(--text-xs); }
+.field-preview-banner button {
+  appearance: none; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0; border-radius: var(--radius-sm);
+  background: #ffffff; color: #101418; font-size: var(--text-sm); font-weight: 600;
+}
+.field-preview-banner button:hover { background: #e7ebef; }
+/* The tool strip names the active preview and the playback lock; the field repeats it only when something is wrong. */
+.field-preview-banner { display: none; }
+.field-preview-banner.transform-preview-banner { padding: 6px 12px; }
+.field-preview-banner.transform-preview-banner--error { display: flex; border-color: var(--error-line); color: var(--error); }
+.field-readout {
+  position: absolute; z-index: 2; display: flex; flex-direction: column; gap: 2px; width: max-content; max-width: min(300px, calc(100% - 16px)); padding: 7px 10px;
+  border-radius: var(--radius-md); font-size: var(--text-xs); line-height: 1.4; overflow-wrap: anywhere; pointer-events: none;
+}
+.field-readout strong { font-weight: 600; font-size: var(--text-sm); }
+.field-readout span { color: var(--field-chip-muted); }
+.neighbor-legend {
+  position: absolute; z-index: 2; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: calc(100% - 330px); padding: 5px 10px;
+  border-radius: var(--radius-md); font-size: var(--text-xs); line-height: 1.4; pointer-events: none;
+}
+.neighbor-legend > span { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.neighbor-legend svg { flex-shrink: 0; fill: #10151a; stroke: currentColor; stroke-width: 1.5; }
 .neighbor-legend svg > path:first-child { fill: none; stroke-dasharray: 6 4; }
 .neighbor-legend [data-neighbor-legend=previous] { color: #b9e3f4; }
 .neighbor-legend [data-neighbor-legend=next] { color: #f1d39a; }
 .neighbor-legend [data-neighbor-legend=next] svg > path:first-child { stroke-dasharray: 1 4; stroke-linecap: round; }
+.neighbor-legend__scope { color: var(--field-chip-muted); }
+.neighbor-legend__stride i { width: 14px; height: 2px; border-radius: 1px; background: currentColor; }
 .field-container:has(.field-stage--moving) .neighbor-legend { display: none; }
-.field-readout span { color: #d7e4d0; }
-.field-stage--pan .field-stage__svg, .field-stage--pan .field-performer { cursor: grab; }
-.field-stage--moving .field-stage__svg, .field-stage--moving .field-performer { cursor: grabbing; }
-.field-stage__corner, .field-stage__hint, .field-stage__orientation { position: absolute; pointer-events: none; font-family: inherit; }
-.field-stage__corner { top: 20px; left: 24px; display: flex; align-items: center; gap: 7px; color: #9daea3; font-size: 9px; font-weight: 600; letter-spacing: 1.1px; }
-.field-stage__dimensions { margin-left: 8px; color: #687f70; font-weight: 400; letter-spacing: .3px; }
-.stage-status-light { height: 5px; width: 5px; border-radius: 50%; background: #a9d888; box-shadow: 0 0 8px #a9d88830; }
-.field-stage__hint { left: 24px; bottom: 17px; color: #829287; font-size: 10px; display: flex; gap: 18px; }
-.field-stage__hint > span { color: #5d7265; }
-.field-stage__orientation { bottom: 16px; right: 23px; color: #788d7e; font-size: 8px; letter-spacing: 1.1px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.field-stage__orientation > span { font-size: 21px; line-height: 22px; font-weight: 200; color: #a5b99d; }
-.stage-three__canvas { width: 100%; height: 100%; min-height: 280px; touch-action: none; }
-.stage-three__canvas > canvas { display: block; width: 100%; height: 100%; outline: none; }
-.stage-three__canvas > canvas:focus-visible { outline: 1px solid #bfe68a; outline-offset: -2px; }
-.stage-three__controls { position: absolute; right: 20px; top: 18px; display: flex; gap: 4px; padding: 4px; border: 1px solid #49605455; border-radius: 8px; background: #17231ed9; backdrop-filter: blur(10px); }
-.stage-three__controls > button { appearance: none; border: 0; border-radius: 5px; background: transparent; color: #b5c2b8; padding: 6px 9px; min-height: 27px; font-family: inherit; font-size: 10px; font-weight: 500; line-height: 1.3; cursor: pointer; }
-.stage-three__controls > button:hover { background: #314337; color: #eaf5e6; }
-.stage-three__controls > button:focus-visible { outline: 1px solid #bfe68a; }
-.stage-three__controls select { max-width: 190px; padding: 5px 7px; border: 1px solid #688264; background: #23372b; color: #edf5e5; font-size: 11px; }
-.field-container--preview .stage-three__controls { top: 116px; }
-.stage-three__fallback > button { padding: 9px 13px; border: 1px solid #bfe68a; border-radius: 5px; background: #d9efb9; color: #283126; font-size: 12px; }
-.stage-three__fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; padding: 30px; text-align: center; color: #cedbcf; background: #16231c; }
-.stage-three__fallback > svg { color: #b6db8f; }
-.stage-three__fallback > strong { font-size: 16px; font-weight: 600; }
-.stage-three__fallback > p { max-width: 360px; font-size: 12px; line-height: 1.7; color: #99af9e; margin: 0; }
-.field-container .field-stage__corner, .field-container .field-stage__hint, .field-container .field-stage__orientation { display: none; }
-.field-container .stage-three__controls { top: 42px; }
-.field-focus-ring { visibility: hidden; }
-.field-performer:focus-visible .field-focus-ring { visibility: visible; }
-.field-performer--focused .field-focus-ring { visibility: visible; }
-.field-stage__svg:focus-visible, .stage-three__canvas > canvas:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
-/* Keyboard help is always the field's accessible description; it is drawn only while the field has keyboard focus. */
-.field-keyboard-help { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; pointer-events: none; background: #14231bf5; color: #edf5e5; border-radius: 4px; font-size: 11px; line-height: 1.45; }
-.field-stage--keyboard .field-keyboard-help { left: 8px; right: 8px; bottom: 8px; width: auto; height: auto; margin: 0; padding: 6px 9px; overflow: visible; clip-path: none; white-space: normal; }
-.field-drag-status { position: absolute; z-index: 3; left: 50%; bottom: 8px; transform: translateX(-50%); padding: 4px 8px; border-radius: 4px; background: #14231bf5; color: #edf5e5; font-size: 11px; line-height: 1.45; white-space: nowrap; pointer-events: none; }
-.stage-three__controls > button { font-size: 12px; }
-.stage-three__controls > button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.stage-three__fallback > p { color: #d7e4d0; }
-.field-stage__corner, .field-stage__hint, .field-stage__orientation { font-size: 11px; color: #d7e4d0; }
-.field-stage__dimensions, .field-stage__hint > span { color: #d7e4d0; }
-@media (max-width: 850px) { .field-stage__dimensions { display: none; } .field-stage__corner { left: 15px; top: 15px; } .field-stage__hint { left: 15px; gap: 10px; font-size: 9px; } .field-stage__hint > span { display: none; } }
-.stage-three__quality { display: flex; align-items: center; gap: 6px; }
-.stage-three__quality > .stage-three__saved-cameras { padding: 5px 7px; border: 1px solid #688264; border-radius: 4px; background: #23372b; color: #edf5e5; font: inherit; font-size: 11px; cursor: pointer; }
-.stage-three__stadium {
-  display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border-radius: 5px;
-  color: #edf5e5; background: #17231e; font-size: 12px;
+.field-container:has(.transform-preview-banner--error) .neighbor-legend { top: 54px; }
+.problem-field-status {
+  position: absolute; z-index: 3; top: 46px; right: 10px; display: flex; align-items: center; gap: var(--space-2); max-width: calc(100% - 24px); padding: 5px 6px 5px 10px;
+  border-radius: var(--radius-md); font-size: var(--text-xs);
 }
+.problem-field-status .button { min-height: 22px; padding: 0 8px; border-color: var(--field-chip-line); color: var(--field-chip-text); font-size: var(--text-xs); }
+.field-stage__corner, .field-stage__hint, .field-stage__orientation { position: absolute; pointer-events: none; color: var(--field-chip-muted); font-size: var(--text-xs); }
+.field-stage__corner { top: 16px; left: 20px; display: flex; align-items: center; gap: 7px; letter-spacing: .06em; }
+.field-stage__dimensions { margin-left: 8px; }
+.stage-status-light { width: 5px; height: 5px; border-radius: 50%; background: #a9d888; }
+.field-stage__hint { left: 20px; bottom: 16px; display: flex; gap: 16px; }
+.field-stage__orientation { right: 20px; bottom: 16px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.field-stage__orientation > span { font-size: 20px; line-height: 22px; font-weight: 300; }
+/* Inside the editor the shell says all of this once, in the status line. */
+.field-container .field-stage__corner, .field-container .field-stage__hint, .field-container .field-stage__orientation { display: none; }
+/* Keyboard help is always the field's accessible description; it is drawn only while the field has keyboard focus. */
+.field-keyboard-help {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; pointer-events: none;
+  border-radius: var(--radius-md); font-size: var(--text-xs); line-height: 1.45;
+}
+.field-stage--keyboard .field-keyboard-help { left: 10px; right: 300px; bottom: 10px; width: auto; height: auto; margin: 0; padding: 6px 10px; overflow: visible; clip-path: none; white-space: normal; }
+.field-drag-status { position: absolute; z-index: 3; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 4px 10px; border-radius: var(--radius-full); font-size: var(--text-xs); white-space: nowrap; pointer-events: none; }
+
+/* 3D stage */
+.stage-three__canvas { width: 100%; height: 100%; min-height: 0; touch-action: none; }
+.stage-three__canvas > canvas { display: block; width: 100%; height: 100%; outline: none; }
+.stage-three__controls, .stage-three__quality {
+  position: absolute; z-index: 3; top: 10px; left: 10px; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 24px); padding: 3px; flex-wrap: wrap;
+  border-radius: var(--radius-lg); font-size: var(--text-xs);
+}
+.stage-three__controls > button, .stage-three__quality > button {
+  appearance: none; height: 24px; padding: 0 9px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--field-chip-text);
+  font-size: var(--text-xs); font-weight: 500;
+}
+.stage-three__controls > button:hover, .stage-three__quality > button:hover { background: #ffffff1a; }
+.stage-three__controls > button[aria-pressed=true] { background: #ffffff26; }
+/* Saved views opens a panel, so it wears a button's outline and icon instead of reading as a caption beside the quality menu. */
+.stage-three__controls > .stage-three__saved-cameras, .stage-three__quality > .stage-three__saved-cameras {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: 2px; padding: 0 9px 0 7px; background: #ffffff14; box-shadow: inset 0 0 0 1px var(--field-chip-line);
+}
+.stage-three__controls > .stage-three__saved-cameras:hover, .stage-three__quality > .stage-three__saved-cameras:hover { background: #ffffff29; }
+.stage-three__saved-cameras > svg { flex-shrink: 0; color: var(--field-chip-muted); }
+.stage-three__controls select, .stage-three__quality select {
+  width: auto; min-height: 24px; max-width: 200px; padding: 0 24px 0 8px; border-color: transparent; background-color: transparent; color: var(--field-chip-text); font-size: var(--text-xs);
+}
+.stage-three__controls select:hover, .stage-three__quality select:hover { background-color: #ffffff1a; border-color: transparent; }
+/* The chip is dark in every theme: its checkbox label must not pick up the theme's text color. */
+.stage-three label.stage-three__stadium { display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--field-chip-text); font-size: var(--text-xs); }
+.stage-three__fallback {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-8);
+  background: var(--field-well); color: var(--field-chip-text); text-align: center;
+}
+.stage-three__fallback > svg { color: var(--field-chip-muted); }
+.stage-three__fallback > strong { font-size: var(--text-lg); font-weight: 600; }
+.stage-three__fallback > p { max-width: 380px; color: var(--field-chip-muted); font-size: var(--text-sm); line-height: 1.6; }
+.stage-three__fallback > button, .stage-three__fallback .button {
+  appearance: none; min-height: var(--control-lg); padding: 0 14px; border: 0; border-radius: var(--radius-sm); background: #ffffff; color: #101418; font-size: var(--text-sm); font-weight: 600;
+}
+@container (max-height: 260px) { .canvas-hint, .canvas-zoom-row { display: none; } }

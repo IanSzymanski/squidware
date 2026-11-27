@@ -1,17 +1,17 @@
 # Personal 2D field display
 
-Open **Project menu → Preferences → Field display**; its **2D field display** group holds these choices. The changes save on this device and do not edit or dirty the production. The label toolbar button cycles the same saved label visibility choice.
+Open **Project menu → Preferences → Field display**; its **2D field display** group holds these choices. The changes save on this device and do not edit or dirty the production. **View options** over the field (**Show labels**, **Selected only**, **Hide labels**) and the J shortcut change the same saved label visibility choice.
 
 | Choice | Default | Range / behavior |
 | --- | --- | --- |
-| Audience orientation | Bottom | Top turns the complete field view 180°. The audience position stays visible in the field status. |
-| Dot radius | 3 CSS px | 2–8 CSS px, independent of field zoom and device pixel ratio |
-| Label size | 12 CSS px | 11–24 CSS px; labels stay upright after flipping |
-| Label visibility | All | All, selected/focused, or hidden; collisions suppress labels in all visible modes |
+| Audience orientation | Bottom | Top turns the complete field view 180°. The **FRONT SIDELINE** and **BACK SIDELINE** captions stay with their sidelines. |
+| Dot radius | 3.5 CSS px | 2–8 CSS px, independent of field zoom and device pixel ratio |
+| Label size | 11 CSS px | 11–24 CSS px; labels stay upright after flipping |
+| Label visibility | All | All, selected/focused, or hidden; unselected labels that would collide are left out, and a selected or focused performer is always labeled |
 | Performer coloring | Section | Production section colors, current selection versus remaining performers, or one custom display color |
 | Custom color | `#B9ED85` | Six-digit RGB; production section colors remain intact |
 
-“Selection groups” means the current selected group versus everyone else. Saved named groups remain owned by #33. A white outer selection ring and a square keyboard focus outline distinguish state independently of dot coloring. Large user-selected dots can overlap in dense forms; the nearest-dot hit policy and tie cycling still apply. Defaults remain the validated 6-pixel diameter and 12-pixel label size.
+“Selection groups” means the current selected group versus everyone else. Saved named groups remain owned by #33. A white outer selection ring and a square keyboard focus outline distinguish state independently of dot coloring. Large user-selected dots can overlap in dense forms; the nearest-dot hit policy and tie cycling still apply. Defaults are a 3.5-pixel radius and an 11-pixel label size.
 
 ## Coordinate and export policy
 

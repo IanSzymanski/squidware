@@ -4,7 +4,7 @@ This records the canonical project format for issue #5. Creation, sampling, edit
 
 ## Pictures and moves
 
-The [compact set list](set-list.md) documents the shared reorder policy, including incoming moves following destinations, changed-source direction declarations and the 32-count move for a former opening picture.
+The [set strip and reorder guide](set-list.md) documents the shared reorder policy, including incoming moves following destinations, changed-source direction declarations and the 32-count move for a former opening picture.
 
 Keep the project ID, field, ensemble, sections, performers, audio offset and all existing entity IDs. Keep the ordered `sets` array; each picture has `id`, `name`, `notes` and a complete `positions` map. Coordinates remain yards, with the established field convention and limits. A picture has no duration, tempo or easing.
 

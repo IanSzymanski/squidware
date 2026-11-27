@@ -1,6 +1,6 @@
 # Exact rotation, scaling, mirrors and pivots
 
-Implements [#27](https://github.com/IanSzymanski/squidware/issues/27) on the selection workspace from #18. **Rotate** and **Mirror** open a temporary field preview. The selection bar keeps **Apply transform** and **Cancel** visible while the numeric panel scrolls independently.
+Implements [#27](https://github.com/IanSzymanski/squidware/issues/27) on the selection workspace from #18. **Rotate** and **Mirror** in the tool strip open a temporary field preview. The tool strip keeps **Cancel** and **Apply** (Apply transform) visible while the numeric panel scrolls in the Inspector.
 
 ## Geometry and controls
 
@@ -9,7 +9,7 @@ Implements [#27](https://github.com/IanSzymanski/squidware/issues/27) on the sel
 - Pivots are the arithmetic selection center, any performer on the current set, an exact custom point, or a field reference. Field references include midfield center, the 50/back or front hash intersection, and each corner. Custom points must be finite and inside the field.
 - The round handle rotates; the square handle scales; dragging the crosshair chooses a custom pivot. Handles use the live SVG coordinate transform, including pan, field zoom and display zoom. Pointer values resolve to six decimal places. Numeric controls provide the keyboard alternative; handles do not add field Tab stops.
 - Mirror across the 50 maps `x` to `field.width - x`, preserving Y. Front/back flip maps `y` to `field.height - y`, preserving X. These fixed field axes do not use the rotation pivot. Performer IDs, roster order and all unselected positions stay intact.
-- The previous ±15° and ±10% controls now start the same preview with those parameters. A singleton can rotate around a non-origin pivot; rotation around its own center is a no-op.
+- The Inspector's **Rotate** and **Scale** step buttons start the same preview with the preset amounts (15° and 10% by default). The handles on the selection frame are separate: a drag rotates or scales in place and applies on release, without this preview. A singleton can rotate around a non-origin pivot; rotation around its own center is a no-op.
 
 ## Preview, validation and history
 

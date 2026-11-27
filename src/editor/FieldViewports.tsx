@@ -11,7 +11,8 @@ export function FieldViewports({ view, field, preview, closePreview }: {
   const split = view === 'split';
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: stackBelow, height: 320 });
-  const [preferred, setPreferred] = useState(50);
+  // The chart is what the writer edits, so it starts with most of the space and the 3D view is a monitor beside or below it; the divider changes that.
+  const [preferred, setPreferred] = useState(72);
   const drag = useRef<{ pointer: number; start: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -27,7 +28,9 @@ export function FieldViewports({ view, field, preview, closePreview }: {
     return () => { observer.disconnect(); drag.current = null; };
   }, [split]);
 
-  const stacked = size.width < stackBelow;
+  // A field is wide, so the chart sits above and the 3D view runs under it as a panorama; only a very wide, short
+  // area puts them side by side.
+  const stacked = size.width < stackBelow || size.width < size.height * 2.6;
   const available = (stacked ? size.height : size.width) - dividerSize;
   const minimum = Math.min(50, Math.max(25, Math.ceil((stacked ? 144 : 240) * 100 / available)));
   const cap = (value: number) => Math.max(minimum, Math.min(100 - minimum, value));

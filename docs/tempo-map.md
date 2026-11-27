@@ -1,6 +1,6 @@
 # Tempo ranges, ramps and fermatas — #52
 
-Open **Sheet → Tempo map**, **Timeline view → Tempo map**, or search **Tempo map** in the Command palette. Move BPM cells remain base tempos. The shared map drives silent/media-clock rehearsal, audio-thread metronome scheduling, show durations, CSV timing and the PDF timing appendix. Meter, score positions, movement paths and physical geometry are unchanged.
+Open **Tempo map** in the Plan sheet's toolbar, **Timeline options → Tempo map…** in the transport, or search **Tempo map** in the Command palette. Move BPM cells remain base tempos. The shared map drives silent/media-clock rehearsal, audio-thread metronome scheduling, show durations, CSV timing and the PDF timing appendix. Meter, score positions, movement paths and physical geometry are unchanged.
 
 ## Edit and preview
 

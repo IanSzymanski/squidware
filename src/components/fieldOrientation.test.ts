@@ -37,8 +37,8 @@ describe('2D field fit', () => {
     const view = fieldViewBox(field, 1, { x: 0, y: 0 });
     expect(view.x).toBeCloseTo(-FIELD_FIT_MARGIN.x); expect(view.y).toBeCloseTo(-FIELD_FIT_MARGIN.y);
     expect(view.width).toBeCloseTo(100 + FIELD_FIT_MARGIN.x * 2); expect(view.height).toBeCloseTo(field.height + FIELD_FIT_MARGIN.y * 2);
-    // Labels are drawn 4.2 yd above the back sideline and 5.2 yd (plus glyph height) below the front sideline.
-    expect(view.y).toBeLessThan(-5.1); expect(view.y + view.height).toBeGreaterThan(field.height + 5.4);
+    // Captions sit just outside the turf: their glyphs reach 3.65 yd above the back sideline and 3.4 yd below the front sideline.
+    expect(view.y).toBeLessThan(-3.65); expect(view.y + view.height).toBeGreaterThan(field.height + 3.4);
     // The margin stays wide enough that a point 3 yd outside the field is still in view but off the field.
     expect(view.x).toBeLessThan(-3);
   });
