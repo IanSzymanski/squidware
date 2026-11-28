@@ -1,84 +1,95 @@
 # Squidware
 
-**Find your flow. A desktop drill design studio for marching ensembles.**
+**Write drill the way you think about it. A desktop drill design studio for marching bands, drum corps and indoor ensembles.**
 
-Write formations, refine transitions, rehearse in 3D, and export the next rehearsal packet. Squidware brings the cast, field, musical timeline and production sheet into one local workspace on Windows, macOS and Linux. Free, open source, and no account required.
+Squidware puts the field, the cast, the music and the production sheet in one window. Pick an ensemble and you are moving dots in seconds; shape forms with one click, connect sets in counts, check every move as you write, rehearse it in 3D with the recording, and hand the band a drill book. It runs on Windows, macOS and Linux, keeps your files on your computer, and is free and open source.
 
-[Download v0.6.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) · [User guide](docs/USER_GUIDE.md) · [Run from source](#run-from-source) · [Roadmap](ROADMAP.md)
+[Download](https://github.com/IanSzymanski/squidware/releases) · [User guide](docs/USER_GUIDE.md) · [Run from source](#run-from-source) · [Roadmap](ROADMAP.md)
 
-> **Release and development:** v0.6.0 is the newest published prerelease. This README and its screenshots show current `main`, including unreleased musical timing, editable travel paths, reusable formations and group route movement. [Run from source](#run-from-source) to use these features.
+![The Tether demo in Squidware's Write mode: 24 sopranos selected with a frame that fits the group, the shape and arrange tools above the field, the selection described in steps in the side panel and every set as a thumbnail below](docs/images/studio.png)
 
-![The Tether demo in Squidware's Write mode: 24 sopranos selected on the field, the shape and arrange tools above it, the selection described in steps in the side panel, and the set strip below](docs/images/studio.png)
+## Why drill writers use it
 
-## Design with precision
+- **It speaks drill.** Positions read as side, yard line and hash ("2.5 steps outside the 40, 6 steps behind back hash"), lengths in steps, step size as 8-to-5 style ratios, time in counts and measures. Type a position the same way: "4 outside the 40, 8 behind the front hash".
+- **The first click is usable.** A new line or arc lands on a whole-step interval, sized to the section you picked, centered on a step, and numbered in Cast order along the form when that keeps paths clear. A soloist standing offstage stays put until you choose to include them.
+- **Everything is one step away.** The verbs of drill writing (Line, Arc, Circle, Block, Wave, Align, Rotate, Mirror, Place) are buttons above the field, and every other command is in a palette that suggests what fits your selection. `Ctrl/⌘ K`, type "move 4 forward", Enter.
+- **Problems surface while you write.** Every move is checked for spacing and step size in the background. Findings read as one line ("R11 and R12 too close · 0 steps apart · Set 40 → 41 · ct 11") with a Go button that takes you to the count and selects the performers.
+- **Rehearse with the music.** The attached recording drives the show clock, with a meter-aware metronome, count-in, rehearsal passages and a full 3D stadium view.
+- **Your show is yours.** No account, no subscription, no cloud. Projects are plain local files with a [published format](format/FORMAT.md), and automatic recovery copies protect work in progress. MIT licensed.
 
-Start with **Tether**, the bundled demo: a full 165-member drum corps show with 67 sets in four movements, written to Squidwriter's Space show with curvilinear forms, scatters, orbiting conveyors, follow-the-leader cables, a counter-march and a company front ([about the demo](examples/README.md)). Or create a blank production and import your cast. The field supports up to **500 performers and 128 sets**.
+## Get on the field fast
 
-| Your next step | Tools in the workspace |
+Open Squidware and pick a starting ensemble: a small, marching or large band, a drum corps, or an indoor floor for winter guard. You land on the field with the cast in a staging block, ready to shape. Or explore **Tether**, the bundled 165-member, 67-set drum corps show written with curvilinear forms, scatters, orbiting conveyors, follow-the-leader cables, a counter-march and a company front ([about the demo](examples/README.md)). Import your own roster from CSV at any time. A production holds up to **500 performers and 128 sets**.
+
+| To | Use |
 | --- | --- |
-| Build the cast | CSV roster import, editable names and sections, and [shared selection between Cast and field](docs/CAST_PANEL.md). |
-| Select the right performers | Individual and additive section selection, marquee and reviewed lasso selection, rank/file selection and [saved groups](docs/SELECTION_TOOLS.md). |
-| Place the picture | Drag, configurable [grids and group snapping](docs/GRID_SNAPPING.md), keyboard nudges and [drill-language coordinate entry](docs/COORDINATE_ENTRY.md). |
-| Shape and refine | Preview [lines, arcs, circles, blocks and waves](docs/FORMATION_PREVIEWS.md), editable Bézier curves and seeded scatter; [rotate, scale and mirror](docs/EXACT_TRANSFORMS.md); set [alignment and exact intervals](docs/SPACING_ALIGNMENT.md). |
-| Connect the sets | Previous/next ghosts and paths, counts and tempo per move, distinct New/Duplicate/Insert/Hold actions, and a [sampled transition split](docs/split-transition.md). |
+| Pick performers | Click a section's name, drag a box, draw a lasso, select a rank or file, or recall a [saved group](docs/SELECTION_TOOLS.md). Cast and field share one selection. |
+| Shape them | Preview a [line, arc, circle, block or wave](docs/FORMATION_PREVIEWS.md), an [editable Bézier curve](docs/bezier-formations.md) or a [seeded scatter](docs/scatter-formations.md). Drag the handles or type interval, width and bulge in steps, then Apply. |
+| Arrange them | Rotate and scale with the frame on the field, [mirror across the 50 or front to back](docs/EXACT_TRANSFORMS.md), [align and space at an exact interval](docs/SPACING_ALIGNMENT.md), or [place by drill coordinates](docs/COORDINATE_ENTRY.md). |
+| Keep a form editable | Save it as a [live formation](docs/live-formations.md) that keeps its shape and member slots, or store it in your [template library](docs/template-library.md) for the next show. |
+| Add the next set | One click on **Add set** holds the current picture for the same number of counts. The arrow under it offers a repeat, a clean staging grid or an insert before. |
 
-Formation, transform and spacing tools preview the result before Apply. Accepted edits use named undo actions; Cancel keeps the original picture.
+![The Tether sopranos previewed as an arc: 23 performers in Cast order at a 2-step interval, the soloist left in place with an Include option, and Cancel and Apply in the tool strip](docs/images/shape-preview.png)
 
-The window is built around the field. A top bar holds the project, the three modes (**Write**, **Plan** and **Rehearse**), undo, problems and command search. One tool strip above the field holds the pointer tools, the shapes (Line, Arc, Circle, Block, Wave), the arrangers (Align, Rotate, Mirror, Place) and the Motion menu; while a preview is open the strip shows what is being previewed with Cancel and Apply. The side panel shows the sections, the selection in drill terms (coordinate, size in steps, counts, travel and step size) and the current set, or the Cast list. Below the field are the transport, a count timeline with problem markers, and every set as a thumbnail. Any command is one search away with `Ctrl/⌘ K`.
+Every shape, transform and spacing edit previews before it changes anything. Apply records one named undo step; Cancel leaves the picture as it was. Ghosts of the previous and next sets and their paths show where each performer comes from and goes.
 
-The layout adapts to window size and UI scale: tool groups fold into Shape and Arrange menus, the side panel opens over the field, and playback options move into **More playback options**. Preferences groups **Appearance**, **Field display**, **Editing** and **Shortcuts**, with dark, light and high-contrast themes. Display and layout choices leave drill geometry unchanged. The [design system](docs/DESIGN_SYSTEM.md) describes the shell, tokens and shared controls.
+## Shape every move
 
-## Shape the movement
+Moves are more than straight lines. Bend one performer's path with handles and watch the count ticks along it; [draw a path freehand](docs/path-authoring.md) and fit it; give a performer [holds and timed stages](docs/movement-schedules.md) inside a move so they leave and arrive on their own counts.
 
-Pause at an arrival set and select one performer to **Edit performer path**. Refine a cubic curve with field handles or exact coordinates, then scrub its count ticks before Apply. **Draw performer path** and **Edit movement timing** preview on the main field with docked parameters and pinned Apply/Cancel controls. Stroke fitting, intermediate anchors, holds and timed submoves let performers depart and arrive independently.
+![Editing soprano 16's path into the Lament set: a curved preview with two numbered handles, count ticks along the path, pinned yard numbers and the position at count 11 described in drill terms](docs/images/travel-path.png)
 
-![An unapplied Bézier travel-path preview for Tether performer S16 into Lament at 2× field zoom, with draggable handles, exact control coordinates, count ticks and Apply/Cancel controls](docs/images/travel-path.png)
-
-| Build on your work | Current tools |
+| For | Squidware gives you |
 | --- | --- |
-| Keep formations editable | [Live formations](docs/live-formations.md) retain shape parameters and member slots. Refine [Bézier curves and waves](docs/bezier-formations.md) or preview [seeded scatter](docs/scatter-formations.md) with spacing constraints. |
-| Arrange your tools | Switch Write, Plan or Rehearse, and save named [personal workspaces](docs/WORKSPACES.md) from the Project menu. |
-| Reuse a starting point | Save anonymous ensemble setups and formation presets in a [personal template library](docs/template-library.md), then preview placement on the current cast. |
-| Compare destinations | [Optimize assignment](docs/assignment-optimization.md) compares travel and movement checks while respecting pins, section slots and explicit role constraints. |
-| Control ensemble travel | Review [formation transitions](docs/formation-transitions.md), or use [shared routes](docs/shared-routes.md) for [follow-the-leader, counter-march and conveyor movement](docs/group-movement.md). Preview connectors, count ticks and spacing/stride findings before committing. |
-
-Path and movement edits use reviewed previews and named undo actions. See [individual path authoring](docs/path-authoring.md) for drawing and handle controls, and [move operations](docs/path-operations.md) for reviewed count resizing, reversal and interval copy/paste.
+| Whole-ensemble travel | [Follow-the-leader, counter-march and conveyor](docs/group-movement.md) movement along [shared routes](docs/shared-routes.md), with delays, intervals and cues. |
+| Form-to-form transitions | [Controlled formation transitions](docs/formation-transitions.md) that morph one live formation into another with shared timing and checks. |
+| Who goes where | Shortest-travel, positional or Cast-order assignment, and an [assignment optimizer](docs/assignment-optimization.md) that compares options with pins and section constraints. |
+| Editing a move after the fact | [Move operations](docs/path-operations.md) to resize counts, reverse a move or copy intervals, and a [transition split](docs/split-transition.md) that adds a set partway through. |
+| Body and equipment | [Performer facing](docs/performer-facing.md), instrument and guard markers, and [choreography cues](docs/USER_GUIDE.md#choreography-cues) such as plié and flag moves by count. |
+| Props and pit | [Staging props](docs/USER_GUIDE.md#staging-props) and front ensemble equipment that move set to set, with optional footprint clearance checks. |
 
 ## Plan the whole show
 
-Edit set names, counts, tempos and notes in the **Production sheet**. Navigate cells with the keyboard or review a CSV/TSV paste before applying the range as one undoable edit. Add pickups, meter changes and rehearsal marks through the **Score map**; measure/beat readouts and the metronome use the same count axis. Preview [tempo ranges, linear BPM ramps and timed fermatas](docs/tempo-map.md) with one undoable Apply; playback and the metronome share the map.
+**Plan** mode gives the production sheet the whole window: every set with its measure, counts, tempo, meter, rehearsal mark and notes. Type straight into the grid, or paste a range from a spreadsheet and review it before it applies. The **Score map** adds pickups, meter changes and rehearsal marks; the **Tempo map** adds tempo changes, ramps and fermatas. Playback, the metronome and every readout follow the same musical timeline.
 
-![Tether's editable Production sheet, showing the opening rows of its 67-set show in Plan mode with notes, incoming counts, base tempos, meters and rehearsal marks](docs/images/production-sheet.png)
+![Tether's production sheet in Plan mode: set numbers with measures, names, counts, tempos, notes, meters and rehearsal marks for a 67-set show](docs/images/production-sheet.png)
 
-Use the set strip to move between sets and reorder them by drag, and the set finder in the transport to search by number or name. The [Production sheet guide](docs/production-sheet.md) and [Score map guide](docs/score-map.md) explain editing and timing rules.
+[Recording anchors](docs/audio-alignment.md) line set arrivals and individual counts up with a variable-tempo recording, with waveform and tap assistance. See the [production sheet](docs/production-sheet.md) and [score map](docs/score-map.md) guides.
 
-## Rehearse and review
+## Catch problems before rehearsal does
 
-Switch from the 2D field to an orbitable **3D preview**, with perspective, front and overhead cameras, or open it in a separate [3D window](docs/USER_GUIDE.md#3d-window) that follows the editor, for example on a second display. Scrub by count, change rehearsal speed, loop the show, or save an annotated passage for a section or selected performers. Attached audio drives the show clock, with a sync offset, meter-aware metronome and count-in. Use [recording anchors](docs/audio-alignment.md) to align set arrivals and individual counts to variable-tempo recordings, with waveform/tap assistance and an undoable preview.
+[Show-wide problems](docs/show-wide-problems.md) checks every move for performers that come too close and steps that are too big, including curved paths and group routes, and keeps checking as you edit. The count in the top bar, markers on the timeline and badges on set thumbnails show where to look; one click takes you to the count with the performers selected and their paths highlighted. [Rules](docs/analysis-rules.md) can differ by section and marching direction and travel with the project. Turn on footprint clearance to check performers against props and pit equipment.
 
-![Squidware's live 3D preview of Tether's Accretion disc set, with 165 section-colored performer markers, camera controls and the shared show timeline in Rehearse mode](docs/images/rehearsal-3d.png)
+## Rehearse it before the band does
 
-[Show-wide problems](docs/show-wide-problems.md) flag minimum spacing and excessive stride and take you to the affected count and performers. Timeline markers group nearby findings so you can review them from the affected move. [Production, section and direction rules](docs/analysis-rules.md) travel with the project. Checks describe performer-center geometry; review physical clearance and traffic separately.
+Switch to **Rehearse** for a 3D stadium view with press-box, front, overhead and perspective cameras, or save your own angles. Open the 3D view in its [own window](docs/USER_GUIDE.md#3d-window) on a second display while you write. A large set-and-count readout serves the back of the room.
 
-## Bring the recording with you
+![Rehearse mode: Tether's Accretion disc set in a 3D stadium from the press-box camera, with section-colored marchers and a large set and count readout](docs/images/rehearsal-3d.png)
 
-**Export** groups field charts and performer coordinate sheets under **PDF drill book**. **Other formats** offers coordinate CSV, the current chart as SVG and **Portable production with audio**. Choose the portable production to bundle the recording in a `.squidpack` file or reference it relative to the package folder. Review the contents and size before export. Opening the package restores its recording and offset; a missing or changed reference offers an explicit relink action while keeping the drill intact.
+Attach the recording and it becomes the show clock, with a sync offset, a meter-aware metronome and a count-in. Change speed, loop the show, or save [rehearsal passages](docs/rehearsal-passages.md) for a section or a few performers. Labels step aside during playback so you see pure form in motion. Render a [rehearsal video](docs/USER_GUIDE.md#export-a-rehearsal-packet) of any set range from any camera, with the recording if you like.
 
-![Portable production export for Tether showing 67 drill sets, a generated recording, a two-second sync offset and the estimated package size before export](docs/images/portable-audio.png)
+## Hand the band their drill
 
-[Portable audio packages](docs/AUDIO_PACKAGES.md) support WAV, MP3, OGG, M4A and FLAC up to 200 MiB, subject to decoder support. Export the package again after edits or relinking.
+**Export** produces what the staff and the ensemble need:
+
+| Output | Contents |
+| --- | --- |
+| PDF drill book | A field chart for every set with counts, tempo and notes, on Letter or A4 |
+| Performer coordinate sheets | A dot book page for every performer with their position at every set in steps |
+| Coordinates CSV | Every performer at every set, with arrival descriptions and timing |
+| Current chart SVG | A scalable drawing of the set on screen |
+| Rehearsal video | A WebM of a set range from a chosen camera |
+| Portable production | The editable show with its recording bundled or referenced, in one `.squidpack` file |
+
+![The portable production export: what the package will hold as a short table, with the recording, its offset and the estimated size](docs/images/portable-audio.png)
+
+## Make it yours
+
+Choose dark, light or high-contrast themes and a UI scale; set dot size, label size and colors on the field; turn the field to face the audience either way. Rebind any shortcut. Save named [workspaces](docs/WORKSPACES.md). Write on a football field, an [indoor floor or a custom stage](docs/USER_GUIDE.md#indoor-floors-and-custom-stages) in feet or meters, with your own floor plan as the background. The interface stays fully usable from small laptop windows to large displays, by keyboard as well as mouse.
 
 ## Get Squidware
 
-The latest downloadable build is **[v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0)**, a prerelease. Choose the asset for your platform:
-
-| Platform | Download |
-| --- | --- |
-| Windows x64 | [Portable executable](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/Squidware.0.6.0.exe) |
-| macOS Apple Silicon | [ARM64 disk image](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/Squidware-0.6.0-arm64.dmg) |
-| Linux x64 | [AppImage](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/Squidware-0.6.0.AppImage) |
-
-Packages are unsigned. The release includes [SHA-256 checksums](https://github.com/IanSzymanski/squidware/releases/download/v0.6.0/SHA256SUMS.txt). See [all releases](https://github.com/IanSzymanski/squidware/releases) for release notes and available assets; the [release plan](docs/RELEASES.md) tracks upcoming work.
+Download the newest build for your platform from [Releases](https://github.com/IanSzymanski/squidware/releases): a portable `.exe` for Windows x64, a `.dmg` for Apple Silicon Macs, or an AppImage for Linux x64. Every release lists its changes and includes SHA-256 checksums. Builds are not code-signed yet, so the first launch may ask you to confirm the app.
 
 ### Run from source
 
@@ -92,28 +103,21 @@ pnpm exec install-electron
 pnpm desktop
 ```
 
-`pnpm desktop` starts the development server and Electron together. Port 5173 must be available; closing the app stops the server. To run a production build locally:
+`pnpm desktop` starts the development server and Electron together on port 5173. To run a production build locally, use `pnpm build` and then `pnpm start`. `pnpm dev` runs the editor in a browser for renderer work.
 
-```sh
-pnpm build
-pnpm start
-```
+## Your first show in five minutes
 
-3D requires WebGL; the 2D editor remains available if 3D cannot initialize. For browser-only renderer development, use `pnpm dev`; the preview uses downloads and browser printing in place of native file/PDF dialogs. Portable packages use the desktop app.
+1. Open Squidware and pick an ensemble, or explore the demo.
+2. Click a section's name in the side panel, then **Arc** in the tool strip. Adjust it on the field and press Enter to apply.
+3. Click **Add set**. Drag the section somewhere new, or shape it again.
+4. Press Space to watch the move. Attach your recording from the transport to play it with the music.
+5. Save the project, then **Export** a drill book or dot books for the band.
 
-## Your first rehearsal
-
-1. Start a new production from the welcome screen (pick an ensemble size and you are on the field), or explore the demo. Choose a set and click a section in the side panel.
-2. Drag the selection, or click a shape such as Arc to preview a formation. Apply it, then use Undo to compare. Keep it as a live formation to refine it later.
-3. Choose **Add set** at the end of the set strip: a new picture, a duplicate, an insert or a hold. Set its counts, tempo and rehearsal notes.
-4. Select one performer at an arrival set to preview a travel-path edit. Review flagged transitions, attach audio, then play or scrub in 2D or 3D.
-5. Save the editable project and export field charts, performer sheets or a portable audio package.
-
-The [user guide](docs/USER_GUIDE.md) covers the full workflow, including roster import, coordinate conventions and file handling.
+The [user guide](docs/USER_GUIDE.md) walks through the full workflow, from roster import to rehearsal video.
 
 ### Keyboard essentials
 
-Use `Ctrl` on Windows/Linux and `⌘` on macOS. Defaults can be changed in **Preferences → Shortcuts**.
+Use `Ctrl` on Windows and Linux and `⌘` on macOS. Change any of these in **Preferences → Shortcuts**.
 
 | Action | Shortcut |
 | --- | --- |
@@ -127,59 +131,45 @@ Use `Ctrl` on Windows/Linux and `⌘` on macOS. Defaults can be changed in **Pre
 | Save / Save As | `Ctrl/⌘ S` / `Ctrl/⌘ Shift S` |
 | Open / new production | `Ctrl/⌘ O` / `Ctrl/⌘ N` |
 | Toggle 2D / 3D | `T` |
-| Open or focus the 3D window (desktop) | `Shift+T` |
+| Open or focus the 3D window | `Shift+T` |
 
-The field is one Tab stop: arrows move performer focus, Enter/Space selects, and Shift+Enter/Space adds or removes a performer. Editing shortcuts respect text entry. See [commands, drill phrases and rebinding](docs/COMMAND_PALETTE.md).
+The field is one Tab stop: arrow keys move between performers, Enter or Space selects, and Shift adds to the selection. See [commands, drill phrases and rebinding](docs/COMMAND_PALETTE.md).
 
-## Files stay local
+## Your files stay on your computer
 
-The desktop app runs without an account or external service. Automatic recovery and explicit file saves have separate status; use Save for a lasting project copy.
-
-| File or output | What it keeps |
+| File | What it holds |
 | --- | --- |
-| `.squid` | Editable drill, cast, sections, timing, notes and audio offset. Recording bytes and undo history are excluded. |
-| `.squidpack` | Editable production plus bundled audio or a relative recording reference. Export is a snapshot and does not replace the plain Save destination. |
-| Local recovery | Automatic drill recovery copies; keep the package separately for its recording. |
-| PDF / CSV / SVG | Field charts and performer coordinate sheets, coordinate data, or the current field chart. |
+| `.squid` | The editable show: drill, cast, sections, timing, notes and audio offset |
+| `.squidpack` | The editable show with its recording bundled or referenced |
+| Recovery copies | Automatic local copies of your work, reviewable from the Project menu |
+| PDF, CSV, SVG, WebM | Drill books, dot books, coordinate data, charts and rehearsal video |
 
-The public [`.squid` format contract](format/FORMAT.md) includes v1–v13 JSON Schemas, migration examples, a maximum-size fixture and a reference validator. Ordinary saves use schema v2, tempo maps v3, recording alignment v4, [curved performer paths](docs/movement-paths.md) v5, and [independent holds/submoves](docs/movement-schedules.md) v6. [Live formations](docs/live-formations.md) write v7, shared routes v8, editable Bézier formations v9, seeded scatter v10, and [constrained assignment comparisons](docs/assignment-optimization.md) v11. [Controlled formation transitions](docs/formation-transitions.md) combine reusable endpoints, protected individual paths, stagger and shared movement checks using these existing formats. [Group route movement](docs/group-movement.md) adds delayed followers, counter-march cues and arc-length conveyors in v12. [Performer facing and appearance](docs/performer-facing.md) use v13. Current readers open v1–v13 projects. [Package format and path rules](docs/AUDIO_PACKAGES.md) document `.squidpack`.
+The [`.squid` format](format/FORMAT.md) is public, versioned and documented with JSON Schemas, migration examples and a reference validator, and every version of Squidware opens files from earlier ones. See [audio packages](docs/AUDIO_PACKAGES.md) for `.squidpack`.
 
-## Development and verification
+## Built to be trusted
 
-Squidware uses Electron, React, TypeScript and Three.js. Geometry, timing and validation share a [pure engine](docs/domain.md); the editor uses typed commands and named history transactions. The desktop renderer has Node integration disabled and a fixed preload API for native operations.
+Squidware is built with Electron, React, TypeScript and Three.js. Drill geometry, timing and validation live in a [pure engine](docs/domain.md) shared by the editor, the checks and the exports; every edit is a typed command with named undo. The desktop renderer runs isolated from Node with a fixed preload API. More than a thousand unit tests and over fifty desktop workflow suites drive the real app on Windows, macOS and Linux before a release ships.
 
-| Path | Responsibility |
+| Path | Holds |
 | --- | --- |
-| `src/ui/` | Design tokens, shared controls, dialogs, menus and icons ([design system](docs/DESIGN_SYSTEM.md); [what the rebuild changed and why](docs/UI_REBUILD.md)) |
-| `src/shell/` | The application shell: top bar, tool strip, side panel, show strip and welcome |
+| `src/ui/`, `src/shell/` | The [design system](docs/DESIGN_SYSTEM.md) and the application shell ([how the interface was rebuilt](docs/UI_REBUILD.md)) |
 | `src/editor/` | Editor state, commands, feature panels, playback and file sessions |
 | `src/domain.ts` | Geometry, timeline, validation and data exchange |
-| `src/components/` | Interactive 2D field, Three.js rehearsal scene and print output |
-| `electron/` | Isolated native window, file dialogs, atomic saves, packages and recovery |
+| `src/components/` | The 2D field, the Three.js rehearsal scene and print output |
+| `electron/` | The native window, file dialogs, atomic saves, packages and recovery |
 | `scripts/` | Development, validation, packaging and desktop workflow tooling |
 
-Run the checks appropriate to a change:
-
 ```sh
-pnpm test
-pnpm test:contracts
-pnpm build
-pnpm test:native
-pnpm test:workflows
+pnpm test            # unit tests
+pnpm test:contracts  # format and release contracts
+pnpm build           # production build
+pnpm test:workflows  # desktop workflow suites
 ```
 
-`pnpm certify` runs the complete certification plan for the current OS, including packaging and packaged startup. See the [testing guide](docs/TESTING.md) for Python, graphical desktop/Xvfb requirements and focused suites. CI runs source/contracts once and native, desktop and package checks on Windows, macOS and Linux. The [validation policy](docs/VALIDATION_POLICY.md) defines acceptance and release requirements.
-
-To build for the current host, run `pnpm dist --publish never`; Windows also has `pnpm dist:win --publish never`. Outputs go to `release/`. Build each target on its corresponding OS. Signing and automatic updates are not configured.
-
-## Scope and roadmap
-
-Squidware supports standard 100 × 53⅓-yard college/high-school fields, editable straight/cubic performer paths, independently timed holds and submoves, live formations and shared group routes. Linear or eased timing applies within individual travel intervals, and curved parameter speed can vary. Group route motion uses linear counts. The 3D figures are rehearsal markers. Per-set staging props appear in 2D, 3D, field charts and rehearsal video. [Detailed spacing/stride checks](docs/detailed-path-analysis.md) report conservative bounds and confirmed/possible findings for custom paths. Detailed split/rewire operations, proprietary Pyware interchange and cloud collaboration remain roadmap work. See [planned releases](docs/RELEASES.md) and the [implementation queue](docs/IMPLEMENTATION_QUEUE.md).
-
-Squidware is an independent early-stage project and is not affiliated with or endorsed by Pyware or its owners.
+`pnpm certify` runs the full certification for the current OS, including packaging. See the [testing guide](docs/TESTING.md) and the [release plan](docs/RELEASES.md).
 
 ## License and contributions
 
-Licensed under the [MIT License](LICENSE), copyright © 2026 Squidware contributors. You may use, modify and redistribute Squidware, including commercially, while preserving the license and copyright notice. Contributions are provided under the same license; preserve attribution and identify third-party code or assets.
+Squidware is free software under the [MIT License](LICENSE), copyright © 2026 Squidware contributors. Use it, change it and share it, including commercially, keeping the license and copyright notice. Contributions are welcome under the same license. Dependencies keep their own licenses, listed in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt); desktop packages carry them in `resources/legal/`. See the [licensing guide](docs/licensing.md).
 
-Dependencies retain their own licenses in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Desktop packages include Squidware, dependency and Chromium notices in `resources/legal/` (`Contents/Resources/legal/` on macOS); keep those files when redistributing. See the [licensing guide](docs/licensing.md).
+Squidware is an independent project and is not affiliated with or endorsed by Pyware or its owners.

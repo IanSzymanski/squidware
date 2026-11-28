@@ -2,7 +2,7 @@ import { FOOTBALL_SURFACE, isCustomSurface, surfaceUnits, SURFACE_UNITS, yardsIn
 import { sampleFacings } from './performerFacing';
 import { sampleStaging } from './staging';
 import { effectiveMove } from './groupMotion';
-import { generateFormation } from './formationGeometry';
+import { formationBody, generateFormation } from './formationGeometry';
 export { generateFormation } from './formationGeometry';
 import { referenceClearance, referenceDetailedTransition } from './analysis/reference';
 import { sampleMovement, movementLength, hasDetailedPaths, isScheduledPath, movementSchedule } from './movementPaths';
@@ -103,7 +103,9 @@ export function transformPositions(
     selected.forEach(id => { result[id] = { x: positions[id].x + boundedDx, y: positions[id].y + boundedDy }; });
     return result;
   }
-  const center = selected.reduce((sum, id) => ({ x: sum.x + positions[id].x / selected.length, y: sum.y + positions[id].y / selected.length }), { x: 0, y: 0 });
+  // Turn and scale about the group's center; a performer standing well apart goes along without pulling the pivot to it.
+  const body = formationBody(positions, selected);
+  const center = body.reduce((sum, id) => ({ x: sum.x + positions[id].x / body.length, y: sum.y + positions[id].y / body.length }), { x: 0, y: 0 });
   const transformed = selected.map(id => {
     const point = affinePoint(positions[id], center, rotation, scale);
     return { x: point.x + dx, y: point.y + dy };

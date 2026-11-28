@@ -81,6 +81,7 @@
 .problem-count-badge[data-display=clear] > svg { color: var(--success); }
 .problem-count-badge[data-display=found], .problem-count-badge[data-display=failed] { background: var(--warning-bg); color: var(--warning); font-weight: 600; }
 .problem-count-shown + .problem-count-words { margin-left: -2px; }
+.problem-count-words { font-variant-numeric: tabular-nums; }
 .recovery-indicator { appearance: none; display: inline-flex; align-items: center; gap: 5px; height: var(--control-sm); padding: 0 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
 .recovery-indicator:hover { color: var(--text); background: var(--hover-bg); }
 .recovery-indicator[data-state=routine] .recovery-indicator-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -297,11 +298,16 @@
 .section-legend > .section-chips { flex: 1; min-width: 0; max-height: min(232px, 30vh); overflow: hidden auto; scrollbar-width: thin; overscroll-behavior: contain; }
 .section-legend-toggle { flex: none; min-width: 22px; height: 22px; margin-right: -4px; }
 .section-legend--compact > .section-chips { display: flex; flex-wrap: wrap; gap: 2px 2px; margin: 0 -4px; }
-/* Folded, a section is its color and the letters its labels start with; the full name is in its tooltip. */
 .section-legend--compact .section-chips button { position: relative; flex: none; width: auto; max-width: none; padding: 0 5px 0 4px; gap: 4px; }
-.section-legend--compact .section-chips button :is(.section-name, .section-count) { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.section-legend--compact .section-chips button::after { content: attr(data-prefix); color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; letter-spacing: .02em; }
-.section-legend--compact .section-chips button:is(.selected, .partial)::after { color: var(--text); }
+.section-legend--compact .section-chips button .section-count { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Folded, every section keeps its name where the window has the height; in a short window the sections outside the selection take the
+   short word a writer says for them ("Mello", "Bari"), with the full name in the tooltip, so the selection's numbers stay in view. */
+.section-legend--compact .section-chips button .section-name { color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; }
+@media (max-height: 820px) {
+  .section-legend--compact .section-chips button:not(.selected, .partial) .section-name { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .section-legend--compact .section-chips button:not(.selected, .partial)::after { content: attr(data-short); color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; }
+}
+.section-legend--compact .section-chips button:is(.selected, .partial) .section-name { color: var(--text); font-weight: 600; }
 .section-legend--compact .section-chips button.selected { background: transparent; }
 .section-legend--compact .section-chips button:is(.selected, .partial) i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent); }
 .section-legend--compact .section-chips button.partial i { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px var(--accent-line); }
@@ -315,6 +321,7 @@
 .selection-stats dt { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
 .selection-stats dd { display: flex; align-items: baseline; gap: 3px; color: var(--text); font-size: var(--text-md); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .selection-stats dd small { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
+.selection-apart { display: block; margin-top: 1px; color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 500; }
 .selection-stat-text { font-size: var(--text-sm) !important; font-weight: 500 !important; }
 .selection-stats:has(> div:nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .selection-stats:has(> div:only-child) { grid-template-columns: 1fr; }
@@ -575,6 +582,12 @@
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .add-set:hover { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+.add-set-group { flex: none; display: flex; flex-direction: column; gap: 2px; margin: 2px 0; }
+.add-set-group .add-set { flex: 1; margin: 0; border-bottom-left-radius: var(--radius-xs); border-bottom-right-radius: var(--radius-xs); }
+.add-set-more { appearance: none; display: flex; align-items: center; justify-content: center; height: 18px; border: 1px solid var(--border); border-radius: var(--radius-xs) var(--radius-xs) var(--radius-md) var(--radius-md); background: transparent; color: var(--text-tertiary); }
+.add-set-more:hover { background: var(--hover-bg); color: var(--text); }
+.set-strip:not(.set-strip--thumbnails) .add-set-group { flex-direction: row; }
+.set-strip:not(.set-strip--thumbnails) .add-set-more { width: 22px; height: auto; border-radius: var(--radius-xs) var(--radius-md) var(--radius-md) var(--radius-xs); }
 .set-strip:not(.set-strip--thumbnails) .add-set { flex-direction: row; width: auto; padding: 0 12px; gap: 6px; }
 .set-finder { display: flex; flex-direction: column; width: 320px; max-height: min(420px, calc(var(--viewport-height) - 120px)); padding: 0; overflow: hidden; }
 .set-finder-search { display: flex; align-items: center; gap: var(--space-2); padding: 0 12px; border-bottom: 1px solid var(--hairline); color: var(--text-tertiary); }
@@ -655,6 +668,9 @@ dialog.welcome::backdrop { background: var(--backdrop); backdrop-filter: blur(6p
 .live-formation-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .live-formation-text strong { font-size: var(--text-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-formation-text span { color: var(--text-tertiary); font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.formation-apart { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-muted); color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.35; }
+.formation-apart strong { color: var(--text); }
+.formation-apart .button { margin-left: auto; flex: none; }
 .formation-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .formation-grid > button {
   appearance: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; padding: 0;

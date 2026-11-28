@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { PointerEvent, KeyboardEvent } from 'react';
+import type { PointerEvent, KeyboardEvent, ReactNode } from 'react';
+import { Magnet } from 'lucide-react';
 import { FieldDrawing } from '../components/Field2D';
 import { formatYards } from '../coordinates';
 import { movementSvg, movementTravels } from '../movementPaths';
 import { moveSelection } from '../snapping';
+import { isCustomSurface } from '../surfaces';
 import type { PerformerPath, Point, Project, Move } from '../types';
 import { DRAW_LIMIT, travelTicks, type TravelHandle } from './pathAuthoring';
 import { HelpButton } from './ControlHelp';
@@ -26,24 +28,34 @@ export interface TravelPreview {
 }
 type Gesture = { pointer: number; handle?: TravelHandle; before: Point[]; points: Point[] };
 
-export function TravelCanvas(props: TravelPreview) {
-  const [zoom, setZoom] = useState(1), [snap, setSnap] = useState(false);
-  const [activeHandle, setActiveHandle] = useState<TravelHandle>();
+/** The zoom that frames a move: the closest of 1×, 2× and 4× that still shows both ends with room for the curve. */
+export function travelZoom(field: Project['field'], from: Point, to: Point): number {
+  const width = Math.abs(to.x - from.x) + 24, height = Math.abs(to.y - from.y) + 16;
+  return [4, 2].find(zoom => width <= (field.width + 14) / zoom && height <= (field.height + 16) / zoom) ?? 1;
+}
+
+export function TravelCanvas(props: TravelPreview & { toolbar?: ReactNode }) {
+  const [zoom, setZoom] = useState(() => Math.min(2, travelZoom(props.project.field, props.from, props.to))), [snap, setSnap] = useState(false);
   const { project, from, to } = props;
   const center = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
   const width = (project.field.width + 14) / zoom, height = (project.field.height + 16) / zoom;
   const origin = zoom === 1 ? { x: -7, y: -8 } : { x: Math.max(-7, Math.min(project.field.width + 7 - width, center.x - width / 2)), y: Math.max(-8, Math.min(project.field.height + 8 - height, center.y - height / 2)) };
   return <div className="travel-canvas">
-    <div className="schedule-actions">
-      <label className="form-label">Field zoom<select aria-label="Path field zoom" value={zoom} onChange={e => setZoom(Number(e.target.value))}>{[1, 2, 4].map(n => <option key={n} value={n}>{n}×</option>)}</select></label>
-      <HelpButton title="Snap path handles" active={snap} description="Snap handle drags and arrow keys using the production's field snapping settings. Numeric entries remain exact." className="button subtle" onClick={() => setSnap(s => !s)}>Snap handles {snap ? 'on' : 'off'}</HelpButton>
+    <div className="travel-toolbar">
+      {props.toolbar}
+      <span className="travel-toolbar-end">
+        <label className="inline-label">Zoom<select aria-label="Path field zoom" value={zoom} onChange={e => setZoom(Number(e.target.value))}>{[1, 2, 4].map(n => <option key={n} value={n}>{n}×</option>)}</select></label>
+        <HelpButton title="Snap path handles" active={snap} description="Snap handle drags and arrow keys to the field grid. Typed numbers stay exact." className="button subtle small" onClick={() => setSnap(s => !s)}><Magnet size={13} />Snap</HelpButton>
+      </span>
     </div>
     <svg className="path-preview" viewBox={`${origin.x} ${origin.y} ${width} ${height}`}>
       <g pointerEvents="none"><FieldDrawing project={project} positions={props.positions} selectedIds={[props.performerId]} showLabels={false} /></g>
-      <TravelOverlay {...props} zoom={zoom} snap={snap} onActiveHandle={setActiveHandle} />
+      <TravelOverlay {...props} zoom={zoom} snap={snap} />
+      {zoom > 1 && !isCustomSurface(project.field) && <g className="travel-ruler" pointerEvents="none" aria-hidden="true">
+        <rect x={origin.x - width} y={origin.y} width={width * 3} height={3.4 / zoom} />
+        {Array.from({ length: 9 }, (_, i) => (i + 1) * 10).filter(x => x > origin.x + 1 && x < origin.x + width - 1).map(x => <text key={x} x={x} y={origin.y + 2.5 / zoom} fontSize={2.3 / zoom}>{Math.min(x, project.field.width - x)}</text>)}
+      </g>}
     </svg>
-    {!props.capture && <p className="microcopy" role="status" aria-label="Active path handle">{activeHandle ? `${activeHandle.label}: X ${formatYards(activeHandle.point.x)}, Y ${formatYards(activeHandle.point.y)} yd` : 'Straight travel has no control handles. Choose cubic geometry to add them.'}</p>}
-    <TravelDetails {...props} />
   </div>;
 }
 
@@ -59,6 +71,8 @@ export function TravelOverlay(props: TravelPreview & { zoom: number; snap: boole
   const handle = handles.find(h => h.id === active && (!selectedRow || h.rowId === selectedRow)) ?? handles.find(h => h.rowId === selectedRow) ?? (!selectedRow ? handles[0] : undefined);
   useEffect(() => { props.onActiveHandle?.(handle); }, [handle, props.onActiveHandle]);
   const travels = movementTravels(from, to, path), ticks = props.samples ?? travelTicks(from, to, path, counts, transition);
+  const length = ticks.reduce((sum, tick, i) => i ? sum + Math.hypot(tick.point.x - ticks[i - 1].point.x, tick.point.y - ticks[i - 1].point.y) : 0, 0);
+  const fit = Math.max(2, Math.floor(length * zoom / 4)), labelEvery = [1, 2, 4, 8, 16, 32, 64].find(n => (ticks.length - 1) / n <= fit) ?? Math.ceil((ticks.length - 1) / fit);
   function local(event: PointerEvent<SVGGElement>): Point {
     const matrix = svg.current?.getScreenCTM();
     if (!matrix) throw new Error('Field coordinates are unavailable.');
@@ -81,7 +95,9 @@ export function TravelOverlay(props: TravelPreview & { zoom: number; snap: boole
     let end = i; while (end + 1 < ticks.length && same(ticks[i].point, ticks[end + 1].point)) end++;
     const text = props.routeMode ? formatYards : formatTimelineCount;
     if (end > i) return `${text(ticks[i].count)}–${text(ticks[end].count)}`;
-    return i === 0 || i === ticks.length - 1 || i % Math.max(1, Math.ceil(ticks.length / (zoom * 8))) === 0 ? text(ticks[i].count) : null;
+    // A label every 1, 2, 4, 8… counts, as many as fit about four yards apart at this zoom; the last stays clear of its neighbor.
+    const every = labelEvery;
+    return i === 0 || i === ticks.length - 1 || (i % every === 0 && ticks.length - 1 - i >= Math.min(every, 3)) ? text(ticks[i].count) : null;
   }
   function move(h: TravelHandle, p: Point, advance = false) {
     const result = moveSelection({ handle: h.point }, ['handle'], { x: p.x - h.point.x, y: p.y - h.point.y }, project.field, project.snapping, snap, 'handle', { x: p.x !== h.point.x, y: p.y !== h.point.y, advance });
@@ -176,13 +192,13 @@ export function TravelOverlay(props: TravelPreview & { zoom: number; snap: boole
         <path className={`path-proposed ${part.segment.id === selectedRow ? 'is-selected' : ''}`} d={movementSvg(part.from, part.to, { segments: [part.segment] })} pointerEvents="none" />
         {onSelectRow && !capture && <path data-travel-segment={part.segment.id} className="travel-segment-hit" d={movementSvg(part.from, part.to, { segments: [part.segment] })} />}
       </g>)}
-      <g className="travel-ticks" pointerEvents="none">{ticks.map(({ count, point }, i) => <g key={count} data-travel-count={count} transform={`translate(${point.x} ${point.y})`}><circle r={.18 / zoom} />{tickLabel(i) && <text transform={props.flipped ? "rotate(180)" : undefined} x={.45 / zoom} y={-1 / zoom} fontSize={3 / zoom}>{tickLabel(i)}</text>}</g>)}</g>
+      <g className="travel-ticks" pointerEvents="none">{ticks.map(({ count, point }, i) => <g key={count} data-travel-count={count} transform={`translate(${point.x} ${point.y})`}><circle r={.18 / zoom} />{tickLabel(i) && <text transform={props.flipped ? "rotate(180)" : undefined} x={.45 / zoom} y={-.8 / zoom} fontSize={2.2 / zoom}>{tickLabel(i)}</text>}</g>)}</g>
       {!capture && <g className="path-polygon">{travels.map(({ from: a, to: b, segment: s }) => s.kind === 'cubic' && <path key={s.id} d={`M${a.x} ${a.y}L${s.control1.x} ${s.control1.y}M${b.x} ${b.y}L${s.control2.x} ${s.control2.y}`} pointerEvents="none" />)}
         {handles.filter(h => !selectedRow || h.rowId === selectedRow).map(h => <g key={h.id} data-travel-handle={h.id} className={`travel-handle ${h.id === handle?.id ? 'is-active' : ''}`} aria-label={h.label} transform={`translate(${h.point.x} ${h.point.y})`}>
           <circle className="travel-handle-hit" r={2.5 / zoom} /><circle r={.6 / zoom} /><text transform={props.flipped ? "rotate(180)" : undefined} x={1 / zoom} y={-1 / zoom} style={{fontSize: `${3 / zoom}px`}}>{h.kind === 'start' ? 'S' : h.kind === 'arrival' ? 'A' : h.kind === 'control1' ? '1' : '2'}</text>
         </g>)}
       </g>}
-      <g className="travel-endpoints" pointerEvents="none">{endpoints.map((p, i) => <g key={i} transform={`translate(${p.x} ${p.y})`}><rect x={-.6 / zoom} y={-.6 / zoom} width={1.2 / zoom} height={1.2 / zoom} /><text transform={props.flipped ? "rotate(180)" : undefined} x={1 / zoom} y={2.5 / zoom} fontSize={3 / zoom}>{props.routeClosed ? i ? '' : 'Seam' : i ? 'End' : 'Start'}</text></g>)}</g>
+      <g className="travel-endpoints" pointerEvents="none">{endpoints.map((p, i) => <g key={i} transform={`translate(${p.x} ${p.y})`}><rect x={-.6 / zoom} y={-.6 / zoom} width={1.2 / zoom} height={1.2 / zoom} /><text transform={props.flipped ? "rotate(180)" : undefined} x={1 / zoom} y={2.5 / zoom} fontSize={2.4 / zoom}>{props.routeClosed ? i ? '' : 'Seam' : i ? 'End' : 'Start'}</text></g>)}</g>
       {!!stroke.length && <polyline className="travel-stroke" points={stroke.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)).map(p => `${p.x},${p.y}`).join(' ')} pointerEvents="none" />}
     </g>;
 }

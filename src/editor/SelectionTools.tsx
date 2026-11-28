@@ -39,6 +39,15 @@ export function revealFocusedChip(event: FocusEvent<HTMLElement>) {
   else if (inner.right > outer.right - pad) scroller.scrollLeft += inner.right - (outer.right - pad);
 }
 
+/** The word a writer says for a section, short enough for a row of chips: "Mello", "Bari", "Pit"; otherwise its first word, cut to five letters. */
+const SHORT_NAMES: Record<string, string> = { sopranos: 'Sop', trumpets: 'Tpt', mellophones: 'Mello', trombones: 'Bone', baritones: 'Bari', euphoniums: 'Euph', tubas: 'Tuba',
+  snares: 'Snare', tenors: 'Tenor', 'bass drums': 'Bass', cymbals: 'Cym', 'front ensemble': 'Pit', flags: 'Flag', rifles: 'Rifle', sabres: 'Sabre',
+  clarinets: 'Clar', flutes: 'Flute', saxophones: 'Sax', woodwinds: 'WW', percussion: 'Perc', piccolos: 'Picc' };
+export function sectionShortName(name: string): string {
+  const part = name.split('·').at(-1)!.trim(), known = SHORT_NAMES[part.toLowerCase()];
+  return known ?? (part.split(/\s+/)[0] ?? part).slice(0, 5);
+}
+
 export function SectionSelectionButton({ section, controller }: { section: Section; controller: EditorController }) {
   const shift = useRef(false), ids = controller.sectionMembers.get(section.id) ?? [];
   const selected = ids.length > 0 && ids.every(id => controller.selectedSet.has(id));
@@ -47,7 +56,7 @@ export function SectionSelectionButton({ section, controller }: { section: Secti
   const enabled = useEditorSelector(canSelectSection);
   // The letters this section's labels start with ("S", "TB", "FE"): what the writer already reads on the field.
   const prefix = useMemo(() => controller.project.performers.find(performer => performer.sectionId === section.id)?.label.replace(/[\d\s.-]+$/, '') ?? '', [controller.project.performers, section.id]);
-  return <HelpButton pointerPassThrough data-prefix={prefix || undefined} command="selection.section" title={`Select all ${section.name}`} description={`Select ${ids.length} performers in the whole section. Shift-click or Shift-Enter adds them. Cast filters do not limit section buttons.`} active={selected} state={selected ? 'Selected' : 'Not selected'} disabled={!enabled} disabledReason="Finish the current gesture or selection review first." className={selected ? 'selected' : partial ? 'partial' : ''}
+  return <HelpButton pointerPassThrough data-prefix={prefix || undefined} data-short={sectionShortName(section.name)} command="selection.section" title={`Select all ${section.name}`} description={`Select ${ids.length} performers in the whole section. Shift-click or Shift-Enter adds them. Cast filters do not limit section buttons.`} active={selected} state={selected ? 'Selected' : 'Not selected'} disabled={!enabled} disabledReason="Finish the current gesture or selection review first." className={selected ? 'selected' : partial ? 'partial' : ''}
     onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') shift.current = event.shiftKey; }}
     onClick={event => { controller.dispatch('selection.section', { id: section.id, additive: event.detail === 0 ? shift.current || event.shiftKey : event.shiftKey }); shift.current = false; }}><i style={{ background: section.color }} /><span className="section-name">{section.name}</span><span className="section-count">{ids.length}</span></HelpButton>;
 }

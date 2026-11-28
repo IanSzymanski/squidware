@@ -264,8 +264,8 @@ async function checkCompactChrome() {
     }
     await capture(`compact-${width}-${scale}.png`);
     // Exercise native input at both scales, including a narrow enlarged window.
+    // One click adds the next set, holding this one.
     await clickSelector('[aria-label="Add set"]');
-    await clickSelector('[aria-label="Apply set creation"]');
     const name = `Compact ${width} ${scale}`;
     await typeText('.inspector input[aria-label="Set name"]', name); await fieldKey('.inspector input[aria-label="Set name"]', 'Enter');
     await editNumber('Counts', 12);

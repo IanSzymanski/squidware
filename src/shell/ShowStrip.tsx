@@ -184,10 +184,16 @@ function SetStrip({ controller: c, addButton }: { controller: EditorController; 
         </HelpButton>;
       })}
     </div>
-    {addButton && <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set, starting from this picture. The dialog also offers a repeat, a clean staging grid or an insert, and you choose the counts before it is created."
-      disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} className="add-set" onClick={c.addSet}>
-      <Plus size={16} /><span>Add set</span>
-    </HelpButton>}
+    {addButton && <div className="add-set-group">
+      <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set with everyone holding this picture, ready to move. The arrow below offers a repeat, a clean staging grid or an insert."
+        disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} className="add-set" onClick={c.addSet}>
+        <Plus size={16} /><span>Add set</span>
+      </HelpButton>
+      <HelpButton command="set.hold" title="More ways to add a set" description="Repeat this set, start from a clean staging grid or insert one before, and choose the counts first."
+        disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} className="add-set-more" onClick={() => c.dispatch('set.hold')}>
+        <ChevronDown size={13} />
+      </HelpButton>
+    </div>}
   </div>;
 }
 
@@ -346,7 +352,7 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
         {folded.length > 0 && <OverflowMenu title="More playback options" description={transport === 'compact' ? 'Loop, metronome and playback speed. A wider window shows them in the transport.' : 'Audio, rehearsal passages, loop, metronome and playback speed. A wider window shows them in the transport.'} placement="above">{folded}</OverflowMenu>}
         <span className="divider-vertical" />
         {/* With the strip out of sight, in a short window or when hidden, adding a set stays one click away. */}
-        {layout.mode === 'write' && (!setsVisible || layout.breakpoints.short) && <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set, starting from this picture. The dialog also offers a repeat, a clean staging grid or an insert."
+        {layout.mode === 'write' && (!setsVisible || layout.breakpoints.short) && <HelpButton command="set.hold" showShortcut={false} title="Add set" description="Add the next set with everyone holding this picture, ready to move. Set actions in the Inspector offer a repeat or an insert."
           disabled={project.sets.length >= PROJECT_LIMITS.sets} disabledReason={`A production can contain at most ${PROJECT_LIMITS.sets} sets.`} className="icon-button" onClick={controller.addSet}><Plus size={16} /></HelpButton>}
         {layout.mode === 'write' && <HelpButton pointerPassThrough title={setsVisible ? 'Hide set strip' : 'Show set strip'} description="Show or hide the strip of set thumbnails to give the field more room." className="icon-button strip-toggle" aria-expanded={setsVisible} disabled={layout.locked} disabledReason="Finish or cancel the current input or preview first." onClick={toggleSets}>{setsVisible ? <PanelBottomClose size={16} /> : <PanelBottomOpen size={16} />}</HelpButton>}
         <Menu label="Timeline options" description="Zoom the timeline, show or hide the set strip, and open the score, tempo and recording tools." className="icon-button" align="end" side="above" items={timelineMenu}><SlidersHorizontal size={16} /></Menu>

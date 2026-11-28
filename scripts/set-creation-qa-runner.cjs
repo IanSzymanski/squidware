@@ -104,8 +104,8 @@ app.whenReady().then(async () => {
       await click(button('Undo')); await chooseSet(1);
     }
     pass('all four native shortcuts open review; invalid timing and Cancel preserve the show; Apply, Undo and Redo preserve the documented properties and identities');
-    // Add set opens the creation dialog; its kind chooser is distinct from the Inspector's Set actions menu.
-    await click(button('Add set')); await click('dialog[open] .set-creation-kinds '+button('Hold positions'));
+    // The arrow under Add set opens the creation dialog; its kind chooser is distinct from the Inspector's Set actions menu.
+    await click(button('More ways to add a set')); await click('dialog[open] .set-creation-kinds '+button('Hold positions'));
     assert.equal(await evaluate("document.querySelector('dialog[open] .set-creation-kinds [aria-label=\"Hold positions\"]').getAttribute('aria-pressed')"),'true');
     await type(button('Creation counts'), '17'); await click(button('Apply set creation'));
     const accepted = await present();
@@ -129,7 +129,12 @@ app.whenReady().then(async () => {
     await click('[role=menu][aria-label="Set actions"] '+button('Duplicate set'));
     assert.equal(await evaluate(state+'.ui.setCreationKind'),'duplicate'); await key(window,'Escape'); await wait(`${state}.ui.dialog===null`, 'duplicate cancel');
     await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,newSetCounts:24})`);
-    await click(button('Add set')); await wait(`${state}.ui.dialog==='set-create'`, 'default-count dialog'); assert.equal(await evaluate("document.querySelector('[aria-label=\"Creation counts\"]').value"),'24');
+    // Add set itself adds a held set in one click, as long as the current set's move, with no dialog.
+    { const before=await present(), at=await evaluate(state+'.selection.activeIndex'); await click(button('Add set'));
+      const added=await present(); assert.equal(added.sets.length,before.sets.length+1); assert.equal(await evaluate(state+'.ui.dialog'),null);
+      assert.deepEqual(added.sets[at+1].positions,before.sets[at].positions); assert.equal(added.moves[at].counts,at?before.moves[at-1].counts:24,'the new move takes the current set\'s counts'); assert.equal(await evaluate(state+'.selection.activeIndex'),at+1);
+      await click(button('Undo')); assert.deepEqual(await present(),before); await chooseSet(at); }
+    await click(button('More ways to add a set')); await wait(`${state}.ui.dialog==='set-create'`, 'default-count dialog'); assert.equal(await evaluate("document.querySelector('[aria-label=\"Creation counts\"]').value"),'24');
     for (const theme of ['dark','light','high-contrast']) {
       await evaluate(`${editor}.setValue('preferences','value',{...${state}.preferences.value,theme:${JSON.stringify(theme)}})`); await capture(`set-creation-${theme}.png`);
     }
