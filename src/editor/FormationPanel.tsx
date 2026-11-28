@@ -41,6 +41,8 @@ export function FormationPanel({ controller: c }: { controller: EditorController
   }, [session]);
   const options = session?.options;
   const display = (value: number) => Number(value.toFixed(2));
+  // Sizes and the average interval read to a tenth of a step.
+  const size = (value: number) => Number(value.toFixed(1));
   const plain = !!session && !session.scatter && !session.bezier;
   // Lengths read in the production's steps on a football field, and in yards on any other surface.
   const custom = isCustomSurface(c.project.field);
@@ -66,6 +68,8 @@ export function FormationPanel({ controller: c }: { controller: EditorController
   const assignmentLocked = session?.assignmentConstraints ? 'Review or clear saved constraints in Optimize assignment.' : 'Finish or cancel the pending input before changing assignment.';
   const unavailable = c.pendingDraft ? 'Finish or cancel the pending input first.' : c.readOnly ? 'Return to a set and pause playback to edit positions.' : 'Select performers first. Use Select all for the full ensemble.';
   const live = c.activeSet.liveFormations ?? [];
+  const apartLabels = (session?.apart ?? []).map(id => c.project.performers.find(p => p.id === id)?.label ?? id);
+  const apartNames = apartLabels.length > 3 ? `${apartLabels.slice(0, 3).join(', ')} and ${apartLabels.length - 3} more` : apartLabels.join(', ');
   const editingLocked = c.readOnly || c.pendingDraft;
   if (!session && !live.length) return null;
   return <div ref={region} className="formation-panel">
@@ -97,16 +101,20 @@ export function FormationPanel({ controller: c }: { controller: EditorController
       <HelpButton pointerPassThrough command="formation.bezier" title="Bézier wave formation" description="Start from an S-shaped curve with a middle anchor." disabled={c.pendingDraft || c.selectedIds.length < 2} disabledReason="Select at least two performers." onClick={() => c.dispatch('formation.bezier', { wave: true })}><BezierWaveIcon size={20} /><span>S-curve</span></HelpButton>
       <HelpButton pointerPassThrough command="formation.scatter" title="Scatter formation" description="Fill a region with evenly spread, repeatable random positions." aria-pressed={!!session.scatter} className={session.scatter ? 'active' : ''} disabled={c.pendingDraft || !c.selectedIds.length} onClick={() => c.dispatch('formation.scatter')}><ScatterIcon size={20} /><span>Scatter</span></HelpButton>
     </div>}
+    {session?.apart?.length ? <div className="formation-apart" role="status">
+      <span><strong>{apartNames}</strong> {session.apart.length === 1 ? 'stays' : 'stay'} in place, away from the group</span>
+      <HelpButton command="formation.whole" title="Include performers left in place" description="Add them to this shape and size it for everyone." className="button small subtle" disabled={c.pendingDraft || !!session.assignmentConstraints} disabledReason="Finish the pending input first." onClick={() => c.dispatch('formation.whole')}>Include</HelpButton>
+    </div> : null}
     {session && options && <div key={session.kind} className="formation-parameters">
       {session.scatter ? <ScatterFormationFields controller={c} /> : session.bezier ? <BezierFormationFields controller={c} /> : <>
         <div className="form-row">
           {interval !== null
-            ? <NumberField label={`Interval · ${lengthUnit}`} description="The distance between neighbors. Changing it resizes the whole shape and keeps its proportions." value={display(interval)} min={.1} max={320} step={.25} onDraftChange={c.setPendingDraft} onChange={next => update({ width: options.width * next / interval, height: options.height * next / interval })} />
-            : <NumberField label={`Depth · ${lengthUnit}`} value={display(options.height / lengthYards)} min={0} max={320} step={.5} disabled={session.kind === 'line'} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
-          <NumberField label={`${session.kind === 'line' ? 'Length' : 'Width'} · ${lengthUnit}`} value={display(options.width / lengthYards)} min={.1} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={width => update({ width: width * lengthYards })} />
+            ? <NumberField label={`Interval · ${lengthUnit}`} description="The average distance between neighbors. Changing it resizes the whole shape and keeps its proportions." value={size(interval)} min={.1} max={320} step={.25} onDraftChange={c.setPendingDraft} onChange={next => update({ width: options.width * next / interval, height: options.height * next / interval })} />
+            : <NumberField label={`Depth · ${lengthUnit}`} value={size(options.height / lengthYards)} min={0} max={320} step={.5} disabled={session.kind === 'line'} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
+          <NumberField label={`${session.kind === 'line' ? 'Length' : 'Width'} · ${lengthUnit}`} value={size(options.width / lengthYards)} min={.1} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={width => update({ width: width * lengthYards })} />
         </div>
         <div className="form-row">
-          {session.kind !== 'line' && interval !== null && <NumberField label={`${session.kind === 'arc' ? 'Bulge' : 'Depth'} · ${lengthUnit}`} value={display(options.height / lengthYards)} min={0} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
+          {session.kind !== 'line' && interval !== null && <NumberField label={`${session.kind === 'arc' ? 'Bulge' : 'Depth'} · ${lengthUnit}`} value={size(options.height / lengthYards)} min={0} max={320} step={.5} onDraftChange={c.setPendingDraft} onChange={height => update({ height: height * lengthYards })} />}
           <NumberField label="Rotation · °" value={display(options.rotation)} min={-3600} max={3600} step={1} onDraftChange={c.setPendingDraft} onChange={rotation => update({ rotation })} />
           {session.kind === 'block' && <NumberField label="Columns" value={options.columns} min={1} max={500} integer onDraftChange={c.setPendingDraft} onChange={columns => update({ columns })} />}
         </div>

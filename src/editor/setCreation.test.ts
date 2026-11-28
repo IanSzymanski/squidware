@@ -116,4 +116,19 @@ describe('distinct set creation', () => {
     store.dispatch('dialog.open', { dialog: null }); // Cancel is navigation, not a project edit.
     expect(store.getState().project).toBe(original);
   });
+  it('keeps a curved move whole when a hold or repeat goes in front of it, and still refuses a new picture there', () => {
+    const p = fixture(), from = p.sets[0].positions.a, to = p.sets[1].positions.a;
+    p.moves[0].paths.a = { segments: [{ id: 'curve', kind: 'cubic', startCount: 0, endCount: p.moves[0].counts, control1: { x: from.x, y: to.y }, control2: { x: to.x, y: from.y } }] };
+    for (const kind of ['hold', 'duplicate'] as const) {
+      const store = createEditorStore(structuredClone(p));
+      expect(store.dispatch('set.create', { kind, index: 0 })).toBe(true);
+      const next = store.getState().project.present, curved = next.moves.find(move => move.toSetId === p.sets[1].id)!;
+      expect(curved.fromSetId).toBe(next.sets[1].id);
+      expect(curved.paths.a).toEqual(p.moves[0].paths.a);
+    }
+    const store = createEditorStore(structuredClone(p));
+    expect(store.dispatch('set.create', { kind: 'new', index: 0 })).toBe(false);
+    expect(store.getState().ui.toast).toMatch(/starting set/);
+  });
 });
+

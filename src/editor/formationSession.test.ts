@@ -6,6 +6,7 @@ import { currentFormationResult, SHORTEST_DEFAULT_LIMIT, shortestOrderStale } fr
 import { createPerformanceFixture } from '../performanceFixtures';
 import { canEditPositions } from './editMode';
 import { hasUnsavedWork, markFileOpened } from './fileSession';
+import { formationInterval, generateFormation } from '../formationGeometry';
 
 function setup() {
   const project = createDemoProject(); const ids = project.performers.slice(0,3).map(p=>p.id);
@@ -63,14 +64,19 @@ describe('formation preview commands', () => {
     const {store}=setup(); store.setValue('ui','pendingDraft',true);
     expect(store.dispatch('formation.preview',{})).toBe(false); expect(store.getState().ui.pendingDraft).toBe(true);
   });
-  it.each<FormationKind>(['arc','line','circle','block','curve'])('Shape opens the demo brass as a %s inside the field with uncrossed shortest-travel paths', kind => {
+  it.each<FormationKind>(['arc','line','circle','block','curve'])('Shape opens the demo brass as a %s inside the field with uncrossed paths', kind => {
     const project=createDemoProject(), store=createEditorStore(project), brass=project.performers.filter(p=>p.sectionId===project.sections[0].id).map(p=>p.id);
     expect(project.sections[0].name).toBe('Brass'); expect(brass).toHaveLength(24);
     store.setValue('selection','selectedIds',brass); if (kind!=='arc') store.setValue('ui','formation',kind);
     expect(store.dispatch('formation.preview',{})).toBe(true);
     const session=store.getState().ui.formationPreview!, result=currentFormationResult(store.getState())!;
-    expect(session).toMatchObject({kind,assignmentMode:'shortest',options:{assignment:'position'}});
-    if (kind==='arc') expect(session.options).toMatchObject({width:56,height:14});
+    // The brass already stand in Cast order in a block, so reproducing it in Cast order crosses no paths and keeps the numbers in order.
+    expect(session).toMatchObject(kind==='block'?{kind,assignmentMode:'roster',options:{assignment:'roster'}}:{kind,assignmentMode:'shortest',options:{assignment:'position'}});
+    // Seeded from the 56 × 14 yd brass footprint, then spread so neighbors stand a whole number of 8-to-5 steps apart.
+    if (kind!=='block') { const steps=formationInterval(generateFormation(kind,24,session.options))/.625; expect(Math.abs(steps-Math.round(steps))).toBeLessThan(.05); }
+    // Width and depth of a curved form land on half steps.
+    if (kind!=='block'&&kind!=='line') for (const size of [session.options.width,session.options.height]) expect(size/.3125).toBeCloseTo(Math.round(size/.3125),6);
+    if (kind==='arc') expect(session.options.height/session.options.width).toBeCloseTo(14/56,1);
     expect(result.error).toBeNull(); expect(properCrossings(project.sets[0].positions,result.updates)).toBe(0);
     // The brass already stand in an 8 × 3 block, so the selection-sized block seed reproduces it exactly.
     expect(result.changed).toBe(kind!=='block'); if (kind==='block') return;

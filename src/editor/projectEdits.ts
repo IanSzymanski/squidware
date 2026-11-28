@@ -5,6 +5,8 @@ import { copyStaging } from '../staging';
 import { PROJECT_LIMITS, setTiming, uid, validateSetUpdate } from '../domain';
 import type { DrillSet, Move, Project, SetPropertyUpdate } from '../types';
 
+const samePicture = (a: DrillSet, b: DrillSet) => JSON.stringify([a.positions, a.facings ?? null, a.staging ?? null]) === JSON.stringify([b.positions, b.facings ?? null, b.staging ?? null]);
+
 /** Incoming timing follows the destination picture, preserving v1 edit behavior.
  * Surviving moves keep their IDs; a changed predecessor rewires the same move.
  */
@@ -16,9 +18,13 @@ export function reconnectSets(project: Project, sets: DrillSet[], newTiming = ne
     const old = incoming.get(set.id);
     if (old) {
       if (old.fromSetId === sets[index].id) return old;
-      if (hasDetailedPaths(old)) throw new Error('This operation changes a detailed move’s starting set. Remove its custom paths and group movements first.');
       // Declarations describe this exact move, not a new predecessor's travel.
       const { marchingDirections: _directions, ...rewired } = old;
+      // A new predecessor standing exactly where the old one did (a hold or a repeat) starts every custom path and group movement from the
+      // same spot, so they stay.
+      const before = project.sets.find(set => set.id === old.fromSetId);
+      if (hasDetailedPaths(old) && before && samePicture(before, sets[index])) return { ...rewired, fromSetId: sets[index].id };
+      if (hasDetailedPaths(old)) throw new Error('This operation changes a detailed move’s starting set. Remove its custom paths and group movements first.');
       return { ...rewired, fromSetId: sets[index].id };
     }
     const timing = newTiming.get(set.id) ?? { counts: 32, ...project.openingTiming };

@@ -38,10 +38,10 @@ import { canEditPositions } from './editMode';
 import { assertCanReplace } from './fileSession';
 import { defaultTransform, type ExactTransform, type TransformOperation } from '../transforms';
 import { currentTransformResult, transformSessionCurrent } from './transformSession';
-import { currentFormationResult, defaultAssignmentMode, formationSessionCurrent, formationProject, sessionAssignmentMode, sessionAssignmentOrder, shortestGeometryKey } from './formationSession';
+import { currentFormationResult, defaultAssignmentMode, formationSessionCurrent, formationProject, rosterKeepsPathsApart, sessionAssignmentMode, sessionAssignmentOrder, shortestGeometryKey } from './formationSession';
 import { formationCenter } from '../formationAssignment';
 import type { FormationAssignmentMode } from '../formationPreview';
-import { defaultFormationOptions } from '../formationGeometry';
+import { defaultFormationOptions, formationBody } from '../formationGeometry';
 import { DEFAULT_ANALYSIS_RULES } from '../analysis/rules';
 import { DEFAULT_SNAPPING, moveSelection, validateSnapSettings, type SnapSettings } from '../snapping';
 import { isNudgeKey, nudgeDelta, type NudgeRequest } from '../editIncrements';
@@ -174,7 +174,7 @@ export interface CommandArguments {
   'live.edit': { id: string }; 'live.detach': { id: string; ids?: string[] };
   'live.members': { ids: string[] }; 'live.redistribute': undefined;
   'live.copy': { id: string; targetSetId: string };
-  'formation.preview': { kind?: FormationKind; assignmentMode?: FormationAssignmentMode; scaffold?: boolean };
+  'formation.preview': { kind?: FormationKind; assignmentMode?: FormationAssignmentMode; scaffold?: boolean; whole?: boolean };
   'formation.scatter': undefined;
   'scatter.display': { travel: boolean };
   'scatter.select': { vertex?: number; slot?: number };
@@ -187,7 +187,7 @@ export interface CommandArguments {
   'formation.bezier-select': { id: string };
   'formation.bezier-update': { bezier: BezierFormation };
   'formation.update': { options: FormationOptions; assignmentMode?: FormationAssignmentMode };
-  'formation.apply': undefined; 'formation.cancel': undefined;
+  'formation.apply': undefined; 'formation.cancel': undefined; 'formation.whole': undefined;
   'selection.all': undefined; 'selection.clear': undefined; 'set.select': { index: number };
   'metronome.configure': { meter: import('../types').Meter; enabled: boolean; countInBars: number; speed: number };
   'metronome.toggle': undefined;
@@ -522,16 +522,24 @@ export const commandRegistry = {
   'formation.preview': define({ id: 'formation.preview', name: 'Preview formation', description: 'Preview a shape on the explicit selection before applying.', arguments: { kind: 'FormationKind?', assignmentMode: 'shortest | position | roster?', scaffold: 'boolean? (Scatter/Bézier: preference size at the centroid, positional or roster order)' }, enabled: s => (editable(s) || formationSessionCurrent(s)) && !s.ui.pendingDraft && !s.ui.dialog && !s.project.transactionName && s.selection.selectedIds.length > 0,
     execute: (c, a) => {
       const s = c.getState(); const kind = a.kind ?? s.ui.formation;
-      const ids = s.ui.formationPreview?.ids ?? s.project.present.performers.filter(p => s.selection.selectedIds.includes(p.id)).map(p => p.id);
+      let ids = s.ui.formationPreview?.ids ?? s.project.present.performers.filter(p => s.selection.selectedIds.includes(p.id)).map(p => p.id);
       const positions = s.project.present.sets[s.selection.activeIndex].positions;
       const previous = s.ui.formationPreview, inherit = !!previous && (!!previous.live || previous.kind === kind);
+      // A first shape leaves a performer standing well apart from the group (a soloist offstage) where it is; the panel offers to include it.
+      let apart = previous?.apart;
+      if (!previous && !a.scaffold && !a.whole) {
+        const body = formationBody(positions, ids);
+        if (body.length < ids.length) { apart = ids.filter(id => !body.includes(id)); ids = [...body]; c.patch('selection', { selectedIds: ids }); }
+      }
       const center = previous?.options.center ?? formationCenter(positions, ids), saved = previous?.live ? previous.options : s.ui.formationDrafts[kind];
       const preferred = { width: s.ui.formationWidth, height: s.ui.formationHeight, rotation: s.ui.formationRotation, columns: s.ui.formationColumns };
       // Session drafts and live edits win; a first use is sized from the selection and fit inside the field.
-      const seeded: FormationOptions = saved || a.scaffold ? { assignment: 'position', ...(saved ?? preferred), center } : defaultFormationOptions(kind, positions, ids, preferred, s.project.present.field, (s.project.present.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES).minimumSpacing, previous?.options.center);
+      const seeded: FormationOptions = saved || a.scaffold ? { assignment: 'position', ...(saved ?? preferred), center } : defaultFormationOptions(kind, positions, ids, preferred, s.project.present.field, (s.project.present.analysisRules?.defaults ?? DEFAULT_ANALYSIS_RULES).minimumSpacing, previous?.options.center, isCustomSurface(s.project.present.field) ? undefined : 5 / (s.project.present.snapping ?? DEFAULT_SNAPPING).steps);
       const inherited = inherit ? sessionAssignmentMode(previous!) : undefined;
       const remembered = s.ui.formationAssignmentModes[kind];
       let mode = a.assignmentMode ?? inherited ?? (a.scaffold ? (seeded.assignment === 'roster' ? 'roster' : 'position') : remembered && remembered !== 'shortest' ? remembered : defaultAssignmentMode(ids.length));
+      // With no choice made yet, numbers run in Cast order along the new form whenever that keeps every path clear of the others.
+      if (mode === 'shortest' && !a.assignmentMode && !inherited && !remembered && !a.scaffold && rosterKeepsPathsApart(positions, ids, kind, { ...seeded, assignment: 'roster' })) mode = 'roster';
       if (a.scaffold && mode === 'shortest') mode = 'position'; // Scatter and Bézier slots are not the generated shape's slots.
       const options: FormationOptions = { ...seeded, assignment: mode === 'roster' ? 'roster' : 'position' };
       const assignmentRotation = previous?.kind === kind ? previous.assignmentRotation ?? options.rotation : options.rotation;
@@ -539,7 +547,7 @@ export const commandRegistry = {
       const kept = inherit && !!previous?.order && (inherited === mode || !!previous.live);
       const order = kept ? previous!.order! : sessionAssignmentOrder(positions, ids, kind, options, mode);
       const assignmentSolvedFor = mode !== 'shortest' ? undefined : kept ? previous!.assignmentSolvedFor : shortestGeometryKey(kind, options);
-      c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}) } });
+      c.patch('ui', { workspace: 'design', view: editingFieldView(s.ui.view), formation: kind, formationPreview: { revision: s.project.revision, setId: s.project.present.sets[s.selection.activeIndex].id, ids, kind, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:order===previous?.order?previous?.assignmentReviewed:undefined, assignmentConstraints:previous?.assignmentConstraints, ...(previous?.live ? { live: previous.live } : {}), ...(apart?.length ? { apart } : {}) } });
     } }),
   'formation.scatter': define({id:'formation.scatter',name:'Preview scatter formation',description:'Generate a seeded arrangement for explicitly selected performers, then review and Apply or Cancel.',arguments:{},
     enabled:s=>(editable(s)||formationSessionCurrent(s))&&!s.ui.pendingDraft&&!s.ui.dialog&&!s.project.transactionName&&s.selection.selectedIds.length>0,
@@ -605,6 +613,9 @@ export const commandRegistry = {
       const assignmentSolvedFor = mode !== 'shortest' ? undefined : reassign ? shortestGeometryKey(session.kind, options) : session.assignmentSolvedFor;
       c.patch('ui', { formationPreview: { ...session, options, order, assignmentRotation, assignmentMode: mode, assignmentSolvedFor, assignmentReviewed:reassign?undefined:session.assignmentReviewed, ...(session.live && changedMode ? { live: { ...session.live, slotCount: session.ids.length, slots: session.ids.map((_,i)=>i) } } : {}) }, formationDrafts: { ...s.ui.formationDrafts, [session.kind]: options }, ...(session.bezier ? {} : { formationAssignmentModes: { ...s.ui.formationAssignmentModes, [session.kind]: mode } }) });
     } }),
+  'formation.whole': define({ id: 'formation.whole', name: 'Include performers left in place', description: 'Add the performers a first shape left where they stand, and reshape with everyone.', arguments: {},
+    enabled: s => formationSessionCurrent(s) && !!s.ui.formationPreview?.apart?.length && !s.ui.pendingDraft && !s.ui.formationPreview?.assignmentConstraints,
+    execute: c => { const session = c.getState().ui.formationPreview!; c.patch('selection', { selectedIds: [...session.ids, ...session.apart!] }); c.patch('ui', { formationPreview: null }); commandRegistry['formation.preview'].execute(c, { kind: session.kind, whole: true }); } }),
   'formation.cancel': define({ id: 'formation.cancel', name: 'Cancel formation', description: 'Discard the preview and keep the original positions.', arguments: {}, enabled: s => !!s.ui.formationPreview,
     execute: c => c.patch('ui', { formationPreview: null }) }),
   'formation.apply': define({ id: 'formation.apply', name: 'Apply formation', description: 'Commit the visible formation as one undoable edit.', arguments: {}, enabled: s => { const result = currentFormationResult(s); return !s.ui.pendingDraft && !!result?.changed && !result.error; },

@@ -2,7 +2,8 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, ChevronUp, Copy, Minus, MoreHorizontal, Pause, Plus, RotateCcw, RotateCw, Scissors, Sparkles, Trash2 } from 'lucide-react';
 import { isCustomSurface, surfaceUnits, unitInYards, yardsInUnit } from '../surfaces';
 import { nudgeLabel } from '../editIncrements';
-import { DEFAULT_SNAPPING, gridInterval, snapDescription } from '../snapping';
+import { formationBody } from '../formationGeometry';
+import { DEFAULT_SNAPPING, gridInterval, hashLines, snapDescription } from '../snapping';
 import { coordinateDescription, performerMoveOutput, PROJECT_LIMITS, setCountLimits, setTiming } from '../domain';
 import type { Preferences } from '../preferences';
 import { NumberField } from '../components/NumberField';
@@ -58,7 +59,10 @@ export function Inspector({ controller }: { controller: EditorController }) {
   const custom = isCustomSurface(project.field);
   const toUnit = (value: number) => yardsInUnit(value, unit);
   const displayPositions = controller.coordinateResult?.positions ?? controller.spacingResult?.positions ?? controller.formationResult?.positions ?? controller.transformResult?.positions ?? activeSet.positions;
-  const points = useMemo(() => selectedPerformers.map(performer => displayPositions[performer.id]), [selectedPerformers, displayPositions]);
+  // The group's size and center leave out a performer standing well apart, as the frame on the field does; they are named instead.
+  const body = useMemo(() => formationBody(displayPositions, selectedPerformers.map(performer => performer.id).filter(id => displayPositions[id])), [selectedPerformers, displayPositions]);
+  const apart = useMemo(() => { const kept = new Set(body); return selectedPerformers.filter(performer => displayPositions[performer.id] && !kept.has(performer.id)); }, [body, selectedPerformers, displayPositions]);
+  const points = useMemo(() => body.map(id => displayPositions[id]), [body, displayPositions]);
   const bounds = useMemo(() => points.length ? {
     x: Math.min(...points.map(p => p.x)), y: Math.min(...points.map(p => p.y)),
     width: Math.max(...points.map(p => p.x)) - Math.min(...points.map(p => p.x)),
@@ -95,7 +99,15 @@ export function Inspector({ controller }: { controller: EditorController }) {
   const nothingSelected = selectedIds.length === 0;
   useEffect(() => { if (nothingSelected) setSectionsOpen(false); }, [nothingSelected]);
   const compactSections = !nothingSelected && !sectionsOpen;
-  const where = bounds ? coordinateDescription(selectedPerformers.length === 1 ? displayPositions[selectedPerformers[0].id] : { x: bounds.centerX, y: bounds.centerY }, project.field, controller.coordinateFormat).split('; ') : [];
+  // A form's center (six or more) reads on the production's grid, as its dots do: whole or half steps from the yard line and the nearer
+  // hash or sideline. A handful of performers reads exactly.
+  const grid = gridInterval(project.snapping ?? DEFAULT_SNAPPING);
+  const onGrid = (point: { x: number; y: number }) => {
+    if (custom || body.length < 6) return point;
+    const reference = hashLines(project.field).reduce((best, y) => Math.abs(y - point.y) < Math.abs(best - point.y) ? y : best);
+    return { x: Math.round(point.x / grid) * grid, y: reference + Math.round((point.y - reference) / grid) * grid };
+  };
+  const where = bounds ? coordinateDescription(selectedPerformers.length === 1 ? displayPositions[selectedPerformers[0].id] : onGrid({ x: bounds.centerX, y: bounds.centerY }), project.field, controller.coordinateFormat).split('; ') : [];
   // "Side 2: 4 steps outside the 40" reads better with the side as the caption.
   const side = where.length ? /^(Side [12]): (.+)$/.exec(where[0]) : null;
 
@@ -165,7 +177,7 @@ export function Inspector({ controller }: { controller: EditorController }) {
               {(side ? [side[2].charAt(0).toUpperCase() + side[2].slice(1), ...where.slice(1).map(line => line.charAt(0).toUpperCase() + line.slice(1))] : where).map((line, i) => <span key={i}>{line}</span>)}
             </p>
             <dl className="selection-stats">
-              {!single && <div><dt>Size</dt><dd>{inSteps(bounds.width)} × {inSteps(bounds.height)}<small>{custom ? unit : 'steps'}</small></dd></div>}
+              {!single && <div><dt>Size</dt><dd>{inSteps(bounds.width)} × {inSteps(bounds.height)}<small>{custom ? unit : 'steps'}</small></dd>{apart.length > 0 && <span className="selection-apart">{apart.slice(0, 2).map(p => p.label).join(', ')}{apart.length > 2 ? ` +${apart.length - 2}` : ''} apart</span>}</div>}
               {travel && <>
                 <div><dt>Move in</dt><dd>{travel.counts}<small>counts</small></dd></div>
                 <div><dt>{single ? 'Travel' : 'Longest path'}</dt><dd>{inSteps(travel.distance)}<small>{custom ? unit : 'steps'}</small></dd></div>

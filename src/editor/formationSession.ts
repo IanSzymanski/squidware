@@ -72,3 +72,20 @@ export function previewFormationSession(project: Project, session: FormationSess
     return { positions:next,updates,changed:distances.some(d=>d>1e-9) || JSON.stringify(original)!==JSON.stringify(shape),error:null,travel:{total:distances.reduce((a,b)=>a+b,0),maximum:Math.max(0,...distances)} };
   } catch(error) { return { positions, updates:{}, changed:false,error:(error as Error).message,travel:null }; }
 }
+
+const crosses = (a: Point, b: Point, c: Point, d: Point) => {
+  const turn = (p: Point, q: Point, r: Point) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const d1 = turn(c, d, a), d2 = turn(c, d, b), d3 = turn(a, b, c), d4 = turn(a, b, d);
+  return d1 * d2 < -1e-12 && d3 * d4 < -1e-12;
+};
+/** Whether giving the shape's slots to the performers in Cast order keeps their straight paths nearly clear of each other:
+ * at most one crossing for every six performers. Only forms of six or more ask: with fewer, the order along the form is plain either way. */
+export function rosterKeepsPathsApart(positions: Record<string, Point>, ids: readonly string[], kind: FormationKind, options: FormationOptions): boolean {
+  if (ids.length < 6 || ids.length > SHORTEST_DEFAULT_LIMIT) return false;
+  const order = sessionAssignmentOrder(positions, ids, kind, options, 'roster'), slots = generateFormation(kind, ids.length, options);
+  const paths = order.map((id, i) => [positions[id], slots[i]] as const);
+  const allowed = Math.floor(ids.length / 6);
+  let crossings = 0;
+  for (let i = 0; i < paths.length; i++) for (let j = i + 1; j < paths.length; j++) if (crosses(paths[i][0], paths[i][1], paths[j][0], paths[j][1]) && ++crossings > allowed) return false;
+  return true;
+}

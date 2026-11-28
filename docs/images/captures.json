@@ -13,14 +13,25 @@
   "captures": [
     {
       "name": "studio.png",
-      "description": "Tether, EH 3 · Accretion disc, 24 Sopranos selected, Write mode with the side panel and set strip",
+      "description": "Tether, EH 3 \u00b7 Accretion disc, 24 Sopranos selected, Write mode; the frame fits the group with S1 standing apart",
       "width": 1600,
       "height": 1000,
       "mode": "write",
       "view": "2d",
       "fieldHeight": 748,
       "webglDraws": 0,
-      "sha256": "d5992941e83837ff105ff78106d9c09f7130c0a2de3be33d78aa58894c7cbad6"
+      "sha256": "39dd80aafb7bd96e19de97365cece4b7c94a0148fb03e4f484a74b535fd442cb",
+      "capture": "refresh"
+    },
+    {
+      "name": "shape-preview.png",
+      "description": "Tether, EH 3 \u00b7 Accretion disc, Sopranos previewed as an arc: 23 in Cast order at a 2-step interval, S1 left in place",
+      "width": 1600,
+      "height": 1000,
+      "mode": "write",
+      "view": "2d",
+      "sha256": "f59575e6dc3e73fb41bd97abb8ca5e7e7cfd567a014218baae18b45f9c7d40c7",
+      "capture": "refresh"
     },
     {
       "name": "production-sheet.png",
@@ -34,7 +45,7 @@
     },
     {
       "name": "rehearsal-3d.png",
-      "description": "Tether, EH 3 · Accretion disc in Rehearse mode, perspective 3D camera",
+      "description": "Tether, EH 3 \u00b7 Accretion disc in Rehearse mode, perspective 3D camera",
       "width": 1600,
       "height": 1000,
       "mode": "rehearse",
@@ -45,7 +56,7 @@
     },
     {
       "name": "travel-path.png",
-      "description": "Unapplied cubic performer path preview for S16 into EH 9 · Lament, at 2x path field zoom",
+      "description": "Curved performer path preview for S16 into EH 9 \u00b7 Lament at 2\u00d7 path zoom, handles at (60, 21) and (69, 15.5) yards",
       "width": 1600,
       "height": 1000,
       "mode": "write",
@@ -54,11 +65,12 @@
       "webglDraws": 40,
       "crop": {
         "x": 386,
-        "y": 96,
+        "y": 112,
         "width": 828,
-        "height": 808
+        "height": 777
       },
-      "sha256": "25e2af3dba732162bc00ef344d7d108b8a373022317582171b5d9f6100385abc"
+      "sha256": "ee8c8bdbd16578842adf269b7e527f80ce19c68e17354202b069abdd62ad67d8",
+      "capture": "refresh"
     },
     {
       "name": "portable-audio.png",
@@ -96,5 +108,31 @@
     "title": "Tether",
     "performers": 165,
     "sets": 67
+  },
+  "refresh": {
+    "date": "2026-11-28",
+    "source": {
+      "revision": "1dc1ba83d357eaa983c83d557c78b812c90b06cf",
+      "tree": "1ffe603055dcbd3971d2645ff87f47eb1b7bd5c7",
+      "dirty": false,
+      "contentHash": "3feca9e8d3df9e38fa7976024ef65bbaf1900b75fe7ccfad78f7ff7e05ea92f9",
+      "lockfileHash": "3136bc8a6a5b452af0512d4953912d52ed06eaed155931c0835fb9955da837f2"
+    },
+    "build": {
+      "builtAt": "2026-11-28T01:35:41.664Z",
+      "outputHash": "cc789c6e8db479bd29dc5bf93947130ff1f401bc6c4d9dc29c85f8d591f272d5"
+    },
+    "renderer": "Production renderer/preload/main launched by Playwright under Xvfb with the Chromium sandbox disabled for the container; SwiftShader WebGL.",
+    "path": {
+      "performer": "S16",
+      "controls": [
+        60,
+        21,
+        69,
+        15.5
+      ],
+      "fieldZoom": 2
+    },
+    "note": "Recaptured after the drill-writer review rounds for the screens those rounds changed. The other images keep the 2026-11-26 capture above."
   }
 }

@@ -154,7 +154,7 @@ describe('shared group movement',()=>{
   it('protects referenced route geometry/deletion, allows renaming, and blocks individual edits/copy and rewiring',()=>{
     const {project,group,route}=setup();const p=validateProject(project),base={routeId:route.id,existing:true,revision:0,epoch:0};
     expect(()=>editSharedRoute(p,{...base,route:null})).toThrow(/used by group/);expect(()=>editSharedRoute(p,{...base,route:{...route,start:{x:5,y:5}}})).toThrow(/used by group/);expect(editSharedRoute(p,{...base,route:{...route,name:'Renamed'}}).sharedRoutes![0].name).toBe('Renamed');
-    expect(()=>editMovementSchedule(p,{moveId:p.moves[0].id,performerId:'p0',path:null,revision:0,epoch:0})).toThrow(/group movement/);expect(()=>copyIntervals(p,0,'p0',['implicit-line'],true,'clip',0)).toThrow(/group movement/);expect(()=>createPicture(p,1,'insert-before',16)).toThrow(/starting set/);
+    expect(()=>editMovementSchedule(p,{moveId:p.moves[0].id,performerId:'p0',path:null,revision:0,epoch:0})).toThrow(/group movement/);expect(()=>copyIntervals(p,0,'p0',['implicit-line'],true,'clip',0)).toThrow(/group movement/);expect(()=>createPicture(p,0,'new',16)).toThrow(/starting set/);expect(createPicture(p,1,'insert-before',16).moves.find(m=>m.toSetId===p.sets[1].id)!.groupMotions).toEqual(p.moves[0].groupMotions);
     const store=createEditorStore(p);store.dispatch('set.select',{index:1});store.setValue('selection','selectedIds',[group.members[0]]);expect(store.dispatch('path.open')).toBe(false);expect(store.dispatch('performers.remove',{ids:['p0']})).toBe(false);expect(store.getState().project.present).toEqual(p);
   });
   it('supports 2/64/500 identities without mutating base paths and retains compact serialized definitions',()=>{

@@ -1,4 +1,7 @@
 import { formatYards } from '../coordinates';
+import { setStartCount } from '../domain';
+import { DEFAULT_SNAPPING } from '../snapping';
+import { isCustomSurface, surfaceUnits, yardsInUnit } from '../surfaces';
 import { formatTimelineCount } from './timelineNavigation';
 import type { Finding, MoveCheck } from '../analysis/show';
 import type { Project, TransitionIssue } from '../types';
@@ -169,4 +172,30 @@ export function activeCluster(clusters: readonly ProblemCluster[], remembered: {
   let best = 0;
   clusters.forEach((c, i) => { if (distance(c) < distance(clusters[best])) best = i; });
   return best;
+}
+
+/** How a writer reads a finding: who, what went wrong, by how much, and where, in steps rather than yards. */
+export interface FindingSummary { headline: string; detail: string; where: string }
+const names = (ids: string[]) => ids.length <= 2 ? ids.join(' and ') : `${ids.slice(0, -1).join(', ')} and ${ids[ids.length - 1]}`;
+const trim = (value: number) => String(Number(value.toFixed(1)));
+export function findingSummary(issue: TransitionIssue, project: Project, index: number, labels: ProblemLabels): FindingSummary {
+  const custom = isCustomSurface(project.field), unit = surfaceUnits(project.field), stepYards = 5 / (project.snapping ?? DEFAULT_SNAPPING).steps;
+  const length = (yards: number) => custom ? `${trim(yardsInUnit(yards, unit))} ${unit}` : `${trim(yards / stepYards)} ${Math.abs(yards / stepYards - 1) < .05 ? 'step' : 'steps'}`;
+  const range = (low: number, high: number) => { const a = length(low), b = length(high); return a === b ? a : `${a.split(' ')[0]}–${b}`; };
+  const who = names(participants(issue).map(id => label(id, labels)));
+  const local = index === 0 ? at(issue) : at(issue) - setStartCount(project, index - 1);
+  const where = index === 0 ? 'Opening set' : `Set ${index} → ${index + 1} · ct ${wholeCount(local)}`;
+  const m = issue.measurement, number = (pattern: RegExp) => { const found = pattern.exec(issue.message); return found ? Number(found[1]) : undefined; };
+  if (issue.type === 'stride') {
+    const limit = number(/minimum ([\d.]+) steps per 5 yd/), engine = number(/([\d.]+) steps per 5 yards/);
+    const size = m ? (m.upper > 0 ? `${trim(5 / m.upper)}-to-5` : '') : engine !== undefined ? `${trim(engine)}-to-5` : '';
+    return { headline: `${who}: step too big`, detail: [size, limit !== undefined && `limit ${trim(limit)}-to-5`].filter(Boolean).join(' · '), where };
+  }
+  if (issue.type === 'collision') {
+    const minimum = number(/Minimum ([\d.]+) yd/), apart = m ? range(Math.max(0, m.lower), Math.max(0, m.upper)) : (() => { const v = number(/([\d.]+) yards apart/); return v === undefined ? '' : length(v); })();
+    return { headline: `${who} too close`, detail: [apart && `${apart} apart`, minimum !== undefined && `needs ${length(minimum)}`].filter(Boolean).join(' · '), where };
+  }
+  const overlap = number(/overlap by ([\d.]+) yd/), gap = number(/([\d.]+) yd edge gap/), required = number(/Required edge gap ([\d.]+) yd/);
+  const measured = overlap !== undefined ? `overlap ${length(overlap)}` : gap !== undefined ? `${length(gap)} apart` : 'may touch';
+  return { headline: `${who} too close`, detail: [measured, required !== undefined && `needs ${length(required)}`].filter(Boolean).join(' · '), where };
 }
