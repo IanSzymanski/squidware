@@ -1,14 +1,12 @@
 # README screenshots
 
-Captured 2026-11-26 from the production desktop app built at source commit `96b23f9eae346c4d515ea28f743b0c166e619a40`, on the branch that rebuilds the application shell and design system. These images show development features; the root README distinguishes them from the published v0.6.0 prerelease.
+Captured 2026-11-28 from the production desktop app built at source commit `dea9cf67107efa3b8bcdb532bed216f65d58900d`, after the squid glyph became the app mark and squid green the default accent. All six images were recaptured together.
 
-All captures use an isolated profile, the included Tether demo (165 performers, 67 sets), dark theme, default UI scale and a 1600 × 1000 content viewport. The production main process, preload and renderer run under Xvfb on Linux. No application styles or displayed UI content were replaced. Each capture waits for the whole-show check to finish, so the problems count in the top bar is the real result. [Capture metadata and image hashes](captures.json) record source/build identity, viewport dimensions, crops, mode, view and cumulative WebGL draw counts. The capture run reported no renderer errors.
-
-[studio.png](studio.png), [shape-preview.png](shape-preview.png) and [travel-path.png](travel-path.png) were recaptured on 2026-11-28 from the production desktop app built at source commit `1dc1ba83d357eaa983c83d557c78b812c90b06cf`, after the drill-writer review rounds changed those screens. Same profile, demo, theme and viewport; the Chromium sandbox was disabled for the Linux container the app ran in. [Capture metadata](captures.json) records that build under `refresh`; the other images keep the 2026-11-26 capture.
+All captures use an isolated profile, the included Tether demo (165 performers, 67 sets), dark theme with the default squid-green accent and Turf field, default UI scale and a 1600 × 1000 content viewport. The production main process, preload and renderer run under Xvfb on Linux, with the Chromium sandbox disabled for the container and SwiftShader WebGL for the 3D view. No application styles or displayed UI content were replaced. Each capture waits for the whole-show check to finish, so the problems count in the top bar is the real result. [Capture metadata and image hashes](captures.json) record source and build identity, viewport dimensions, crops, mode and view. The capture run reported no renderer errors.
 
 | Image | State |
 | --- | --- |
-| [studio.png](studio.png) | Set 3, EH 3 · Accretion disc; 24 Sopranos selected from the side panel; the selection frame fits the group and the Inspector names S1, the offstage soloist, as standing apart. |
+| [studio.png](studio.png) | Set 3, EH 3 · Accretion disc; the 24 Sopranos selected; the selection frame fits the group and the Inspector names S1, the offstage soloist, as standing apart. |
 | [shape-preview.png](shape-preview.png) | The same set with the Sopranos previewed as an arc: 23 performers in Cast order at a 2-step interval, 28.5 × 14 steps, centered on the 40; S1 stays in place with an Include option. The preview was canceled after capture. |
 | [production-sheet.png](production-sheet.png) | Plan mode: the editable production sheet showing the opening rows of the 67-set demo with notes, counts, base tempos, meters and rehearsal marks. |
 | [rehearsal-3d.png](rehearsal-3d.png) | Set 3, EH 3 · Accretion disc; Rehearse mode, press-box camera, stadium and detailed shadows. The real Three.js scene was rendered using SwiftShader. |
