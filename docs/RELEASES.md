@@ -1,6 +1,6 @@
 # Squidware release plan
 
-**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0) and [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) are published. **v0.7 — Show timing and analysis** has all 15 issues completed and awaits publication. **v0.8 — Reusable forms and detailed motion** has 13 of 23 issues completed; the 10 open issues ([#173](https://github.com/IanSzymanski/squidware/issues/173)–[#182](https://github.com/IanSzymanski/squidware/issues/182)) come from the [2026-11-05 UI/UX audit](audits/2026-11-05/UI_UX_AUDIT.md). Continue with [#173 — field space](https://github.com/IanSzymanski/squidware/issues/173), respecting the maintained queue and hard prerequisites.
+**Current release status:** [v0.5.0](https://github.com/IanSzymanski/squidware/releases/tag/v0.5.0), [v0.6.0 — Precise field authoring](https://github.com/IanSzymanski/squidware/releases/tag/v0.6.0) and [v0.7.0 — Show timing and analysis](https://github.com/IanSzymanski/squidware/releases/tag/v0.7.0) are published. **v0.8 — Reusable forms and detailed motion** has all 23 issues completed and is the next release to publish. The MCP issues for agentic drill writing ([#188](https://github.com/IanSzymanski/squidware/issues/188)–[#202](https://github.com/IanSzymanski/squidware/issues/202)) are assigned to v1.2 beside the scripting API.
 
 **Main certification:** [PR #153 certification](https://github.com/IanSzymanski/squidware/actions/runs/40790853888) passed source checks, all desktop suites and package verification on Windows/macOS/Linux before merge. It includes the field-gesture lifecycle repair for the macOS pan timeout observed after #152. v0.7 remains unpublished with 1 unfinished issue; publication still requires successful exact-source main CI.
 
@@ -162,14 +162,29 @@ Hosted immutable performer releases, QR/privacy/revisions, optional release sync
 
 ## v1.2 — Optional collaboration and scripting
 
-Versioned scripting and optional cloud roles, lifecycle, sync, conflict recovery and collaborative review, preserving local/offline use.
+Versioned scripting and an MCP server for agentic drill writing, and optional cloud roles, lifecycle, sync, conflict recovery and collaborative review, preserving local/offline use.
 
-0/4 implementation issues completed at reconciliation.
+0/19 implementation issues completed at reconciliation.
 
 - [ ] [#48 · Audit A47 Expose a versioned scripting API over the engine and command layer](https://github.com/IanSzymanski/squidware/issues/48)
 - [ ] [#88 · Roadmap Define optional collaboration roles, privacy and service lifecycle](https://github.com/IanSzymanski/squidware/issues/88)
 - [ ] [#89 · Roadmap Add optional project sync, named versions and explicit conflict recovery](https://github.com/IanSzymanski/squidware/issues/89)
 - [ ] [#90 · Roadmap Add shared review comments and concurrent editing after merge semantics are proven](https://github.com/IanSzymanski/squidware/issues/90)
+- [ ] [#188 · MCP: Squidware MCP server foundation (stdio) with canonical project I/O](https://github.com/IanSzymanski/squidware/issues/188)
+- [ ] [#189 · MCP: build the show skeleton from music (timing import, tempo map, score map, anchors)](https://github.com/IanSzymanski/squidware/issues/189)
+- [ ] [#190 · MCP: cast and ensemble templates (sections, roles, labels, selection groups)](https://github.com/IanSzymanski/squidware/issues/190)
+- [ ] [#191 · MCP: form placement tools with assignment strategies and live formations](https://github.com/IanSzymanski/squidware/issues/191)
+- [ ] [#192 · MCP: transition tools for transforms and route-based group movement](https://github.com/IanSzymanski/squidware/issues/192)
+- [ ] [#193 · MCP: analysis tools with structured findings and explanations](https://github.com/IanSzymanski/squidware/issues/193)
+- [ ] [#194 · MCP: automatic repair suggestions for collisions and strides](https://github.com/IanSzymanski/squidware/issues/194)
+- [ ] [#195 · MCP: render sets and transitions to images for visual review](https://github.com/IanSzymanski/squidware/issues/195)
+- [ ] [#196 · MCP: spatial queries (positions at a count, distances, clearances, free space)](https://github.com/IanSzymanski/squidware/issues/196)
+- [ ] [#197 · MCP: drill style lint (realistic steps, intervals, sightlines, ensemble rules)](https://github.com/IanSzymanski/squidware/issues/197)
+- [ ] [#198 · MCP: atomic edits, diffs and undo for agent sessions](https://github.com/IanSzymanski/squidware/issues/198)
+- [ ] [#199 · MCP: recordings and packages (.squidpack, alignment from audio)](https://github.com/IanSzymanski/squidware/issues/199)
+- [ ] [#200 · MCP: connect to the running desktop app (live session and screenshots)](https://github.com/IanSzymanski/squidware/issues/200)
+- [ ] [#201 · MCP: publish the drill authoring helpers as a supported library](https://github.com/IanSzymanski/squidware/issues/201)
+- [ ] [#202 · MCP tools for agentic drill writing (tracking)](https://github.com/IanSzymanski/squidware/issues/202)
 
 Tracker #1 spans all releases and belongs to the last milestone; it closes only after every child issue is fulfilled. New scope must be assigned in the plan before a release can publish. No issue is closed merely by assigning a milestone.
 
