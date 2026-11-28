@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Box, SquareArrowOutUpRight } from 'lucide-react';
+import { applyAppearance } from '../appearance';
 import type { Stage3DQuality } from '../components/Stage3D';
 import { HelpButton } from './ControlHelp';
 import { Mirrored3D } from './Mirrored3D';
@@ -53,7 +54,7 @@ export function Popout3D({ controller }: { controller: EditorController }) {
   const { store } = controller;
   const popout = useEditorSelector(state => state.ui.popout3d);
   const focus = useEditorSelector(state => state.ui.popout3dFocus);
-  const { theme, uiScale } = controller.preferences.value;
+  const { accent, accentColor, uiScale } = controller.preferences.value, { theme } = controller.preferences;
   const [host, setHost] = useState<HTMLElement | null>(null);
   const update = useRef(controller.preferences.update); update.current = controller.preferences.update;
   const retained = useRef<{ child: Window; timer: number } | null>(null);
@@ -99,8 +100,8 @@ export function Popout3D({ controller }: { controller: EditorController }) {
   useLayoutEffect(() => {
     if (!host) return;
     const root = host.ownerDocument.documentElement;
-    root.dataset.theme = theme; root.style.setProperty('--ui-scale', String(uiScale));
-  }, [host, theme, uiScale]);
+    applyAppearance(root, theme, accent, accentColor); root.style.setProperty('--ui-scale', String(uiScale));
+  }, [host, theme, accent, accentColor, uiScale]);
   useEffect(() => { if (host) host.ownerDocument.title = `${controller.project.title} · 3D preview — Squidware`; }, [host, controller.project.title]);
   return host && popout === 'open' ? createPortal(<PopoutContent controller={controller} />, host) : null;
 }

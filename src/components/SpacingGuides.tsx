@@ -33,7 +33,7 @@ export function SpacingGuides({ preview, project, scale, flipped }: { preview: F
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   }
   const handle = group && (session.options.anchor === 'end' ? group.start : group.end);
-  return <g ref={geometry} className="spacing-guides" aria-hidden="true" stroke={result.error ? '#ffb6aa' : '#8dc8ff'}>
+  return <g ref={geometry} className="spacing-guides" aria-hidden="true" stroke={result.error ? 'var(--field-invalid, #ffb6aa)' : 'var(--field-preview, #8dc8ff)'}>
     <g pointerEvents="none" fill="none" strokeWidth={1.5 / scale}>
       {session.ids.map(id => <g key={id}><circle cx={original[id].x} cy={original[id].y} r={6 / scale} strokeDasharray={`${3 / scale} ${3 / scale}`} /><path data-spacing-path={id} d={`M${original[id].x},${original[id].y}L${result.positions[id].x},${result.positions[id].y}`} strokeDasharray={`${4 / scale} ${3 / scale}`} /></g>)}
       {result.groups.map((g, i) => <g key={i} data-spacing-guide={i}>
@@ -42,7 +42,7 @@ export function SpacingGuides({ preview, project, scale, flipped }: { preview: F
           const p = { x: g.start.x + axis.x * g.interval * index, y: g.start.y + axis.y * g.interval * index };
           return <path key={id} d={`M${p.x - normal.x * 4 / scale},${p.y - normal.y * 4 / scale}L${p.x + normal.x * 4 / scale},${p.y + normal.y * 4 / scale}`} />;
         })}
-        {g.ids.length > 1 && session.options.operation !== 'align' && <text x={(g.start.x + g.end.x) / 2} y={(g.start.y + g.end.y) / 2} transform={`translate(${normal.x * 14 / scale} ${normal.y * 14 / scale})${flipped ? ` rotate(180 ${(g.start.x + g.end.x) / 2} ${(g.start.y + g.end.y) / 2})` : ''}`} textAnchor="middle" fill="#e5f1ff" stroke="#16231c" strokeWidth={3 / scale} paintOrder="stroke" fontSize={11 / scale}>{Number(g.interval.toFixed(3))} yd</text>}
+        {g.ids.length > 1 && session.options.operation !== 'align' && <text x={(g.start.x + g.end.x) / 2} y={(g.start.y + g.end.y) / 2} transform={`translate(${normal.x * 14 / scale} ${normal.y * 14 / scale})${flipped ? ` rotate(180 ${(g.start.x + g.end.x) / 2} ${(g.start.y + g.end.y) / 2})` : ''}`} textAnchor="middle" fill="var(--field-guide-text, #e5f1ff)" stroke="var(--field-guide-halo, #16231c)" strokeWidth={3 / scale} paintOrder="stroke" fontSize={11 / scale}>{Number(g.interval.toFixed(3))} yd</text>}
       </g>)}
     </g>
     {handle && group && group.ids.length > 1 && session.options.operation === 'interval' && <g data-spacing-handle="interval" transform={`translate(${handle.x} ${handle.y})`} style={{ cursor: preview.invalidInput ? 'not-allowed' : 'ew-resize', touchAction: 'none' }}

@@ -25,7 +25,20 @@ describe('personal preferences codec', () => {
     for (const theme of ['dark', 'light', 'high-contrast']) for (const uiScale of [1, 1.1, 1.25, 1.5]) {
       expect(validatePreferences({ theme, uiScale })).toMatchObject({ theme, uiScale });
     }
-    for (const value of [{ theme: 'system' }, { uiScale: 0 }, { uiScale: 1.2 }, { uiScale: '1.25' }, { uiScale: Infinity }]) expect(() => validatePreferences(value)).toThrow();
+    for (const value of [{ theme: 'auto' }, { uiScale: 0 }, { uiScale: 1.2 }, { uiScale: '1.25' }, { uiScale: Infinity }]) expect(() => validatePreferences(value)).toThrow();
+  });
+  it('keeps system theme, accent and field look as personal choices with lime turf defaults', () => {
+    expect(validatePreferences({ version: 1 })).toMatchObject({ theme: 'dark', accent: 'lime', fieldScheme: 'turf' });
+    const looks = { theme: 'system', accent: 'violet', fieldScheme: 'classic' };
+    expect(validatePreferences(looks)).toMatchObject(looks);
+    for (const fieldScheme of ['turf', 'grass', 'classic', 'night']) expect(validatePreferences({ fieldScheme }).fieldScheme).toBe(fieldScheme);
+    expect(validatePreferences({ version: 1 })).toMatchObject({ accentColor: '#c2f279', fieldWellColor: null });
+    const custom = { accent: 'custom', accentColor: '#AA3355', fieldWellColor: '#f4f4f4' };
+    expect(validatePreferences(custom)).toMatchObject(custom);
+    expect(validatePreferences({ fieldWellColor: null }).fieldWellColor).toBeNull();
+    for (const input of [{ accent: 'gold' }, { accent: '#c2f279' }, { fieldScheme: 'paper' }, { fieldScheme: null }, { theme: 'System' }, { accentColor: null }, { accentColor: 'red' }, { fieldWellColor: '' }, { fieldWellColor: '#fff' }]) expect(() => validatePreferences(input)).toThrow();
+    const project = serializeProject(createDemoProject());
+    for (const key of ['fieldScheme', '"accent"']) expect(project).not.toContain(key);
   });
   it('validates display preferences with safe readable defaults for older files', () => {
     expect(validatePreferences({ version: 1 })).toMatchObject({ fieldDotRadiusPx: 3.5, fieldLabelSizePx: 11, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', selectionLabelsOnly: false });

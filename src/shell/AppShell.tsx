@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, Maximize, Minus, Plus, X } from 'lucide-react';
 import { PrintOutput } from '../components/PrintOutput';
+import { printFieldScheme } from '../components/fieldPalette';
 import { CommandPalette } from '../editor/CommandPalette';
 import { HelpButton } from '../editor/ControlHelp';
 import { EditorDialogs } from '../editor/EditorDialogs';
@@ -77,7 +78,7 @@ export function AppShell() {
     <EditorDialogs key={projectEpoch} controller={controller} />
     {workspacesOpen && <WorkspacesDialog controller={controller} onClose={() => setWorkspacesOpen(false)} />}
     {welcome && !controller.dialog && !paletteOpen && <Welcome controller={controller} onClose={() => setWelcome(false)} />}
-    {printing && <PrintOutput project={project} mode={printMode} paper={controller.preferences.value.paperSize} coordinateFormat={controller.coordinateFormat} />}
+    {printing && <PrintOutput project={project} mode={printMode} paper={controller.preferences.value.paperSize} coordinateFormat={controller.coordinateFormat} fieldScheme={printFieldScheme(controller.preferences.value.fieldScheme)} />}
   </>;
 }
 

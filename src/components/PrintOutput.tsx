@@ -6,16 +6,18 @@ import { COORDINATE_CONVENTIONS, coordinatePrecisionLabel, performerMoveOutput, 
 import { sampleStaging } from '../staging';
 import { resolvePassage } from '../rehearsal';
 import { FieldDrawing } from './Field2D';
+import type { FieldScheme } from '../appearance';
 
-export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat }: { project: Project; mode: 'charts' | 'coordinates'; paper?: 'letter' | 'a4'; coordinateFormat?: CoordinateOptions }) {
+/** `fieldScheme` paints the field charts: the standard turf, or Classic chart's black lines on white paper. */
+export function PrintOutput({ project, mode, paper = 'letter', coordinateFormat, fieldScheme = 'turf' }: { project: Project; mode: 'charts' | 'coordinates'; paper?: 'letter' | 'a4'; coordinateFormat?: CoordinateOptions; fieldScheme?: FieldScheme }) {
   const surface = isCustomSurface(project.field) ? project.field : undefined;
   const timing=project.tempoMap || project.audioAnchors?.length ? compileTempo(project) : null;
   const pages=timing?Array.from({length:Math.ceil(timing.spans.length/20)},(_,i)=>timing.spans.slice(i*20,(i+1)*20)):[];
-  return <div id="print-output" data-paper={paper}>
+  return <div id="print-output" data-paper={paper} data-field-scheme={fieldScheme}>
     {mode === 'charts' ? project.sets.map((set, index) => <section className="print-page" key={set.id}>
       <header><div><span>SQUIDWARE / FIELD CHART</span><h1>{project.title}</h1><p>{project.ensemble}</p></div><div className="print-set">{String(index + 1).padStart(2, '0')}<small>{set.name}</small></div></header>
       <div className="print-meta"><span>{setTiming(project, index).counts} counts into set</span><span>Cumulative count {setStartCount(project, index)}</span><span>{setTiming(project, index).tempo} {timing?'base BPM · see tempo map':'BPM'}</span><span>{project.performers.length} performers</span></div>
-      <svg viewBox={surface ? surfaceViewBox(surface, 7, 8) : "-7 -8 114 69.333"} xmlns="http://www.w3.org/2000/svg"><FieldDrawing project={project} staging={sampleStaging(project, { setIndex: index, progress: 1 })} positions={set.positions} showLabels showGrid coordinateFormat={coordinateFormat} /></svg>
+      <svg viewBox={surface ? surfaceViewBox(surface, 7, 8) : "-7 -8 114 69.333"} xmlns="http://www.w3.org/2000/svg"><FieldDrawing project={project} staging={sampleStaging(project, { setIndex: index, progress: 1 })} positions={set.positions} showLabels showGrid coordinateFormat={coordinateFormat} presentation={{ scheme: fieldScheme }} /></svg>
       <p className="print-notes">{set.notes || 'Rehearsal notes: _________________________________________________________________'}</p>
       <footer>{surface ? `Coordinates in ${surface.unit}. ${SURFACE_AXES}` : 'Coordinates in yards. Front sideline is the bottom of the chart.'} • Squidware</footer>
     </section>) : project.performers.map(performer => <section className="print-page performer-page" key={performer.id}>

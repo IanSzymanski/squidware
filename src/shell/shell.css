@@ -161,11 +161,13 @@
   position: relative; flex: 1; min-height: 160px; overflow: hidden; background: var(--field-well); container-type: size;
 }
 .field-container:focus-visible { outline-offset: -2px; }
-.field-container { background-color: var(--field-well); background-image: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
+.field-container { background-color: var(--field-scheme-well, var(--field-well)); background-image: radial-gradient(ellipse at 50% 46%, var(--field-scheme-glow, var(--field-well-glow)) 0%, var(--field-scheme-well, var(--field-well)) 70%); }
 .field-container .field-stage, .field-container .stage-three { height: 100%; min-height: 0; }
 /* Keep a status line below the chart so coordinates and zoom never cover a sideline performer. */
 .field-container .field-stage { height: calc(100% - 34px); margin-top: 4px; overflow: visible; background: none; }
-.field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background-color: var(--field-chip-well); background-image: none; }
+.field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background-color: var(--field-scheme-floor-well, var(--field-chip-well)); background-image: none; }
+/* Text on a floor's well reads against that well; the container's inline style holds both inks, so the switch happens on the text. */
+.field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) :is(.canvas-hint, .field-status-line, .compact-sides) { --field-scheme-ink: var(--field-scheme-floor-ink); --field-scheme-ink-muted: var(--field-scheme-floor-ink-muted); }
 .compact-sides { display: none; }
 @container (max-width: 860px) {
   .field-stage .field-captions { visibility: hidden; }
@@ -173,7 +175,7 @@
 }
 .field-viewports[data-layout] .field-captions { visibility: hidden; }
 .field-viewports[data-layout] .compact-sides { display: flex; }
-.compact-sides { position: absolute; left: 10px; top: 8px; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--field-chip-muted); pointer-events: none; }
+.compact-sides { position: absolute; left: 10px; top: 8px; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--field-scheme-ink-muted, var(--field-chip-muted)); pointer-events: none; }
 .compact-sides span:nth-child(2) { padding-inline: 5px; border-inline: 1px solid var(--field-chip-line); font-variant-numeric: tabular-nums; }
 @container (max-width: 480px) { .compact-sides { top: auto; bottom: 7px; } .field-container:has(.field-readout) .compact-sides { display: none; } }
 /* Yard numbers recede so performer labels read over them. */
@@ -192,7 +194,7 @@
   transition: background var(--fast) var(--ease);
 }
 .canvas-chip:hover, .canvas-view .popout-3d-button:hover { background: #262d35f0; color: #fff; }
-.canvas-chip.active:not([aria-expanded=true]) { color: var(--field-chip-accent); border-color: #c2f27966; }
+.canvas-chip.active:not([aria-expanded=true]) { color: var(--field-chip-accent); border-color: var(--field-chip-accent-line); }
 .canvas-chip > svg:last-child { opacity: .6; }
 .canvas-view .popout-3d-button { width: 26px; height: 26px; min-width: 0; }
 .canvas-segmented { display: inline-flex; padding: 2px; gap: 1px; }
@@ -214,7 +216,7 @@
 .statusbar-snap-button { color: var(--field-chip-muted); font-weight: 400; }
 .canvas-hint {
   position: absolute; z-index: 2; left: 14px; bottom: 9px; max-width: calc(50% - 84px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--field-chip-muted); font-size: var(--text-xs); pointer-events: none; text-shadow: 0 1px 2px #000a;
+  color: var(--field-scheme-ink-muted, var(--field-chip-muted)); font-size: var(--text-xs); pointer-events: none; text-shadow: var(--field-scheme-ink-shadow, 0 1px 2px #000a);
 }
 /* Beside the chart the 3D view is a monitor: it keeps its camera and saved views; stadium and quality stay with the full 3D view. */
 .stage-three__controls--split :is(.stage-three__stadium, select[aria-label="3D quality"]) { display: none; }
@@ -235,7 +237,7 @@
 .field-container:has(.neighbor-legend) .canvas-hint { display: none; }
 .field-status-line {
   position: absolute; top: 100%; left: 10px; right: 330px; height: 30px; display: flex; align-items: center; gap: 12px;
-  font-size: var(--text-xs); color: var(--field-chip-muted); pointer-events: none;
+  font-size: var(--text-xs); color: var(--field-scheme-ink-muted, var(--field-chip-muted)); pointer-events: none;
 }
 .field-status-line .field-readout, .field-stage--keyboard .field-status-line .field-keyboard-help {
   position: static; height: auto; border: 0; padding: 0; background: transparent; backdrop-filter: none;
@@ -243,8 +245,9 @@
 }
 .field-status-line .field-readout { flex-direction: row; align-items: baseline; gap: 7px; max-width: 100%; min-width: 0; }
 .field-status-line .field-readout strong, .field-status-line .field-readout span { overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); }
-.field-status-line .field-readout strong { color: var(--field-chip-text); flex-shrink: 0; max-width: 45%; }
-.field-stage--keyboard .field-status-line .field-keyboard-help { flex: none; max-width: 100%; color: var(--field-chip-muted); }
+.field-status-line .field-readout strong { color: var(--field-scheme-ink, var(--field-chip-text)); flex-shrink: 0; max-width: 45%; }
+.field-status-line .field-readout span { color: var(--field-scheme-ink-muted, var(--field-chip-muted)); }
+.field-stage--keyboard .field-status-line .field-keyboard-help { flex: none; max-width: 100%; color: var(--field-scheme-ink-muted, var(--field-chip-muted)); }
 .field-container:has(.field-readout) :is(.canvas-hint, .neighbor-legend) { visibility: hidden; }
 @container (max-width: 860px) { .field-status-line .field-readout ~ .field-keyboard-help { position: absolute; clip-path: inset(50%); } }
 @container (max-width: 560px) { .field-status-line { right: 110px; } }

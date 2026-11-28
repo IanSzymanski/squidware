@@ -20,7 +20,7 @@ export function BezierFormationHandles({preview,project,scale,snap}:{preview:Fie
     <title>{part==='point'?'Anchor':`${part} tangent`} · drag to preview; edit numbers in the Inspector</title>
     <circle r={13/scale} fill="transparent" stroke="none"/>{part==='point'?<rect x={-5/scale} y={-5/scale} width={10/scale} height={10/scale} fill={preview.session.bezierAnchorId===id ? 'var(--accent)' : 'var(--surface)'}/>:<circle r={4/scale} fill="var(--surface)"/>}
   </g>;
-  return <g ref={root} className="formation-handles bezier-handles" aria-hidden="true" stroke={preview.result.error?'#ffb6aa':'#8dc8ff'} strokeWidth={1.5/scale}>
+  return <g ref={root} className="formation-handles bezier-handles" aria-hidden="true" stroke={preview.result.error?'var(--field-invalid, #ffb6aa)':'var(--field-preview, #8dc8ff)'} strokeWidth={1.5/scale}>
     <g pointerEvents="none" fill="none"><path data-bezier-curve="true" d={routeSvg(bezierRoute(shape))}/>
       {shape.anchors.map((a,i)=><path key={a.id} strokeDasharray={`${3/scale} ${3/scale}`} d={`M${(i?a.incoming:a.point).x},${(i?a.incoming:a.point).y}L${a.point.x},${a.point.y}L${(i<shape.anchors.length-1?a.outgoing:a.point).x},${(i<shape.anchors.length-1?a.outgoing:a.point).y}`}/>)}
       {preview.session.ids.map(id=><path key={id} strokeDasharray={`${4/scale} ${3/scale}`} d={`M${preview.original[id].x},${preview.original[id].y}L${preview.result.positions[id].x},${preview.result.positions[id].y}`}/>)}

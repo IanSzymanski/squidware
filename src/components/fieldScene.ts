@@ -1,11 +1,13 @@
 import type { Point, Project } from '../types';
 import { isCustomSurface } from '../surfaces';
 import { fieldViewPoint, type FieldOrientation } from './fieldOrientation';
+import { fieldPalette } from './fieldPalette';
 import { layoutFieldLabels, type FieldPresentation, type ScreenBox } from './fieldPresentation';
 
 export interface FieldScreen { scale: number; bounds: ScreenBox; pixelRatio?: number }
 export function fieldDotColor(sectionColor: string, selected: boolean, display: FieldPresentation) {
-  return display.colorMode === 'section' ? sectionColor : display.colorMode === 'custom' ? display.customColor : selected ? '#8dc8ff' : '#b3c5bd';
+  const { groups } = fieldPalette(display.scheme);
+  return display.colorMode === 'section' ? sectionColor : display.colorMode === 'custom' ? display.customColor : selected ? groups.selected : groups.other;
 }
 export function measureFieldLabels(project: Project, fontSize: number) {
   const context = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;

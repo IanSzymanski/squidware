@@ -14,7 +14,10 @@ Persisted choices:
 
 | Section | Choice | Default / limits |
 | --- | --- | --- |
-| Appearance | Interface theme | Dark; Light and High contrast available |
+| Appearance | Interface theme | Dark; Match system, Light and High contrast available. Match system follows the computer's light/dark and contrast settings. |
+| Appearance | Accent color | Lime; Blue, Teal, Violet, Pink, or a custom RGB color from the visible picker (`#C2F279` until picked). Every accent is adjusted per theme to keep text and focus readable. |
+| Appearance | Field appearance | Turf; Grass, Classic chart (black on white) and Night chart (white on black). Printed drill books use Classic chart when chosen, Turf otherwise. |
+| Appearance | Background behind the field | The field look's own; any custom RGB color. **Match field look** clears it. |
 | Appearance | UI scale | 100%; 110%, 125% and 150% available |
 | Appearance | Panel layout | Comfortable; Compact |
 | Appearance | Show hints | On. Off hides the hint line at the field's lower left and the short tips in the Plan sheet, command palette and 3D preview; tooltips and Help keep the same guidance, and field keyboard help remains the field's accessible description. |
@@ -41,7 +44,7 @@ The desktop app also remembers the [3D window's](USER_GUIDE.md#3d-window) positi
 
 Changes made with the view controls over the field (view, toggles and zoom) and the selected formation kind update the same settings. Formation defaults seed each shape's parameters on first use; subsequent shape edits are independent session drafts. They change positions only when Apply formation is used. Coordinate precision changes descriptions in the field, Cast, Inspector, coordinate sheets and CSV; it does not round project geometry or alter the CSV's numeric-coordinate columns.
 
-See [themes and UI scale](APPEARANCE.md) for appearance, selection/focus cues and enlarged layouts.
+See [themes, accent, field appearance and UI scale](APPEARANCE.md) for appearance, selection/focus cues and enlarged layouts.
 
 See [editing increments](EDIT_INCREMENTS.md) for shared command routing, modifiers and exact preview behavior.
 
