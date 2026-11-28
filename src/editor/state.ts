@@ -29,7 +29,7 @@ export interface EditorState {
     popout3d: 'unavailable' | 'closed' | 'open'; popout3dFocus: number;
     camera: { preset: CameraPreset | null; version: number; savedId?: string };
     selectionToolsOpen: boolean; selectionTolerance: number; selectionPreview: SelectionReview | null;
-    showLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog; groupMotionId?: string;
+    showLabels: boolean; adaptiveLabels: boolean; selectionLabelsOnly: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; dialog: Dialog; groupMotionId?: string;
     pendingDraft: boolean; menu: boolean; paletteOpen: boolean; toast: string; formation: FormationKind;
     setCreationKind: SetCreationKind;
     formationWidth: number; formationHeight: number; formationRotation: number; formationColumns: number;
@@ -64,7 +64,7 @@ export function createEditorState(project: Project, recoveryError?: string): Edi
     selection: { activeIndex: 0, selectedIds: [] },
     playback: { count: 0, playing: false, loop: false, speed: 1, metronome: false, countInBars: 0, muted: false, clockStatus: '', seekVersion: 0, rehearsalId: null },
     ui: { workspace: 'design', workspaceVersion: 0, focusMode: false, view: '2d', popout3d: 'unavailable', popout3dFocus: 0, camera: { preset: 'press-box', version: 0 }, tool: 'select', zoom: 1, fitVersion: 0, projectEpoch: 0, selectionToolsOpen: false, selectionTolerance: .25, selectionPreview: null,
-      showLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
+      showLabels: true, adaptiveLabels: true, selectionLabelsOnly: false, showPaths: false, showNextPaths: false, showGrid: true, snap: true, dialog: null,
       pendingDraft: false, menu: false, paletteOpen: false, toast: '', setCreationKind: 'new', formation: 'arc', formationWidth: 45,
       formationHeight: 22, formationRotation: 0, formationColumns: 8, castPanelOpen: false, castReveal: 0, castRevealRestored: false, castQuery: '',
       sectionFilter: 'all', castAmount: 8, castSection: project.sections[0]?.id ?? '',

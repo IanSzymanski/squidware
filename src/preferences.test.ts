@@ -29,6 +29,8 @@ describe('personal preferences codec', () => {
   });
   it('validates display preferences with safe readable defaults for older files', () => {
     expect(validatePreferences({ version: 1 })).toMatchObject({ fieldDotRadiusPx: 3.5, fieldLabelSizePx: 11, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', selectionLabelsOnly: false });
+    expect(validatePreferences({ version: 1 }).adaptiveLabels).toBe(true);
+    expect(validatePreferences({ version: 1, showLabels: true, selectionLabelsOnly: false }).adaptiveLabels).toBe(false);
     const settings = { fieldOrientation: 'audience-top', fieldDotRadiusPx: 8, fieldLabelSizePx: 24, fieldColorMode: 'custom', fieldCustomColor: '#eEbB22', selectionLabelsOnly: true };
     expect(validatePreferences(settings)).toMatchObject(settings);
     for (const input of [{ fieldDotRadiusPx: 0 }, { fieldLabelSizePx: 10 }, { fieldLabelSizePx: Infinity }, { fieldOrientation: 'mirror' }, { fieldColorMode: 'unknown' }, { fieldCustomColor: 'red' }, { fieldCustomColor: '#abcdef00' }, { fieldCustomColor: null }]) expect(() => validatePreferences(input)).toThrow();

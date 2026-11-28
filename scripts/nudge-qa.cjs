@@ -99,10 +99,14 @@ module.exports = async function ({project,editor,state,evaluate,wait,click,key,c
   }
   await key('Escape'); window.webContents.setZoomFactor(1); window.setContentSize(1120,768); await settleNativeViewport(window,'step help layout');
   await reset({nudgeUnit:'steps',nudgeStep:1,fastNudgeStep:4});
-  // Keyboard help is drawn only after a key press in the field, and then takes the place of the field's hint line.
+  // On a narrow chart, the keyboard-focused performer's coordinate has priority over the shortcut cue.
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.field-keyboard-help')).clipPath"), 'inset(50%)', 'idle keyboard help is not drawn');
   await focusField(); await key('Right');
-  assert.ok(await evaluate("(()=>{const n=document.querySelector('.field-keyboard-help');const r=n.getBoundingClientRect();const drawn=s=>{const e=document.querySelector(s);if(!e)return false;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'};return getComputedStyle(n).clipPath==='none'&&r.height>10&&/4 steps/.test(n.textContent)&&!drawn('.field-topline')&&!drawn('.canvas-hint')&&!document.querySelector('.field-snap-status')})()"),'keyboard step help replaces field information');
+  await wait("document.querySelector('.field-stage--keyboard .field-status-line .field-readout')?.getBoundingClientRect().height > 10", 'focused coordinate is visible in the narrow status line');
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.field-keyboard-help')).clipPath"), 'inset(50%)');
+  assert.ok(await evaluate("document.querySelector('.field-stage__svg').getAttribute('aria-describedby').split(' ').includes(document.querySelector('.field-keyboard-help').id)"), 'field keeps accessible step help');
   await capture('increments-field-narrow.png');
+  window.setContentSize(1600,900); await settleNativeViewport(window,'wide step help layout');
+  await wait("getComputedStyle(document.querySelector('.field-keyboard-help')).clipPath === 'none' && document.querySelector('.field-keyboard-help').getBoundingClientRect().height > 10", 'keyboard cue is visible beside the coordinate on a wide chart');
   pass('configured editing controls remain reachable at 1366/1120px and 125% UI zoom; step help stays separate from field information');
 };

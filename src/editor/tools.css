@@ -25,3 +25,5 @@ p.form-label { margin-bottom: -6px; }
 .inspector-tool .inspector-section { border: 0; }
 .facing-controls .transform-buttons { display: flex; gap: 6px; padding: 0; border: 0; background: none; }
 .facing-controls .transform-buttons .button { flex: 1; }
+
+.formation-move-context { display: block; margin-top: 3px; color: var(--text-secondary); font-weight: 400; text-transform: none; letter-spacing: normal; }

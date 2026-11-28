@@ -118,6 +118,16 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
   }
   return <section className="production-workspace sheet-workspace" aria-label="Editable production sheet">
     <div className="sheet-toolbar">
+      {!!score.marks.length && <select className="sheet-jump" aria-label="Jump to rehearsal mark" value="" disabled={controller.pendingDraft} onChange={event => {
+        const count = Number(event.target.value);
+        controller.scrub(count);
+        const row = store.getState().selection.activeIndex;
+        setCursor({ row, column: 0 });
+        table.current?.querySelector(`[data-row="${row}"]`)?.scrollIntoView({ block: 'nearest' });
+      }}>
+        <option value="" disabled>Jump to mark…</option>
+        {score.marks.map(mark => <option key={mark.count} value={mark.count}>{mark.label} · {scoreLabel(score, mark.count)}</option>)}
+      </select>}
       <p className="sheet-summary">
         <span><strong>{project.sets.length}</strong> {project.sets.length === 1 ? 'set' : 'sets'}</span>
         <span><strong>{duration}</strong> {duration === 1 ? 'count' : 'counts'}</span>
@@ -145,8 +155,9 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
           const start = starts[row], active = controller.index === row;
           // scoreLabel is "M9 · beat 1"; the beat is shown only when the set lands off the downbeat.
           const [measure, ...beat] = scoreLabel(score, start).split(' · '), downbeat = scorePosition(score, start).beat === 1;
-          return <tr key={set.id} className={active ? 'sheet-active' : ''}>
-          <th scope="row" aria-current={active ? 'step' : undefined}><span className="sheet-set-number">{String(row + 1).padStart(2, '0')}</span><span className="sheet-score-position">{measure}{beat.length > 0 && <span className={downbeat ? 'sheet-score-beat sheet-score-beat--downbeat' : 'sheet-score-beat'}> · {beat.join(' · ')}</span>}</span>{active && <span className="sheet-current">Current</span>}</th>
+          const rehearsalMark = score.marks.find(mark => mark.count === start)?.label;
+          return <tr key={set.id} className={active ? 'sheet-active' : ''} data-rehearsal-mark={rehearsalMark ? '' : undefined}>
+          <th scope="row" aria-current={active ? 'step' : undefined}><span className="sheet-set-number">{String(row + 1).padStart(2, '0')}</span><span className="sheet-score-position">{measure}{beat.length > 0 && <span className={downbeat ? 'sheet-score-beat sheet-score-beat--downbeat' : 'sheet-score-beat'}> · {beat.join(' · ')}</span>}</span>{rehearsalMark && <span className="sheet-mark" title={rehearsalMark}>{rehearsalMark}</span>}{active && <span className="sheet-current">Current</span>}</th>
           {sheetLabels.map((label, column) => {
             const cell = { row, column }, editing = same(draft, cell), value = sheetValue(project, row, column);
             const opening = row === 0 && column === 1, inherits = column === 4 && row > 0 && !value;
@@ -174,7 +185,7 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
               },
             };
             const classes = [numeric(column) && 'sheet-num', inherits && 'sheet-inherit', repeats && !editing && 'sheet-repeat'].filter(Boolean).join(' ');
-            return <td key={label} className={classes || undefined}>{column === 3 ? <textarea {...props} rows={1} onKeyDown={e => move(e, cell)} /> : <input {...props} inputMode={numeric(column) ? 'decimal' : 'text'} onKeyDown={e => move(e, cell)} />}</td>;
+            return <td key={label} className={classes || undefined}>{column === 3 ? <><textarea {...props} rows={1} onKeyDown={e => move(e, cell)} />{!wrap && !active && !editing && <span className="sheet-note-preview" aria-hidden="true">{value}</span>}</> : <input {...props} inputMode={numeric(column) ? 'decimal' : 'text'} onKeyDown={e => move(e, cell)} />}</td>;
           })}
         </tr>; })}
       </tbody></table>

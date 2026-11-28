@@ -14,7 +14,8 @@ export interface FieldPresentation {
   labelReachSelected?: boolean;
   /** While a shape previews, the selected performers named along it (the ends and every fourth); the rest of the shape goes unlabeled. */
   labelSubset?: ReadonlySet<string>;
-  labelMode: 'all' | 'selected' | 'none';
+  /** Adaptive leaves room around each label, so fewer show at Fit and more as the field zooms in; with a selection, only its members are named. */
+  labelMode: 'adaptive' | 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
   colorMode: 'section', customColor: '#b9ed85', dotRadiusPx: 3.5, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 11, labelMode: 'all',
@@ -101,8 +102,10 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
   const { topRight, bottomRight } = presentation.labelKeepOut ?? {};
   if (topRight) labelSpace.add({ left: bounds.right - topRight[0], top: bounds.top, right: bounds.right, bottom: bounds.top + topRight[1] });
   if (bottomRight) labelSpace.add({ left: bounds.right - bottomRight[0], top: bounds.bottom - bottomRight[1], right: bounds.right, bottom: bounds.bottom });
-  const subset = presentation.labelSubset;
-  const ordered = dots.filter(dot => (presentation.labelMode === 'all' || dot.selected || dot.focused) && (!subset || !dot.selected || dot.focused || subset.has(dot.id)))
+  const subset = presentation.labelSubset, adaptive = presentation.labelMode === 'adaptive';
+  const selectedCount = adaptive ? dots.filter(dot => dot.selected).length : 0;
+  const showContext = presentation.labelMode === 'all' || (adaptive && selectedCount === 0);
+  const ordered = dots.filter(dot => (showContext || dot.selected || dot.focused) && (!subset || !dot.selected || dot.focused || subset.has(dot.id)))
     .sort((a, b) => Number(b.focused) - Number(a.focused) || Number(b.selected) - Number(a.selected) || stableIdOrder(a, b));
   const outward = outwardSides(dots);
   const height = presentation.labelSizePx + 4;
@@ -119,13 +122,19 @@ export function layoutFieldLabels(dots: LabelDot[], bounds: ScreenBox, presentat
     const at = (extra: number) => sides.map(side => labelBox(dot, side, (side[0] > .9 || !tied ? gap : far) + extra, width, height)).filter(inView);
     const near = at(0);
     let box = near.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate));
-    if (!box && (dot.focused || dot.selected && presentation.labelReachSelected !== false)) {
+    // Adaptive reaches farther only for a single selected performer; a larger selection is named where its labels fit.
+    if (!box && (dot.focused || dot.selected && presentation.labelReachSelected !== false && (!adaptive || selectedCount === 1))) {
       const reach = [...near, ...at(10), ...at(22), ...at(36)];
       // Labels never overlap: a selected label that finds no clear spot even farther out is left out; only focus always names.
       box = reach.find(candidate => !dotSpace.intersects(candidate) && !labelSpace.intersects(candidate))
         ?? reach.find(candidate => !labelSpace.intersects(candidate)) ?? (dot.focused ? near[0] : undefined);
     }
-    if (box) { result.set(dot.id, box); labelSpace.add(box); }
+    if (box) {
+      result.set(dot.id, box);
+      // Screen-space breathing room thins context labels at Fit and reveals more as dots spread under zoom.
+      const pad = adaptive ? height * (dot.selected || dot.focused ? 0.8 : 1.5) : 0;
+      labelSpace.add({ left: box.left - pad, right: box.right + pad, top: box.top - pad, bottom: box.bottom + pad });
+    }
   }
   return result;
 }

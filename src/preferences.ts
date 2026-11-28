@@ -15,7 +15,7 @@ export interface Preferences {
   workspaceLayout: WorkspaceLayout; castPanelOpen: boolean; workspaces: Workspaces;
   setThumbnails: boolean;
   showLabels: boolean; showPaths: boolean; showNextPaths: boolean; showGrid: boolean; snap: boolean; zoom: number;
-  selectionHintDismissed: boolean; selectionLabelsOnly: boolean;
+  adaptiveLabels: boolean; selectionHintDismissed: boolean; selectionLabelsOnly: boolean;
   /** Show short instructional lines in panels; the same guidance stays in tooltips and Help when off. */
   showHints: boolean;
   fieldOrientation: 'audience-bottom' | 'audience-top';
@@ -41,7 +41,7 @@ export interface PreferencesBridge {
 }
 export function defaultPreferences(): Preferences {
   return { version: 1, shortcutBindings: {}, theme: 'dark', uiScale: 1, workspaceLayout: workspacePreset('write'), workspaces: defaultWorkspaces(), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
-    selectionLabelsOnly: false, setThumbnails: true, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3.5, fieldLabelSizePx: 11,
+    adaptiveLabels: true, selectionLabelsOnly: false, setThumbnails: true, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3.5, fieldLabelSizePx: 11,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
     nudgeStep: .625, fastNudgeStep: 2.5, nudgeUnit: 'yards', rotationStep: 15, scaleStep: 10, coordinateDecimals: 2, coordinatePrecision: 'quarter', paperSize: 'letter', printMode: 'charts', minimumSpacing: 1, maximumStride: 1.25, newSetCounts: 32, popout3dBounds: null };
@@ -56,6 +56,8 @@ export function validatePreferences(input: unknown): Preferences {
   if (source.version !== undefined && source.version !== 0 && source.version !== 1) throw new Error('Preferences use a newer or unsupported version. Update Squidware or reset preferences.');
   const result = defaultPreferences() as unknown as Record<string, unknown>;
   if (source.workspaceLayout === undefined && source.panelLayout === 'compact') result.workspaceLayout = { ...workspacePreset('write'), setsWidth: 176, inspectorWidth: 235 };
+  // Honor the label choice saved by versions before adaptive labeling.
+  if (source.adaptiveLabels === undefined && source.showLabels === true && !source.selectionLabelsOnly) result.adaptiveLabels = false;
   // Preserve the output of existing decimal-only preferences until a step increment is chosen.
   if (source.coordinatePrecision === undefined && source.coordinateDecimals !== undefined) result.coordinatePrecision = 'decimal';
   for (const key of Object.keys(result).filter(key => key !== 'version')) {

@@ -278,7 +278,22 @@ export function ShowStrip({ controller, layout }: { controller: EditorController
     { label: 'Metronome and count-in…', icon: <Timer size={15} />, onSelect: () => { controller.dispatch('dialog.open', { dialog: 'metronome' }); } },
   ];
 
-  const rehearsal = <HelpButton command="rehearsal.open" title="Rehearsal passages" className="icon-button" active={!!passage} onClick={() => controller.dispatch('rehearsal.open')}><Bookmark size={16} /><span className="overflow-option-label">Rehearsal passages</span></HelpButton>;
+  const passageItems = useMemo(() => (project.rehearsal ?? []).map(saved => {
+    const range = resolvePassage(project, saved);
+    const start = project.sets.findIndex(set => saved.start.kind === 'set' && set.id === saved.start.setId);
+    const end = project.sets.findIndex(set => saved.end?.kind === 'set' && set.id === saved.end.setId);
+    const hint = end >= 0 && start >= 0 ? `Sets ${start + 1}–${end + 1}` : range.end ? `Counts ${fmt(range.start.count)}–${fmt(range.end.count)}` : `Count ${fmt(range.start.count)}`;
+    return { key: saved.id, label: saved.name, hint, radio: true, checked: rehearsalId === saved.id,
+      disabled: !!range.error, disabledReason: range.error, onSelect: () => { controller.dispatch('rehearsal.activate', { id: saved.id }); } };
+  }), [project, rehearsalId, controller.dispatch]);
+  const currentPassage = passageItems.find(item => item.checked);
+  const rehearsal = layout.mode === 'rehearse' && transport !== 'narrow' && passageItems.length
+    ? <Menu label="Choose rehearsal passage" className="button small passage-picker" side="above" align="end" disabled={locked}
+        items={[...passageItems, { type: 'separator' }, { label: 'Full show', radio: true, checked: !currentPassage, onSelect: () => { controller.dispatch('rehearsal.clear'); } },
+          { label: 'Edit passages…', onSelect: () => { controller.dispatch('rehearsal.open'); } }]}>
+        <Bookmark size={14} /><span>{currentPassage?.hint ?? 'Passage'}</span><ChevronDown size={12} />
+      </Menu>
+    : <HelpButton command="rehearsal.open" title="Rehearsal passages" className="icon-button" active={!!passage} onClick={() => controller.dispatch('rehearsal.open')}><Bookmark size={16} /><span className="overflow-option-label">Rehearsal passages</span></HelpButton>;
   const audio = <HelpButton title={audioName ? 'Replace audio' : 'Attach audio'} description="Choose a local audio file to accompany rehearsal playback." disabledReason="Wait for the audio file to finish loading." className={`audio-attach ${audioName ? 'attached' : ''}`} onClick={() => void controller.chooseAudio()} disabled={audioLoading || !!controller.fileOperation}>{audioLoading ? <LoaderCircle size={14} className="spin" /> : <AudioLines size={14} />}<span className="audio-file-label">{audioName || 'Add audio'}</span></HelpButton>;
   const loopButton = <HelpButton title={resolved?.end ? 'Loop range' : 'Loop show'} description={resolved?.end ? 'Repeat the active count range using the shared audio clock.' : 'Restart from the opening set when playback reaches the end.'} className="icon-button transport-labelled" active={loop} onClick={() => setLoop(!loop)}><Repeat2 size={16} /><span className="overflow-option-label">{resolved?.end ? 'Loop range' : 'Loop show'}</span></HelpButton>;
   const metronomeButton = <HelpButton title="Metronome" command="metronome.toggle" description="Toggle meter-aware clicks. Configure meter and count-in from the timeline menu." className="icon-button transport-labelled" active={metronome} onClick={() => controller.dispatch('metronome.toggle')}><Timer size={16} /><span className="overflow-option-label">Metronome</span></HelpButton>;

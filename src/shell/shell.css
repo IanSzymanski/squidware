@@ -163,15 +163,19 @@
 .field-container:focus-visible { outline-offset: -2px; }
 .field-container { background-color: var(--field-well); background-image: radial-gradient(ellipse at 50% 46%, var(--field-well-glow) 0%, var(--field-well) 70%); }
 .field-container .field-stage, .field-container .stage-three { height: 100%; min-height: 0; }
-/* In a short window the field is limited by height, so the controls get a little more room off the turf. */
-@container (max-height: 520px) { .field-container .field-stage { height: calc(100% - 28px); margin-block: 14px; } }
-/* Turf surrounds a football field; a floor or stage sits in a neutral well. */
+/* Keep a status line below the chart so coordinates and zoom never cover a sideline performer. */
+.field-container .field-stage { height: calc(100% - 34px); margin-top: 4px; overflow: visible; background: none; }
 .field-container:has(.field-stage:is([data-surface=indoor], [data-surface=custom])) { background-color: var(--field-chip-well); background-image: none; }
-/* A few pixels above and below the 2D field keep the floating controls off the turf in short windows. */
-.field-container .field-stage { height: calc(100% - 16px); margin-block: 8px; background: none; }
-/* Captions are drawn in field units; where the field is too small for them to be read, they step aside. */
-.field-viewports[data-layout] .field-captions { display: none; }
-@container (max-width: 860px) { .field-stage .field-captions { display: none; } }
+.compact-sides { display: none; }
+@container (max-width: 860px) {
+  .field-stage .field-captions { visibility: hidden; }
+  .compact-sides { display: flex; }
+}
+.field-viewports[data-layout] .field-captions { visibility: hidden; }
+.field-viewports[data-layout] .compact-sides { display: flex; }
+.compact-sides { position: absolute; left: 10px; top: 8px; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--field-chip-muted); pointer-events: none; }
+.compact-sides span:nth-child(2) { padding-inline: 5px; border-inline: 1px solid var(--field-chip-line); font-variant-numeric: tabular-nums; }
+@container (max-width: 480px) { .compact-sides { top: auto; bottom: 7px; } .field-container:has(.field-readout) .compact-sides { display: none; } }
 /* Yard numbers recede so performer labels read over them. */
 .field-stage .field-yard-numbers { opacity: .36; }
 /* The tool strip and status line carry mode and snapping; the field itself stays clear. */
@@ -229,16 +233,21 @@
 /* While paths are shown, their legend takes the hint's place at the field's lower left, off the chart. */
 .field-container .neighbor-legend { top: auto; right: auto; left: 10px; bottom: 6px; max-width: calc(50% - 84px); }
 .field-container:has(.neighbor-legend) .canvas-hint { display: none; }
-.field-container:has(.neighbor-legend) .field-readout { bottom: 36px; }
-/* Coordinates under the pointer read in one fixed place, like a status line, instead of covering the dots. */
-.field-container .field-readout {
-  left: 2px !important; top: auto !important; bottom: -2px; flex-direction: row; align-items: center; gap: 8px; height: 26px; padding: 0 9px;
-  max-width: calc(100% - 340px); white-space: nowrap; overflow: hidden;
+.field-status-line {
+  position: absolute; top: 100%; left: 10px; right: 330px; height: 30px; display: flex; align-items: center; gap: 12px;
+  font-size: var(--text-xs); color: var(--field-chip-muted); pointer-events: none;
 }
-.field-container .field-readout strong { font-size: var(--text-xs); flex: none; }
-.field-container .field-readout span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.field-container:has(.field-readout) .canvas-hint { visibility: hidden; }
-.field-container:has(.field-readout) .field-caption-front { opacity: 0; }
+.field-status-line .field-readout, .field-stage--keyboard .field-status-line .field-keyboard-help {
+  position: static; height: auto; border: 0; padding: 0; background: transparent; backdrop-filter: none;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.field-status-line .field-readout { flex-direction: row; align-items: baseline; gap: 7px; max-width: 100%; min-width: 0; }
+.field-status-line .field-readout strong, .field-status-line .field-readout span { overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); }
+.field-status-line .field-readout strong { color: var(--field-chip-text); flex-shrink: 0; max-width: 45%; }
+.field-stage--keyboard .field-status-line .field-keyboard-help { flex: none; max-width: 100%; color: var(--field-chip-muted); }
+.field-container:has(.field-readout) :is(.canvas-hint, .neighbor-legend) { visibility: hidden; }
+@container (max-width: 860px) { .field-status-line .field-readout ~ .field-keyboard-help { position: absolute; clip-path: inset(50%); } }
+@container (max-width: 560px) { .field-status-line { right: 110px; } }
 .field-container:has(.field-stage--moving) :is(.canvas-view, .canvas-zoom-row, .canvas-hint) { opacity: .35; }
 .field-container.is-3d :is(.canvas-zoom, .statusbar-snap-button) { display: none; }
 .field-stage--keyboard ~ .canvas-hint, .field-container:has(.field-stage--keyboard) .canvas-hint { display: none; }
@@ -277,10 +286,16 @@
 .selection-bar:focus-visible { outline-offset: -2px; }
 .selection-bar-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: var(--control-md); }
 .selection-summary { display: flex; flex-direction: column; min-width: 0; }
+.selection-summary--active { flex-direction: column-reverse; }
+.selection-summary--active .selection-sections { color: var(--text); font-size: var(--text-lg); font-weight: 600; }
+.selection-summary--active .selection-count { color: var(--text-secondary); font-size: var(--text-xs); font-weight: 400; }
 .selection-count { font-size: var(--text-lg); font-weight: 600; line-height: 1.25; }
 .selection-sections { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Sections: the color key of the field, and the fastest way to select. */
 .section-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; margin: 0 -6px; }
+.section-prompt { font-size: var(--text-lg); }
+.section-legend:not(.section-legend--compact) .section-chips button { background: var(--surface-muted); }
+.section-legend:not(.section-legend--compact) .section-chips button:hover { background: var(--hover-bg); }
 .section-chips button {
   appearance: none; display: flex; align-items: center; gap: 7px; min-width: 0; height: 22px; padding: 0 6px; border: 0; border-radius: var(--radius-sm);
   background: transparent; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 500; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -316,7 +331,7 @@
 .selection-bounds { display: flex; flex-direction: column; gap: 10px; }
 .selection-coordinate { display: flex; flex-direction: column; gap: 1px; color: var(--text); font-size: var(--text-md); font-weight: 500; line-height: 1.4; text-wrap: balance; }
 .selection-coordinate-label { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-.selection-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; border-radius: var(--radius-md); overflow: hidden; background: var(--hairline); border: 1px solid var(--hairline); }
+.selection-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 1px; border-radius: var(--radius-md); overflow: hidden; background: var(--hairline); border: 1px solid var(--hairline); }
 .selection-stats > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 7px 9px; background: var(--surface-muted); }
 .selection-stats dt { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
 .selection-stats dd { display: flex; align-items: baseline; gap: 3px; color: var(--text); font-size: var(--text-md); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -340,7 +355,7 @@
 .selected-performer .exact-position { padding: 6px 0 4px; }
 .set-name-row { display: flex; align-items: flex-end; gap: 6px; }
 .set-name-row > .form-label { flex: 1; }
-/* Set timing: the two numbers edited most, always first in the panel. */
+/* Set timing starts the set properties, below the active selection. */
 .set-timing { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid var(--hairline); }
 .set-timing-title { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
 .set-timing-field { position: relative; flex: none; display: inline-flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
@@ -417,7 +432,7 @@
 .set-jump > svg { color: var(--text-tertiary); }
 .set-jump-number {
   display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 5px; background: var(--accent-soft-strong); color: var(--accent-text);
-  font-size: var(--text-sm); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+  font-size: var(--text-md); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .set-jump-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-md); font-weight: 600; }
 .readout { display: flex; flex-direction: column; gap: 1px; min-width: 0; white-space: nowrap; }
@@ -706,3 +721,6 @@ dialog.welcome::backdrop { background: var(--backdrop); backdrop-filter: blur(6p
 .workspace-rename input { flex: 1; }
 .workspace-save { display: flex !important; flex-direction: row !important; align-items: flex-end; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--hairline); }
 .workspace-save .form-label { flex: 1; }
+
+.transport .passage-picker { flex: none; max-width: 136px; gap: 4px; }
+.passage-picker span { overflow: hidden; text-overflow: ellipsis; }
