@@ -5,7 +5,7 @@ import { DEFAULT_SNAPPING, validateSnapSettings, type SnapSettings } from './sna
 import { validateWorkspaceLayout, workspacePreset, type WorkspaceLayout } from './workspaceLayout';
 import { validateShortcutBindings, type ShortcutBindings } from './shortcuts';
 import { validatePopoutBounds, type PopoutBounds } from './popoutBounds';
-import { ACCENT_PREFERENCES, FIELD_SCHEMES, THEMES, type AccentPreference, type FieldScheme, type ThemePreference } from './appearance';
+import { ACCENT_PREFERENCES, FIELD_SCHEMES, RETIRED_ACCENTS, THEMES, type AccentPreference, type FieldScheme, type ThemePreference } from './appearance';
 import { HEX_COLOR } from './color';
 export { nativeAccelerator, nativeMenuCommands, nativeRedoAlias, textEditAction } from './shortcuts';
 export { placePopoutBounds, POPOUT_SIZE, validatePopoutBounds } from './popoutBounds';
@@ -47,7 +47,7 @@ export interface PreferencesBridge {
   resetPreferences: () => Promise<Preferences>;
 }
 export function defaultPreferences(): Preferences {
-  return { version: 1, shortcutBindings: {}, theme: 'dark', accent: 'lime', accentColor: '#c2f279', fieldScheme: 'turf', fieldWellColor: null, uiScale: 1, workspaceLayout: workspacePreset('write'), workspaces: defaultWorkspaces(), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
+  return { version: 1, shortcutBindings: {}, theme: 'dark', accent: 'green', accentColor: '#0eedb5', fieldScheme: 'turf', fieldWellColor: null, uiScale: 1, workspaceLayout: workspacePreset('write'), workspaces: defaultWorkspaces(), castPanelOpen: false, snapDefaults: { ...DEFAULT_SNAPPING }, panelLayout: 'comfortable', view: '2d', showLabels: true, showPaths: false, showNextPaths: false, showGrid: true, snap: true, zoom: 1, selectionHintDismissed: false, showHints: true,
     adaptiveLabels: true, selectionLabelsOnly: false, setThumbnails: true, fieldOrientation: 'audience-bottom', fieldColorMode: 'section', fieldCustomColor: '#b9ed85', fieldDotRadiusPx: 3.5, fieldLabelSizePx: 11,
     inspectorSetOpen: true, inspectorSelectionOpen: true, inspectorFormationOpen: false, inspectorChecksOpen: false,
     formation: 'arc', formationWidth: 45, formationHeight: 22, formationRotation: 0, formationColumns: 8,
@@ -75,6 +75,7 @@ export function validatePreferences(input: unknown): Preferences {
     if (key === 'workspaceLayout') { result[key] = validateWorkspaceLayout(value); continue; }
     if (key === 'snapDefaults') { result[key] = validateSnapSettings(value); continue; }
     if (key === 'popout3dBounds') { result[key] = validatePopoutBounds(value); continue; }
+    if (key === 'accent' && typeof value === 'string' && Object.hasOwn(RETIRED_ACCENTS, value)) { result[key] = RETIRED_ACCENTS[value]; continue; }
     if (key === 'fieldCustomColor' || key === 'accentColor' || key === 'fieldWellColor') {
       if (!(key === 'fieldWellColor' && value === null) && (typeof value !== 'string' || !HEX_COLOR.test(value))) throw new Error(`Invalid preference: ${key}.`);
       result[key] = value; continue;

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { applyAppearance, clearAppearance, resolveTheme, systemAppearance, watchSystemAppearance } from '../appearance';
 import { useEditorSelector, useEditorStore } from './react';
+import { showAccentIcon } from '../ui/squidGlyph';
 import { browserPreferences, startPreferencesController } from './preferencesController';
 import type { Preferences } from '../preferences';
 export function usePreferencesController() {
@@ -18,7 +19,9 @@ export function usePreferencesController() {
     const root = document.documentElement;
     applyAppearance(root, theme, state.value.accent, state.value.accentColor);
     root.style.setProperty('--ui-scale', String(state.value.uiScale));
-    return () => { clearAppearance(root); root.style.removeProperty('--ui-scale'); };
+    // The tab icon wears the accent too; the desktop window keeps its packaged icon.
+    const restoreIcon = showAccentIcon(document.querySelector('link[rel=icon]'), getComputedStyle(root).getPropertyValue('--accent').trim());
+    return () => { restoreIcon(); clearAppearance(root); root.style.removeProperty('--ui-scale'); };
   }, [theme, state.value.accent, state.value.accentColor, state.value.uiScale]);
   useEffect(() => {
     const unavailable = { getItem() { throw new Error('Browser preferences storage is unavailable.'); }, setItem() { throw new Error('Browser preferences storage is unavailable.'); } };

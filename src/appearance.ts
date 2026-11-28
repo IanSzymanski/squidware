@@ -13,9 +13,8 @@ export const THEMES = THEME_CHOICES.map(choice => choice.id);
 
 /** One accent marks the primary action, the current item and focus, tuned per theme to keep its contrast. `swatch` is its --accent in each theme. */
 export const ACCENT_CHOICES = [
-  { id: 'lime', name: 'Lime', swatch: { dark: '#c2f279', light: '#2f6b0d', 'high-contrast': '#d4ff8f' } },
+  { id: 'green', name: 'Green', swatch: { dark: '#0eedb5', light: '#006b50', 'high-contrast': '#0eedb5' } },
   { id: 'blue', name: 'Blue', swatch: { dark: '#8ab4ff', light: '#1b57b5', 'high-contrast': '#a8ccff' } },
-  { id: 'teal', name: 'Teal', swatch: { dark: '#5fe0c8', light: '#0a6a5c', 'high-contrast': '#8ff5e0' } },
   { id: 'violet', name: 'Violet', swatch: { dark: '#b9a2ff', light: '#5b3fc4', 'high-contrast': '#d2c2ff' } },
   { id: 'pink', name: 'Pink', swatch: { dark: '#ff9fd6', light: '#ad2370', 'high-contrast': '#ffc2e6' } },
 ] as const;
@@ -24,6 +23,8 @@ export type AccentPreset = typeof ACCENT_CHOICES[number]['id'];
 export type AccentPreference = AccentPreset | 'custom';
 export const ACCENTS = ACCENT_CHOICES.map(choice => choice.id);
 export const ACCENT_PREFERENCES: readonly AccentPreference[] = [...ACCENTS, 'custom'];
+/** Accents of earlier builds: the lime default and a teal now too close to the squid green; both read as green. */
+export const RETIRED_ACCENTS: Readonly<Record<string, AccentPreference>> = { lime: 'green', teal: 'green' };
 
 /** How the 2D field is painted. Printed drill books follow Classic chart only; SVG export, panel previews and the 3D view keep Turf. */
 export const FIELD_SCHEME_CHOICES = [

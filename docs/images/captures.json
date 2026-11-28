@@ -1,14 +1,22 @@
 {
+  "date": "2026-11-28",
   "source": {
-    "revision": "96b23f9eae346c4d515ea28f743b0c166e619a40",
-    "tree": "0cd73c9acb997494cb28036f720a698be93fe63d",
+    "revision": "dea9cf67107efa3b8bcdb532bed216f65d58900d",
+    "tree": "059b68fcdfbefd6f2466e4aa0826f5634292451b",
     "dirty": false,
-    "contentHash": "2adc269b4f71a1a678a359fae9a9b6b12800e513dad5e344e9c8cd381f2c6417",
+    "contentHash": "68790e02a7d7c6b04cd88f95175ba32fb9514338c608805adcb0733b3a6ab78c",
     "lockfileHash": "3136bc8a6a5b452af0512d4953912d52ed06eaed155931c0835fb9955da837f2"
   },
   "build": {
-    "builtAt": "2026-11-26T20:25:14.106Z",
-    "outputHash": "e24d6492a004a8c5f46556a3967660078a4e55e37ff5ffc648c5589720ae19fe"
+    "builtAt": "2026-11-28T08:06:09.026Z",
+    "outputHash": "565a51fc2422d8d35fc79636d90f18be3362af4ff6882235d0b225190f03e496"
+  },
+  "renderer": "Production renderer/preload/main launched under Xvfb with the Chromium sandbox disabled for the container; SwiftShader WebGL.",
+  "appearance": {
+    "theme": "dark",
+    "accent": "green",
+    "fieldScheme": "turf",
+    "uiScale": 1
   },
   "captures": [
     {
@@ -19,9 +27,7 @@
       "mode": "write",
       "view": "2d",
       "fieldHeight": 748,
-      "webglDraws": 0,
-      "sha256": "39dd80aafb7bd96e19de97365cece4b7c94a0148fb03e4f484a74b535fd442cb",
-      "capture": "refresh"
+      "sha256": "603bdaf615d74bc298867c4fca71764d2c7f06e122062e61f3e0a453f5b51516"
     },
     {
       "name": "shape-preview.png",
@@ -30,8 +36,8 @@
       "height": 1000,
       "mode": "write",
       "view": "2d",
-      "sha256": "f59575e6dc3e73fb41bd97abb8ca5e7e7cfd567a014218baae18b45f9c7d40c7",
-      "capture": "refresh"
+      "fieldHeight": 748,
+      "sha256": "2e876c110161b25e72f475ae2d098af67ce1a2a808db9835050aecdb3143ee57"
     },
     {
       "name": "production-sheet.png",
@@ -40,37 +46,33 @@
       "height": 1000,
       "mode": "plan",
       "view": "2d",
-      "webglDraws": 0,
-      "sha256": "56a2efe070ff11f175616ce6957b6277e5074c037258dd47cdb730a1b9e2a20c"
+      "sha256": "8349da2c88fad13a45bb3b1b716ae7cdbcbec2fa3e9b98c7b45e03e498845a6b"
     },
     {
       "name": "rehearsal-3d.png",
-      "description": "Tether, EH 3 \u00b7 Accretion disc in Rehearse mode, perspective 3D camera",
+      "description": "Tether, EH 3 \u00b7 Accretion disc in Rehearse mode, press-box camera, stadium and detailed shadows",
       "width": 1600,
       "height": 1000,
       "mode": "rehearse",
       "view": "3d",
       "fieldHeight": 825,
-      "webglDraws": 40,
-      "sha256": "a9d45c20b5d6f7f01e87737dd3045b47f041329a6d5ae6afd38460d8f2356c59"
+      "sha256": "9a2068c36260667118140f7d1aa84e970596f36812dfc9088d4754c161fe85fb"
     },
     {
       "name": "travel-path.png",
-      "description": "Curved performer path preview for S16 into EH 9 \u00b7 Lament at 2\u00d7 path zoom, handles at (60, 21) and (69, 15.5) yards",
+      "description": "Curved performer path preview for S16 into EH 9 \u00b7 Lament at 2\u00d7 path zoom, handles at (60, 21) and (69, 15.5) yards, count 11",
       "width": 1600,
       "height": 1000,
       "mode": "write",
       "view": "2d",
       "fieldHeight": 748,
-      "webglDraws": 40,
       "crop": {
         "x": 386,
-        "y": 112,
+        "y": 111,
         "width": 828,
         "height": 777
       },
-      "sha256": "ee8c8bdbd16578842adf269b7e527f80ce19c68e17354202b069abdd62ad67d8",
-      "capture": "refresh"
+      "sha256": "595c5b38f421fd0cacc212dead42eb78e4e6a330ec4956afb7b8c02207f254c0"
     },
     {
       "name": "portable-audio.png",
@@ -80,59 +82,31 @@
       "mode": "write",
       "view": "2d",
       "fieldHeight": 722,
-      "webglDraws": 40,
       "crop": {
         "x": 536,
         "y": 219,
         "width": 528,
         "height": 562
       },
-      "sha256": "4677a0aabd94dd256d3761701bbfbadc1241ffc264a6a5ef06912b5f9ff1f83b"
+      "sha256": "6620b91bf650787d60aacaabb99a1c9266da94e5dde958f0c8d4db6ade94e0d6"
     }
   ],
   "path": {
     "performer": "S16",
     "controls": [
-      64.661,
-      26.662,
-      69.946,
-      23.571
+      60,
+      21,
+      69,
+      15.5
     ],
-    "fieldZoom": 2
+    "fieldZoom": 2,
+    "count": 11
   },
   "recording": "Generated 80-second PCM pulse; no private recording.",
-  "renderer": "Production renderer/preload/main; Xvfb and SwiftShader WebGL.",
-  "date": "2026-11-26",
   "errors": [],
   "demo": {
     "title": "Tether",
     "performers": 165,
     "sets": 67
-  },
-  "refresh": {
-    "date": "2026-11-28",
-    "source": {
-      "revision": "1dc1ba83d357eaa983c83d557c78b812c90b06cf",
-      "tree": "1ffe603055dcbd3971d2645ff87f47eb1b7bd5c7",
-      "dirty": false,
-      "contentHash": "3feca9e8d3df9e38fa7976024ef65bbaf1900b75fe7ccfad78f7ff7e05ea92f9",
-      "lockfileHash": "3136bc8a6a5b452af0512d4953912d52ed06eaed155931c0835fb9955da837f2"
-    },
-    "build": {
-      "builtAt": "2026-11-28T01:35:41.664Z",
-      "outputHash": "cc789c6e8db479bd29dc5bf93947130ff1f401bc6c4d9dc29c85f8d591f272d5"
-    },
-    "renderer": "Production renderer/preload/main launched by Playwright under Xvfb with the Chromium sandbox disabled for the container; SwiftShader WebGL.",
-    "path": {
-      "performer": "S16",
-      "controls": [
-        60,
-        21,
-        69,
-        15.5
-      ],
-      "fieldZoom": 2
-    },
-    "note": "Recaptured after the drill-writer review rounds for the screens those rounds changed. The other images keep the 2026-11-26 capture above."
   }
 }

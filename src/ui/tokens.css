@@ -5,7 +5,7 @@
  * these values. Three themes share one set of names: dark (default), light and high-contrast.
  *
  * Production content is separate from chrome: section colors and the field artwork are never recolored by a theme.
- * The personal accent (data-accent) recolors only the accent group; lime is the default and lives in the theme blocks.
+ * The personal accent (data-accent) recolors only the accent group; squid green is the default and lives in the theme blocks.
  */
 :root, :root[data-theme=dark] {
   color-scheme: dark;
@@ -36,17 +36,17 @@
   --disabled-text: #8d96a1;
   --disabled-bg: #1a1d21;
 
-  /* Brand accent: squid lime. */
-  --accent: #c2f279;
-  --accent-hover: #d0f794;
-  --accent-pressed: #b1e464;
-  --on-accent: #12200a;
-  --accent-text: #c2f279;
-  --accent-soft: #c2f27918;
-  --accent-soft-strong: #c2f2792b;
-  --accent-line: #c2f27966;
-  --selected-bg: #c2f27918;
-  --focus-ring: #c2f279;
+  /* Brand accent: squid green, #0eedb5 on dark grounds and #006b50 on light ones. */
+  --accent: #0eedb5;
+  --accent-hover: #31f3c2;
+  --accent-pressed: #0cd09f;
+  --on-accent: #04231a;
+  --accent-text: #0eedb5;
+  --accent-soft: #0eedb518;
+  --accent-soft-strong: #0eedb52b;
+  --accent-line: #0eedb566;
+  --selected-bg: #0eedb518;
+  --focus-ring: #0eedb5;
 
   /* Meaning. */
   --success: #6fd6a0;
@@ -76,8 +76,8 @@
   --field-chip-text: #eef2f6;
   --field-chip-muted: #b3bcc7;
   --field-chip-disabled: #868e98;
-  --field-chip-accent: #c2f279;
-  --field-chip-accent-line: #c2f27966;
+  --field-chip-accent: #0eedb5;
+  --field-chip-accent-line: #0eedb566;
   /* The well around a floor or stage: neutral and dark in every theme, like the canvas controls over it. */
   --field-chip-well: #15181b;
 
@@ -161,16 +161,16 @@
   --disabled-text: #5f6873;
   --disabled-bg: #f1f3f5;
 
-  --accent: #2f6b0d;
-  --accent-hover: #3a7c14;
-  --accent-pressed: #275a0a;
+  --accent: #006b50;
+  --accent-hover: #007f5f;
+  --accent-pressed: #00523d;
   --on-accent: #ffffff;
-  --accent-text: #2f6b0d;
-  --accent-soft: #4d9a1a17;
-  --accent-soft-strong: #4d9a1a2b;
-  --accent-line: #4d9a1a80;
-  --selected-bg: #4d9a1a17;
-  --focus-ring: #2f6b0d;
+  --accent-text: #006b50;
+  --accent-soft: #0f9a7417;
+  --accent-soft-strong: #0f9a742b;
+  --accent-line: #0f9a7480;
+  --selected-bg: #0f9a7417;
+  --focus-ring: #006b50;
 
   --success: #17714a;
   --success-bg: #17714a14;
@@ -216,15 +216,15 @@
   --disabled-text: #b8b8b8;
   --disabled-bg: #1c1c1c;
 
-  --accent: #d4ff8f;
-  --accent-hover: #e2ffb0;
-  --accent-pressed: #c2f279;
+  --accent: #0eedb5;
+  --accent-hover: #44f4c8;
+  --accent-pressed: #0cd09f;
   --on-accent: #000000;
-  --accent-text: #d4ff8f;
-  --accent-soft: #d4ff8f26;
-  --accent-soft-strong: #d4ff8f40;
-  --accent-line: #d4ff8f;
-  --selected-bg: #d4ff8f26;
+  --accent-text: #0eedb5;
+  --accent-soft: #0eedb526;
+  --accent-soft-strong: #0eedb540;
+  --accent-line: #0eedb5;
+  --selected-bg: #0eedb526;
   --focus-ring: #ffffff;
 
   --success: #8ff0b6;
@@ -288,47 +288,6 @@
   --selected-bg: #a8ccff26;
   --field-chip-accent: #8ab4ff;
   --field-chip-accent-line: #8ab4ff66;
-}
-:root[data-accent=teal], :root[data-theme=dark][data-accent=teal] {
-  --accent: #5fe0c8;
-  --accent-hover: #80e8d5;
-  --accent-pressed: #48ccb4;
-  --on-accent: #052520;
-  --accent-text: #5fe0c8;
-  --accent-soft: #5fe0c818;
-  --accent-soft-strong: #5fe0c82b;
-  --accent-line: #5fe0c866;
-  --selected-bg: #5fe0c818;
-  --focus-ring: #5fe0c8;
-  --field-chip-accent: #5fe0c8;
-  --field-chip-accent-line: #5fe0c866;
-}
-:root[data-theme=light][data-accent=teal] {
-  --accent: #0a6a5c;
-  --accent-hover: #0d7a6a;
-  --accent-pressed: #085548;
-  --on-accent: #ffffff;
-  --accent-text: #0a6a5c;
-  --accent-soft: #13917f17;
-  --accent-soft-strong: #13917f2b;
-  --accent-line: #13917f80;
-  --selected-bg: #13917f17;
-  --focus-ring: #0a6a5c;
-  --field-chip-accent: #5fe0c8;
-  --field-chip-accent-line: #5fe0c866;
-}
-:root[data-theme=high-contrast][data-accent=teal] {
-  --accent: #8ff5e0;
-  --accent-hover: #b0f8ea;
-  --accent-pressed: #5fe0c8;
-  --on-accent: #000000;
-  --accent-text: #8ff5e0;
-  --accent-soft: #8ff5e026;
-  --accent-soft-strong: #8ff5e040;
-  --accent-line: #8ff5e0;
-  --selected-bg: #8ff5e026;
-  --field-chip-accent: #5fe0c8;
-  --field-chip-accent-line: #5fe0c866;
 }
 :root[data-accent=violet], :root[data-theme=dark][data-accent=violet] {
   --accent: #b9a2ff;
