@@ -1,3 +1,4 @@
+import { labelSettings, labelVisibility, type LabelVisibility } from './labelVisibility';
 import { NumberField } from '../components/NumberField';
 import { Tooltip } from '../components/Tooltip';
 import type { EditorController } from './useEditorController';
@@ -14,8 +15,8 @@ export function FieldDisplayPreferences({ preferences }: Pick<EditorController, 
       <NumberField label="Dot radius · pixels" description="Radius in CSS pixels, independent of field zoom and display density. Selection rings and pointer targets remain visible." value={p.fieldDotRadiusPx} min={2} max={8} step={.5} onChange={fieldDotRadiusPx => update({ fieldDotRadiusPx })} />
       <NumberField label="Label size · pixels" description="Text size in CSS pixels. Crowded labels are suppressed; focus a dot for its full coordinate readout." value={p.fieldLabelSizePx} min={11} max={24} onChange={fieldLabelSizePx => update({ fieldLabelSizePx })} />
     </div>
-    <label className="form-label">Label visibility<Tooltip name="Label visibility" description="Always try all labels, show only selected or focused labels, or hide labels. The toolbar cycles the same saved setting."><select aria-label="Label visibility" value={!p.showLabels ? 'none' : p.selectionLabelsOnly ? 'selected' : 'all'} onChange={e => update({ showLabels: e.target.value !== 'none', selectionLabelsOnly: e.target.value === 'selected' })}>
-      <option value="all">All · avoid overlaps</option><option value="selected">Selected or focused only</option><option value="none">Hidden</option>
+    <label className="form-label">Label visibility<Tooltip name="Label visibility" description="Adaptive labels leave space around the form at each zoom level. Choose All for a chart check."><select aria-label="Label visibility" value={labelVisibility(p)} onChange={e => update(labelSettings(e.target.value as LabelVisibility))}>
+      <option value="adaptive">Adaptive · follow zoom and selection</option><option value="all">All · avoid overlaps</option><option value="selected">Selected or focused only</option><option value="none">Hidden</option>
     </select></Tooltip></label>
     <label className="form-label">Performer coloring<Tooltip name="Performer coloring" description="Use production section colors, distinguish the current selection from the remaining performers, or use one custom display color. White selection rings and square keyboard focus remain distinct."><select aria-label="Performer coloring" value={p.fieldColorMode} onChange={e => update({ fieldColorMode: e.target.value as typeof p.fieldColorMode })}>
       <option value="section">Section colors</option><option value="selection">Selection groups</option><option value="custom">Custom color</option>

@@ -16,7 +16,7 @@ function hint(c: EditorController): string {
   if (c.tool === 'lasso') return 'Draw around performers to select them · Shift adds to the selection';
   if (c.tool === 'pan') return 'Drag to pan · scroll to zoom · V returns to Select';
   if (!c.project.performers.length) return 'Open Cast to add performers, then shape your first set';
-  if (!c.selectedIds.length) return 'Click a dot, drag a box or pick a section, then choose a shape';
+  if (!c.selectedIds.length) return 'Click a dot or drag a box to select';
   if (c.selectedIds.length === 1) return `Drag to move · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
   return `Drag to move · handles scale and rotate · Alt+arrows nudge ${nudgeText(c.preferences.value, c.project)}`;
 }

@@ -1,3 +1,4 @@
+import { labelSettings, labelVisibility, type LabelVisibility } from '../editor/labelVisibility';
 import { useLayoutEffect, useRef, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { AlignHorizontalJustifyCenter, ArrowRight, Bookmark, Check, ChevronDown, Clapperboard, Clock3, Eye, FlipHorizontal2, Focus, Grid3X3, Hand, Lasso, LayoutPanelLeft, ListFilter, Magnet, Blend, Footprints, Spline, SquareDashedMousePointer, MapPin, MoreHorizontal, MousePointer2, Package, PanelRight, Pencil, RotateCw, Route, Scissors, Shapes, SlidersHorizontal, Sparkles, Tags, TriangleAlert, Users, X } from 'lucide-react';
 import { HelpButton } from '../editor/ControlHelp';
@@ -274,8 +275,8 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
     label: a.label, icon, command: a.invocation.id, disabled: !!a.disabledReason, disabledReason: a.disabledReason ?? undefined, onSelect: () => run(a), ...extra,
   });
   const three = c.view === '3d';
-  const labelsState = !c.showLabels ? 'hidden' : c.selectionLabelsOnly ? 'selected' : 'all';
-  const setLabels = (next: 'all' | 'selected' | 'hidden') => { c.setShowLabels(next !== 'hidden'); c.setSelectionLabelsOnly(next === 'selected'); };
+  const labelsState = labelVisibility(state.ui);
+  const setLabels = (mode: LabelVisibility) => c.preferences.update(labelSettings(mode));
   const paths = action('display.paths', undefined), nextPaths = action('display.next-paths', undefined);
   const pathsMenu: MenuEntry[] = [
     item(paths, <PathsFromIcon size={16} />, { label: 'Show paths from previous set', checked: c.showPaths, keepOpen: true, description: 'Show how performers travel into this set.' }),
@@ -283,9 +284,10 @@ export function ViewControls({ controller: c, layout, onWorkspaces }: { controll
   ];
   const viewMenu: MenuEntry[] = [
     { type: 'heading', label: 'Performer labels' },
+    { label: 'Adaptive labels', icon: <Tags size={15} />, checked: labelsState === 'adaptive', radio: true, keepOpen: true, description: 'Leave space around labels as you zoom. With a selection, label its members.', onSelect: () => setLabels('adaptive') },
     { label: 'Show labels', icon: <Tags size={15} />, hint: 'where they fit', checked: labelsState === 'all', radio: true, keepOpen: true, description: 'Label every performer. Labels that would overlap are left out; zoom in to see them all.', onSelect: () => setLabels('all') },
     { label: 'Selected only', icon: <Tags size={15} />, checked: labelsState === 'selected', radio: true, keepOpen: true, onSelect: () => setLabels('selected') },
-    { label: 'Hide labels', icon: <Tags size={15} />, checked: labelsState === 'hidden', radio: true, keepOpen: true, onSelect: () => setLabels('hidden') },
+    { label: 'Hide labels', icon: <Tags size={15} />, checked: labelsState === 'none', radio: true, keepOpen: true, onSelect: () => setLabels('none') },
     { type: 'heading', label: 'Grid' },
     item(action('display.grid', undefined), <Grid3X3 size={15} />, { label: 'Show field grid', checked: c.showGrid, keepOpen: true }),
     item(action('display.snap', undefined), <Magnet size={15} />, { label: 'Snap to grid', checked: c.snap, keepOpen: true }),

@@ -31,7 +31,7 @@ export function RehearsalPanel({ controller }: { controller: EditorController })
   try { validateRehearsal([draft]); invalid = resolved.error ?? ''; } catch (e) { invalid = (e as Error).message; }
   const focusValue = draft.focus.kind === 'all' ? 'all' : draft.focus.kind === 'section' ? `section:${draft.focus.sectionId}` : 'performers';
   return <Modal title="Rehearsal passages" wide onClose={() => controller.setDialog(null)}>
-    <p className="modal-intro">Save annotated bookmarks or count ranges. Go to a passage, then use Play and Loop. Section focus changes the rehearsal view; the attached recording remains the full mix.</p>
+    <p className="modal-intro">Choose a passage to edit, or save a new rehearsal range.</p>
     <div className="rehearsal-panel"><aside aria-label="Saved rehearsal passages"><button className="button subtle" type="button" disabled={(project.rehearsal?.length ?? 0) >= PROJECT_LIMITS.rehearsalPassages} onClick={() => { setDraft(fresh()); setError(''); }}>New passage</button>
       {!project.rehearsal?.length && <p className="microcopy">No passages saved yet.</p>}
       {project.rehearsal?.map(p => { const r = resolvePassage(project, p); return <button type="button" key={p.id} className={`rehearsal-item${draft.id === p.id ? ' selected' : ''}`} aria-pressed={draft.id === p.id} onClick={() => { setDraft(structuredClone(p)); setError(''); }}><strong>{p.name}</strong><span>{p.end ? 'Range' : 'Bookmark'}{rehearsalId === p.id ? ' · Active' : ''}</span>{r.error && <span className="rehearsal-error">Needs repair · {r.error}</span>}</button>; })}

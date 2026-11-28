@@ -5,7 +5,9 @@
 .field-stage__canvas { visibility: hidden; }
 .field-stage__svg { position: relative; display: block; width: 100%; height: 100%; min-height: 0; touch-action: none; user-select: none; outline: none; }
 .field-stage__svg:focus-visible, .stage-three__canvas > canvas:focus-visible { outline: 2px solid var(--field-accent); outline-offset: -4px; }
-.field-performer { cursor: grab; outline: none; }
+.field-performer { cursor: grab; }
+/* The global outline scales in SVG field units. The focused dot has its own screen-space ring. */
+.field-stage__svg .field-performer:focus { outline: none; }
 .field-stage--readonly .field-performer { cursor: default; }
 .field-stage--pan .field-stage__svg, .field-stage--pan .field-performer { cursor: grab; }
 .field-stage--moving .field-stage__svg, .field-stage--moving .field-performer { cursor: grabbing; }

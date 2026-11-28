@@ -3,7 +3,7 @@ import { defaultPreferences, validatePreferences } from '../preferences';
 import type { Preferences, PreferencesBridge } from '../preferences';
 import type { EditorState } from './state';
 import type { EditorStore } from './store';
-const UI_KEYS = ['castPanelOpen', 'selectionLabelsOnly', 'view', 'showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
+const UI_KEYS = ['castPanelOpen', 'adaptiveLabels', 'selectionLabelsOnly', 'view', 'showLabels', 'showPaths', 'showNextPaths', 'showGrid', 'snap', 'zoom', 'formation', 'formationWidth', 'formationHeight', 'formationRotation', 'formationColumns', 'printMode'] as const;
 const KEYS = Object.keys(defaultPreferences()) as (keyof Preferences)[];
 const sameValue = (a: Preferences, b: Preferences, key: keyof Preferences) => key === 'workspaces' || key === 'snapDefaults' || key === 'workspaceLayout' || key === 'shortcutBindings' || key === 'popout3dBounds' ? JSON.stringify(a[key]) === JSON.stringify(b[key]) : a[key] === b[key];
 const equal = (a: Preferences, b: Preferences) => KEYS.every(key => sameValue(a, b, key));

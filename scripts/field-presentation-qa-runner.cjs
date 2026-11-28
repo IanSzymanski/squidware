@@ -175,6 +175,8 @@ app.whenReady().then(async () => {
     const block = ids.filter((_,i)=>i%25<8 && Math.floor(i/25)<8 && i>0);
     for (const id of block) { await click(await center(id)); await selected(id); }
     pass('every distinct center in an 8x8 two-step block is mouse-selectable within the 500-performer cast');
+    // This sweep verifies the explicit all-labels setting, including nonselected performers.
+    await evaluate(`${editor}.setValue('ui','adaptiveLabels',false)`);
     for (const zoom of [.6, 1, 3]) {
       await evaluate(`${editor}.setValue('ui','zoom',${zoom}); ${editor}.setValue('ui','fitVersion',${zoom})`); await pause(80);
       for (const id of [ids[212],ids[213],ids[237],ids[238]]) { await click(await center(id)); await selected(id); }

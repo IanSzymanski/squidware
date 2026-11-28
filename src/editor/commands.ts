@@ -1,3 +1,4 @@
+import { labelSettings, labelVisibility } from './labelVisibility';
 import { editingFieldView, fieldViews, type FieldView } from '../workspaces';
 import type { CameraPreset } from '../components/Stage3D';
 import { validateCameraViews, type SavedCameraView } from '../cameraViews';
@@ -445,7 +446,10 @@ export const commandRegistry = {
   'display.next-paths': simple('display.next-paths', 'Show paths to next set', 'Show outgoing paths to the next set without changing geometry.', s => idle(s) && s.ui.view !== '3d' && canEditPositions(s) && s.selection.activeIndex < s.project.present.sets.length-1, c => c.patch('ui', { showNextPaths: !c.getState().ui.showNextPaths })),
   'display.grid': simple('display.grid', 'Show field grid', 'Toggle the placement grid without changing performer positions.', idle, c => c.patch('ui', { showGrid: !c.getState().ui.showGrid })),
   'display.snap': simple('display.snap', 'Snap to grid', 'Toggle snapping for direct position edits. Precise numeric coordinates remain exact.', idle, c => c.patch('ui', { snap: !c.getState().ui.snap })),
-  'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle all labels, selected/focused labels and hidden labels.', idle, c => { const u = c.getState().ui; c.patch('ui', !u.showLabels ? { showLabels: true, selectionLabelsOnly: false } : !u.selectionLabelsOnly ? { selectionLabelsOnly: true } : { showLabels: false }); }),
+  'display.labels': simple('display.labels', 'Cycle performer labels', 'Cycle adaptive, all, selected and hidden labels.', idle, c => {
+    const next = { adaptive: 'all', all: 'selected', selected: 'none', none: 'adaptive' } as const;
+    c.patch('ui', labelSettings(next[labelVisibility(c.getState().ui)]));
+  }),
   'field.zoom-in': simple('field.zoom-in', 'Zoom field in', 'Increase the 2D field magnification.', s => fieldView(s) && s.ui.zoom < 3, c => c.patch('ui', { zoom: Math.min(3, c.getState().ui.zoom + .2) })),
   'field.zoom-out': simple('field.zoom-out', 'Zoom field out', 'Reduce the 2D field magnification.', s => fieldView(s) && s.ui.zoom > .6, c => c.patch('ui', { zoom: Math.max(.6, c.getState().ui.zoom - .2) })),
   'field.fit': simple('field.fit', 'Fit field', 'Reset 2D zoom and pan to show the entire field.', fieldView, c => c.patch('ui', { zoom: 1, fitVersion: c.getState().ui.fitVersion + 1 })),

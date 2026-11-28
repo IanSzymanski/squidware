@@ -141,9 +141,10 @@ export function Inspector({ controller }: { controller: EditorController }) {
   return <aside className="inspector">
     <div hidden={planning} className="selection-bar" role="region" aria-label="Selection actions" tabIndex={-1}>
       <div className="selection-bar-heading">
-        <div className="selection-summary">
-          <strong className="selection-count" role="status">{selectedIds.length} selected</strong>
-          <span className="selection-sections">{!selectedIds.length ? `${project.performers.length} ${project.performers.length === 1 ? 'performer' : 'performers'} in the cast` : single ? `${single.label}${single.name ? ` · ${single.name}` : ''}` : sections.slice(0, 3).map(section => section.name).join(', ')}{!single && sections.length > 3 ? ` +${sections.length - 3}` : ''}</span>
+        <div className={`selection-summary${selectedIds.length ? ' selection-summary--active' : ''}`}>
+          {nothingSelected && <strong className="section-prompt">{project.sections.length ? 'Select a section' : 'Cast'}</strong>}
+          <strong className={nothingSelected ? 'selection-count sr-only' : 'selection-count'} role="status">{selectedIds.length} selected</strong>
+          <span className="selection-sections">{!selectedIds.length ? controller.preferences.value.showHints && project.performers.length && project.sections.length ? 'Choose a shape in the toolbar next' : `${project.performers.length} ${project.performers.length === 1 ? 'performer' : 'performers'}` : single ? `${single.label}${single.name ? ` · ${single.name}` : ''}` : sections.slice(0, 3).map(section => section.name).join(', ')}{!single && sections.length > 3 ? ` +${sections.length - 3}` : ''}</span>
         </div>
         {selectedIds.length > 0
           ? <HelpButton command="selection.clear" title="Clear selection" className="button small" onClick={() => setSelectedIds([])}>Clear</HelpButton>
@@ -162,12 +163,6 @@ export function Inspector({ controller }: { controller: EditorController }) {
       {controller.transformPreview && <div className="inspector-tool"><TransformPanel controller={controller} /></div>}
       {controller.spacingPreview && <div className="inspector-tool"><SpacingPanel controller={controller} /></div>}
       {controller.coordinatePreview && <div className="inspector-tool"><CoordinatePanel controller={controller} /></div>}
-
-      {!previewing && <div key={`${projectEpoch}-${activeSet.id}-timing`} className="set-timing" role="group" aria-label={`Set ${index + 1} timing`}>
-        <span className="set-timing-title">Set {index + 1}</span>
-        <span className="set-timing-field" data-unit="counts"><NumberField hideLabel onDraftChange={setPendingDraft} label="Counts" description="Set the number of counts in the move into this set." disabledReason="The opening set has no incoming move and always has zero counts." value={timing.counts} min={setCountLimits(index).min} max={setCountLimits(index).max} integer disabled={index === 0} onChange={value => { setPlaying(false); updateSet({ counts: Math.round(value) }); }} /></span>
-        <span className="set-timing-field" data-unit="BPM"><NumberField hideLabel onDraftChange={setPendingDraft} label={project.tempoMap ? 'Base tempo · BPM' : 'Tempo · BPM'} description="Set the base tempo for the move into this set. Tempo-map ranges override it." disabledReason="The opening set has no incoming move; select a later set to edit tempo." value={timing.tempo} min={PROJECT_LIMITS.tempo.min} max={PROJECT_LIMITS.tempo.max} step={0.1} disabled={index === 0} onChange={value => updateSet({ tempo: value })} /></span>
-      </div>}
 
       {points.length > 0 && bounds && !previewing && <div hidden={planning || three}>
         <Section title={single ? 'Position' : 'Selection'} preference="inspectorSelectionOpen" className="selection-section" controller={controller}>
@@ -215,6 +210,12 @@ export function Inspector({ controller }: { controller: EditorController }) {
             <FacingControls key={JSON.stringify([projectEpoch, activeSet.id, selectedIds])} controller={controller} unavailable={unavailable} />
           </details>
         </Section>
+      </div>}
+
+      {!previewing && <div key={`${projectEpoch}-${activeSet.id}-timing`} className="set-timing" role="group" aria-label={`Set ${index + 1} timing`}>
+        <span className="set-timing-title">Set {index + 1}</span>
+        <span className="set-timing-field" data-unit="counts"><NumberField hideLabel onDraftChange={setPendingDraft} label="Counts" description="Set the number of counts in the move into this set." disabledReason="The opening set has no incoming move and always has zero counts." value={timing.counts} min={setCountLimits(index).min} max={setCountLimits(index).max} integer disabled={index === 0} onChange={value => { setPlaying(false); updateSet({ counts: Math.round(value) }); }} /></span>
+        <span className="set-timing-field" data-unit="BPM"><NumberField hideLabel onDraftChange={setPendingDraft} label={project.tempoMap ? 'Base tempo · BPM' : 'Tempo · BPM'} description="Set the base tempo for the move into this set. Tempo-map ranges override it." disabledReason="The opening set has no incoming move; select a later set to edit tempo." value={timing.tempo} min={PROJECT_LIMITS.tempo.min} max={PROJECT_LIMITS.tempo.max} step={0.1} disabled={index === 0} onChange={value => updateSet({ tempo: value })} /></span>
       </div>}
 
       {!previewing && <Section title={`Set ${index + 1} details`} preference="inspectorSetOpen" controller={controller} className="set-section">
