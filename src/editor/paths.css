@@ -1,7 +1,7 @@
 /* Travel paths, movement timing, shared routes and move operations. */
 .path-panel .path-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
 /* The field takes what the window leaves, so the dialog fits without scrolling down to its actions. */
-.path-panel .path-preview { display: block; width: 100%; max-height: clamp(200px, calc(var(--viewport-height) - 470px), 420px); border-radius: var(--radius-md); background: #1a2b23; }
+.path-panel .path-preview { display: block; width: 100%; max-height: clamp(200px, calc(var(--viewport-height) - 520px), 360px); border-radius: var(--radius-md); background: #1a2b23; }
 .path-panel .path-fields { display: flex; flex-direction: column; gap: var(--space-3); }
 .path-subject { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; font-size: var(--text-lg); }
 .path-subject span { color: var(--text-secondary); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
