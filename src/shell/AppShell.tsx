@@ -59,6 +59,8 @@ export function AppShell() {
             {layout.focusMode && <HelpButton pointerPassThrough title="Exit focus" description="Restore the toolbar and panels. Escape also exits focus." className="focus-restore button" onClick={layout.toggleFocus}><Maximize size={14} />Exit focus<kbd>Esc</kbd></HelpButton>}
           </div>
           <div className="workspace-sheet" hidden={!planning} inert={!planning}><ProductionWorkspace key={projectEpoch} controller={controller} /></div>
+          {/* Notifications sit at the foot of the work area: over the field's front apron or the sheet, clear of the transport, the set strip and the tool strip's menus. */}
+          {toast && <div className="toast" role="status"><Check size={15} /><span>{toast}</span><HelpButton title="Dismiss notification" description="Close this notification." onClick={() => setToast('')} aria-label="Dismiss notification"><X size={14} /></HelpButton></div>}
         </main>
         {layout.overlay && !layout.preview && <div className="workspace-overlay-dismiss" onClick={layout.closeOverlay} />}
         <SidePanel controller={controller} layout={layout} />
@@ -69,7 +71,6 @@ export function AppShell() {
     <input ref={rosterInput} type="file" accept=".csv" hidden onChange={event => void onRosterFile(event)} />
     <input ref={audioInput} type="file" accept="audio/*" hidden onChange={event => void onAudioFile(event)} />
     <audio ref={audioRef} src={audioUrl || undefined} muted={muted} preload="auto" />
-    {toast && <div className="toast" role="status"><Check size={15} /><span>{toast}</span><HelpButton title="Dismiss notification" description="Close this notification." onClick={() => setToast('')} aria-label="Dismiss notification"><X size={14} /></HelpButton></div>}
     <SelectionTools controller={controller} />
     <Popout3D controller={controller} />
     {paletteOpen && <CommandPalette />}

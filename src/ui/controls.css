@@ -207,9 +207,9 @@ details > summary:hover { color: var(--text); }
 /* ---------- Toast ---------- */
 /* Centered with `translate`, which the entrance animation's `transform` leaves alone: the toast appears where it stays. */
 .toast {
-  /* Under the top bar and tool strip, over the field's back apron: clear of the set strip and the transport. */
-  position: fixed; z-index: 90; left: 50%; top: 96px; translate: -50% 0;
-  display: flex; align-items: center; gap: 10px; max-width: min(560px, calc(var(--viewport-width) - 32px));
+  /* At the foot of the work area, under menus (60) and tooltips (100), so it never takes a click meant for them. */
+  position: absolute; z-index: 55; left: 50%; bottom: 40px; translate: -50% 0;
+  display: flex; align-items: center; gap: 10px; max-width: min(560px, calc(100% - 32px));
   padding: 8px 8px 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-full);
   background: var(--overlay); box-shadow: var(--shadow-lg); color: var(--text); font-size: var(--text-sm);
   animation: pop-in var(--normal) var(--ease);
