@@ -4,6 +4,8 @@ import type { MouseEventHandler, ReactNode } from 'react';
 
 import type { Point, Project } from '../types';
 import { isCustomSurface } from '../surfaces';
+import { fieldPaletteFor } from '../components/fieldPalette';
+import type { FieldScheme } from '../appearance';
 import type { ThumbnailDot } from './thumbnailRoster';
 import { HelpButton } from './ControlHelp';
 import type { ControlHelpProps } from './ControlHelp';
@@ -12,13 +14,14 @@ import { Tooltip } from '../components/Tooltip';
 export function Button({ children, onClick, active, className = '', ...help }: ControlHelpProps & { children: ReactNode; onClick: MouseEventHandler<HTMLButtonElement>; disabled?: boolean; className?: string }) {
   return <HelpButton {...help} active={active} className={`icon-button ${active ? 'active' : ''} ${className}`} onClick={onClick}>{children}</HelpButton>;
 }
-export const MiniField = memo(function MiniField({ positions, dots, field }: { positions: Readonly<Record<string, Point>>; dots: readonly ThumbnailDot[]; field?: Project['field'] }) {
+export const MiniField = memo(function MiniField({ positions, dots, field, scheme, well }: { positions: Readonly<Record<string, Point>>; dots: readonly ThumbnailDot[]; field?: Project['field']; scheme?: FieldScheme; well?: string | null }) {
+  const { thumb, floor } = fieldPaletteFor(scheme, well);
   // A floor or stage is drawn as itself, fitted to the same frame as a football field.
   if (field && isCustomSurface(field)) {
     const k = Math.min(100 / field.width, 53.333 / field.height), w = field.width * k, h = field.height * k, x0 = 5 + (100 - w) / 2, y0 = 5 + (53.333 - h) / 2;
-    return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true"><rect width="110" height="65" fill="#17191d" /><rect x={x0} y={y0} width={w} height={h} rx="1.5" fill={field.preset === 'indoor' ? '#343139' : '#292f3a'} stroke="#646a76" strokeWidth=".5" />{dots.map(dot => { const pos = positions[dot.id]; return pos && <circle key={dot.id} cx={x0 + pos.x * k} cy={y0 + pos.y * k} r="1.5" fill={dot.color} />; })}</svg>;
+    return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true"><rect width="110" height="65" fill={thumb.floorSurround} /><rect x={x0} y={y0} width={w} height={h} rx="1.5" fill={field.preset === 'indoor' ? floor.indoor : floor.custom} stroke={thumb.floorEdge} strokeWidth=".5" />{dots.map(dot => { const pos = positions[dot.id]; return pos && <circle key={dot.id} cx={x0 + pos.x * k} cy={y0 + pos.y * k} r="1.5" fill={dot.color} />; })}</svg>;
   }
-  return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true"><rect x="5" y="5" width="100" height="53.333" rx="2" fill="#243d32" />{Array.from({ length: 11 }, (_, i) => <path key={i} d={`M${5 + i * 10},5v53.333`} stroke="#4c6555" strokeWidth="0.4" />)}{dots.map(dot => { const pos = positions[dot.id]; return pos && <circle key={dot.id} cx={pos.x + 5} cy={pos.y + 5} r="0.9" fill={dot.color} />; })}</svg>;
+  return <svg viewBox="0 0 110 65" className="mini-field" aria-hidden="true" style={scheme ? { background: thumb.surround } : undefined}><rect x="5" y="5" width="100" height="53.333" rx="2" fill={thumb.field} />{Array.from({ length: 11 }, (_, i) => <path key={i} d={`M${5 + i * 10},5v53.333`} stroke={thumb.line} strokeWidth="0.4" />)}{dots.map(dot => { const pos = positions[dot.id]; return pos && <circle key={dot.id} cx={pos.x + 5} cy={pos.y + 5} r="0.9" fill={dot.color} />; })}</svg>;
 });
 export function CommitInput({ value, onCommit, maxLength, label, onDraftChange, allowEmpty = false, multiline = false, placeholder, description }: { value: string; onCommit: (value: string) => void; maxLength: number; label?: string; onDraftChange: (pending: boolean, fieldId: string) => void; allowEmpty?: boolean; multiline?: boolean; placeholder?: string; description?: string }) {
   const [draft, setDraft] = useState(value);

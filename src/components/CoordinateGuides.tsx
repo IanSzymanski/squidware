@@ -8,7 +8,7 @@ export interface FieldCoordinatePreview {
 export function CoordinateGuides({preview,scale}:{preview:FieldCoordinatePreview;scale:number}) {
   const {session,result,original}=preview;
   if(!result.parsed)return null;
-  return <g className="coordinate-guides" aria-hidden="true" pointerEvents="none" fill="none" stroke={result.error?'#ffb6aa':'#8dc8ff'} strokeWidth={1.5/scale}>
+  return <g className="coordinate-guides" aria-hidden="true" pointerEvents="none" fill="none" stroke={result.error?'var(--field-invalid, #ffb6aa)':'var(--field-preview, #8dc8ff)'} strokeWidth={1.5/scale}>
     {session.ids.map(id=>{const before=original[id];const after=result.positions[id];return <g key={id}>
       <circle cx={before.x} cy={before.y} r={6/scale} strokeDasharray={`${3/scale} ${3/scale}`}/>
       <path data-coordinate-path={id} d={`M${before.x},${before.y}L${after.x},${after.y}`} strokeDasharray={`${4/scale} ${3/scale}`}/>

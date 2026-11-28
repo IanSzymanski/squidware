@@ -5,6 +5,7 @@
  * these values. Three themes share one set of names: dark (default), light and high-contrast.
  *
  * Production content is separate from chrome: section colors and the field artwork are never recolored by a theme.
+ * The personal accent (data-accent) recolors only the accent group; lime is the default and lives in the theme blocks.
  */
 :root, :root[data-theme=dark] {
   color-scheme: dark;
@@ -76,6 +77,7 @@
   --field-chip-muted: #b3bcc7;
   --field-chip-disabled: #868e98;
   --field-chip-accent: #c2f279;
+  --field-chip-accent-line: #c2f27966;
   /* The well around a floor or stage: neutral and dark in every theme, like the canvas controls over it. */
   --field-chip-well: #15181b;
 
@@ -243,4 +245,170 @@
 
   --field-chip: #000000;
   --field-chip-line: #ffffff;
+}
+
+/* Accent choices. Each pairs with every theme; tokens.test.ts checks text and focus contrast for every pair. */
+:root[data-accent=blue], :root[data-theme=dark][data-accent=blue] {
+  --accent: #8ab4ff;
+  --accent-hover: #a3c4ff;
+  --accent-pressed: #739fef;
+  --on-accent: #0a1a33;
+  --accent-text: #8ab4ff;
+  --accent-soft: #8ab4ff18;
+  --accent-soft-strong: #8ab4ff2b;
+  --accent-line: #8ab4ff66;
+  --selected-bg: #8ab4ff18;
+  --focus-ring: #8ab4ff;
+  --field-chip-accent: #8ab4ff;
+  --field-chip-accent-line: #8ab4ff66;
+}
+:root[data-theme=light][data-accent=blue] {
+  --accent: #1b57b5;
+  --accent-hover: #2565c8;
+  --accent-pressed: #164a9c;
+  --on-accent: #ffffff;
+  --accent-text: #1b57b5;
+  --accent-soft: #2f6fd617;
+  --accent-soft-strong: #2f6fd62b;
+  --accent-line: #2f6fd680;
+  --selected-bg: #2f6fd617;
+  --focus-ring: #1b57b5;
+  --field-chip-accent: #8ab4ff;
+  --field-chip-accent-line: #8ab4ff66;
+}
+:root[data-theme=high-contrast][data-accent=blue] {
+  --accent: #a8ccff;
+  --accent-hover: #c2dcff;
+  --accent-pressed: #8ab4ff;
+  --on-accent: #000000;
+  --accent-text: #a8ccff;
+  --accent-soft: #a8ccff26;
+  --accent-soft-strong: #a8ccff40;
+  --accent-line: #a8ccff;
+  --selected-bg: #a8ccff26;
+  --field-chip-accent: #8ab4ff;
+  --field-chip-accent-line: #8ab4ff66;
+}
+:root[data-accent=teal], :root[data-theme=dark][data-accent=teal] {
+  --accent: #5fe0c8;
+  --accent-hover: #80e8d5;
+  --accent-pressed: #48ccb4;
+  --on-accent: #052520;
+  --accent-text: #5fe0c8;
+  --accent-soft: #5fe0c818;
+  --accent-soft-strong: #5fe0c82b;
+  --accent-line: #5fe0c866;
+  --selected-bg: #5fe0c818;
+  --focus-ring: #5fe0c8;
+  --field-chip-accent: #5fe0c8;
+  --field-chip-accent-line: #5fe0c866;
+}
+:root[data-theme=light][data-accent=teal] {
+  --accent: #0a6a5c;
+  --accent-hover: #0d7a6a;
+  --accent-pressed: #085548;
+  --on-accent: #ffffff;
+  --accent-text: #0a6a5c;
+  --accent-soft: #13917f17;
+  --accent-soft-strong: #13917f2b;
+  --accent-line: #13917f80;
+  --selected-bg: #13917f17;
+  --focus-ring: #0a6a5c;
+  --field-chip-accent: #5fe0c8;
+  --field-chip-accent-line: #5fe0c866;
+}
+:root[data-theme=high-contrast][data-accent=teal] {
+  --accent: #8ff5e0;
+  --accent-hover: #b0f8ea;
+  --accent-pressed: #5fe0c8;
+  --on-accent: #000000;
+  --accent-text: #8ff5e0;
+  --accent-soft: #8ff5e026;
+  --accent-soft-strong: #8ff5e040;
+  --accent-line: #8ff5e0;
+  --selected-bg: #8ff5e026;
+  --field-chip-accent: #5fe0c8;
+  --field-chip-accent-line: #5fe0c866;
+}
+:root[data-accent=violet], :root[data-theme=dark][data-accent=violet] {
+  --accent: #b9a2ff;
+  --accent-hover: #cab8ff;
+  --accent-pressed: #a68cf5;
+  --on-accent: #1a0f3a;
+  --accent-text: #b9a2ff;
+  --accent-soft: #b9a2ff18;
+  --accent-soft-strong: #b9a2ff2b;
+  --accent-line: #b9a2ff66;
+  --selected-bg: #b9a2ff18;
+  --focus-ring: #b9a2ff;
+  --field-chip-accent: #b9a2ff;
+  --field-chip-accent-line: #b9a2ff66;
+}
+:root[data-theme=light][data-accent=violet] {
+  --accent: #5b3fc4;
+  --accent-hover: #6a4fd3;
+  --accent-pressed: #4c33a8;
+  --on-accent: #ffffff;
+  --accent-text: #5b3fc4;
+  --accent-soft: #6e54d817;
+  --accent-soft-strong: #6e54d82b;
+  --accent-line: #6e54d880;
+  --selected-bg: #6e54d817;
+  --focus-ring: #5b3fc4;
+  --field-chip-accent: #b9a2ff;
+  --field-chip-accent-line: #b9a2ff66;
+}
+:root[data-theme=high-contrast][data-accent=violet] {
+  --accent: #d2c2ff;
+  --accent-hover: #e0d4ff;
+  --accent-pressed: #b9a2ff;
+  --on-accent: #000000;
+  --accent-text: #d2c2ff;
+  --accent-soft: #d2c2ff26;
+  --accent-soft-strong: #d2c2ff40;
+  --accent-line: #d2c2ff;
+  --selected-bg: #d2c2ff26;
+  --field-chip-accent: #b9a2ff;
+  --field-chip-accent-line: #b9a2ff66;
+}
+:root[data-accent=pink], :root[data-theme=dark][data-accent=pink] {
+  --accent: #ff9fd6;
+  --accent-hover: #ffb8e1;
+  --accent-pressed: #f088c6;
+  --on-accent: #3a0a26;
+  --accent-text: #ff9fd6;
+  --accent-soft: #ff9fd618;
+  --accent-soft-strong: #ff9fd62b;
+  --accent-line: #ff9fd666;
+  --selected-bg: #ff9fd618;
+  --focus-ring: #ff9fd6;
+  --field-chip-accent: #ff9fd6;
+  --field-chip-accent-line: #ff9fd666;
+}
+:root[data-theme=light][data-accent=pink] {
+  --accent: #ad2370;
+  --accent-hover: #bd2c7d;
+  --accent-pressed: #931c5e;
+  --on-accent: #ffffff;
+  --accent-text: #ad2370;
+  --accent-soft: #c73c8817;
+  --accent-soft-strong: #c73c882b;
+  --accent-line: #c73c8880;
+  --selected-bg: #c73c8817;
+  --focus-ring: #ad2370;
+  --field-chip-accent: #ff9fd6;
+  --field-chip-accent-line: #ff9fd666;
+}
+:root[data-theme=high-contrast][data-accent=pink] {
+  --accent: #ffc2e6;
+  --accent-hover: #ffd6ee;
+  --accent-pressed: #ff9fd6;
+  --on-accent: #000000;
+  --accent-text: #ffc2e6;
+  --accent-soft: #ffc2e626;
+  --accent-soft-strong: #ffc2e640;
+  --accent-line: #ffc2e6;
+  --selected-bg: #ffc2e626;
+  --field-chip-accent: #ff9fd6;
+  --field-chip-accent-line: #ff9fd666;
 }

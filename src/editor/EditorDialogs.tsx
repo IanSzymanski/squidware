@@ -32,6 +32,7 @@ import { PreferencesPanel } from './PreferencesPanel';
 import { SnappingPanel } from './SnappingPanel';
 import { RecoveryPanel } from './RecoveryPanel';
 import { CommitInput, CommitColor, MiniField } from './EditorControls';
+import { printFieldScheme } from '../components/fieldPalette';
 
 import type { EditorController } from './useEditorController';
 import { ProblemsPanel } from './ProblemsPanel';
@@ -99,7 +100,7 @@ function ExportPreview({ controller, mode }: { controller: EditorController; mod
       {mode === 'charts' ? <>
         <text x="6" y="9" className="export-preview-title">{project.title}</text>
         <text x="6" y="14" className="export-preview-text">Set 1 · {first.name}</text>
-        <svg x="6" y="17" width="98" height="54" viewBox="3 3 104 59"><MiniField positions={first.positions} dots={thumbnailDots} field={project.field} /></svg>
+        <svg x="6" y="17" width="98" height="54" viewBox="3 3 104 59"><MiniField positions={first.positions} dots={thumbnailDots} field={project.field} scheme={printFieldScheme(controller.preferences.value.fieldScheme)} /></svg>
         <path d="M6,75h70M6,79h52" className="export-preview-rule" />
       </> : <>
         <text x="6" y="9" className="export-preview-title">{performer ? `${performer.label}${performer.name ? ` · ${performer.name}` : ''}` : project.title}</text>

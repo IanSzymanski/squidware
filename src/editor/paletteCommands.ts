@@ -71,7 +71,7 @@ export function paletteEntries(state: EditorState): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
   function add<I extends CommandId>(id: I, args: CommandArguments[I], name?: string, key = id as string, description = commandRegistry[id].description) {
     const invocation = { id, args } as CommandInvocation;
-    const keywords = id === 'view.popout' ? 'pop out popout detach second monitor display separate 3d preview window' : id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme contrast scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
+    const keywords = id === 'view.popout' ? 'pop out popout detach second monitor display separate 3d preview window' : id === 'selection.tools' ? 'create rename update remove saved groups radius nearest polygon' : id === 'cast.show' ? 'edit performer name section roster' : id === 'preferences.open' ? 'rebind keyboard bindings shortcuts theme dark light system contrast accent color field appearance turf grass classic black white chart night scale panel layout increments hints tips' : id === 'dialog.open' && key === 'dialog-settings' ? 'edit production title ensemble field markings section color audio offset' : '';
     entries.push({ key, name: name ?? commandRegistry[id].name, description, keywords, invocation, disabledReason: commandUnavailable(state, invocation) });
   }
   // The browser build has no separate 3D window, so its commands stay hidden there.

@@ -21,7 +21,7 @@ p.form-label { margin-bottom: -6px; }
 .facing-controls .form-row { flex-wrap: wrap; }
 .bezier-fields, .scatter-fields { display: flex; flex-direction: column; gap: var(--space-3); }
 .bezier-fields .form-row, .scatter-fields .form-row { flex-wrap: wrap; }
-.formation-handles { color: #8dc8ff; }
+.formation-handles { color: var(--field-preview, #8dc8ff); }
 .inspector-tool .inspector-section { border: 0; }
 .facing-controls .transform-buttons { display: flex; gap: 6px; padding: 0; border: 0; background: none; }
 .facing-controls .transform-buttons .button { flex: 1; }

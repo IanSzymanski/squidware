@@ -29,6 +29,6 @@
 .selection-candidates small { display: block; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .selection-saved-group { display: flex; flex-direction: column; gap: 6px; padding-top: var(--space-2); border-top: 1px solid var(--hairline); }
 .selection-saved-group > span { color: var(--text-tertiary); font-size: var(--text-xs); }
-.selection-preview-ring { fill: none; stroke: #fff4b1; pointer-events: none; }
-.selection-preview-ring[data-included=false] { stroke-dasharray: 3 2; stroke: #ffcb83; }
+.selection-preview-ring { fill: none; stroke: var(--field-candidate, #fff4b1); pointer-events: none; }
+.selection-preview-ring[data-included=false] { stroke-dasharray: 3 2; stroke: var(--field-candidate-out, #ffcb83); }
 @media (max-height: 500px) { .selection-tools-panel { top: 12px; max-height: calc(var(--viewport-height) - 24px); } }

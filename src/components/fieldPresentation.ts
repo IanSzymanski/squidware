@@ -1,8 +1,13 @@
 import type { Point } from '../types';
+import type { FieldScheme } from '../appearance';
 
 /** CSS pixels, independent of drill yards, zoom and device-pixel ratio. */
 export interface FieldPresentation {
   colorMode: 'section' | 'selection' | 'custom';
+  /** How the field is painted. Turf is the standard field used by exports. */
+  scheme: FieldScheme;
+  /** A personal background behind the field, in place of the look's own. */
+  well?: string | null;
   customColor: string;
   dotRadiusPx: number;
   pointerRadiusPx: number;
@@ -18,7 +23,7 @@ export interface FieldPresentation {
   labelMode: 'adaptive' | 'all' | 'selected' | 'none';
 }
 export const DEFAULT_FIELD_PRESENTATION: Readonly<FieldPresentation> = {
-  colorMode: 'section', customColor: '#b9ed85', dotRadiusPx: 3.5, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 11, labelMode: 'all',
+  colorMode: 'section', scheme: 'turf', customColor: '#b9ed85', dotRadiusPx: 3.5, pointerRadiusPx: 10, touchRadiusPx: 22, labelSizePx: 11, labelMode: 'all',
 };
 export interface ScreenDot extends Point { id: string }
 export interface ScreenBox { left: number; top: number; right: number; bottom: number }

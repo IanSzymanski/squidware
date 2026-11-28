@@ -32,9 +32,9 @@ dialog.modal .problem-pagination > span:first-child { margin-right: auto; }
 .problem-bound { margin-left: 8px; padding: 1px 6px; border-radius: var(--radius-full); background: var(--warning-bg); color: var(--warning); font-size: var(--text-xs); font-weight: 600; }
 .problems-method summary { cursor: pointer; color: var(--text-tertiary); font-size: var(--text-xs); }
 .problems-method p { margin-top: var(--space-2); }
-.problem-path { fill: none; stroke: var(--error); stroke-width: 3px; stroke-dasharray: 8 4; vector-effect: non-scaling-stroke; }
-.problem-ring { fill: none; stroke: var(--error); stroke-width: 3px; vector-effect: non-scaling-stroke; }
-.clearance-outline--warning .problem-ring { stroke: var(--warning); }
+.problem-path { fill: none; stroke: var(--field-problem, var(--error)); stroke-width: 3px; stroke-dasharray: 8 4; vector-effect: non-scaling-stroke; }
+.problem-ring { fill: none; stroke: var(--field-problem, var(--error)); stroke-width: 3px; vector-effect: non-scaling-stroke; }
+.clearance-outline--warning .problem-ring { stroke: var(--field-problem-warning, var(--warning)); }
 .clearance-outline--possible .problem-ring { stroke-dasharray: 4 3; }
-.problem-preview .problem-path { stroke: var(--warning); stroke-dasharray: 3 5; }
-.problem-preview .problem-ring { stroke: var(--warning); }
+.problem-preview .problem-path { stroke: var(--field-problem-warning, var(--warning)); stroke-dasharray: 3 5; }
+.problem-preview .problem-ring { stroke: var(--field-problem-warning, var(--warning)); }

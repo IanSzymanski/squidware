@@ -1,6 +1,6 @@
 /** Preferences groups, in dialog and section-nav order. */
 export const preferencesSections = [
-  { id: 'appearance', title: 'Appearance', description: 'Theme, UI scale, panel layout and hints.' },
+  { id: 'appearance', title: 'Appearance', description: 'Theme, accent color, field appearance, UI scale, panel layout and hints.' },
   { id: 'field', title: 'Field display', description: 'Start view, paths, grid, zoom, dots, labels, coloring and coordinate precision.' },
   { id: 'editing', title: 'Editing', description: 'Nudge and preset increments, snapping, new sets, formation tools, new-production and print defaults.' },
   { id: 'shortcuts', title: 'Shortcuts', description: 'Find, record, clear and reset keyboard shortcuts.' },

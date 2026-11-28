@@ -170,7 +170,7 @@ function SetStrip({ controller: c, addButton }: { controller: EditorController; 
               select(event.key === 'Home' ? 0 : event.key === 'End' ? project.sets.length - 1 : Math.max(0, Math.min(project.sets.length - 1, i + (forward ? 1 : -1))), true);
             }
           }}>
-          {thumbnails && <span className="set-card-thumb"><MiniField positions={set.positions} dots={thumbnailDots} field={project.field} />
+          {thumbnails && <span className="set-card-thumb"><MiniField positions={set.positions} dots={thumbnailDots} field={project.field} scheme={preferences.value.fieldScheme} well={preferences.value.fieldWellColor} />
             <span className="set-number">{pad(i + 1)}</span>
             {i > 0 && <span className="set-row-counts">{timing.counts}</span>}
             {flags[i] > 0 && <span className={`set-card-flag${danger[i] ? ' danger' : ''}`}><TriangleAlert size={10} aria-hidden="true" />{flags[i]}</span>}

@@ -67,7 +67,7 @@ export function FormationHandles({ preview, field, scale }: { preview: FieldForm
   const start = at(-options.width/2,baseline); const end = at(options.width/2,baseline);
   const rotation = at(0, -(session.kind === 'line' ? 0 : options.height/2)-30/scale);
   const outline = [[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y]) => at(x*options.width/2,y*options.height/2));
-  return <g ref={geometry} className="formation-handles" aria-hidden="true" stroke={result.error ? '#ffb6aa' : '#8dc8ff'}>
+  return <g ref={geometry} className="formation-handles" aria-hidden="true" stroke={result.error ? 'var(--field-invalid, #ffb6aa)' : 'var(--field-preview, #8dc8ff)'}>
     <g pointerEvents="none" fill="none" strokeWidth={1.5/scale} strokeDasharray={`${4/scale} ${3/scale}`}>
       {session.ids.map(id => <g key={id} data-stride={preview.strides?.[id]} stroke={preview.strides?.[id] ? STRIDE_COLORS[preview.strides[id]] : undefined} opacity={preview.strides?.[id] ? undefined : longest.has(id) ? .35 : .1}><circle cx={original[id].x} cy={original[id].y} r={6/scale} /><path data-formation-path={id} d={`M${original[id].x},${original[id].y}L${result.positions[id].x},${result.positions[id].y}`} /></g>)}
       {endpoints ? <path d={`M${start.x},${start.y}L${end.x},${end.y}`} /> : <polygon points={outline.map(p => `${p.x},${p.y}`).join(' ')} />}

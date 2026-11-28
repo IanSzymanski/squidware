@@ -19,7 +19,7 @@ The orientation is a presentation half-turn around the field center. SVG geometr
 
 Dragging, spatial focus arrows and Alt+arrow movement follow screen direction in either orientation. Roster Home/End/Page stepping retains roster order. Inspector directions and exact X/Y inputs retain physical field meaning; movement arrow icons turn with the displayed orientation. Pan and zoom work in screen/view space; switching orientation resets pan and cancels any active field gesture without committing it. Opening Preferences also cancels an exact-transform preview through the existing context invalidation policy.
 
-Printed charts and SVG exports keep their standard audience-bottom orientation, section colors, chart dot/label geometry and full labels. CSV and project output retain canonical coordinates. The 3D view retains its own camera controls. No new project fields, schema version or print-display option are introduced.
+Printed charts and SVG exports keep their standard audience-bottom orientation, section colors, chart dot/label geometry and full labels. The field's colors come from the personal [field appearance](APPEARANCE.md#field-appearance): printed charts use Classic chart when it is chosen and Turf otherwise; SVG export stays Turf. CSV and project output retain canonical coordinates. The 3D view retains its own camera controls. No new project fields, schema version or print-display option are introduced.
 
 The existing version-1 personal preferences codec fills missing fields for older records. It validates bounded finite pixel sizes, orientation/color enums, label booleans and six-digit RGB colors. Reset and storage-failure behavior remain shared with the existing [preference controller](PREFERENCES.md).
 

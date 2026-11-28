@@ -1,7 +1,8 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { selectionMembership } from '../selection';
 import type { Point, Project } from '../types';
-import { STRIDE_COLORS, type NeighborOverlay, type NeighborPath } from '../neighborPaths';
+import type { NeighborOverlay, NeighborPath } from '../neighborPaths';
+import { fieldPalette } from './fieldPalette';
 import type { SelectionReview } from '../selectionTools';
 import { labelLeader } from './fieldPresentation';
 import type { FieldPresentation } from './fieldPresentation';
@@ -25,7 +26,6 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
   const ref = useRef<HTMLCanvasElement>(null);
   const lost = useRef(false);
   const sprites = useRef(new Map<string, HTMLCanvasElement>());
-  const accentCache = useRef('');
   const [generation, setGeneration] = useState(0);
   const widths = useMemo(() => measureFieldLabels(project, display.labelSizePx), [project.performers, display.labelSizePx]);
   const paths = useRef(new WeakMap<NeighborPath, { path: Path2D; end: Point; angle: number }>());
@@ -35,11 +35,9 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
     const canvas = ref.current!;
     const fail = () => { lost.current = true; canvas.style.visibility = 'hidden'; onReady(false); };
     const restore = () => { lost.current = false; setGeneration(value => value + 1); };
-    const theme = new MutationObserver(() => { accentCache.current = ''; setGeneration(value => value + 1); });
-    theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     canvas.addEventListener('contextlost', fail);
     canvas.addEventListener('contextrestored', restore);
-    return () => { theme.disconnect(); canvas.removeEventListener('contextlost', fail); canvas.removeEventListener('contextrestored', restore); onReady(false); };
+    return () => { canvas.removeEventListener('contextlost', fail); canvas.removeEventListener('contextrestored', restore); onReady(false); };
   }, [onReady]);
   useLayoutEffect(() => {
     const canvas = ref.current!;
@@ -54,8 +52,9 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
       context.setTransform(size.ratio, 0, 0, size.ratio, -bounds.left * size.ratio, -bounds.top * size.ratio);
       const selected = selectionMembership(selectedIds);
       const colors = new Map(project.sections.map(section => [section.id, section.color]));
-      const accent = accentCache.current ||= getComputedStyle(canvas).getPropertyValue('--field-accent').trim() || '#91c1ff';
-      const spriteKey = `${display.dotRadiusPx}/${size.ratio}/${accent}/${project.sections.map(s => s.color).join(',')}/${display.colorMode}/${display.customColor}`;
+      // The canvas paints with the same palette as the SVG field, so the two renderers never disagree.
+      const palette = fieldPalette(display.scheme), overlayInk = palette.ink, accent = palette.dot.ring;
+      const spriteKey = `${display.dotRadiusPx}/${size.ratio}/${display.scheme}/${project.sections.map(s => s.color).join(',')}/${display.colorMode}/${display.customColor}`;
       if (canvas.dataset.spriteKey !== spriteKey) { sprites.current.clear(); canvas.dataset.spriteKey = spriteKey; }
       const circle = (x: number, y: number, radius: number) => { context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); };
       const view = (point: Point) => { const p = fieldViewPoint(point, project.field, orientation); return { x: p.x * scale, y: p.y * scale }; };
@@ -64,10 +63,10 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
       if (orientation === 'audience-top') { context.translate(project.field.width, project.field.height); context.rotate(Math.PI); }
       for (const overlay of neighbors ?? []) {
         const incoming = overlay.direction === 'previous';
-        const base = incoming ? '#b9e3f4' : '#f1d39a'; context.lineWidth = 1.5 / scale;
+        const base = incoming ? overlayInk.previous : overlayInk.next; context.lineWidth = 1.5 / scale;
         context.lineCap = 'round';
         for (const path of overlay.paths) {
-          context.strokeStyle = path.level === 'ok' ? base : STRIDE_COLORS[path.level]; context.lineWidth = 1.5 / scale;
+          context.strokeStyle = path.level === 'ok' ? base : path.level === 'large' ? overlayInk.strideLarge : overlayInk.strideOver; context.lineWidth = 1.5 / scale;
           if (path.moving) {
             let cached = paths.current.get(path);
             if (!cached) {
@@ -107,11 +106,11 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
           ink.scale(size.ratio, size.ratio);
           const dotCircle = (r: number, x = pad, y = pad) => { ink.beginPath(); ink.arc(x, y, r, 0, Math.PI * 2); };
           if (isSelected) {
-            dotCircle(radius + 3); ink.strokeStyle = '#111820'; ink.lineWidth = 4; ink.stroke();
+            dotCircle(radius + 3); ink.strokeStyle = palette.dot.halo; ink.lineWidth = 4; ink.stroke();
             ink.strokeStyle = accent; ink.lineWidth = 1.5; ink.stroke();
           }
-          dotCircle(radius); ink.fillStyle = color; ink.fill(); ink.strokeStyle = isSelected ? '#fff' : '#142920'; ink.lineWidth = 1; ink.stroke();
-          dotCircle(radius / 4, pad - radius * .23, pad - radius * .27); ink.fillStyle = '#fff'; ink.globalAlpha = .3; ink.fill();
+          dotCircle(radius); ink.fillStyle = color; ink.fill(); ink.strokeStyle = isSelected ? palette.dot.outlineSelected : palette.dot.outline; ink.lineWidth = 1; ink.stroke();
+          dotCircle(radius / 4, pad - radius * .23, pad - radius * .27); ink.fillStyle = '#fff'; ink.globalAlpha = palette.dot.gloss; ink.fill();
           sprites.current.set(key, sprite);
         }
         const receded = !!subject && !subject.has(person.id);
@@ -125,10 +124,10 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
           context.font = `${isSelected ? 700 : 500} ${display.labelSizePx}px Arial, sans-serif`; context.textBaseline = 'alphabetic'; context.lineJoin = 'round';
           // Only a selected or focused label is tied by a leader; the others sit against their dots.
           const line = isSelected || person.id === focusedId ? labelLeader(p, label, display.dotRadiusPx) : null;
-          if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = '#c3d0c4'; context.globalAlpha = .5 * ink; context.lineWidth = 1; context.stroke(); }
+          if (line) { context.beginPath(); context.moveTo(line.x1, line.y1); context.lineTo(line.x2, line.y2); context.strokeStyle = palette.label.leader; context.globalAlpha = .5 * ink; context.lineWidth = 1; context.stroke(); }
           context.globalAlpha = ink;
-          context.strokeStyle = '#1c3026'; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
-          context.fillStyle = isSelected ? '#fff' : '#c3d0c4'; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          context.strokeStyle = palette.label.halo; context.lineWidth = 2.5; context.strokeText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
+          context.fillStyle = isSelected ? palette.label.selected : palette.label.screen; context.fillText(person.label, label.left + 2, label.top + 2 + display.labelSizePx * .8);
           context.globalAlpha = 1;
         }
       }
@@ -137,11 +136,11 @@ export function FieldCanvas({ project, positions, selectedIds, display, screen, 
         for (const candidate of selectionPreview.candidates) {
           const point = positions[candidate.id]; if (!point) continue;
           const p = view(point); circle(p.x, p.y, 11); context.lineWidth = 2;
-          context.strokeStyle = included.has(candidate.id) ? '#fff4b1' : '#ffcb83'; context.setLineDash(included.has(candidate.id) ? [] : [3, 2]); context.stroke();
+          context.strokeStyle = included.has(candidate.id) ? palette.ink.candidate : palette.ink.candidateOut; context.setLineDash(included.has(candidate.id) ? [] : [3, 2]); context.stroke();
         }
         context.setLineDash([]);
       }
-      context.strokeStyle = '#fff'; context.lineWidth = 1; context.setLineDash([.4 * scale, .3 * scale]);
+      context.strokeStyle = palette.ink.snap; context.lineWidth = 1; context.setLineDash([.4 * scale, .3 * scale]);
       context.beginPath();
       for (const [id, point] of Object.entries(snapPreview)) {
         if (!original[id]) continue;

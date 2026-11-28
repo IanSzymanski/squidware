@@ -20,6 +20,8 @@ import { coordinateDescription } from '../domain';
 import { FieldReadout } from './FieldReadout';
 import { FIELD_KEYS, nextFieldFocus } from './fieldKeyboard';
 import type { FieldKey } from './fieldKeyboard';
+import { fieldPaletteFor, fieldPaletteStyle, type FieldPalette } from './fieldPalette';
+import type { FieldScheme } from '../appearance';
 import { cycleFieldHit, DEFAULT_FIELD_PRESENTATION, labelLeader, nearestFieldDots } from './fieldPresentation';
 import type { FieldPresentation, HitCycle, ScreenBox } from './fieldPresentation';
 import './stages.css';
@@ -53,8 +55,9 @@ interface DrawingProps {
   deferMotion?: boolean;
 }
 
-function CustomFieldMarkings({ field, showGrid, flipped, snapping, gridScale }: { field: CustomSurface; showGrid: boolean; flipped: boolean; snapping: NonNullable<Project['snapping']>; gridScale?: number }) {
+function CustomFieldMarkings({ field, showGrid, flipped, snapping, gridScale, palette }: { field: CustomSurface; showGrid: boolean; flipped: boolean; snapping: NonNullable<Project['snapping']>; gridScale?: number; palette: FieldPalette }) {
   const { width, height, background } = field;
+  const ink = palette.floor;
   const x = surfaceReferences(field, 'x');
   const y = surfaceReferences(field, 'y');
   const step = gridInterval(snapping) * gridStride(gridInterval(snapping), gridScale);
@@ -67,24 +70,24 @@ function CustomFieldMarkings({ field, showGrid, flipped, snapping, gridScale }: 
   const label = (text: string, px: number, py: number) => <text x={px} y={py} transform={flipped ? `rotate(180 ${px} ${py})` : undefined}>{text}</text>;
   const mark = Math.min(width, height, 30) / 24;
   return <g data-field-markings="true" aria-hidden="true">
-    <rect data-field-surface="true" width={width} height={height} fill={field.preset === 'indoor' ? '#343139' : '#292f3a'} />
+    <rect data-field-surface="true" width={width} height={height} fill={field.preset === 'indoor' ? ink.indoor : ink.custom} />
     {background && <image href={background.image} x={background.x} y={background.y} width={background.width} height={background.height} preserveAspectRatio="none" />}
-    {minorGrid && <g stroke="#dae0e8" strokeWidth=".035" opacity={screen ? .13 : .25}>
+    {minorGrid && <g stroke={ink.grid} strokeWidth=".035" opacity={screen ? .13 : .25}>
       {Array.from({ length: Math.floor(width / step) }, (_, i) => line((i + 1) * step, 'x'))}
       {Array.from({ length: Math.floor(height / step) }, (_, i) => line((i + 1) * step, 'y'))}
     </g>}
-    <g stroke="#e7edf5" strokeWidth={screen ? .06 : .09} opacity={screen ? .3 : .48} strokeDasharray=".35 .2">
+    <g stroke={ink.reference} strokeWidth={screen ? .06 : .09} opacity={screen ? .3 : .48} strokeDasharray=".35 .2">
       {x.slice(1, -1).map(value => line(value, 'x'))}
       {y.slice(1, -1).map(value => line(value, 'y'))}
     </g>
-    <rect width={width} height={height} fill="none" stroke="#ced8e4" strokeWidth={screen ? .1 : .15} strokeOpacity={screen ? .7 : 1} />
-    <path d={`M0,${mark}V0H${mark}`} fill="none" stroke="#fff" strokeWidth={screen ? .12 : .2} strokeOpacity={screen ? .8 : 1} />
+    <rect width={width} height={height} fill="none" stroke={ink.edge} strokeWidth={screen ? .1 : .15} strokeOpacity={screen ? .7 : 1} />
+    <path d={`M0,${mark}V0H${mark}`} fill="none" stroke={ink.origin} strokeWidth={screen ? .12 : .2} strokeOpacity={screen ? .8 : 1} />
     {screen
-      ? <g className="field-captions" fill="#aeb8c4" opacity=".7" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark * .56} letterSpacing={mark * .18} textAnchor="middle">
+      ? <g className="field-captions" fill={ink.caption} opacity=".7" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark * .56} letterSpacing={mark * .18} textAnchor="middle">
         {label('ORIGIN', mark * 1.6, -mark * .55)}
         {label('AUDIENCE EDGE', width / 2, height + mark * 1.05)}
       </g>
-      : <g fill="#e0e7ef" fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark} textAnchor="middle">
+      : <g fill={ink.printCaption} fontFamily="Arial, sans-serif" fontWeight="600" fontSize={mark} textAnchor="middle">
         {label('0, 0', 0, -mark * 1.1)}
         {label('AUDIENCE EDGE', width / 2, height + mark * 1.65)}
       </g>}
@@ -95,9 +98,10 @@ function CustomFieldMarkings({ field, showGrid, flipped, snapping, gridScale }: 
 const GRID_MIN_PITCH_PX = 6;
 const gridStride = (interval: number, scale?: number) => scale ? [1, 2, 4, 8, 16].find(stride => interval * stride * scale >= GRID_MIN_PITCH_PX) ?? 16 : 1;
 
-export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping']; /** Screen pixels per yard; the grid thins out when its lines would crowd into texture. Print and export draw every line. */ gridScale?: number }) {
-  const { width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING, gridScale } = props;
-  if (isCustomSurface(props)) return <CustomFieldMarkings field={props} showGrid={showGrid} flipped={flipped} snapping={snapping} gridScale={gridScale} />;
+export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Project['field'] & { showGrid: boolean; flipped?: boolean; snapping?: Project['snapping']; /** Screen pixels per yard; the grid thins out when its lines would crowd into texture. Print and export draw every line. */ gridScale?: number; /** The standard turf unless a personal field look or a Classic chart drill book asks otherwise. */ scheme?: FieldScheme; /** A personal background behind the field, which its captions must read on. */ well?: string | null }) {
+  const { width, height, preset, showGrid, flipped = false, snapping = DEFAULT_SNAPPING, gridScale, scheme, well } = props;
+  const palette = fieldPaletteFor(scheme, well), ink = palette.football;
+  if (isCustomSurface(props)) return <CustomFieldMarkings field={props} showGrid={showGrid} flipped={flipped} snapping={snapping} gridScale={gridScale} palette={palette} />;
 
   const hashInset = preset === 'college' ? 20 : height / 3;
   const interval = snapping.target === 'grid' ? gridInterval(snapping) : 5;
@@ -107,14 +111,14 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
   const yardLines = Array.from({ length: Math.floor(width / 5) + 1 }, (_, index) => index * 5);
   const hashes = Array.from({ length: Math.floor(width) - 1 }, (_, index) => index + 1).filter(x => x % 5 !== 0);
   return <g data-field-markings="true" aria-hidden="true">
-    <rect x={-2} y={-2} width={width + 4} height={height + 4} rx="0.5" fill="#273a34" stroke="#46574c" strokeWidth="0.12" />
-    <rect data-field-surface="true" width={width} height={height} fill="#233c31" />
-    {yardLines.filter((_, i) => i % 2 === 0).map(x => <rect key={`stripe-${x}`} x={x} width={Math.min(5, width - x)} height={height} fill="#294438" opacity="0.5" />)}
-    {showGrid && <g stroke="#a3c0a4" strokeWidth="0.045" opacity="0.2">
+    <rect x={-2} y={-2} width={width + 4} height={height + 4} rx="0.5" fill={ink.apron} stroke={ink.apronLine} strokeWidth="0.12" />
+    <rect data-field-surface="true" width={width} height={height} fill={ink.turf} />
+    {ink.stripeOpacity > 0 && yardLines.filter((_, i) => i % 2 === 0).map(x => <rect key={`stripe-${x}`} x={x} width={Math.min(5, width - x)} height={height} fill={ink.stripe} opacity={ink.stripeOpacity} />)}
+    {showGrid && <g stroke={ink.grid} strokeWidth="0.045" opacity={ink.gridOpacity}>
       {Array.from({ length: Math.floor(width / drawn) + 1 }, (_, i) => <line key={`gx-${i}`} x1={i * drawn} x2={i * drawn} y1={0} y2={height} />)}
       {gridY.map((y, i) => <line key={`gy-${i}`} x1={0} x2={width} y1={y} y2={y} />)}
     </g>}
-    <g stroke="#ccdcc9" opacity="0.5" strokeWidth="0.14">
+    <g stroke={ink.line} opacity={ink.lineOpacity} strokeWidth="0.14">
       {yardLines.map(x => <line key={`yard-${x}`} x1={x} x2={x} y1={0} y2={height} opacity={x % 10 === 0 ? 1 : 0.6} />)}
       <rect width={width} height={height} fill="none" strokeWidth="0.27" opacity="1" />
       {hashes.map(x => <g key={`hash-${x}`}>
@@ -124,7 +128,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
         <line x1={x} x2={x} y1={height - hashInset - 0.3} y2={height - hashInset + 0.3} />
       </g>)}
     </g>
-    <g className="field-yard-numbers" fill="#d9e0c7" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="2.5" opacity="0.55">
+    <g className="field-yard-numbers" fill={ink.number} textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="2.5" opacity={ink.numberOpacity}>
       {yardLines.filter(x => x > 0 && x < width && x % 10 === 0).map(x => {
         const label = Math.min(x, width - x);
         return <g key={`number-${x}`}>
@@ -133,7 +137,7 @@ export const StaticFieldMarkings = memo(function StaticFieldMarkings(props: Proj
         </g>;
       })}
     </g>
-    <g className="field-captions" fill="#b4c5b4" opacity="0.6" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="600" fontSize="0.9" letterSpacing="0.3">
+    <g className="field-captions" fill={ink.caption} opacity={ink.captionOpacity} textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="600" fontSize="0.9" letterSpacing="0.3">
       <text x={width / 2} y={-2.75} transform={flipped ? `rotate(180 ${width / 2} -3.07)` : undefined}>BACK SIDELINE</text>
       <text className="field-caption-front" x={width / 2} y={height + 3.4} transform={flipped ? `rotate(180 ${width / 2} ${height + 3.08})` : undefined}>FRONT SIDELINE</text>
       {/* Side 1 is the left half from the audience, as every coordinate reads. */}
@@ -150,6 +154,7 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
   const colors = new Map(project.sections.map(section => [section.id, section.color]));
   const sectionNames = new Map(project.sections.map(section => [section.id, section.name]));
   const display = { ...DEFAULT_FIELD_PRESENTATION, ...presentation };
+  const palette = fieldPaletteFor(display.scheme, display.well);
   const scale = screen?.scale ?? 1;
   const radius = screen ? display.dotRadiusPx / scale : .52;
   const flipped = !!screen && orientation === 'audience-top';
@@ -160,10 +165,10 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
   // The tie between a dot and a label placed away from its usual side, in the performer's own frame.
   const leader = (at: Point, box: ScreenBox) => {
     const line = labelLeader({ x: at.x * scale, y: at.y * scale }, box, display.dotRadiusPx);
-    return line && <line className="field-label-leader" x1={line.x1 / scale - at.x} y1={line.y1 / scale - at.y} x2={line.x2 / scale - at.x} y2={line.y2 / scale - at.y} stroke="#c3d0c4" strokeOpacity=".5" strokeWidth={1 / scale} pointerEvents="none" />;
+    return line && <line className="field-label-leader" x1={line.x1 / scale - at.x} y1={line.y1 / scale - at.y} x2={line.x2 / scale - at.x} y2={line.y2 / scale - at.y} stroke={palette.label.leader} strokeOpacity=".5" strokeWidth={1 / scale} pointerEvents="none" />;
   };
   return <>
-    {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} gridScale={screen?.scale} />}
+    {!dynamicOnly && <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={flipped} gridScale={screen?.scale} scheme={display.scheme} well={display.well} />}
     <StagingFootprints objects={staging} />
     {neighbors && <NeighborDrawing overlays={neighbors} scale={scale} />}
     {project.performers.map(performer => {
@@ -180,13 +185,13 @@ export function FieldDrawing({ project, facings, staging, positions, neighbors, 
         <title>{details}</title>
         <g transform={flipped ? 'rotate(180)' : undefined}>
         <circle className="field-hit-area" r={screen ? display.pointerRadiusPx / scale : 1.15} fill="transparent" />
-        {readoutId && <rect className="field-focus-ring" x={-focusRadius} y={-focusRadius} width={focusRadius * 2} height={focusRadius * 2} rx={screen ? 1 / scale : .15} fill="none" stroke="#fff" strokeWidth={screen ? 2 / scale : .24} pointerEvents="none" />}
-        {isSelected && screen && <circle className="field-selection-halo" r={(display.dotRadiusPx + 3) / scale} fill="none" stroke="#111820" strokeWidth={4 / scale} pointerEvents="none" />}
-        {isSelected && <circle className={screen ? "field-selection-ring" : undefined} r={screen ? (display.dotRadiusPx + 3) / scale : .96} fill={`${color}22`} stroke="#ffffff" strokeWidth={screen ? 1.5 / scale : .16} pointerEvents="none" />}
-        <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? '#fff' : '#142920'} strokeWidth={screen ? 1 / scale : .16} />
-        <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity="0.3" pointerEvents="none" />
+        {readoutId && <rect className="field-focus-ring" x={-focusRadius} y={-focusRadius} width={focusRadius * 2} height={focusRadius * 2} rx={screen ? 1 / scale : .15} fill="none" stroke={palette.dot.ring} strokeWidth={screen ? 2 / scale : .24} pointerEvents="none" />}
+        {isSelected && screen && <circle className="field-selection-halo" r={(display.dotRadiusPx + 3) / scale} fill="none" stroke={palette.dot.halo} strokeWidth={4 / scale} pointerEvents="none" />}
+        {isSelected && <circle className={screen ? "field-selection-ring" : undefined} r={screen ? (display.dotRadiusPx + 3) / scale : .96} fill={`${color}22`} stroke={palette.dot.ring} strokeWidth={screen ? 1.5 / scale : .16} pointerEvents="none" />}
+        <circle className="field-dot" r={radius} fill={color} stroke={isSelected ? palette.dot.outlineSelected : palette.dot.outline} strokeWidth={screen ? 1 / scale : .16} />
+        <circle cx={-radius * .23} cy={-radius * .27} r={radius / 4} fill="#ffffff" opacity={palette.dot.gloss} pointerEvents="none" />
         {showLabels && screen && label && (isSelected || performer.id === keyboardFocusId) && leader(labelPoint, label) }
-        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? '#fff' : screen ? '#c3d0c4' : '#e0e9de'} stroke="#1c3026" strokeWidth={screen ? 2.5 / scale : .2} strokeLinejoin="round" paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} opacity={!screen || isSelected ? undefined : selected.size ? .45 : .85} pointerEvents="none">{performer.label}</text>}
+        {showLabels && (!screen || label) && <text data-performer-label={performer.id} x={label ? (label.left + 2) / scale - labelPoint.x : .83} y={label ? (label.top + 2 + display.labelSizePx * .8) / scale - labelPoint.y : .34} fill={isSelected ? palette.label.selected : screen ? palette.label.screen : palette.label.print} stroke={palette.label.halo} strokeWidth={screen ? 2.5 / scale : .2} strokeLinejoin="round" paintOrder="stroke" fontFamily={screen ? 'Arial, sans-serif' : 'Inter, Arial, sans-serif'} fontSize={screen ? display.labelSizePx / scale : 1.05} fontWeight={isSelected ? 700 : 500} opacity={!screen || isSelected ? undefined : selected.size ? .45 : .85} pointerEvents="none">{performer.label}</text>}
         </g>
       </g>;
     })}
@@ -203,8 +208,8 @@ InteractiveFieldDrawing.displayName = 'InteractiveFieldDrawing';
 const NO_POSITIONS: Record<string, Point> = {};
 const NO_NEIGHBORS: NeighborOverlay[] = [];
 
-function PerformerMarks({ facings, performers, positions, scale, radius }: {
-  facings?: PerformerFacings; performers: { id: string; role?: NonNullable<Performer['appearance']>['role']; costumeColor?: string }[]; positions: Record<string, Point>; scale: number; radius: number;
+function PerformerMarks({ facings, performers, positions, scale, radius, ink }: {
+  facings?: PerformerFacings; performers: { id: string; role?: NonNullable<Performer['appearance']>['role']; costumeColor?: string }[]; positions: Record<string, Point>; scale: number; radius: number; ink: FieldPalette['mark'];
 }) {
   const start = radius + 4;
   return <g className="performer-marks" pointerEvents="none" aria-hidden="true">
@@ -212,16 +217,16 @@ function PerformerMarks({ facings, performers, positions, scale, radius }: {
       const point = Object.hasOwn(positions, id) ? positions[id] : undefined;
       return point && <path key={id} data-performer-facing={id} data-facing-degrees={angle}
         transform={`translate(${point.x} ${point.y}) scale(${1 / scale}) rotate(${-angle})`}
-        d={`M -3 ${start} L 0 ${start + 5} L 3 ${start} Z`} fill="#f5f5e8" stroke="#142920" strokeWidth="1" />;
+        d={`M -3 ${start} L 0 ${start + 5} L 3 ${start} Z`} fill={ink.fill} stroke={ink.outline} strokeWidth="1" />;
     })}
     {performers.map(({ id, role, costumeColor }) => {
       const point = positions[id];
       return point && <g key={id} data-performer-appearance={id} data-performer-role={role}
         transform={`translate(${point.x} ${point.y}) scale(${1 / scale})`}>
-        {costumeColor && <circle r={Math.max(1.4, radius * .6)} fill={costumeColor} stroke="#142920" strokeWidth="1" />}
+        {costumeColor && <circle r={Math.max(1.4, radius * .6)} fill={costumeColor} stroke={ink.outline} strokeWidth="1" />}
         {role && <path transform={`translate(${-start - 5} ${-start - 5})`}
           d={role === 'guard' ? 'M -2 3 V -3 H 3 L 1 0 H -2 Z' : 'M -3 -2 H 3 V 2 H -3 Z'}
-          fill="#f5f5e8" stroke="#142920" strokeWidth="1" />}
+          fill={ink.fill} stroke={ink.outline} strokeWidth="1" />}
       </g>;
     })}
   </g>;
@@ -278,7 +283,7 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const [rememberedFocus, setRememberedFocus] = useState<{ project: string; id: string } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const hitCycle = useRef<HitCycle | null>(null);
-  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut, presentation?.labelReachSelected, presentation?.labelSubset]);
+  const display = useMemo(() => ({ ...DEFAULT_FIELD_PRESENTATION, ...presentation }), [presentation?.colorMode, presentation?.scheme, presentation?.well, presentation?.customColor, presentation?.dotRadiusPx, presentation?.pointerRadiusPx, presentation?.touchRadiusPx, presentation?.labelSizePx, presentation?.labelMode, presentation?.labelKeepOut, presentation?.labelReachSelected, presentation?.labelSubset]);
   const [canvasReady, setCanvasReady] = useState(false);
   const [screen, setScreen] = useState<DrawingProps['screen']>();
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
@@ -292,6 +297,8 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const view = fieldViewBox(project.field, safeZoom, pan);
   const viewWidth = view.width, viewHeight = view.height;
   const viewport = `${view.x} ${view.y} ${viewWidth} ${viewHeight}`;
+  const palette = useMemo(() => fieldPaletteFor(display.scheme, display.well), [display.scheme, display.well]);
+  const paletteStyle = useMemo(() => fieldPaletteStyle(palette), [palette]);
   const displayedPositions = useMemo(() => Object.keys(preview).length ? { ...positions, ...preview } : positions, [positions, preview]);
   const spatialPreview = moveOperationPreview ?? travelPreview;
   const markedPerformers = useMemo(() => {
@@ -597,10 +604,10 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
   const pathCount = moving ? 0 : neighbors?.reduce((count, overlay) => count + overlay.paths.length, 0) ?? 0;
   // The static markings redraw only when zoom crosses a grid level, not on every zoom step: one representative scale per level.
   const gridLevel = screen ? 2 ** (Math.round(Math.log2(screen.scale) * 4) / 4) : undefined;
-  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`} data-surface={project.field.preset}>
+  return <div className={`field-stage${readOnly ? ' field-stage--readonly' : ''}${tool === 'pan' ? ' field-stage--pan' : ''}${moving ? ' field-stage--moving' : ''}${keyboardHelp ? ' field-stage--keyboard' : ''}`} data-surface={project.field.preset} data-field-scheme={display.scheme} style={paletteStyle}>
     <svg className="field-stage__background" viewBox={viewport} aria-hidden="true">
       <g transform={fieldViewTransform(project.field, orientation)}>
-        <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} gridScale={gridLevel} />
+        <StaticFieldMarkings {...project.field} snapping={project.snapping} showGrid={showGrid} flipped={orientation === 'audience-top'} gridScale={gridLevel} scheme={display.scheme} well={display.well} />
         <StagingFootprints objects={staging} />
       </g>
     </svg>
@@ -611,24 +618,24 @@ export function Field2D({ project, facings, staging, positions, neighbors, selec
       <InteractiveFieldDrawing dynamicOnly deferMotion={canvasActive} project={project} facings={facings} positions={displayedPositions} neighbors={moving ? NO_NEIGHBORS : neighbors} selectedIds={selectedIds} showLabels={showLabels} showGrid={showGrid} coordinateFormat={coordinateFormat} readoutId={spatialPreview ? undefined : readoutId} focusedId={focusedId} keyboardHelpId={keyboardHelpId} keyboardFocusId={keyboardFocus ? focusedId : null} presentation={display} screen={screen} orientation={orientation} />
       </g>
       {(facings || markedPerformers.length > 0) && screen && <PerformerMarks facings={facings}
-        performers={markedPerformers} positions={displayedPositions} scale={screen.scale} radius={display.dotRadiusPx} />}
+        performers={markedPerformers} positions={displayedPositions} scale={screen.scale} radius={display.dotRadiusPx} ink={palette.mark} />}
       {!spatialPreview && problemOverlay}
       {moveOperationPreview?.overlay}
       {travelPreview && <TravelOverlay {...travelPreview} zoom={safeZoom} snap={travelPreview.snapHandles ?? snap} mainField pan={tool === 'pan'} scale={screen?.scale} flipped={orientation === 'audience-top'} />}
       {selectionPreview && <g opacity={canvasActive ? 0 : 1} aria-hidden="true" pointerEvents="none">{selectionPreview.candidates.map(candidate => <circle key={candidate.id} data-selection-candidate={candidate.id} data-included={selectionPreview.ids.includes(candidate.id)} className="selection-preview-ring" cx={positions[candidate.id].x} cy={positions[candidate.id].y} r={11 / (screen?.scale ?? 1)} strokeWidth={2 / (screen?.scale ?? 1)} />)}</g>}
-      {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill="#fff4b122" fillRule="evenodd" stroke="#fff4b1" strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
+      {(lasso || selectionPreview?.spec.kind === 'lasso') && <polygon data-selection-lasso="true" points={(lasso ?? (selectionPreview!.spec.kind === 'lasso' ? selectionPreview!.spec.points : [])).map(p => `${p.x},${p.y}`).join(' ')} fill={`${palette.ink.lasso}22`} fillRule="evenodd" stroke={palette.ink.lasso} strokeWidth={1.5 / (screen?.scale ?? 1)} pointerEvents="none" />}
       {formationPreview && (formationPreview.session.scatter ? <ScatterFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : formationPreview.session.bezier ? <BezierFormationHandles key={orientation} preview={formationPreview} project={project} snap={snap} scale={screen?.scale ?? 1}/> : <FormationHandles key={orientation} preview={formationPreview} field={project.field} scale={screen?.scale ?? 1} />)}
       {/* One selected performer among many: a second ring, so the eye finds it at once. */}
       {screen && selectedIds.length === 1 && displayedPositions[selectedIds[0]] && !spatialPreview && <circle className="field-single-halo" data-single-selection="" cx={displayedPositions[selectedIds[0]].x} cy={displayedPositions[selectedIds[0]].y}
-        r={(display.dotRadiusPx + 8) / screen.scale} fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth={1.5 / screen.scale} pointerEvents="none" />}
+        r={(display.dotRadiusPx + 8) / screen.scale} fill="none" stroke={palette.dot.ring} strokeOpacity=".55" strokeWidth={1.5 / screen.scale} pointerEvents="none" />}
       {transformPreview && <TransformHandles key={orientation} preview={transformPreview} field={project.field} scale={screen?.scale ?? 1} />}
       {screen && selectionBox && !readOnly && tool === 'select' && selectedIds.length > 1 && !spatialPreview && !formationPreview && !spacingPreview && !coordinatePreview && !selectionPreview && !transformPreview && !neighbors?.length
         && <SelectionBox key={orientation} ids={selectedIds} positions={displayedPositions} original={positions} box={selectionBox} field={project.field} scale={screen.scale} flipped={orientation === 'audience-top'} radius={display.dotRadiusPx}
           onPreview={updates => { setPreview(updates ?? {}); onMovePreview?.(updates); }} />}
       {coordinatePreview && <CoordinateGuides preview={coordinatePreview} scale={screen?.scale ?? 1} />}
       {spacingPreview && <SpacingGuides key={orientation} preview={spacingPreview} project={project} scale={screen?.scale ?? 1} flipped={orientation === 'audience-top'} />}
-      {moving && Object.keys(preview).length > 0 && <g opacity={canvasActive ? 0 : 1} data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke="#fff" strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{!canvasActive && Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}
-      {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill="#8dc8ff18" stroke="#8dc8ff" strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
+      {moving && Object.keys(preview).length > 0 && <g opacity={canvasActive ? 0 : 1} data-snap-preview="true" aria-hidden="true" pointerEvents="none" stroke={palette.ink.snap} strokeWidth={1 / (screen?.scale ?? 1)} strokeDasharray=".4 .3">{!canvasActive && Object.entries(preview).map(([id, point]) => <line key={id} x1={positions[id].x} y1={positions[id].y} x2={point.x} y2={point.y} />)}</g>}
+      {marquee && <rect x={Math.min(marquee.start.x, marquee.current.x)} y={Math.min(marquee.start.y, marquee.current.y)} width={Math.abs(marquee.start.x - marquee.current.x)} height={Math.abs(marquee.start.y - marquee.current.y)} fill={`${palette.ink.marquee}18`} stroke={palette.ink.marquee} strokeWidth="0.15" strokeDasharray="0.6 0.4" pointerEvents="none" />}
       </g>
     </svg>
 

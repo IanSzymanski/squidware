@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { applyAppearance, clearAppearance, resolveTheme, systemAppearance, watchSystemAppearance } from '../appearance';
 import { useEditorSelector, useEditorStore } from './react';
 import { browserPreferences, startPreferencesController } from './preferencesController';
 import type { Preferences } from '../preferences';
@@ -8,12 +9,17 @@ export function usePreferencesController() {
   const hasSelection = useEditorSelector(state => state.selection.selectedIds.length > 0);
   const hadSelection = useRef(false);
   const controller = useRef<ReturnType<typeof startPreferencesController> | null>(null);
+  const [system, setSystem] = useState(() => systemAppearance());
+  const followsSystem = state.value.theme === 'system';
+  // The system is only watched while the theme follows it; switching to it reads the current system first.
+  useEffect(() => { if (!followsSystem) return; setSystem(systemAppearance()); return watchSystemAppearance(window, setSystem); }, [followsSystem]);
+  const theme = resolveTheme(state.value.theme, system);
   useLayoutEffect(() => {
     const root = document.documentElement;
-    root.dataset.theme = state.value.theme;
+    applyAppearance(root, theme, state.value.accent, state.value.accentColor);
     root.style.setProperty('--ui-scale', String(state.value.uiScale));
-    return () => { delete root.dataset.theme; root.style.removeProperty('--ui-scale'); };
-  }, [state.value.theme, state.value.uiScale]);
+    return () => { clearAppearance(root); root.style.removeProperty('--ui-scale'); };
+  }, [theme, state.value.accent, state.value.accentColor, state.value.uiScale]);
   useEffect(() => {
     const unavailable = { getItem() { throw new Error('Browser preferences storage is unavailable.'); }, setItem() { throw new Error('Browser preferences storage is unavailable.'); } };
     let storage; try { storage = localStorage; } catch { storage = unavailable; }
@@ -24,5 +30,5 @@ export function usePreferencesController() {
     if (hasSelection && !hadSelection.current && !state.value.selectionHintDismissed) controller.current?.update({ selectionHintDismissed: true });
     hadSelection.current = hasSelection;
   }, [hasSelection, state.value.selectionHintDismissed]);
-  return { ...state, update: (value: Partial<Preferences>) => controller.current?.update(value), reset: () => controller.current?.reset(), flush: () => controller.current?.flush() };
+  return { ...state, theme, update: (value: Partial<Preferences>) => controller.current?.update(value), reset: () => controller.current?.reset(), flush: () => controller.current?.flush() };
 }
