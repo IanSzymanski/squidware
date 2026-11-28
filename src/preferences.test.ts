@@ -27,12 +27,14 @@ describe('personal preferences codec', () => {
     }
     for (const value of [{ theme: 'auto' }, { uiScale: 0 }, { uiScale: 1.2 }, { uiScale: '1.25' }, { uiScale: Infinity }]) expect(() => validatePreferences(value)).toThrow();
   });
-  it('keeps system theme, accent and field look as personal choices with lime turf defaults', () => {
-    expect(validatePreferences({ version: 1 })).toMatchObject({ theme: 'dark', accent: 'lime', fieldScheme: 'turf' });
+  it('keeps system theme, accent and field look as personal choices with green turf defaults', () => {
+    expect(validatePreferences({ version: 1 })).toMatchObject({ theme: 'dark', accent: 'green', fieldScheme: 'turf' });
+    // The retired lime and teal accents read as the squid green.
+    for (const accent of ['lime', 'teal']) expect(validatePreferences({ accent }).accent).toBe('green');
     const looks = { theme: 'system', accent: 'violet', fieldScheme: 'classic' };
     expect(validatePreferences(looks)).toMatchObject(looks);
     for (const fieldScheme of ['turf', 'grass', 'classic', 'night']) expect(validatePreferences({ fieldScheme }).fieldScheme).toBe(fieldScheme);
-    expect(validatePreferences({ version: 1 })).toMatchObject({ accentColor: '#c2f279', fieldWellColor: null });
+    expect(validatePreferences({ version: 1 })).toMatchObject({ accentColor: '#0eedb5', fieldWellColor: null });
     const custom = { accent: 'custom', accentColor: '#AA3355', fieldWellColor: '#f4f4f4' };
     expect(validatePreferences(custom)).toMatchObject(custom);
     expect(validatePreferences({ fieldWellColor: null }).fieldWellColor).toBeNull();

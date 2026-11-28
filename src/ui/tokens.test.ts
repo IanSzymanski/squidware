@@ -48,12 +48,15 @@ describe('theme and accent tokens', () => {
     }
     // A color that already reads keeps its exact value.
     expect(customAccentTokens('#c2f279', 'dark')['--accent']).toBe('#c2f279');
+    expect(customAccentTokens('#0eedb5', 'dark')['--accent']).toBe('#0eedb5');
     expect(customAccentTokens('#1b57b5', 'light')['--accent']).toBe('#1b57b5');
   });
-  it('defines every accent for every theme, and lime only in the theme blocks', () => {
+  it('defines every accent for every theme, and the squid green default only in the theme blocks', () => {
     const accented = blocks.flatMap(block => block.selectors).filter(selector => selector.includes('data-accent'));
-    for (const accent of ACCENTS.filter(accent => accent !== 'lime')) for (const theme of ['dark', 'light', 'high-contrast'])
+    for (const accent of ACCENTS.filter(accent => accent !== 'green')) for (const theme of ['dark', 'light', 'high-contrast'])
       expect(accented).toContain(`:root[data-theme=${theme}][data-accent=${accent}]`);
-    expect(accented.some(selector => selector.includes('lime'))).toBe(false);
+    expect(accented.some(selector => /green|lime|teal/.test(selector))).toBe(false);
+    // The brand green: #0eedb5 on dark grounds, #006b50 on light ones.
+    expect(['dark', 'high-contrast', 'light'].map(theme => tokens(theme, 'green')['--accent'])).toEqual(['#0eedb5', '#0eedb5', '#006b50']);
   });
 });

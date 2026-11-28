@@ -4,7 +4,7 @@ Issue [#43](https://github.com/IanSzymanski/squidware/issues/43).
 
 Open **Project menu → Preferences…** and use its **Appearance** section to choose **Match system**, **Dark**, **Light** or **High contrast**, an accent color, a field appearance and the background behind the field, and **100%, 110%, 125% or 150% UI scale**. Changes apply immediately and persist on this device. Dark at 100% is the default, including when an older preferences file is missing the new fields. Reset defaults restores these choices. Invalid themes/scales cannot replace the canonical preferences.
 
-Chrome uses shared neutral surface/text/border tokens, a personal accent (lime by default) for the primary action, the current item and focus, and separate success/warning/error colors. Values, headings, counts, button labels and active or selected states use the full-strength text token; the muted token is reserved for labels, hints and secondary metadata, so a value stands out from its label in every theme. Counts, tempos and coordinate readouts use tabular numerals; compact chrome defaults to 12–13 px. Theme changes apply without color interpolation so text and backgrounds do not briefly use incompatible palettes. Selected dots have a white circular ring with a dark halo; keyboard focus has a separate square outline. Check marks, pressed borders, dashed disabled controls and error text reinforce state.
+Chrome uses shared neutral surface/text/border tokens, a personal accent (squid green by default) for the primary action, the current item and focus, and separate success/warning/error colors. Values, headings, counts, button labels and active or selected states use the full-strength text token; the muted token is reserved for labels, hints and secondary metadata, so a value stands out from its label in every theme. Counts, tempos and coordinate readouts use tabular numerals; compact chrome defaults to 12–13 px. Theme changes apply without color interpolation so text and backgrounds do not briefly use incompatible palettes. Selected dots have a white circular ring with a dark halo; keyboard focus has a separate square outline. Check marks, pressed borders, dashed disabled controls and error text reinforce state.
 
 New productions use gold Brass dots. Opening an existing production preserves its exact section colors, including the original lime Brass default. Other section defaults are unchanged. Theme, accent, field appearance, field background and UI scale remain personal preferences, outside `.squid` data and edit history. The field look and independent dot/label pixel preferences are independent of the chrome theme. Print media resets UI scaling; existing print typography and geometry are retained.
 
@@ -16,9 +16,13 @@ Scaling uses Chromium CSS zoom in both the desktop renderer and browser fallback
 
 ## Accent color
 
-The accent marks the primary action in view, the current set and tool, and keyboard focus. Choose **Lime** (the default), **Blue**, **Teal**, **Violet** or **Pink**, or pick any color with the always-visible **Custom** color picker; picking a color makes it the accent. The picker starts from the accent in use.
+The accent marks the primary action in view, the current set and tool, and keyboard focus. Choose **Green** (the default squid green: `#0EEDB5` on Dark and High contrast, `#006B50` on Light), **Blue**, **Violet** or **Pink**, or pick any color with the always-visible **Custom** color picker; picking a color makes it the accent. The picker starts from the accent in use.
 
 Each preset is defined separately for Dark, Light and High contrast in [`tokens.css`](../src/ui/tokens.css). A custom color keeps its hue and saturation and is lightened (Dark, High contrast) or darkened (Light) only as far as needed: accent text reaches 4.5:1 on every chrome surface, labels on accent buttons reach 4.5:1 in every state, and the focus ring reaches 3:1. When the color is changed for the current theme, Preferences says which color it shows as. High contrast keeps its white focus ring. The dark canvas chips over the field use the accent's dark-theme value in every theme. Status colors (success, warning, error, info) never follow the accent.
+
+Preferences saved with the earlier **Lime** or **Teal** accent open as Green.
+
+**The squid mark** in the top bar and on the welcome screen is drawn in the accent, so it follows the theme and accent choice. In the browser, the tab icon follows the accent too. The packaged desktop icon (`public/icon512.png`, `build/icon.ico`) is the dark glyph on a squid-green tile and does not change with the accent.
 
 ## Field appearance
 

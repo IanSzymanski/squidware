@@ -15,7 +15,7 @@ Persisted choices:
 | Section | Choice | Default / limits |
 | --- | --- | --- |
 | Appearance | Interface theme | Dark; Match system, Light and High contrast available. Match system follows the computer's light/dark and contrast settings. |
-| Appearance | Accent color | Lime; Blue, Teal, Violet, Pink, or a custom RGB color from the visible picker (`#C2F279` until picked). Every accent is adjusted per theme to keep text and focus readable. |
+| Appearance | Accent color | Green (`#0EEDB5` on dark themes, `#006B50` on Light); Blue, Violet, Pink, or a custom RGB color from the visible picker (`#0EEDB5` until picked). Saved Lime or Teal choices open as Green. Every accent is adjusted per theme to keep text and focus readable. |
 | Appearance | Field appearance | Turf; Grass, Classic chart (black on white) and Night chart (white on black). Printed drill books use Classic chart when chosen, Turf otherwise. |
 | Appearance | Background behind the field | The field look's own; any custom RGB color. **Match field look** clears it. |
 | Appearance | UI scale | 100%; 110%, 125% and 150% available |

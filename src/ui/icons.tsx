@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from 'react';
+import { SQUID_GLYPH } from './squidGlyph';
 
 /**
  * Squidware's own glyphs. Formation tools are drawn as performers (dots) in that formation, so a tool
@@ -41,11 +42,9 @@ export const PathsToIcon = (props: IconProps) => <Glyph {...props}>
   <circle cx="16.5" cy="4.5" r="1.9" stroke="currentColor" strokeWidth="1.4" />
 </Glyph>;
 
-/** The Squidware mark, drawn inline so it follows the theme. */
+/** The Squidware mark, drawn inline in the writer's accent color so it follows the theme and the accent choice. */
 export function SquidMark({ size = 24 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
-    <rect width="40" height="40" rx="11" fill="#c2f279" />
-    <path d="M12 20c0-8 8-13 8-13s8 5 8 13c0 4-3 7-8 7s-8-3-8-7Zm3 5-3 8m8-7v9m5-10 3 8" fill="none" stroke="#1c2a21" strokeWidth="3" strokeLinecap="round" />
-    <circle cx="17" cy="19" r="1.5" fill="#1c2a21" /><circle cx="23" cy="19" r="1.5" fill="#1c2a21" />
+  return <svg className="squid-mark" width={size} height={size} viewBox={SQUID_GLYPH.viewBox} aria-hidden="true">
+    <path fill="var(--accent)" fillRule="evenodd" d={SQUID_GLYPH.path} />
   </svg>;
 }
