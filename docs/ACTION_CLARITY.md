@@ -14,7 +14,7 @@ Implements the product changes in [#36](https://github.com/IanSzymanski/squidwar
 | History | **Project menu → History…** | Lucide History (a clock on a counter-clockwise arrow), distinct from the Undo2/Redo2 arrows; dialog heading **History**. Its Undo/Redo buttons name the action and explain why they are unavailable. **Project menu → Recovery copies…** uses LifeBuoy |
 | Cast | **Cast** tab of the side panel | Tab label with the performer count |
 | Production sheet | **Plan** mode in the top bar | Text mode button; the sheet's accessible name is **Editable production sheet** |
-| Add set | Labeled button at the end of the set strip; an icon button in the transport when the strip is hidden | Plus; opens the **Add set** dialog |
+| Add set | Labeled button at the end of the set strip; an icon button in the transport when the strip is hidden | Plus; adds a held set in one click. The arrow under it opens the **Add set** dialog |
 | Select all | Inspector header and the tool strip's **Select menu** | The Inspector header shows **Select all** with nothing selected and **Clear** (**Clear selection**) otherwise; the Select menu lists both |
 | Previous / next paths | **Travel paths** menu over the field: **Show paths from previous set** and **Show paths to next set** | Custom path glyphs; existing distinct ghosts and path styles retained |
 | Performer labels | **View options** menu over the field | Tags; **Show labels**, **Selected only** and **Hide labels**; the J shortcut still cycles them |
