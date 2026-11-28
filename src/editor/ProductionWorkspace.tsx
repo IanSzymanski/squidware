@@ -185,7 +185,7 @@ export function ProductionWorkspace({ controller }: { controller: EditorControll
               },
             };
             const classes = [numeric(column) && 'sheet-num', inherits && 'sheet-inherit', repeats && !editing && 'sheet-repeat'].filter(Boolean).join(' ');
-            return <td key={label} className={classes || undefined}>{column === 3 ? <><textarea {...props} rows={1} onKeyDown={e => move(e, cell)} />{!wrap && !active && !editing && <span className="sheet-note-preview" aria-hidden="true">{value}</span>}</> : <input {...props} inputMode={numeric(column) ? 'decimal' : 'text'} onKeyDown={e => move(e, cell)} />}</td>;
+            return <td key={label} className={classes || undefined}>{column === 3 ? <textarea {...props} rows={1} onKeyDown={e => move(e, cell)} /> : <input {...props} inputMode={numeric(column) ? 'decimal' : 'text'} onKeyDown={e => move(e, cell)} />}</td>;
           })}
         </tr>; })}
       </tbody></table>

@@ -73,9 +73,6 @@
 /* One line per set until a cell is being edited, so more of the show fits. */
 .sheet-scroll--dense tr:not(.sheet-active) textarea:not(:focus) { max-height: calc(1lh + 14px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-.sheet-scroll td:has(.sheet-note-preview) { position: relative; }
-.sheet-scroll td:has(.sheet-note-preview) textarea:not(:focus) { color: transparent; }
-.sheet-note-preview { position: absolute; inset: 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: calc(var(--control-lg) + 4px); color: var(--text-secondary); pointer-events: none; }
 .sheet-scroll tr[data-rehearsal-mark]:not(:first-child) > * { border-top: 1px solid var(--border-strong); }
 .sheet-scroll tr[data-rehearsal-mark] input[data-column="5"] { color: var(--accent-text); font-weight: 600; }
 
